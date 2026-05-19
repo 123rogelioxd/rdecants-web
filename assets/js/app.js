@@ -12,6 +12,7 @@ import { renderCart, updateCartCount,
          toggleCart, sendWhatsApp }       from './cart/render.js';
 import { renderFeatured, renderProducts,
          renderPacks }                    from './catalog/render.js';
+import { renderFeaturedCarousel }         from './catalog/featured.js';
 import { setupScrollAnimations,
          observeFadeUp,
          setupHeroParallax }             from './ui/animations.js';
@@ -68,6 +69,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateCartCount();
 
   /* Render catalog (async — provider pattern) */
+  await renderFeaturedCarousel();
   await renderFeatured();
   await renderProducts();
   await renderPacks();

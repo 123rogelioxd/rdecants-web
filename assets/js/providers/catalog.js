@@ -15,7 +15,7 @@
    To swap data source: change only this file.
    ============================================================= */
 
-import { PRODUCTS, PACKS } from '../../data/products.js';
+import { PRODUCTS, PACKS } from '../../../data/products.js';
 
 export const CatalogProvider = {
 

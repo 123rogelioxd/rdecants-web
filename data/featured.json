@@ -1,0 +1,62 @@
+[
+  {
+    "id": "lemale-elixir",
+    "name": "Le Male Elixir",
+    "tag": "JEAN PAUL GAULTIER",
+    "image": "assets/featured/jpg-le-male-elixir-hero.webp"
+  },
+  {
+    "id": "valentino-born-roma-edt",
+    "name": "Born in Roma EDT",
+    "tag": "VALENTINO",
+    "image": "assets/featured/valentino-born-in-roma-edt-hero.webp"
+  },
+  {
+    "id": "bleu-chanel-edt",
+    "name": "Bleu de Chanel EDT",
+    "tag": "CHANEL",
+    "image": "assets/featured/bleu-de-chanel-edt-hero.webp"
+  },
+  {
+    "id": "lemale-lebeau",
+    "name": "Le Beau Le Parfum",
+    "tag": "JEAN PAUL GAULTIER",
+    "image": "assets/featured/jpg-le-beau-le-parfum-hero.webp"
+  },
+  {
+    "id": "ysl-y-edp",
+    "name": "Y EDP",
+    "tag": "YVES SAINT LAURENT",
+    "image": "assets/featured/ysl-y-edp-hero.webp"
+  },
+  {
+    "id": "dior-sauvage-edp",
+    "name": "Sauvage EDP",
+    "tag": "DIOR",
+    "image": "assets/featured/dior-sauvage-edp-hero.webp"
+  },
+  {
+    "id": "invictus-victory-elixir",
+    "name": "Invictus Victory Elixir",
+    "tag": "PACO RABANNE",
+    "image": "assets/featured/invictus-victory-elixir-hero.webp"
+  },
+  {
+    "id": "one-million-lucky",
+    "name": "1 Million Lucky",
+    "tag": "PACO RABANNE",
+    "image": "assets/featured/one-million-lucky-hero.webp"
+  },
+  {
+    "id": "xerjoff-naxos",
+    "name": "Naxos",
+    "tag": "XERJOFF",
+    "image": "assets/featured/xerjoff-naxos-hero.webp"
+  },
+  {
+    "id": "afnan-9pm",
+    "name": "9 PM Night Out",
+    "tag": "AFNAN",
+    "image": "assets/featured/afnan-9pm-night-out-hero.webp"
+  }
+]
