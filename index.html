@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>RDecants — Fragancias de Lujo en Decants</title>
+<meta name="description" content="Perfumes de lujo auténticos en decants premium. YSL, Dior, Chanel, Valentino desde 3ml. Envíos a todo México.">
+<meta name="theme-color" content="#030303">
+
+<meta property="og:title"       content="RDecants — Fragancias de Lujo">
+<meta property="og:description" content="Huele a lujo sin gastar de más. Decants premium desde $120 MXN.">
+<meta property="og:type"        content="website">
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+
+<!--
+  CSS load order:
+    1. tokens.css     — CSS variables (must load first)
+    2. animations.css — @keyframes + fade-up utility
+    3. components.css — all UI components
+    4. styles.css     — reset, base, @import fonts
+
+  Cache strategy:
+    CSS files use immutable long-cache (31536000s).
+    Increment ?v= query string on each deploy to bust cache.
+    HTML itself is served no-cache so browsers always get
+    the latest version string.
+
+  Current version: 1.0.0 — update all ?v= values on deploy.
+-->
+<link rel="stylesheet" href="assets/css/tokens.css?v=1.0.0">
+<link rel="stylesheet" href="assets/css/animations.css?v=1.0.0">
+<link rel="stylesheet" href="assets/css/components.css?v=1.0.0">
+<link rel="stylesheet" href="assets/css/styles.css?v=1.0.0">
+</head>
+
+<body>
+
+<!-- INTRO SPLASH -->
+<div id="intro" aria-hidden="true">
+  <p class="intro-logo">R DECANTS</p>
+  <p class="intro-sub">Fragrance Edition</p>
+  <div class="intro-line"></div>
+</div>
+
+<!-- HEADER -->
+<header class="header">
+  <a href="#" class="header-logo">
+    <img
+      src="assets/img/logo.png"
+      alt="RDecants Logo"
+      class="logo-img"
+      onerror="this.style.display='none'"
+    >
+    <span class="logo-text">R<span>D</span>ECANTS</span>
+  </a>
+
+  <nav class="header-actions">
+    <button class="btn-cart" onclick="toggleCart()" aria-label="Abrir carrito">
+      <span class="cart-dot" id="cart-dot"></span>
+      BAG (<span id="cart-count">0</span>)
+    </button>
+  </nav>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+
+  <div class="hero-img-wrap" aria-hidden="true">
+    <img src="assets/img/elixir.jpg" alt="Le Male Elixir" loading="eager">
+  </div>
+
+  <div class="hero-content">
+    <p class="hero-eyebrow">Nueva Colección 2026</p>
+
+    <h1 class="hero-title">
+      El arte<br>
+      <em>De oler bien</em>
+    </h1>
+
+    <p class="hero-desc">
+      Fragancias auténticas de lujo, divididas en decants premium.
+      Huele exactamente cómo quieres. Sin compromisos.
+    </p>
+
+    <div class="hero-actions">
+      <button class="btn-primary" onclick="scrollToCatalog()">
+        Descubrir Colección
+      </button>
+      <button class="btn-ghost" onclick="document.getElementById('packs-section').scrollIntoView({behavior:'smooth'})">
+        Ver Packs
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURED PRODUCT -->
+<section class="featured-section">
+  <div class="container">
+    <div class="featured-grid" id="featured-product">
+      <!-- Rendered by catalog/render.js -->
+    </div>
+  </div>
+</section>
+
+<!-- TRUST BAR -->
+<section class="section" style="padding:40px 0;">
+  <div class="container">
+    <div class="trust-grid">
+
+      <div class="trust-item fade-up">
+        <div class="trust-icon">✦</div>
+        <h3 class="trust-title">100% Originales</h3>
+        <p class="trust-desc">Decants de frascos auténticos. Sin imitaciones, sin compromisos.</p>
+      </div>
+
+      <div class="trust-item fade-up">
+        <div class="trust-icon">⚡</div>
+        <h3 class="trust-title">Envío Express</h3>
+        <p class="trust-desc">A todo México. Packaging cuidado que llega perfecto.</p>
+      </div>
+
+      <div class="trust-item fade-up">
+        <div class="trust-icon">💬</div>
+        <h3 class="trust-title">Atención Personal</h3>
+        <p class="trust-desc">Te asesoramos por WhatsApp para encontrar tu fragancia ideal.</p>
+      </div>
+
+      <div class="trust-item fade-up">
+        <div class="trust-icon">♻</div>
+        <h3 class="trust-title">Sin Compromiso</h3>
+        <p class="trust-desc">Prueba antes de invertir en el frasco completo.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- CATALOG -->
+<section class="section" id="catalog">
+  <div class="container">
+
+    <div class="section-header fade-up">
+      <div>
+        <p class="section-label">Colección 2026</p>
+        <h2 class="section-title">Firma<br>Colección</h2>
+      </div>
+      <p style="font-size:12px;color:var(--muted);max-width:220px;line-height:1.7;">
+        Cada fragancia, cuidadosamente seleccionada para hombres que entienden el poder de oler bien.
+      </p>
+    </div>
+
+    <div class="products-grid" id="products-grid">
+      <!-- Rendered by catalog/render.js -->
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- PACKS -->
+<section class="section" id="packs-section">
+  <div class="container">
+
+    <div class="section-header fade-up">
+      <div>
+        <p class="section-label">Conjuntos Seleccionados</p>
+        <h2 class="section-title">Paquetes<br>De Lujo</h2>
+        <p style="font-size:13px;color:var(--muted);margin-top:8px;">
+          Curados para distintas ocasiones, moods y estilos.
+        </p>
+      </div>
+      <p style="font-size:12px;color:var(--muted);max-width:220px;line-height:1.7;">
+        Combinaciones pensadas para cada ocasión. Más ahorro, más presencia.
+      </p>
+    </div>
+
+    <div class="packs-grid" id="packs-grid">
+      <!-- Rendered by catalog/render.js -->
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- TESTIMONIALS -->
+<section class="section">
+  <div class="container">
+
+    <div class="section-header fade-up">
+      <div>
+        <p class="section-label">Clientes</p>
+        <h2 class="section-title">Lo que<br>dicen ellos</h2>
+      </div>
+    </div>
+
+    <div class="reviews-grid">
+
+      <div class="review-card fade-up">
+        <div class="review-stars">★★★★★</div>
+        <p class="review-text">"Me sorprendió la calidad. Pensé que no era original y llegó bien."</p>
+        <p class="review-author">— Carlos M., Monterrey</p>
+      </div>
+
+      <div class="review-card fade-up" style="transition-delay:.08s">
+        <div class="review-stars">★★★★★</div>
+        <p class="review-text">"Perfecto para probar antes de comprar el frasco completo."</p>
+        <p class="review-author">— Diego R., Oaxaca</p>
+      </div>
+
+      <div class="review-card fade-up" style="transition-delay:.16s">
+        <div class="review-stars">★★★★★</div>
+        <p class="review-text">"El pack nocturno es una locura. Le Male Elixir tiene demasiada presencia."</p>
+        <p class="review-author">— Andrés L., Guadalajara</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="container">
+    <p class="footer-logo">R DECANTS</p>
+    <p class="footer-tagline">FRAGRANCE EDITION — MÉXICO</p>
+
+    <nav class="footer-links">
+      <a href="https://wa.me/5219516513018" target="_blank">WhatsApp</a>
+      <a href="#catalog">Catálogo</a>
+      <a href="#packs-section">Packs</a>
+    </nav>
+
+    <p class="footer-copy">
+      © 2026 R Supply — Marca administradora de RDecants · Todos los derechos reservados
+    </p>
+  </div>
+</footer>
+
+<!-- CART OVERLAY -->
+<div id="cart-overlay" class="cart-overlay" onclick="closeCart()"></div>
+
+<!-- CART DRAWER -->
+<aside id="cart-drawer" class="cart-drawer" aria-label="Carrito de compras">
+
+  <div class="cart-header">
+    <h2 class="cart-title">Tu Colección</h2>
+    <button class="cart-close" onclick="closeCart()" aria-label="Cerrar carrito">×</button>
+  </div>
+
+  <div class="cart-items" id="cart-items">
+    <!-- Rendered by cart/render.js -->
+  </div>
+
+  <div class="cart-footer">
+    <div class="cart-total-row">
+      <span class="cart-total-label">Total</span>
+      <span class="cart-total-amount">$<span id="cart-total">0</span></span>
+    </div>
+
+    <button class="btn-whatsapp" onclick="sendWhatsApp()">
+      Confirmar por WhatsApp
+    </button>
+
+    <button class="btn-continue" onclick="closeCart()">
+      Seguir explorando
+    </button>
+  </div>
+</aside>
+
+<!-- WHATSAPP FLOAT -->
+<a class="whatsapp-float" href="https://wa.me/5219516513018" target="_blank" aria-label="Contactar por WhatsApp">
+  <svg viewBox="0 0 24 24" fill="white" aria-hidden="true">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+  </svg>
+</a>
+
+<!-- TOAST -->
+<div id="toast" class="toast" aria-live="polite"></div>
+
+<!--
+  JS entry point — ES module.
+  ?v= must match the version in CSS links above.
+  Update on every deploy: increment VERSION file + all ?v= strings.
+-->
+<script type="module" src="assets/js/app.js?v=1.0.0"></script>
+
+</body>
+</html>

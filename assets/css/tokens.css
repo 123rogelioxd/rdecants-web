@@ -1,0 +1,63 @@
+/* =============================================================
+   RDECANTS — DESIGN TOKENS
+   Single source of truth for all CSS custom properties.
+   ============================================================= */
+
+:root {
+
+  /* ── Colors ─────────────────────────────────────────── */
+  --black:  #030303;
+  --deep:   #070707;
+  --card:   #0c0c0c;
+
+  --white:  #ffffff;
+  --muted:  rgba(255, 255, 255, 0.65);
+  --soft:   rgba(255, 255, 255, 0.45);
+
+  --accent: #c9a96e;   /* luxury gold */
+
+  --danger:      #ff4d4f;
+  --danger-soft: rgba(255, 77, 79, 0.15);
+
+  /* ── Typography scale ───────────────────────────────── */
+  --text-xs:  12px;
+  --text-sm:  13px;
+  --text-md:  15px;
+  --text-lg:  18px;
+  --text-xl:  24px;
+  --text-2xl: 36px;
+  --text-3xl: 56px;
+  --text-4xl: 80px;
+
+  /* ── Font families ──────────────────────────────────── */
+  --font-serif: 'Cormorant Garamond', serif;
+  --font-sans:  'DM Sans', system-ui, sans-serif;
+
+  /* ── Spacing system ─────────────────────────────────── */
+  --space-1: 8px;
+  --space-2: 12px;
+  --space-3: 20px;
+  --space-4: 32px;
+  --space-5: 48px;
+  --space-6: 80px;
+
+  /* ── Borders ────────────────────────────────────────── */
+  --border:    rgba(255, 255, 255, 0.08);
+  --border-hl: rgba(255, 255, 255, 0.14);
+
+  /* ── Border radius ──────────────────────────────────── */
+  --radius-sm: 10px;
+  --radius-md: 18px;
+  --radius-lg: 28px;
+
+  /* ── Shadows ────────────────────────────────────────── */
+  --shadow-sm: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 20px 60px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 40px 90px rgba(0, 0, 0, 0.75);
+
+  /* ── Transitions ────────────────────────────────────── */
+  --transition: all 0.45s cubic-bezier(0.19, 1, 0.22, 1);
+
+  /* ── Aliases (card-bg kept for readability) ─────────── */
+  --card-bg: #0c0c0c;
+}
