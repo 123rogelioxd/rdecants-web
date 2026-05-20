@@ -1,13 +1,36 @@
 /* =============================================================
    RDECANTS — FEATURED CAROUSEL
-   Fetches /data/featured.json and renders luxury portrait cards.
-   Fields used: image · name · tag
+   Data priority:
+     1. GET /api/web/trending  (live API)
+     2. /data/featured.json    (local fallback)
+
+   Card fields used: image · name · tag
    ============================================================= */
+
+import { ApiClient } from '../api/client.js';
 
 let _cache = null;
 
 async function _load() {
   if (_cache) return _cache;
+
+  /* 1 — Try live API (trending) */
+  try {
+    const data = await ApiClient.getTrending();
+    if (Array.isArray(data) && data.length) {
+      _cache = data.map(p => ({
+        id:    p.id   ?? p.slug,
+        name:  p.name,
+        tag:   p.house ?? p.brand ?? p.tag ?? '',
+        image: p.image ?? p.image_url ?? '',
+      }));
+      return _cache;
+    }
+  } catch {
+    /* fall through to local JSON */
+  }
+
+  /* 2 — Fallback: local featured.json */
   const res = await fetch('/data/featured.json');
   if (!res.ok) throw new Error(`featured.json → ${res.status}`);
   _cache = await res.json();
@@ -85,8 +108,8 @@ function _setupDrag(scroller) {
   let isDown = false, startX = 0, scrollLeft = 0;
 
   scroller.addEventListener('mousedown', e => {
-    isDown   = true;
-    startX   = e.pageX - scroller.offsetLeft;
+    isDown     = true;
+    startX     = e.pageX - scroller.offsetLeft;
     scrollLeft = scroller.scrollLeft;
     scroller.classList.add('fc-scroll--grabbing');
   });

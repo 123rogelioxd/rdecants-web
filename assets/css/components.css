@@ -1280,3 +1280,15 @@
   .trust-grid    { grid-template-columns: 1fr; }
   .hero-actions  { flex-direction: column; align-items: flex-start; }
 }
+
+/* ── API state helpers ────────────────────────────────────────── */
+.catalog-loading,
+.catalog-empty {
+  grid-column: 1 / -1;
+  padding: 48px 0;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: .25em;
+  text-transform: uppercase;
+  color: var(--muted);
+}

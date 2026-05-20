@@ -2,6 +2,11 @@
    RDECANTS — CATALOG RENDERER
    Renders featured product, product grid, and packs.
    Data comes exclusively from CatalogProvider.
+
+   States handled:
+     • loading  — placeholder text while fetching
+     • empty    — section hidden when no items
+     • error    — silent (CatalogProvider falls back to local)
    ============================================================= */
 
 import { CatalogProvider } from '../providers/catalog.js';
@@ -9,9 +14,17 @@ import { Tracker }         from '../tracking/tracker.js';
 
 /* ── Featured ────────────────────────────────────────────────── */
 export async function renderFeatured() {
+  const el = document.getElementById('featured-product');
+  if (!el) return;
+
+  el.innerHTML = '<p class="catalog-loading">Cargando...</p>';
+
   const featured = await CatalogProvider.getFeatured();
-  const el       = document.getElementById('featured-product');
-  if (!el || !featured) return;
+
+  if (!featured) {
+    el.closest('section')?.remove();
+    return;
+  }
 
   Tracker.productView(featured);
 
@@ -53,7 +66,15 @@ export async function renderProducts() {
   const container = document.getElementById('products-grid');
   if (!container) return;
 
+  container.innerHTML = '<p class="catalog-loading">Cargando colección...</p>';
+
   const products = await CatalogProvider.getProducts();
+
+  if (!products?.length) {
+    container.innerHTML = '<p class="catalog-empty">Sin productos disponibles por ahora.</p>';
+    return;
+  }
+
   container.innerHTML = '';
 
   products.forEach((p, idx) => {
@@ -77,7 +98,7 @@ export async function renderProducts() {
           : '';
 
     const card = document.createElement('div');
-    card.className   = 'product-card fade-up';
+    card.className         = 'product-card fade-up';
     card.style.transitionDelay = `${idx * 0.06}s`;
 
     card.innerHTML = `
@@ -125,12 +146,20 @@ export async function renderPacks() {
   const container = document.getElementById('packs-grid');
   if (!container) return;
 
+  container.innerHTML = '<p class="catalog-loading">Cargando packs...</p>';
+
   const packs = await CatalogProvider.getPacks();
+
+  if (!packs?.length) {
+    container.innerHTML = '<p class="catalog-empty">Sin packs disponibles por ahora.</p>';
+    return;
+  }
+
   container.innerHTML = '';
 
   packs.forEach((p, idx) => {
     const card = document.createElement('div');
-    card.className   = 'pack-card fade-up';
+    card.className         = 'pack-card fade-up';
     card.style.transitionDelay = `${idx * 0.08}s`;
 
     card.innerHTML = `
