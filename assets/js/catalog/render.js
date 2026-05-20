@@ -4,14 +4,20 @@
    Data comes exclusively from CatalogProvider.
 
    States handled:
-     • loading  — placeholder text while fetching
-     • empty    — section hidden when no items
-     • error    — silent (CatalogProvider falls back to local)
+     • loading   — placeholder text while fetching
+     • empty     — section hidden / empty message when no items
+     • filtered  — SearchBar callback re-renders with subset
+     • no-match  — elegant empty state when filters return 0
    ============================================================= */
 
-import { CatalogProvider }    from '../providers/catalog.js';
-import { Tracker }            from '../tracking/tracker.js';
-import { openProductModal }   from '../ui/modal.js';
+import { CatalogProvider }  from '../providers/catalog.js';
+import { Tracker }          from '../tracking/tracker.js';
+import { openProductModal } from '../ui/modal.js';
+import { SearchBar }        from '../ui/searchbar.js';
+import { observeFadeUp }    from '../ui/animations.js';
+
+/* module-level ref kept for SearchBar callback */
+let _productsContainer = null;
 
 /* ── Featured ────────────────────────────────────────────────── */
 export async function renderFeatured() {
@@ -64,100 +70,26 @@ export async function renderFeatured() {
 
 /* ── Product grid ────────────────────────────────────────────── */
 export async function renderProducts() {
-  const container = document.getElementById('products-grid');
-  if (!container) return;
+  _productsContainer = document.getElementById('products-grid');
+  if (!_productsContainer) return;
 
-  container.innerHTML = '<p class="catalog-loading">Cargando colección...</p>';
+  _productsContainer.innerHTML = '<p class="catalog-loading">Cargando colección...</p>';
 
   const products = await CatalogProvider.getProducts();
 
   if (!products?.length) {
-    container.innerHTML = '<p class="catalog-empty">Sin productos disponibles por ahora.</p>';
+    _productsContainer.innerHTML =
+      '<p class="catalog-empty">Sin productos disponibles por ahora.</p>';
     return;
   }
 
-  container.innerHTML = '';
+  /* Track initial view for all products once */
+  products.forEach(p => Tracker.productView(p));
 
-  products.forEach((p, idx) => {
-    Tracker.productView(p);
-
-    const stockWarning =
-      p.stock <= 3
-        ? `<div class="card-stock">
-             <span class="stock-dot"></span>${_stockText(p.stock)}
-           </div>`
-        : p.stock <= 5
-          ? `<div class="card-stock" style="color:var(--accent)">
-               <span class="stock-dot" style="background:var(--accent)"></span>
-               ${_stockText(p.stock)}
-             </div>`
-          : '';
-
-    const badgeClass =
-      p.badge === 'ÚLTIMAS UNIDADES' || p.stock <= 2 ? 'danger'
-        : p.badge === 'TRENDING'     || p.badge === 'ALTA DEMANDA' ? 'trend'
-          : '';
-
-    const card = document.createElement('div');
-    card.className             = 'product-card product-card--clickable fade-up';
-    card.style.transitionDelay = `${idx * 0.06}s`;
-    card.setAttribute('role',       'button');
-    card.setAttribute('tabindex',   '0');
-    card.setAttribute('aria-label', `Ver detalle de ${p.name}`);
-
-    card.innerHTML = `
-      ${p.badge ? `<span class="card-badge ${badgeClass}">${p.badge}</span>` : ''}
-      <div class="card-img-wrap">
-        <img src="${p.image}" alt="${p.name}" loading="lazy"
-             onerror="this.style.opacity='0'">
-      </div>
-      <div class="card-body">
-        <p class="card-house">${p.house}</p>
-        <h3 class="card-name">${p.name}</h3>
-        <p class="card-story">${p.story}</p>
-        <div class="card-notes">
-          ${p.notes.map(n => `<span class="note-tag">${n}</span>`).join('')}
-        </div>
-        ${stockWarning}
-        <div class="sizes">
-          <button class="size-btn"
-            onclick="event.stopPropagation();window.__rd.cart.add('${p.id}', 3)">
-            <span class="ml">3ml</span>
-            <span class="price">$${p.prices[3]}</span>
-            <span class="cta">Prueba</span>
-          </button>
-          <button class="size-btn popular"
-            onclick="event.stopPropagation();window.__rd.cart.add('${p.id}', 5)">
-            <span class="ml">5ml ⭐</span>
-            <span class="price">$${p.prices[5]}</span>
-            <span class="cta">Popular</span>
-          </button>
-          <button class="size-btn"
-            onclick="event.stopPropagation();window.__rd.cart.add('${p.id}', 10)">
-            <span class="ml">10ml</span>
-            <span class="price">$${p.prices[10]}</span>
-            <span class="cta">Full</span>
-          </button>
-        </div>
-      </div>
-    `;
-
-    /* Open modal on card click (but not on size-btn clicks) */
-    card.addEventListener('click', (e) => {
-      if (e.target.closest('.size-btn')) return;
-      openProductModal(p);
-      Tracker.productView(p);
-    });
-
-    /* Keyboard: Enter / Space open modal */
-    card.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        openProductModal(p);
-      }
-    });
-
-    container.appendChild(card);
+  /* SearchBar handles the first and all subsequent renders */
+  SearchBar.init(products, (filtered) => {
+    _renderGrid(filtered);
+    observeFadeUp();
   });
 }
 
@@ -203,6 +135,116 @@ export async function renderPacks() {
 
     container.appendChild(card);
   });
+}
+
+/* ── Grid renderer (used by SearchBar callback) ──────────────── */
+function _renderGrid(products) {
+  if (!_productsContainer) return;
+
+  _productsContainer.innerHTML = '';
+
+  /* Empty state */
+  if (!products.length) {
+    const empty = document.createElement('div');
+    empty.className = 'sf-empty';
+    empty.innerHTML = `
+      <div class="sf-empty-icon" aria-hidden="true">◯</div>
+      <h3 class="sf-empty-title">Sin resultados</h3>
+      <p class="sf-empty-desc">
+        Intenta otros filtros o ajusta tu búsqueda
+      </p>
+      <button class="btn-ghost sf-empty-clear"
+        onclick="window.__rd?.ui?.clearSearch?.()">
+        Limpiar filtros →
+      </button>
+    `;
+    _productsContainer.appendChild(empty);
+    return;
+  }
+
+  const frag = document.createDocumentFragment();
+
+  products.forEach((p, idx) => {
+    const stockWarning =
+      p.stock <= 3
+        ? `<div class="card-stock">
+             <span class="stock-dot"></span>${_stockText(p.stock)}
+           </div>`
+        : p.stock <= 5
+          ? `<div class="card-stock" style="color:var(--accent)">
+               <span class="stock-dot" style="background:var(--accent)"></span>
+               ${_stockText(p.stock)}
+             </div>`
+          : '';
+
+    const badgeClass =
+      p.badge === 'ÚLTIMAS UNIDADES' || p.stock <= 2 ? 'danger'
+        : p.badge === 'TRENDING' || p.badge === 'ALTA DEMANDA' ? 'trend'
+          : '';
+
+    const card = document.createElement('div');
+    card.className             = 'product-card product-card--clickable fade-up';
+    card.style.transitionDelay = `${idx * 0.05}s`;
+    card.setAttribute('role',       'button');
+    card.setAttribute('tabindex',   '0');
+    card.setAttribute('aria-label', `Ver detalle de ${p.name}`);
+
+    card.innerHTML = `
+      ${p.badge ? `<span class="card-badge ${badgeClass}">${p.badge}</span>` : ''}
+      <div class="card-img-wrap">
+        <img src="${p.image}" alt="${p.name}" loading="lazy"
+             onerror="this.style.opacity='0'">
+      </div>
+      <div class="card-body">
+        <p class="card-house">${p.house}</p>
+        <h3 class="card-name">${p.name}</h3>
+        <p class="card-story">${p.story}</p>
+        <div class="card-notes">
+          ${p.notes.map(n => `<span class="note-tag">${n}</span>`).join('')}
+        </div>
+        ${stockWarning}
+        <div class="sizes">
+          <button class="size-btn"
+            onclick="event.stopPropagation();window.__rd.cart.add('${p.id}', 3)">
+            <span class="ml">3ml</span>
+            <span class="price">$${p.prices[3]}</span>
+            <span class="cta">Prueba</span>
+          </button>
+          <button class="size-btn popular"
+            onclick="event.stopPropagation();window.__rd.cart.add('${p.id}', 5)">
+            <span class="ml">5ml ⭐</span>
+            <span class="price">$${p.prices[5]}</span>
+            <span class="cta">Popular</span>
+          </button>
+          <button class="size-btn"
+            onclick="event.stopPropagation();window.__rd.cart.add('${p.id}', 10)">
+            <span class="ml">10ml</span>
+            <span class="price">$${p.prices[10]}</span>
+            <span class="cta">Full</span>
+          </button>
+        </div>
+      </div>
+    `;
+
+    /* Click → modal */
+    card.addEventListener('click', e => {
+      if (e.target.closest('.size-btn')) return;
+      openProductModal(p);
+      Tracker.productClicked(p, 'grid');
+    });
+
+    /* Keyboard → modal */
+    card.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openProductModal(p);
+      }
+    });
+
+    frag.appendChild(card);
+  });
+
+  _productsContainer.appendChild(frag);
 }
 
 /* ── Helpers ─────────────────────────────────────────────────── */

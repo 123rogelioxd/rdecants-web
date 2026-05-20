@@ -20,6 +20,7 @@ import { setupHeader }                    from './ui/header.js';
 import { showToast }                      from './ui/toast.js';
 import { openProductModal,
          closeProductModal }             from './ui/modal.js';
+import { SearchBar }                     from './ui/searchbar.js';
 import { Tracker }                        from './tracking/tracker.js';
 import { EventBus }                       from './core/events.js';
 import { AppState }                       from './core/state.js';
@@ -39,6 +40,7 @@ window.__rd = {
     sendWhatsApp,
     openProductModal,
     closeProductModal,
+    clearSearch:  () => SearchBar.clearAll(),
     scrollToCatalog: () => {
       document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
       closeCart();
