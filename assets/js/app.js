@@ -14,6 +14,7 @@ import { renderCart, updateCartCount,
 import { renderFeatured, renderProducts,
          renderPacks }                    from './catalog/render.js';
 import { renderFeaturedCarousel }         from './catalog/featured.js';
+import { Recommendations }                from './recommendations/index.js';
 import { setupScrollAnimations,
          observeFadeUp,
          setupHeroParallax }             from './ui/animations.js';
@@ -79,6 +80,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   /* Render catalog (async — provider pattern) */
   await renderFeaturedCarousel();
   await renderFeatured();
+  await Recommendations.render();
   await renderProducts();
   await renderPacks();
 
