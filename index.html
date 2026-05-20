@@ -66,7 +66,7 @@
   <div class="hero-bg"></div>
 
   <div class="hero-img-wrap" aria-hidden="true">
-    <img src="assets/featured/jpg-le-male-elixir-hero.webp" alt="Le Male Elixir" loading="eager">
+    <img src="assets/featured/jpg-le-male-elixir-hero.webp" alt="Le Male Elixir" loading="eager" decoding="async">
   </div>
 
   <div class="hero-content">
@@ -83,10 +83,10 @@
     </p>
 
     <div class="hero-actions">
-      <button class="btn-primary" onclick="scrollToCatalog()">
+      <button class="btn-primary" onclick="scrollToCatalog()" aria-label="Descubrir coleccion">
         Descubrir Colección
       </button>
-      <button class="btn-ghost" onclick="document.getElementById('packs-section').scrollIntoView({behavior:'smooth'})">
+      <button class="btn-ghost" onclick="document.getElementById('packs-section').scrollIntoView({behavior:'smooth'})" aria-label="Ver packs">
         Ver Packs
       </button>
     </div>
@@ -270,7 +270,7 @@
 <div id="cart-overlay" class="cart-overlay" onclick="closeCart()"></div>
 
 <!-- CART DRAWER -->
-<aside id="cart-drawer" class="cart-drawer" aria-label="Carrito de compras">
+<aside id="cart-drawer" class="cart-drawer" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Carrito de compras">
 
   <div class="cart-header">
     <h2 class="cart-title">Tu Colección</h2>
@@ -324,11 +324,11 @@
       <span class="cart-total-amount">$<span id="cart-total">0</span></span>
     </div>
 
-    <button class="btn-whatsapp" id="checkout-whatsapp" onclick="sendWhatsApp()">
+    <button class="btn-whatsapp" id="checkout-whatsapp" onclick="sendWhatsApp()" aria-label="Confirmar pedido por WhatsApp">
       Confirmar por WhatsApp
     </button>
 
-    <button class="btn-continue" onclick="closeCart()">
+    <button class="btn-continue" onclick="closeCart()" aria-label="Cerrar carrito y seguir explorando">
       Seguir explorando
     </button>
   </div>

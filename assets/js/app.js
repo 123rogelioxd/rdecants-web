@@ -23,7 +23,9 @@ import { showToast }                      from './ui/toast.js';
 import { openProductModal,
          closeProductModal }             from './ui/modal.js';
 import { SearchBar }                     from './ui/searchbar.js';
+import { setupImageStates }              from './ui/images.js';
 import { Tracker }                        from './tracking/tracker.js';
+import { trackEvent }                     from './tracking/events.js';
 import { EventBus }                       from './core/events.js';
 import { AppState }                       from './core/state.js';
 
@@ -57,6 +59,75 @@ window.closeCart      = closeCart;
 window.sendWhatsApp   = sendWhatsApp;
 window.scrollToCatalog = window.__rd.ui.scrollToCatalog;
 
+/* ── API event bridge ───────────────────────────────────────── */
+const _API_EVENT_MAP = {
+  product_viewed:            'product_viewed',
+  add_to_cart:               'product_added_to_cart',
+  checkout_started:          'checkout_started',
+  checkout_whatsapp_clicked: 'whatsapp_checkout_clicked',
+  recommendation_clicked:    'recommendation_clicked',
+};
+
+Tracker.use((event, payload) => {
+  const apiName = _API_EVENT_MAP[event];
+  if (!apiName) return;
+  trackEvent(apiName, _toApiPayload(event, payload));
+});
+
+function _toApiPayload(event, payload) {
+  switch (event) {
+    case 'product_viewed':
+      return {
+        product_id: payload.productId,
+        metadata: {
+          name:             payload.productName,
+          house:            payload.house,
+          source_component: 'modal',
+        },
+      };
+    case 'add_to_cart':
+      return {
+        product_id: payload.productId,
+        variant_id: `${payload.productId}-${payload.size}`,
+        metadata: {
+          name:             payload.productName,
+          size:             payload.size,
+          price:            payload.price,
+          source_component: payload.source ?? 'size_btn',
+        },
+      };
+    case 'checkout_started':
+      return {
+        metadata: {
+          cart_total:  payload.total,
+          items_count: payload.itemCount,
+        },
+      };
+    case 'checkout_whatsapp_clicked':
+      return {
+        metadata: {
+          cart_total:  payload.total,
+          items_count: payload.itemCount,
+          delivery:    payload.delivery,
+          payment:     payload.payment,
+        },
+      };
+    case 'recommendation_clicked':
+      return {
+        product_id: payload.productId,
+        metadata: {
+          name:             payload.productName,
+          rail_id:          payload.context?.railId,
+          rail_title:       payload.context?.railTitle,
+          position:         payload.position,
+          source_component: 'recommendation_rail',
+        },
+      };
+    default:
+      return {};
+  }
+}
+
 /* ── Intro ──────────────────────────────────────────────────── */
 function removeIntro() {
   setTimeout(() => {
@@ -71,6 +142,7 @@ function removeIntro() {
 /* ── Bootstrap ──────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', async () => {
   removeIntro();
+  setupImageStates();
 
   /* Initial cart state */
   setupCheckout();

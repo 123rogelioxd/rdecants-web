@@ -8,6 +8,7 @@
    ============================================================= */
 
 import { ApiClient } from '../api/client.js';
+import { primeImageStates } from '../ui/images.js';
 
 let _cache = null;
 
@@ -83,6 +84,7 @@ export async function renderFeaturedCarousel() {
   });
 
   track.appendChild(frag);
+  primeImageStates(track);
   _setupDrag(track.parentElement);
   _observeCards(track);
 }

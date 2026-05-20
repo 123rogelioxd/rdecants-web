@@ -18,6 +18,7 @@
 html {
   scroll-behavior: smooth;
   font-size: 16px;
+  overflow-x: hidden;
 }
 
 body {
@@ -30,6 +31,7 @@ body {
   -webkit-font-smoothing: antialiased;
   scroll-behavior: smooth;
   scroll-padding-top: 80px;
+  min-width: 0;
 }
 
 img  { display: block; max-width: 100%; }
@@ -39,6 +41,7 @@ button {
   cursor: pointer;
   border: none;
   outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 a {

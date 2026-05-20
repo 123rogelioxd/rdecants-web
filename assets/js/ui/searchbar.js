@@ -37,12 +37,14 @@ let _debounceTimer = null;
 let _bar           = null;
 let _drawer        = null;
 let _drawerOverlay = null;
+let _prevFocus     = null;
 
 /* ── Public API ──────────────────────────────────────────────── */
 export const SearchBar = {
 
   init(allProducts, onFilter) {
     /* tear down any existing instance */
+    document.removeEventListener('keydown', _handleDrawerKey);
     _bar?.remove();
     _drawer?.remove();
     _drawerOverlay?.remove();
@@ -265,7 +267,7 @@ function _buildDrawer() {
   _drawer.setAttribute('aria-label', 'Filtros de búsqueda');
 
   const _dp = (t, v, label) =>
-    `<button class="sf-dp" data-t="${t}" data-v="${v}">${label}</button>`;
+    `<button class="sf-dp" data-t="${t}" data-v="${v}" aria-label="Filtrar ${label}">${label}</button>`;
 
   const moodPills  = Object.entries(MOOD_LABELS).map(([k, v])   => _dp('mood',  k, v)).join('');
   const housePills = houses.map(h                                => _dp('house', h, h)).join('');
@@ -344,11 +346,14 @@ function _bindDrawerEvents() {
 
 function _openDrawer() {
   _syncDrawer();
+  _prevFocus = document.activeElement;
   _drawer.classList.add('sf-drawer--open');
   _drawerOverlay.classList.add('sf-ov--open');
   document.body.style.overflow = 'hidden';
   _bar?.querySelector('#sf-mobile-btn')
     ?.setAttribute('aria-expanded', 'true');
+  document.addEventListener('keydown', _handleDrawerKey);
+  setTimeout(() => _drawer.querySelector('#sf-drawer-close')?.focus(), 120);
 }
 
 function _closeDrawer() {
@@ -357,6 +362,36 @@ function _closeDrawer() {
   document.body.style.overflow = '';
   _bar?.querySelector('#sf-mobile-btn')
     ?.setAttribute('aria-expanded', 'false');
+  document.removeEventListener('keydown', _handleDrawerKey);
+  _prevFocus?.focus?.();
+  _prevFocus = null;
+}
+
+function _handleDrawerKey(e) {
+  if (!_drawer?.classList.contains('sf-drawer--open')) return;
+
+  if (e.key === 'Escape') {
+    _closeDrawer();
+    return;
+  }
+
+  if (e.key !== 'Tab') return;
+
+  const focusable = Array.from(_drawer.querySelectorAll(
+    'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+  ));
+  if (!focusable.length) return;
+
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+
+  if (e.shiftKey && document.activeElement === first) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault();
+    first.focus();
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════

@@ -49,6 +49,7 @@ export const EVENTS = {
   RECOMMENDATION_CLICKED:'recommendation_clicked',
   RECOMMENDATION_IGNORED:'recommendation_ignored',
   PAGE_VIEW:             'page_view',
+  PRODUCT_VIEWED:        'product_viewed',
 };
 
 /* ── Tracker ────────────────────────────────────────────────── */
@@ -90,6 +91,14 @@ export const Tracker = {
 
   productView(product) {
     this.emit(EVENTS.PRODUCT_VIEW, {
+      productId:   product.id,
+      productName: product.name,
+      house:       product.house,
+    });
+  },
+
+  productViewed(product) {
+    this.emit(EVENTS.PRODUCT_VIEWED, {
       productId:   product.id,
       productName: product.name,
       house:       product.house,
@@ -175,7 +184,8 @@ export const Tracker = {
 
   recommendationClicked(rec, position, context = {}) {
     this.emit(EVENTS.RECOMMENDATION_CLICKED, {
-      productId: rec.id,
+      productId:   rec.id,
+      productName: rec.name,
       position,
       context,
     });

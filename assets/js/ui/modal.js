@@ -15,6 +15,7 @@
 
 import { showToast } from './toast.js';
 import { primeImageStates } from './images.js';
+import { Tracker } from '../tracking/tracker.js';
 import { getDefaultVariant,
          getPriceForSize,
          getValidVariants,
@@ -66,6 +67,7 @@ export function openProductModal(product) {
   _selectedSize  = _defaultSize(product);
   _prevFocus     = document.activeElement;
 
+  Tracker.productViewed(product);
   _render();
 
   requestAnimationFrame(() => {
