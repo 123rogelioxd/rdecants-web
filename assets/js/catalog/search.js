@@ -8,6 +8,8 @@
      PRICE_RANGES / PRICE_LABELS / SORT_LABELS / MOOD_LABELS
    ============================================================= */
 
+import { getSafePrice, priceSortValue } from '../utils/prices.js';
+
 /* ── Mood rules ─────────────────────────────────────────────────
    All keywords are lowercase, diacritics stripped (see _norm).
    A product matches a mood if ANY note, badge, or text matches.   */
@@ -128,12 +130,12 @@ export function filterProducts(products, state) {
     result = result.filter(p => p.house === state.house);
   }
 
-  /* 4 — Price range (5ml ref price, fallback 3ml) */
+    /* 4 — Price range (first valid product price) */
   if (state.priceRange && PRICE_RANGES[state.priceRange]) {
     const [min, max] = PRICE_RANGES[state.priceRange];
     result = result.filter(p => {
-      const price = p.prices?.[5] ?? p.prices?.[3] ?? 0;
-      return price >= min && price <= max;
+      const price = getSafePrice(p);
+      return price !== null && price >= min && price <= max;
     });
   }
 
@@ -173,9 +175,9 @@ function _matchesMood(product, mood) {
   );
 }
 
-/** Reference price for sorting (5ml, fallback 3ml) */
+/** Reference price for sorting (first valid product price) */
 function _ref5ml(p) {
-  return p.prices?.[5] ?? p.prices?.[3] ?? 0;
+  return priceSortValue(p);
 }
 
 function _sort(products, sort) {
@@ -184,7 +186,7 @@ function _sort(products, sort) {
     case 'price-asc':
       return arr.sort((a, b) => _ref5ml(a) - _ref5ml(b));
     case 'price-desc':
-      return arr.sort((a, b) => _ref5ml(b) - _ref5ml(a));
+      return arr.sort((a, b) => priceSortValue(b, 'desc') - priceSortValue(a, 'desc'));
     case 'popular':
       /* low stock → high demand → appears first */
       return arr.sort((a, b) => (a.stock ?? 99) - (b.stock ?? 99));

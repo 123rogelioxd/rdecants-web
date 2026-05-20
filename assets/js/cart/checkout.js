@@ -6,6 +6,7 @@
 import { Cart }      from './cart.js';
 import { Tracker }   from '../tracking/tracker.js';
 import { showToast } from '../ui/toast.js';
+import { formatPrice, isValidPrice } from '../utils/prices.js';
 
 const STORAGE_KEY = 'rdecants_checkout_customer';
 
@@ -75,6 +76,8 @@ export function sendCheckoutWhatsApp(phoneNumber) {
   saveCheckoutData(data);
 
   const total = Cart.total();
+  const button = document.getElementById('checkout-whatsapp');
+  _setButtonLoading(button, true, 'Abriendo WhatsApp...');
   Tracker.checkoutWhatsappClicked(items, total, {
     delivery: data.delivery,
     payment:  data.payment,
@@ -82,6 +85,7 @@ export function sendCheckoutWhatsApp(phoneNumber) {
 
   const message = buildWhatsAppMessage(items, total, data);
   window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`, '_blank');
+  setTimeout(() => _setButtonLoading(button, false), 700);
 }
 
 export function readCheckoutData() {
@@ -131,13 +135,13 @@ export function buildWhatsAppMessage(items, total, data) {
 
   items.forEach(item => {
     const size = item.type === 'pack' ? 'Pack' : `${item.size}ml`;
-    const subtotal = item.price * item.qty;
-    lines.push(`- ${item.name} | ${size} | Cantidad: ${item.qty} | Subtotal: $${subtotal} MXN`);
+    const subtotal = isValidPrice(item.price) ? item.price * item.qty : null;
+    lines.push(`- ${item.name} | ${size} | Cantidad: ${item.qty} | Subtotal: ${formatPrice(subtotal, 'Por confirmar')}`);
   });
 
   lines.push(
     '',
-    `*Total general: $${total} MXN*`,
+    `*Total general: ${formatPrice(total, 'Por confirmar')}*`,
     '',
     '*Entrega y pago*',
     `Entrega: ${DELIVERY_LABELS[data.delivery] || data.delivery}`,
@@ -217,4 +221,19 @@ function _field(key) {
 
 function _form() {
   return document.getElementById('checkout-form');
+}
+
+function _setButtonLoading(button, isLoading, label = '') {
+  if (!button) return;
+  if (isLoading) {
+    button.dataset.label = button.textContent.trim();
+    button.classList.add('is-loading');
+    button.disabled = true;
+    if (label) button.textContent = label;
+  } else {
+    button.classList.remove('is-loading');
+    button.disabled = Cart.count() === 0;
+    if (button.dataset.label) button.textContent = button.dataset.label;
+    delete button.dataset.label;
+  }
 }

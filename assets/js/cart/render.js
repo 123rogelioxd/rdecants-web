@@ -9,8 +9,10 @@ import { sendCheckoutWhatsApp,
          trackCheckoutStarted } from './checkout.js';
 import { EventBus }  from '../core/events.js';
 import { Tracker }   from '../tracking/tracker.js';
+import { formatPrice, isValidPrice } from '../utils/prices.js';
 
 const WHATSAPP_NUMBER = '5219516513018';
+let _prevFocus = null;
 
 /* ── Render ─────────────────────────────────────────────────── */
 export function renderCart() {
@@ -25,7 +27,10 @@ export function renderCart() {
       <div class="cart-empty">
         <div class="cart-empty-icon">✦</div>
         <h3 class="cart-empty-title">Tu colección está vacía</h3>
-        <p class="cart-empty-desc">Explora nuestras fragancias premium</p>
+        <p class="cart-empty-desc">Explora fragancias premium y arma una seleccion a tu medida.</p>
+        <button class="btn-continue cart-empty-cta" onclick="window.__rd.ui.scrollToCatalog()">
+          Ver catalogo
+        </button>
       </div>
     `;
     if (totalEl) totalEl.textContent = '0';
@@ -38,6 +43,7 @@ export function renderCart() {
   container.innerHTML = items.map(item => {
     const isMaxed = item.qty >= item.stock;
     const label   = item.type === 'pack' ? 'Pack' : `${item.size}ml`;
+    const subtotal = isValidPrice(item.price) ? item.price * item.qty : null;
 
     return `
       <div class="cart-item">
@@ -48,7 +54,7 @@ export function renderCart() {
           <p class="cart-item-detail" style="color:${isMaxed ? 'var(--danger)' : 'var(--muted)'};">
             ${isMaxed ? 'Límite de stock alcanzado' : `Disponibles: ${item.stock}`}
           </p>
-          <p class="cart-item-price">$${item.price * item.qty} MXN</p>
+          <p class="cart-item-price">${formatPrice(subtotal, 'Precio por confirmar')}</p>
         </div>
         <div class="cart-item-controls">
           <button class="remove-btn"
@@ -83,18 +89,29 @@ export function updateCartCount() {
 
 /* ── Drawer open / close ────────────────────────────────────── */
 export function openCart() {
-  document.getElementById('cart-drawer')?.classList.add('active');
+  const drawer = document.getElementById('cart-drawer');
+  _prevFocus = document.activeElement;
+  drawer?.classList.add('active');
+  drawer?.setAttribute('aria-hidden', 'false');
   document.getElementById('cart-overlay')?.classList.add('active');
   document.body.style.overflow = 'hidden';
   Tracker.cartOpened();
   trackCheckoutStarted();
+  document.removeEventListener('keydown', _handleCartKey);
+  document.addEventListener('keydown', _handleCartKey);
+  setTimeout(() => drawer?.querySelector('.cart-close')?.focus(), 120);
 }
 
 export function closeCart() {
-  document.getElementById('cart-drawer')?.classList.remove('active');
+  const drawer = document.getElementById('cart-drawer');
+  drawer?.classList.remove('active');
+  drawer?.setAttribute('aria-hidden', 'true');
   document.getElementById('cart-overlay')?.classList.remove('active');
   document.body.style.overflow = '';
   Tracker.cartClosed();
+  document.removeEventListener('keydown', _handleCartKey);
+  _prevFocus?.focus?.();
+  _prevFocus = null;
 }
 
 export function toggleCart() {
@@ -105,6 +122,34 @@ export function toggleCart() {
 /* ── WhatsApp checkout ──────────────────────────────────────── */
 export function sendWhatsApp() {
   sendCheckoutWhatsApp(WHATSAPP_NUMBER);
+}
+
+function _handleCartKey(e) {
+  const drawer = document.getElementById('cart-drawer');
+  if (!drawer?.classList.contains('active')) return;
+
+  if (e.key === 'Escape') {
+    closeCart();
+    return;
+  }
+
+  if (e.key !== 'Tab') return;
+
+  const focusable = Array.from(drawer.querySelectorAll(
+    'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+  ));
+  if (!focusable.length) return;
+
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+
+  if (e.shiftKey && document.activeElement === first) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault();
+    first.focus();
+  }
 }
 
 /* ── Auto-update on cart changes ────────────────────────────── */

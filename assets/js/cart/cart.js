@@ -7,6 +7,7 @@ import { CatalogProvider } from '../providers/catalog.js';
 import { Tracker }         from '../tracking/tracker.js';
 import { EventBus }        from '../core/events.js';
 import { showToast }       from '../ui/toast.js';
+import { getPriceForSize, isValidPrice } from '../utils/prices.js';
 
 const STORAGE_KEY = 'rdecants_cart';
 
@@ -22,8 +23,11 @@ export const Cart = {
     const product = await CatalogProvider.getProductById(productId);
     if (!product) return;
 
-    const price = product.prices?.[size];
-    if (!price) return;
+    const price = getPriceForSize(product, size);
+    if (price === null) {
+      showToast('Precio no disponible para esa variante');
+      return;
+    }
 
     const key      = `${product.id}-${size}`;
     const existing = _items.find(i => i.key === key);
@@ -125,7 +129,10 @@ export const Cart = {
   },
 
   total() {
-    return _items.reduce((sum, i) => sum + i.price * i.qty, 0);
+    return _items.reduce((sum, i) => {
+      const price = isValidPrice(i.price) ? Number(i.price) : 0;
+      return sum + price * i.qty;
+    }, 0);
   },
 
   count() {

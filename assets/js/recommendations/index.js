@@ -7,6 +7,8 @@ import { CatalogProvider }  from '../providers/catalog.js';
 import { Tracker }          from '../tracking/tracker.js';
 import { openProductModal } from '../ui/modal.js';
 import { observeFadeUp }    from '../ui/animations.js';
+import { primeImageStates } from '../ui/images.js';
+import { getSafePrice, formatPrice } from '../utils/prices.js';
 
 const MAX_PER_RAIL = 8;
 const MIN_PER_RAIL = 2;
@@ -102,7 +104,7 @@ export const Recommendations = {
       const rails = buildRails(products, featured, context);
 
       if (!rails.length) {
-        root.remove();
+        _renderEmpty(root);
         return;
       }
 
@@ -196,7 +198,22 @@ function _renderRails(root, rails) {
   });
 
   _observeRailCards(root);
+  primeImageStates(root);
   observeFadeUp();
+}
+
+function _renderEmpty(root) {
+  root.innerHTML = `
+    <div class="container">
+      <div class="catalog-empty premium-empty">
+        <div class="sf-empty-icon" aria-hidden="true">R</div>
+        <h3 class="sf-empty-title">Sin recomendaciones por ahora</h3>
+        <p class="sf-empty-desc">
+          El catalogo necesita mas metadata para crear selecciones dinamicas.
+        </p>
+      </div>
+    </div>
+  `;
 }
 
 function _railTemplate(rail) {
@@ -218,7 +235,7 @@ function _railTemplate(rail) {
 }
 
 function _cardTemplate(product, rail, idx) {
-  const price = product.prices?.[5] ?? product.prices?.[3] ?? 0;
+  const price = getSafePrice(product);
   const notes = (product.notes ?? []).slice(0, 2);
 
   return `
@@ -235,7 +252,7 @@ function _cardTemplate(product, rail, idx) {
           ${notes.map(note => `<span>${note}</span>`).join('')}
         </div>
         <div class="rr-foot">
-          <span class="rr-price">$${price} <small>/ 5ml</small></span>
+          <span class="rr-price">${formatPrice(price, 'Consultar precio')}</span>
           <span class="rr-open" aria-hidden="true">Ver</span>
         </div>
       </div>
