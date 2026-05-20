@@ -18,6 +18,8 @@ import { setupScrollAnimations,
          setupHeroParallax }             from './ui/animations.js';
 import { setupHeader }                    from './ui/header.js';
 import { showToast }                      from './ui/toast.js';
+import { openProductModal,
+         closeProductModal }             from './ui/modal.js';
 import { Tracker }                        from './tracking/tracker.js';
 import { EventBus }                       from './core/events.js';
 import { AppState }                       from './core/state.js';
@@ -35,6 +37,8 @@ window.__rd = {
     closeCart,
     toggleCart,
     sendWhatsApp,
+    openProductModal,
+    closeProductModal,
     scrollToCatalog: () => {
       document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
       closeCart();

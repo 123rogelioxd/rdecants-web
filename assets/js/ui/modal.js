@@ -1,0 +1,354 @@
+/* =============================================================
+   RDECANTS — PRODUCT DETAIL MODAL
+   Opens a luxury detail sheet for any catalog product.
+
+   Public API (also exposed on window.__rd.ui):
+     openProductModal(product)   — receives a mapped product obj
+     closeProductModal()
+
+   Design rules:
+     • Tokens only — no hardcoded colors or sizes
+     • Vanilla JS — no frameworks
+     • Accessible: focus-trap, ESC, aria-modal
+     • Safe: image fallback if src missing/broken
+   ============================================================= */
+
+import { showToast } from './toast.js';
+
+const WHATSAPP_NUMBER = '5219516513018';
+
+/* ── State ──────────────────────────────────────────────────── */
+let _activeProduct  = null;
+let _selectedSize   = 5;          /* default size */
+let _prevFocus      = null;       /* restore focus on close */
+
+/* ── DOM refs (created once, reused) ────────────────────────── */
+let _overlay, _modal;
+
+/* ── Build DOM (once) ───────────────────────────────────────── */
+function _ensureDOM() {
+  if (_overlay) return;
+
+  /* Overlay */
+  _overlay = document.createElement('div');
+  _overlay.id          = 'pdm-overlay';
+  _overlay.className   = 'pdm-overlay';
+  _overlay.setAttribute('aria-hidden', 'true');
+  _overlay.addEventListener('click', _handleOverlayClick);
+
+  /* Modal shell */
+  _modal = document.createElement('div');
+  _modal.id                  = 'pdm-modal';
+  _modal.className           = 'pdm-modal';
+  _modal.setAttribute('role', 'dialog');
+  _modal.setAttribute('aria-modal', 'true');
+  _modal.setAttribute('aria-labelledby', 'pdm-name');
+
+  _overlay.appendChild(_modal);
+  document.body.appendChild(_overlay);
+
+  /* Global keyboard listener */
+  document.addEventListener('keydown', _handleKey);
+}
+
+/* ── Open ────────────────────────────────────────────────────── */
+export function openProductModal(product) {
+  if (!product) return;
+
+  _ensureDOM();
+
+  _activeProduct = product;
+  _selectedSize  = _defaultSize(product);
+  _prevFocus     = document.activeElement;
+
+  _render();
+
+  requestAnimationFrame(() => {
+    _overlay.classList.add('pdm-overlay--open');
+    _modal.classList.add('pdm-modal--open');
+  });
+
+  document.body.style.overflow = 'hidden';
+
+  /* Focus the close button after transition */
+  setTimeout(() => {
+    _modal.querySelector('.pdm-close')?.focus();
+  }, 320);
+}
+
+/* ── Close ───────────────────────────────────────────────────── */
+export function closeProductModal() {
+  if (!_overlay) return;
+
+  _overlay.classList.remove('pdm-overlay--open');
+  _modal.classList.remove('pdm-modal--open');
+  document.body.style.overflow = '';
+
+  /* Restore focus */
+  _prevFocus?.focus?.();
+  _prevFocus    = null;
+  _activeProduct = null;
+}
+
+/* ── Render modal content ────────────────────────────────────── */
+function _render() {
+  const p = _activeProduct;
+  if (!p || !_modal) return;
+
+  const price    = p.prices?.[_selectedSize] ?? 0;
+  const hasImage = p.image && p.image.trim() !== '';
+
+  const stockHtml = _stockHtml(p.stock);
+  const badgeHtml = p.badge
+    ? `<span class="pdm-badge ${_badgeClass(p.badge, p.stock)}">${p.badge}</span>`
+    : '';
+
+  const notesHtml = (p.notes ?? [])
+    .map(n => `<span class="note-tag">${n}</span>`)
+    .join('');
+
+  const sizesHtml = [3, 5, 10]
+    .filter(ml => (p.prices?.[ml] ?? 0) > 0)
+    .map(ml => `
+      <button
+        class="pdm-size-btn ${ml === _selectedSize ? 'pdm-size-btn--active' : ''}"
+        data-size="${ml}"
+        aria-pressed="${ml === _selectedSize}"
+        aria-label="${ml}ml — $${p.prices[ml]} MXN"
+      >
+        <span class="pdm-size-ml">${ml}ml${ml === 5 ? ' ⭐' : ''}</span>
+        <span class="pdm-size-price">$${p.prices[ml]}</span>
+        <span class="pdm-size-label">${_sizeLabel(ml)}</span>
+      </button>
+    `).join('');
+
+  _modal.innerHTML = `
+    <!-- Close -->
+    <button class="pdm-close" aria-label="Cerrar detalle">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.5" width="18" height="18" aria-hidden="true">
+        <path d="M18 6 6 18M6 6l12 12"/>
+      </svg>
+    </button>
+
+    <!-- Image panel -->
+    <div class="pdm-img-panel">
+      ${badgeHtml}
+      <div class="pdm-img-wrap">
+        ${hasImage
+          ? `<img
+               src="${p.image}"
+               alt="${p.name}"
+               class="pdm-img"
+               loading="eager"
+               onerror="this.parentElement.classList.add('pdm-img-wrap--fallback');this.remove()"
+             >`
+          : '<div class="pdm-img-wrap--fallback"></div>'
+        }
+      </div>
+    </div>
+
+    <!-- Info panel -->
+    <div class="pdm-info">
+
+      <div class="pdm-info-scroll">
+
+        <p class="pdm-house">${p.house ?? ''}</p>
+        <h2 class="pdm-name" id="pdm-name">${p.name}</h2>
+
+        ${p.story
+          ? `<p class="pdm-story">${p.story}</p>`
+          : ''}
+        ${p.desc && p.desc !== p.story
+          ? `<p class="pdm-desc">${p.desc}</p>`
+          : ''}
+
+        ${notesHtml
+          ? `<div class="pdm-notes card-notes">${notesHtml}</div>`
+          : ''}
+
+        ${stockHtml}
+
+        <!-- Size selector -->
+        <div class="pdm-sizes-label">Elige tu tamaño</div>
+        <div class="pdm-sizes" role="group" aria-label="Seleccionar tamaño">
+          ${sizesHtml}
+        </div>
+
+        <!-- Price display -->
+        <div class="pdm-price-row">
+          <span class="pdm-price" id="pdm-price">$${price}</span>
+          <span class="pdm-price-unit">MXN / ${_selectedSize}ml</span>
+        </div>
+
+        <!-- Actions -->
+        <div class="pdm-actions">
+          <button class="btn-primary pdm-btn-add" id="pdm-btn-add"
+            aria-label="Agregar ${p.name} ${_selectedSize}ml al carrito">
+            Agregar al bag
+          </button>
+          <button class="pdm-btn-wa"
+            aria-label="Comprar ${p.name} por WhatsApp">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" aria-hidden="true">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+            </svg>
+            Comprar por WhatsApp
+          </button>
+        </div>
+
+      </div><!-- /pdm-info-scroll -->
+    </div><!-- /pdm-info -->
+  `;
+
+  /* Bind events after render */
+  _bindEvents();
+}
+
+/* ── Event binding ───────────────────────────────────────────── */
+function _bindEvents() {
+  /* Close button */
+  _modal.querySelector('.pdm-close')
+    ?.addEventListener('click', closeProductModal);
+
+  /* Size buttons */
+  _modal.querySelectorAll('.pdm-size-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      _selectedSize = Number(btn.dataset.size);
+      _updateSizeUI();
+    });
+  });
+
+  /* Add to cart */
+  _modal.querySelector('#pdm-btn-add')
+    ?.addEventListener('click', _handleAddToCart);
+
+  /* WhatsApp */
+  _modal.querySelector('.pdm-btn-wa')
+    ?.addEventListener('click', _handleWhatsApp);
+
+  /* Focus trap */
+  _modal.addEventListener('keydown', _trapFocus);
+}
+
+/* ── Update price & size selection without full re-render ────── */
+function _updateSizeUI() {
+  const p     = _activeProduct;
+  const price = p?.prices?.[_selectedSize] ?? 0;
+
+  /* Update price display */
+  const priceEl = _modal.querySelector('#pdm-price');
+  const unitEl  = _modal.querySelector('.pdm-price-unit');
+  if (priceEl) priceEl.textContent = `$${price}`;
+  if (unitEl)  unitEl.textContent  = `MXN / ${_selectedSize}ml`;
+
+  /* Update button label */
+  const addBtn = _modal.querySelector('#pdm-btn-add');
+  if (addBtn) addBtn.setAttribute('aria-label',
+    `Agregar ${p.name} ${_selectedSize}ml al carrito`);
+
+  /* Toggle active class on size buttons */
+  _modal.querySelectorAll('.pdm-size-btn').forEach(btn => {
+    const active = Number(btn.dataset.size) === _selectedSize;
+    btn.classList.toggle('pdm-size-btn--active', active);
+    btn.setAttribute('aria-pressed', String(active));
+  });
+}
+
+/* ── Cart action ─────────────────────────────────────────────── */
+async function _handleAddToCart() {
+  if (!_activeProduct) return;
+  await window.__rd?.cart?.add(_activeProduct.id, _selectedSize);
+  /* Close modal and open cart for a smooth flow */
+  closeProductModal();
+  setTimeout(() => window.__rd?.ui?.openCart?.(), 300);
+}
+
+/* ── WhatsApp action ─────────────────────────────────────────── */
+function _handleWhatsApp() {
+  const p     = _activeProduct;
+  if (!p) return;
+  const price = p.prices?.[_selectedSize] ?? 0;
+  const msg   = encodeURIComponent(
+    `🌟 *RDecants — Consulta de producto*\n\n` +
+    `📦 *${p.name}*\n` +
+    `🏠 ${p.house}\n` +
+    `📐 ${_selectedSize}ml\n` +
+    `💰 $${price} MXN\n\n` +
+    `Hola, me interesa este producto. ¿Está disponible? 🙌`
+  );
+  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, '_blank');
+}
+
+/* ── Overlay click — close only if clicking backdrop ─────────── */
+function _handleOverlayClick(e) {
+  if (e.target === _overlay) closeProductModal();
+}
+
+/* ── Keyboard ────────────────────────────────────────────────── */
+function _handleKey(e) {
+  if (!_overlay?.classList.contains('pdm-overlay--open')) return;
+  if (e.key === 'Escape') closeProductModal();
+}
+
+function _trapFocus(e) {
+  if (e.key !== 'Tab') return;
+  const focusable = Array.from(
+    _modal.querySelectorAll(
+      'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    )
+  );
+  if (!focusable.length) return;
+
+  const first = focusable[0];
+  const last  = focusable[focusable.length - 1];
+
+  if (e.shiftKey && document.activeElement === first) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault();
+    first.focus();
+  }
+}
+
+/* ── Helpers ─────────────────────────────────────────────────── */
+function _defaultSize(product) {
+  /* prefer 5ml if available, else first available */
+  if (product.prices?.[5] > 0) return 5;
+  return [3, 10].find(ml => product.prices?.[ml] > 0) ?? 5;
+}
+
+function _sizeLabel(ml) {
+  if (ml === 3)  return 'Prueba';
+  if (ml === 5)  return 'Popular';
+  if (ml === 10) return 'Full';
+  return '';
+}
+
+function _badgeClass(badge, stock) {
+  if (badge === 'ÚLTIMAS UNIDADES' || stock <= 2) return 'danger';
+  if (badge === 'TRENDING' || badge === 'ALTA DEMANDA') return 'trend';
+  return '';
+}
+
+function _stockHtml(stock) {
+  if (stock <= 0) return `
+    <p class="card-stock pdm-stock">
+      <span class="stock-dot" style="background:var(--danger)"></span>
+      Agotado por el momento
+    </p>`;
+  if (stock <= 1) return `
+    <p class="card-stock pdm-stock">
+      <span class="stock-dot"></span>Última unidad disponible
+    </p>`;
+  if (stock <= 3) return `
+    <p class="card-stock pdm-stock">
+      <span class="stock-dot"></span>Solo ${stock} unidades disponibles
+    </p>`;
+  if (stock <= 5) return `
+    <p class="card-stock pdm-stock" style="color:var(--accent)">
+      <span class="stock-dot" style="background:var(--accent)"></span>
+      Alta demanda esta semana
+    </p>`;
+  return '';
+}

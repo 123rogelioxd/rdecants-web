@@ -1292,3 +1292,403 @@
   text-transform: uppercase;
   color: var(--muted);
 }
+
+/* ── Product Detail Modal ─────────────────────────────────────── */
+
+/* Overlay / backdrop */
+.pdm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 950;
+  background: rgba(0, 0, 0, 0);
+  backdrop-filter: blur(0px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(12px, 3vw, 40px);
+  pointer-events: none;
+  transition:
+    background 0.4s ease,
+    backdrop-filter 0.4s ease;
+  /* Allow scrolling on very small screens */
+  overflow-y: auto;
+}
+
+.pdm-overlay--open {
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px) saturate(0.8);
+  pointer-events: all;
+}
+
+/* Modal box */
+.pdm-modal {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  min-height: 460px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+
+  /* Entrance: scale up + fade in */
+  opacity: 0;
+  transform: scale(0.94) translateY(20px);
+  transition:
+    opacity  0.38s cubic-bezier(0.19, 1, 0.22, 1),
+    transform 0.38s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.pdm-modal--open {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+/* Close button */
+.pdm-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.pdm-close:hover {
+  background: var(--white);
+  color: var(--black);
+  transform: rotate(90deg);
+}
+
+/* Image panel */
+.pdm-img-panel {
+  position: relative;
+  background:
+    radial-gradient(circle at 60% 40%, rgba(201, 169, 110, 0.07) 0%, transparent 65%),
+    linear-gradient(160deg, #0d0d16, #050505);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 440px;
+  overflow: hidden;
+}
+
+.pdm-badge {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: var(--accent);
+  color: var(--black);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  border-radius: 999px;
+  z-index: 2;
+}
+
+.pdm-badge.danger {
+  background: var(--danger);
+  color: var(--white);
+}
+
+.pdm-badge.trend {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--white);
+  border: 1px solid var(--border-hl);
+}
+
+.pdm-img-wrap {
+  width: 85%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+}
+
+.pdm-img {
+  width: 100%;
+  max-height: 380px;
+  object-fit: contain;
+  filter: drop-shadow(0 24px 56px rgba(201, 169, 110, 0.18));
+  transition: transform 0.7s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.pdm-modal--open .pdm-img {
+  transform: scale(1.02);
+}
+
+/* Fallback when image is missing/broken */
+.pdm-img-wrap--fallback {
+  width: 100%;
+  max-height: 380px;
+  min-height: 200px;
+  background:
+    radial-gradient(ellipse at center, rgba(201, 169, 110, 0.08) 0%, transparent 70%);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pdm-img-wrap--fallback::after {
+  content: '✦';
+  font-size: 48px;
+  color: rgba(201, 169, 110, 0.25);
+}
+
+/* Info panel */
+.pdm-info {
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.pdm-info-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: clamp(32px, 5vw, 52px) clamp(28px, 4vw, 44px);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.pdm-house {
+  font-size: 10px;
+  letter-spacing: 0.4em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pdm-house::before {
+  content: '';
+  width: 18px;
+  height: 1px;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+.pdm-name {
+  font-family: var(--font-serif);
+  font-size: clamp(30px, 3.5vw, 46px);
+  font-weight: 300;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin-bottom: 16px;
+}
+
+.pdm-story {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.85;
+  margin-bottom: 8px;
+}
+
+.pdm-desc {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.38);
+  line-height: 1.7;
+  margin-bottom: 20px;
+}
+
+.pdm-notes {
+  margin-bottom: 20px;
+}
+
+.pdm-stock {
+  margin-bottom: 20px;
+}
+
+/* Size selector */
+.pdm-sizes-label {
+  font-size: 9px;
+  letter-spacing: 0.35em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.pdm-sizes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.pdm-size-btn {
+  flex: 1;
+  min-width: 72px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  color: rgba(255, 255, 255, 0.6);
+  padding: 13px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-align: center;
+  line-height: 1.4;
+  transition: var(--transition);
+  cursor: pointer;
+}
+
+.pdm-size-ml    { display: block; font-size: 14px; font-weight: 500; color: var(--white); }
+.pdm-size-price { display: block; font-size: 12px; color: var(--accent); margin-top: 2px; }
+.pdm-size-label { display: block; font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+.pdm-size-btn:hover,
+.pdm-size-btn--active {
+  background: var(--white);
+  border-color: var(--white);
+  color: var(--black);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.pdm-size-btn--active .pdm-size-ml,
+.pdm-size-btn--active .pdm-size-price,
+.pdm-size-btn--active .pdm-size-label,
+.pdm-size-btn:hover .pdm-size-ml,
+.pdm-size-btn:hover .pdm-size-price,
+.pdm-size-btn:hover .pdm-size-label {
+  color: var(--black);
+}
+
+/* Price display */
+.pdm-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.pdm-price {
+  font-family: var(--font-serif);
+  font-size: clamp(36px, 4vw, 48px);
+  font-weight: 300;
+  color: var(--accent);
+  transition: all 0.25s ease;
+}
+
+.pdm-price-unit {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Action buttons */
+.pdm-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pdm-btn-add {
+  width: 100%;
+  text-align: center;
+  justify-content: center;
+}
+
+.pdm-btn-wa {
+  width: 100%;
+  background: rgba(37, 211, 102, 0.1);
+  color: #25D366;
+  border: 1px solid rgba(37, 211, 102, 0.25);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 14px 20px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: var(--transition);
+}
+
+.pdm-btn-wa:hover {
+  background: #25D366;
+  color: var(--white);
+  border-color: #25D366;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(37, 211, 102, 0.25);
+}
+
+/* Card cursor hint */
+.product-card--clickable {
+  cursor: pointer;
+}
+
+.product-card--clickable:hover .card-img-wrap::after {
+  content: 'Ver detalle';
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  padding: 5px 12px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(201, 169, 110, 0.2);
+  border-radius: 999px;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+
+/* ── Responsive: single column on mobile ─────────────────────── */
+@media (max-width: 640px) {
+  .pdm-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .pdm-modal {
+    grid-template-columns: 1fr;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    max-height: 92svh;
+    transform: scale(1) translateY(60px);
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .pdm-modal--open {
+    transform: scale(1) translateY(0);
+  }
+
+  .pdm-img-panel {
+    min-height: 240px;
+    max-height: 280px;
+  }
+
+  .pdm-info {
+    border-left: none;
+    border-top: 1px solid var(--border);
+    overflow-y: auto;
+  }
+
+  .pdm-info-scroll {
+    padding: 28px 24px 40px;
+    overflow-y: visible;
+  }
+
+  .pdm-name {
+    font-size: 32px;
+  }
+}

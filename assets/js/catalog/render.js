@@ -9,8 +9,9 @@
      • error    — silent (CatalogProvider falls back to local)
    ============================================================= */
 
-import { CatalogProvider } from '../providers/catalog.js';
-import { Tracker }         from '../tracking/tracker.js';
+import { CatalogProvider }    from '../providers/catalog.js';
+import { Tracker }            from '../tracking/tracker.js';
+import { openProductModal }   from '../ui/modal.js';
 
 /* ── Featured ────────────────────────────────────────────────── */
 export async function renderFeatured() {
@@ -98,13 +99,17 @@ export async function renderProducts() {
           : '';
 
     const card = document.createElement('div');
-    card.className         = 'product-card fade-up';
+    card.className             = 'product-card product-card--clickable fade-up';
     card.style.transitionDelay = `${idx * 0.06}s`;
+    card.setAttribute('role',       'button');
+    card.setAttribute('tabindex',   '0');
+    card.setAttribute('aria-label', `Ver detalle de ${p.name}`);
 
     card.innerHTML = `
       ${p.badge ? `<span class="card-badge ${badgeClass}">${p.badge}</span>` : ''}
       <div class="card-img-wrap">
-        <img src="${p.image}" alt="${p.name}" loading="lazy">
+        <img src="${p.image}" alt="${p.name}" loading="lazy"
+             onerror="this.style.opacity='0'">
       </div>
       <div class="card-body">
         <p class="card-house">${p.house}</p>
@@ -116,19 +121,19 @@ export async function renderProducts() {
         ${stockWarning}
         <div class="sizes">
           <button class="size-btn"
-            onclick="window.__rd.cart.add('${p.id}', 3)">
+            onclick="event.stopPropagation();window.__rd.cart.add('${p.id}', 3)">
             <span class="ml">3ml</span>
             <span class="price">$${p.prices[3]}</span>
             <span class="cta">Prueba</span>
           </button>
           <button class="size-btn popular"
-            onclick="window.__rd.cart.add('${p.id}', 5)">
+            onclick="event.stopPropagation();window.__rd.cart.add('${p.id}', 5)">
             <span class="ml">5ml ⭐</span>
             <span class="price">$${p.prices[5]}</span>
             <span class="cta">Popular</span>
           </button>
           <button class="size-btn"
-            onclick="window.__rd.cart.add('${p.id}', 10)">
+            onclick="event.stopPropagation();window.__rd.cart.add('${p.id}', 10)">
             <span class="ml">10ml</span>
             <span class="price">$${p.prices[10]}</span>
             <span class="cta">Full</span>
@@ -136,6 +141,21 @@ export async function renderProducts() {
         </div>
       </div>
     `;
+
+    /* Open modal on card click (but not on size-btn clicks) */
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.size-btn')) return;
+      openProductModal(p);
+      Tracker.productView(p);
+    });
+
+    /* Keyboard: Enter / Space open modal */
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openProductModal(p);
+      }
+    });
 
     container.appendChild(card);
   });
