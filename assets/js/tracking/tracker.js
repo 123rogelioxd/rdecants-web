@@ -43,6 +43,7 @@ export const EVENTS = {
   PACK_VIEW:             'pack_view',
   PACK_CLICKED:          'pack_clicked',
   CHECKOUT_STARTED:      'checkout_started',
+  CHECKOUT_WHATSAPP_CLICKED: 'checkout_whatsapp_clicked',
   WHATSAPP_CHECKOUT:     'whatsapp_checkout',
   RECOMMENDATION_VIEW:   'recommendation_view',
   RECOMMENDATION_CLICKED:'recommendation_clicked',
@@ -153,6 +154,14 @@ export const Tracker = {
     this.emit(EVENTS.WHATSAPP_CHECKOUT, {
       itemCount: cart.length,
       total,
+    });
+  },
+
+  checkoutWhatsappClicked(cart, total, checkout = {}) {
+    this.emit(EVENTS.CHECKOUT_WHATSAPP_CLICKED, {
+      itemCount: cart.length,
+      total,
+      ...checkout,
     });
   },
 

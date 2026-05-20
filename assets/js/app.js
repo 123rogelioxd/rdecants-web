@@ -7,6 +7,7 @@
    ============================================================= */
 
 import { Cart }                           from './cart/cart.js';
+import { setupCheckout }                  from './cart/checkout.js';
 import { renderCart, updateCartCount,
          openCart, closeCart,
          toggleCart, sendWhatsApp }       from './cart/render.js';
@@ -71,6 +72,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   removeIntro();
 
   /* Initial cart state */
+  setupCheckout();
   renderCart();
   updateCartCount();
 

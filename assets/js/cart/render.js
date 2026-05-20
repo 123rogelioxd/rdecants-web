@@ -4,9 +4,11 @@
    ============================================================= */
 
 import { Cart }      from './cart.js';
+import { sendCheckoutWhatsApp,
+         syncCheckoutAvailability,
+         trackCheckoutStarted } from './checkout.js';
 import { EventBus }  from '../core/events.js';
 import { Tracker }   from '../tracking/tracker.js';
-import { showToast } from '../ui/toast.js';
 
 const WHATSAPP_NUMBER = '5219516513018';
 
@@ -27,6 +29,7 @@ export function renderCart() {
       </div>
     `;
     if (totalEl) totalEl.textContent = '0';
+    syncCheckoutAvailability();
     return;
   }
 
@@ -67,6 +70,7 @@ export function renderCart() {
   }).join('');
 
   if (totalEl) totalEl.textContent = total;
+  syncCheckoutAvailability();
 }
 
 export function updateCartCount() {
@@ -83,6 +87,7 @@ export function openCart() {
   document.getElementById('cart-overlay')?.classList.add('active');
   document.body.style.overflow = 'hidden';
   Tracker.cartOpened();
+  trackCheckoutStarted();
 }
 
 export function closeCart() {
@@ -99,22 +104,7 @@ export function toggleCart() {
 
 /* ── WhatsApp checkout ──────────────────────────────────────── */
 export function sendWhatsApp() {
-  const items = Cart.items;
-  if (!items.length) return;
-
-  const total = Cart.total();
-  Tracker.whatsappCheckout(items, total);
-
-  let msg = '🛍️ *Pedido RDecants*%0A%0A';
-
-  items.forEach(item => {
-    const size = item.type === 'pack' ? 'Pack' : `${item.size}ml`;
-    msg += `• *${item.name}* — ${item.qty} × ${size} ($${item.price * item.qty})%0A`;
-  });
-
-  msg += `%0A💰 *Total: $${total} MXN*%0A%0AHola, quiero confirmar mi pedido 🙌`;
-
-  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, '_blank');
+  sendCheckoutWhatsApp(WHATSAPP_NUMBER);
 }
 
 /* ── Auto-update on cart changes ────────────────────────────── */

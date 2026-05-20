@@ -277,12 +277,49 @@
   </div>
 
   <div class="cart-footer">
+    <div class="checkout-panel" id="checkout-form" aria-label="Datos de checkout">
+      <div class="checkout-head">
+        <span class="checkout-kicker">Checkout</span>
+        <span class="checkout-note">Datos para coordinar por WhatsApp</span>
+      </div>
+
+      <label class="checkout-label" for="checkout-name">Nombre</label>
+      <input class="checkout-field" id="checkout-name" type="text" autocomplete="name" placeholder="Tu nombre">
+
+      <label class="checkout-label" for="checkout-location">Ciudad / estado</label>
+      <input class="checkout-field" id="checkout-location" type="text" autocomplete="address-level2" placeholder="Ej. Oaxaca, Oaxaca">
+
+      <div class="checkout-grid">
+        <label class="checkout-control" for="checkout-delivery">
+          <span>Entrega</span>
+          <select id="checkout-delivery" class="checkout-field">
+            <option value="local">Local</option>
+            <option value="national">Envio nacional</option>
+          </select>
+        </label>
+
+        <label class="checkout-control" for="checkout-payment">
+          <span>Pago</span>
+          <select id="checkout-payment" class="checkout-field">
+            <option value="cash">Efectivo</option>
+            <option value="transfer">Transferencia</option>
+            <option value="oxxo">Deposito OXXO</option>
+          </select>
+        </label>
+      </div>
+
+      <label class="checkout-label" for="checkout-notes">Notas opcionales</label>
+      <textarea class="checkout-field checkout-textarea" id="checkout-notes" rows="3" placeholder="Horario, referencia o detalle especial"></textarea>
+
+      <p class="checkout-error" id="checkout-error" aria-live="polite"></p>
+    </div>
+
     <div class="cart-total-row">
       <span class="cart-total-label">Total</span>
       <span class="cart-total-amount">$<span id="cart-total">0</span></span>
     </div>
 
-    <button class="btn-whatsapp" onclick="sendWhatsApp()">
+    <button class="btn-whatsapp" id="checkout-whatsapp" onclick="sendWhatsApp()">
       Confirmar por WhatsApp
     </button>
 
