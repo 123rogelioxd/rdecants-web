@@ -6,22 +6,19 @@
    handlers use window.__rd.* instead of loose globals.
    ============================================================= */
 
-import { Cart }                           from './cart/cart.js';
-import { setupCheckout }                  from './cart/checkout.js';
+import { Cart }                           from './cart/cart.js?v=1.0.2';
+import { setupCheckout }                  from './cart/checkout.js?v=1.0.2';
 import { renderCart, updateCartCount,
          openCart, closeCart,
-         toggleCart, sendWhatsApp }       from './cart/render.js';
-import { renderFeatured, renderProducts,
-         renderPacks }                    from './catalog/render.js';
-import { renderFeaturedCarousel }         from './catalog/featured.js';
-import { Recommendations }                from './recommendations/index.js';
+         toggleCart, sendWhatsApp }       from './cart/render.js?v=1.0.2';
+import { renderProducts, renderPacks }     from './catalog/render.js?v=1.0.2';
 import { setupScrollAnimations,
          observeFadeUp,
          setupHeroParallax }             from './ui/animations.js';
 import { setupHeader }                    from './ui/header.js';
 import { showToast }                      from './ui/toast.js';
 import { openProductModal,
-         closeProductModal }             from './ui/modal.js';
+         closeProductModal }             from './ui/modal.js?v=1.0.2';
 import { SearchBar }                     from './ui/searchbar.js';
 import { setupImageStates }              from './ui/images.js';
 import { Tracker }                        from './tracking/tracker.js';
@@ -87,8 +84,8 @@ function _toApiPayload(event, payload) {
       };
     case 'add_to_cart':
       return {
-        product_id: payload.productId,
-        variant_id: `${payload.productId}-${payload.size}`,
+        product_id: payload.product_id ?? payload.productId,
+        variant_id: payload.variant_id ?? `${payload.productId}-${payload.size}`,
         metadata: {
           name:             payload.productName,
           size:             payload.size,
@@ -150,9 +147,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateCartCount();
 
   /* Render catalog (async — provider pattern) */
-  await renderFeaturedCarousel();
-  await renderFeatured();
-  await Recommendations.render();
   await renderProducts();
   await renderPacks();
 

@@ -3,10 +3,10 @@
    Customer data, validation, persistence and premium WA message.
    ============================================================= */
 
-import { Cart }      from './cart.js';
+import { Cart }      from './cart.js?v=1.0.2';
 import { Tracker }   from '../tracking/tracker.js';
 import { showToast } from '../ui/toast.js';
-import { formatPrice, isValidPrice } from '../utils/prices.js';
+import { formatPrice, isValidPrice } from '../utils/prices.js?v=1.0.2';
 
 const STORAGE_KEY = 'rdecants_checkout_customer';
 
@@ -136,12 +136,16 @@ export function buildWhatsAppMessage(items, total, data) {
   items.forEach(item => {
     const size = item.type === 'pack' ? 'Pack' : `${item.size}ml`;
     const subtotal = isValidPrice(item.price) ? item.price * item.qty : null;
-    lines.push(`- ${item.name} | ${size} | Cantidad: ${item.qty} | Subtotal: ${formatPrice(subtotal, 'Por confirmar')}`);
+    lines.push(
+      `- ${item.name} | ${size} | Cantidad: ${item.qty} | Subtotal: ${formatPrice(subtotal, 'Por confirmar')}`,
+      `  product_id: ${item.product_id ?? item.sourceId ?? 'Por confirmar'} | variant_id: ${item.variant_id ?? item.key ?? 'Por confirmar'}`
+    );
   });
 
   lines.push(
     '',
     `*Total general: ${formatPrice(total, 'Por confirmar')}*`,
+    'Stock sujeto a confirmacion.',
     '',
     '*Entrega y pago*',
     `Entrega: ${DELIVERY_LABELS[data.delivery] || data.delivery}`,

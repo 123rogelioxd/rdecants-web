@@ -30,12 +30,12 @@
     HTML itself is served no-cache so browsers always get
     the latest version string.
 
-  Current version: 1.0.0 — update all ?v= values on deploy.
+  Current version: 1.0.2 — update all ?v= values on deploy.
 -->
-<link rel="stylesheet" href="assets/css/tokens.css?v=1.0.0">
-<link rel="stylesheet" href="assets/css/animations.css?v=1.0.0">
-<link rel="stylesheet" href="assets/css/components.css?v=1.0.0">
-<link rel="stylesheet" href="assets/css/styles.css?v=1.0.0">
+<link rel="stylesheet" href="assets/css/tokens.css?v=1.0.2">
+<link rel="stylesheet" href="assets/css/animations.css?v=1.0.2">
+<link rel="stylesheet" href="assets/css/components.css?v=1.0.2">
+<link rel="stylesheet" href="assets/css/styles.css?v=1.0.2">
 </head>
 
 <body>
@@ -56,7 +56,7 @@
   <nav class="header-actions">
     <button class="btn-cart" onclick="toggleCart()" aria-label="Abrir carrito">
       <span class="cart-dot" id="cart-dot"></span>
-      BAG (<span id="cart-count">0</span>)
+      CARRITO (<span id="cart-count">0</span>)
     </button>
   </nav>
 </header>
@@ -83,50 +83,14 @@
     </p>
 
     <div class="hero-actions">
-      <button class="btn-primary" onclick="scrollToCatalog()" aria-label="Descubrir coleccion">
-        Descubrir Colección
+      <button class="btn-primary" onclick="scrollToCatalog()" aria-label="Ver catalogo">
+        Ver Catálogo
       </button>
       <button class="btn-ghost" onclick="document.getElementById('packs-section').scrollIntoView({behavior:'smooth'})" aria-label="Ver packs">
         Ver Packs
       </button>
     </div>
   </div>
-</section>
-
-<!-- FEATURED CAROUSEL -->
-<section class="fc-section" id="fc-section">
-  <div class="container">
-    <div class="fc-header fade-up">
-      <div>
-        <p class="section-label">Selección Destacada</p>
-        <h2 class="section-title">Fragancias<br><em>Icónicas</em></h2>
-      </div>
-      <p style="font-size:12px;color:var(--muted);max-width:220px;line-height:1.7;">
-        Los clásicos que nunca fallan y los nuevos que están dominando.
-      </p>
-    </div>
-  </div>
-  <div class="fc-scroll" role="region" aria-label="Fragancias destacadas">
-    <div class="fc-track" id="fc-track">
-      <!-- Rendered by catalog/featured.js -->
-    </div>
-  </div>
-</section>
-
-<div class="divider"></div>
-
-<!-- FEATURED PRODUCT -->
-<section class="featured-section">
-  <div class="container">
-    <div class="featured-grid" id="featured-product">
-      <!-- Rendered by catalog/render.js -->
-    </div>
-  </div>
-</section>
-
-<!-- RECOMMENDATION RAILS -->
-<section class="rr-section" id="recommendation-rails" aria-label="Recomendaciones dinamicas">
-  <!-- Rendered lazily by recommendations/index.js -->
 </section>
 
 <!-- TRUST BAR -->
@@ -208,43 +172,6 @@
       <!-- Rendered by catalog/render.js -->
     </div>
 
-  </div>
-</section>
-
-<div class="divider"></div>
-
-<!-- TESTIMONIALS -->
-<section class="section">
-  <div class="container">
-
-    <div class="section-header fade-up">
-      <div>
-        <p class="section-label">Clientes</p>
-        <h2 class="section-title">Lo que<br>dicen ellos</h2>
-      </div>
-    </div>
-
-    <div class="reviews-grid">
-
-      <div class="review-card fade-up">
-        <div class="review-stars">★★★★★</div>
-        <p class="review-text">"Me sorprendió la calidad. Pensé que no era original y llegó bien."</p>
-        <p class="review-author">— Carlos M., Monterrey</p>
-      </div>
-
-      <div class="review-card fade-up" style="transition-delay:.08s">
-        <div class="review-stars">★★★★★</div>
-        <p class="review-text">"Perfecto para probar antes de comprar el frasco completo."</p>
-        <p class="review-author">— Diego R., Oaxaca</p>
-      </div>
-
-      <div class="review-card fade-up" style="transition-delay:.16s">
-        <div class="review-stars">★★★★★</div>
-        <p class="review-text">"El pack nocturno es una locura. Le Male Elixir tiene demasiada presencia."</p>
-        <p class="review-author">— Andrés L., Guadalajara</p>
-      </div>
-
-    </div>
   </div>
 </section>
 
@@ -349,7 +276,7 @@
   ?v= must match the version in CSS links above.
   Update on every deploy: increment VERSION file + all ?v= strings.
 -->
-<script type="module" src="assets/js/app.js?v=1.0.0"></script>
+<script type="module" src="assets/js/app.js?v=1.0.2"></script>
 
 </body>
 </html>

@@ -83,7 +83,7 @@ export const PRICE_LABELS = {
 };
 
 export const SORT_LABELS = {
-  trending:     'Trending',
+  trending:     'Destacados',
   'price-asc':  'Menor precio',
   'price-desc': 'Mayor precio',
   popular:      'Más popular',

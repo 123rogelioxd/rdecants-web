@@ -10,15 +10,16 @@
      â€¢ no-match  â€” elegant empty state when filters return 0
    ============================================================= */
 
-import { CatalogProvider }  from '../providers/catalog.js';
+import { CatalogProvider }  from '../providers/catalog.js?v=1.0.2';
 import { Tracker }          from '../tracking/tracker.js';
-import { openProductModal } from '../ui/modal.js';
-import { SearchBar }        from '../ui/searchbar.js';
+import { openProductModal } from '../ui/modal.js?v=1.0.2';
+import { SearchBar }        from '../ui/searchbar.js?v=1.0.2';
 import { observeFadeUp }    from '../ui/animations.js';
 import { primeImageStates } from '../ui/images.js';
 import { getDefaultVariant,
+         getDisplayVariant,
          getValidVariants,
-         formatPrice }      from '../utils/prices.js';
+         formatPrice }      from '../utils/prices.js?v=1.0.2';
 
 /* module-level ref kept for SearchBar callback */
 let _productsContainer = null;
@@ -191,40 +192,18 @@ function _renderGrid(products) {
   const frag = document.createDocumentFragment();
 
   products.forEach((p, idx) => {
-    const stockWarning =
-      p.stock <= 3
-        ? `<div class="card-stock">
-             <span class="stock-dot"></span>${_stockText(p.stock)}
-           </div>`
-        : p.stock <= 5
-          ? `<div class="card-stock" style="color:var(--accent)">
-               <span class="stock-dot" style="background:var(--accent)"></span>
-               ${_stockText(p.stock)}
-             </div>`
-          : '';
+    const displayVariant = getDisplayVariant(p);
+    const priceHtml = displayVariant
+      ? `${formatPrice(displayVariant.price)} <small>${displayVariant.size}ml</small>`
+      : 'Consultar precio';
+    const stockState = _stockState(p.stock);
+    const isSoldOut = p.stock <= 0;
 
-    const badgeText = _normalizeBadge(p.badge);
+    const badgeText = _normalizeBadge(stockState.label);
     const badgeClass =
-      badgeText === 'ULTIMAS UNIDADES' || p.stock <= 2 ? 'danger'
-        : badgeText === 'TRENDING' || badgeText === 'ALTA DEMANDA' ? 'trend'
+      isSoldOut ? 'danger'
+        : p.stock <= 3 ? 'trend'
           : '';
-
-    const variants = getValidVariants(p);
-    const sizesHtml = variants.length
-      ? variants.map(({ size, price }) => `
-          <button class="size-btn ${size === 5 ? 'popular' : ''}"
-            onclick="event.stopPropagation();window.__rd.cart.add('${p.id}', ${size})"
-            aria-label="Agregar ${p.name} ${size}ml al carrito">
-            <span class="ml">${size}ml${size === 5 ? ' *' : ''}</span>
-            <span class="price">$${price}</span>
-            <span class="cta">${_sizeLabel(size)}</span>
-          </button>
-        `).join('')
-      : `<button class="size-btn size-btn--disabled" disabled aria-disabled="true">
-           <span class="ml">Consultar</span>
-           <span class="price">Precio</span>
-           <span class="cta">WhatsApp</span>
-         </button>`;
 
     const card = document.createElement('div');
     card.className             = 'product-card product-card--clickable fade-up';
@@ -234,7 +213,7 @@ function _renderGrid(products) {
     card.setAttribute('aria-label', `Ver detalle de ${p.name}`);
 
     card.innerHTML = `
-      ${p.badge ? `<span class="card-badge ${badgeClass}">${p.badge}</span>` : ''}
+      <span class="card-badge ${badgeClass}">${stockState.label}</span>
       <div class="card-img-wrap">
         <img src="${p.image}" alt="${p.name}" loading="lazy" decoding="async">
       </div>
@@ -242,19 +221,32 @@ function _renderGrid(products) {
         <p class="card-house">${p.house}</p>
         <h3 class="card-name">${p.name}</h3>
         <p class="card-story">${p.story}</p>
-        <div class="card-notes">
-          ${p.notes.map(n => `<span class="note-tag">${n}</span>`).join('')}
-        </div>
-        ${stockWarning}
-        <div class="sizes">
-          ${sizesHtml}
+        <div class="card-purchase">
+          <div>
+            <p class="card-price">${priceHtml}</p>
+            <p class="card-stock card-stock--${stockState.key}">
+              <span class="stock-dot"></span>${stockState.label}
+            </p>
+          </div>
+          <button class="btn-primary card-action"
+            ${isSoldOut ? 'disabled aria-disabled="true"' : ''}
+            aria-label="${isSoldOut ? `${p.name} agotado` : `Ver detalle de ${p.name}`}">
+            ${isSoldOut ? 'Agotado' : 'Ver detalle'}
+          </button>
         </div>
       </div>
     `;
 
     /* Click â†’ modal */
+    card.querySelector('.card-action')?.addEventListener('click', e => {
+      e.stopPropagation();
+      if (isSoldOut) return;
+      openProductModal(p);
+      Tracker.productClicked(p, 'card_action');
+    });
+
     card.addEventListener('click', e => {
-      if (e.target.closest('.size-btn')) return;
+      if (e.target.closest('.card-action')) return;
       openProductModal(p);
       Tracker.productClicked(p, 'grid');
     });
@@ -282,6 +274,12 @@ function _stockText(stock) {
   return 'Disponible';
 }
 
+function _stockState(stock) {
+  if (stock <= 0) return { key: 'out', label: 'Agotado' };
+  if (stock <= 3) return { key: 'low', label: 'Pocas piezas' };
+  return { key: 'ok', label: 'Disponible' };
+}
+
 function _normalizeBadge(badge) {
   return String(badge ?? '')
     .normalize('NFD')
@@ -292,7 +290,7 @@ function _normalizeBadge(badge) {
 function _sizeLabel(size) {
   if (size === 3) return 'Prueba';
   if (size === 5) return 'Popular';
-  if (size === 10) return 'Full';
+  if (size === 10) return 'Grande';
   return 'Decant';
 }
 

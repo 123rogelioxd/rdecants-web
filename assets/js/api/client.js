@@ -6,7 +6,7 @@
    Callers are responsible for fallback logic.
    ============================================================= */
 
-import { API_BASE } from './config.js';
+import { API_BASE } from './config.js?v=1.0.2';
 
 async function _get(path) {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -17,6 +17,9 @@ async function _get(path) {
 }
 
 export const ApiClient = {
+  /** Preferred inventory source for the storefront */
+  getDecantsProducts: () => _get('/api/decants/products'),
+
   /** Returns array of all catalog products */
   getCatalog:  () => _get('/api/web/catalog'),
 

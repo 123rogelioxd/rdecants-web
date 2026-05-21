@@ -3,11 +3,11 @@
    State management: add, remove, qty, persist, stock limits.
    ============================================================= */
 
-import { CatalogProvider } from '../providers/catalog.js';
+import { CatalogProvider } from '../providers/catalog.js?v=1.0.2';
 import { Tracker }         from '../tracking/tracker.js';
 import { EventBus }        from '../core/events.js';
 import { showToast }       from '../ui/toast.js';
-import { getPriceForSize, isValidPrice } from '../utils/prices.js';
+import { getPriceForSize, getVariantForSize, isValidPrice } from '../utils/prices.js?v=1.0.2';
 
 const STORAGE_KEY = 'rdecants_cart';
 
@@ -24,6 +24,8 @@ export const Cart = {
     if (!product) return;
 
     const price = getPriceForSize(product, size);
+    const variant = getVariantForSize(product, size);
+    const stock = variant?.availability ?? product.stock ?? 0;
     if (price === null) {
       showToast('Precio no disponible para esa variante');
       return;
@@ -33,26 +35,31 @@ export const Cart = {
     const existing = _items.find(i => i.key === key);
 
     if (existing) {
-      if (existing.qty >= product.stock) {
-        showToast(`Solo quedan ${product.stock} de ${product.name}`);
+      if (existing.qty >= stock) {
+        showToast(`Solo quedan ${stock} de ${product.name}`);
         return;
       }
       existing.qty++;
+      existing.stock = stock;
+      existing.product_id = product.product_id ?? product.id;
+      existing.variant_id = variant?.variant_id ?? existing.variant_id;
     } else {
-      if (product.stock <= 0) {
+      if (stock <= 0 || variant?.soldOut) {
         showToast(`${product.name} está agotado`);
         return;
       }
       _items.push({
         key,
         sourceId: product.id,
+        product_id: product.product_id ?? product.id,
+        variant_id: variant?.variant_id ?? `${product.id}-${size}`,
         type:     'product',
         name:     product.name,
         house:    product.house,
         size,
         price,
         qty:      1,
-        stock:    product.stock,
+        stock,
       });
     }
 
@@ -82,6 +89,8 @@ export const Cart = {
       _items.push({
         key,
         sourceId: pack.id,
+        product_id: pack.id,
+        variant_id: `pack-${pack.id}`,
         type:     'pack',
         name:     pack.name,
         house:    'PACK',
@@ -157,7 +166,13 @@ function _load() {
     if (!raw) return [];
     return JSON.parse(raw)
       .filter(i => i && i.key)
-      .map(i => ({ ...i, qty: Math.max(1, Number(i.qty) || 1) }));
+      .map(i => ({
+        ...i,
+        product_id: i.product_id ?? i.sourceId,
+        variant_id: i.variant_id ?? i.key,
+        stock: Math.max(0, Number(i.stock) || 0),
+        qty: Math.max(1, Number(i.qty) || 1),
+      }));
   } catch {
     return [];
   }
@@ -169,5 +184,6 @@ async function _getStock(item) {
     return pack?.stock ?? item.stock ?? 1;
   }
   const product = await CatalogProvider.getProductById(item.sourceId);
-  return product?.stock ?? item.stock ?? 1;
+  const variant = getVariantForSize(product, item.size);
+  return variant?.availability ?? item.stock ?? 0;
 }

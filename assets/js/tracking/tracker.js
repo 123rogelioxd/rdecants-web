@@ -114,8 +114,11 @@ export const Tracker = {
   },
 
   addToCart(product, size, price, source = 'size_btn') {
+    const variant = product.variants?.find(v => Number(v.size ?? v.ml_size) === Number(size));
     this.emit(EVENTS.ADD_TO_CART, {
       productId:   product.id,
+      product_id:  product.product_id ?? product.id,
+      variant_id:  variant?.variant_id,
       productName: product.name,
       house:       product.house,
       size,

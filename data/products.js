@@ -14,7 +14,7 @@ export const PRODUCTS = [
     notes:    ['Lavanda', 'Vainilla', 'Miel'],
     image:    'assets/featured/jpg-le-male-elixir-hero.webp',
     stock:    4,
-    badge:    'MÁS PEDIDO',
+    badge:    'Más pedido',
     prices:   { 3: 120, 5: 170, 10: 330 },
   },
   {
@@ -26,7 +26,7 @@ export const PRODUCTS = [
     notes:    ['Cítrico', 'Madera', 'Ámbar'],
     image:    'assets/featured/bleu-de-chanel-edt-hero.webp',
     stock:    4,
-    badge:    'CLÁSICO',
+    badge:    'Clásico',
     prices:   { 3: 140, 5: 200, 10: 380 },
   },
   {
@@ -38,7 +38,7 @@ export const PRODUCTS = [
     notes:    ['Manzana', 'Jengibre', 'Cedro'],
     image:    'assets/featured/ysl-y-edp-hero.webp',
     stock:    5,
-    badge:    'DIARIO',
+    badge:    'Diario',
     prices:   { 3: 120, 5: 170, 10: 340 },
   },
   {
@@ -62,7 +62,7 @@ export const PRODUCTS = [
     notes:    ['Vainilla', 'Lavanda', 'Madera'],
     image:    'assets/featured/invictus-victory-elixir-hero.webp',
     stock:    3,
-    badge:    'ÚLTIMAS',
+    badge:    'Pocas piezas',
     prices:   { 3: 120, 5: 170, 10: 330 },
   },
   {
@@ -84,7 +84,7 @@ export const PRODUCTS = [
     desc:     'Azul, fresco y masculino.',
     story:    'Limpio, elegante y perfecto para calor.',
     notes:    ['Marino', 'Cítrico', 'Mineral'],
-    image:    'assets/featured/dior-sauvage-edp-hero.webp',
+    image:    'assets/featured/rasassi-hawas-ice-hero.webp',
     stock:    3,
     badge:    'FRESCO',
     prices:   { 3: 120, 5: 170, 10: 330 },
@@ -98,7 +98,7 @@ export const PRODUCTS = [
     notes:    ['Manzana', 'Vainilla', 'Canela'],
     image:    'assets/featured/afnan-9pm-night-out-hero.webp',
     stock:    4,
-    badge:    'TRENDING',
+    badge:    'Popular',
     prices:   { 3: 80, 5: 100, 10: 180 },
   },
   {
@@ -108,9 +108,9 @@ export const PRODUCTS = [
     desc:     'Fresco, dulce y cumplidor.',
     story:    'De esos que la gente sí nota.',
     notes:    ['Manzana', 'Menta', 'Ámbar'],
-    image:    'assets/featured/one-million-lucky-hero.webp',
+    image:    'assets/featured/rasassi-hawas-ice-hero.webp',
     stock:    4,
-    badge:    'ALTA DEMANDA',
+    badge:    'Alta demanda',
     prices:   { 3: 90, 5: 120, 10: 240 },
   },
   {
@@ -122,7 +122,7 @@ export const PRODUCTS = [
     notes:    ['Cítrico', 'Jengibre', 'Madera'],
     image:    'assets/featured/bleu-de-chanel-edt-hero.webp',
     stock:    4,
-    badge:    'VALUE',
+    badge:    'Accesible',
     prices:   { 3: 90, 5: 130, 10: 250 },
   },
   {
@@ -135,7 +135,7 @@ export const PRODUCTS = [
     image:    'assets/featured/xerjoff-naxos-hero.webp',
     featured: true,
     stock:    1,
-    badge:    'ULTRA LUXURY',
+    badge:    'Nicho',
     prices:   { 3: 220, 5: 300, 10: 590 },
   },
   {
@@ -145,9 +145,9 @@ export const PRODUCTS = [
     desc:     'Frutal, brillante y exclusivo.',
     story:    'Lujo moderno con una salida que impacta.',
     notes:    ['Frutas', 'Ámbar', 'Vainilla'],
-    image:    'assets/featured/dior-sauvage-edp-hero.webp',
+    image:    'assets/featured/xerjoff-erba-pura-hero.webp',
     stock:    1,
-    badge:    'ULTRA LUXURY',
+    badge:    'Nicho',
     prices:   { 3: 220, 5: 300, 10: 590 },
   },
 ];
@@ -162,7 +162,7 @@ export const PACKS = [
     price:         349,
     originalPrice: 370,
     stock:         2,
-    badge:         'BEST SELLER',
+    badge:         'Más pedido',
   },
   {
     id:            'pack-fresh',
@@ -173,7 +173,7 @@ export const PACKS = [
     price:         329,
     originalPrice: 340,
     stock:         3,
-    badge:         'DAILY',
+    badge:         'Diario',
   },
   {
     id:            'pack-summer',
@@ -184,7 +184,7 @@ export const PACKS = [
     price:         299,
     originalPrice: 310,
     stock:         2,
-    badge:         'SUMMER',
+    badge:         'Verano',
   },
   {
     id:            'pack-date-night',
@@ -195,17 +195,17 @@ export const PACKS = [
     price:         349,
     originalPrice: 370,
     stock:         2,
-    badge:         'NIGHT',
+    badge:         'Noche',
   },
   {
     id:            'pack-ultra-luxury',
-    name:          'Ultra Luxury',
+    name:          'Lujo Nicho',
     emoji:         '✦',
     desc:          'La selección más exclusiva.',
     detail:        'Naxos + Erba Gold · 5ml',
     price:         549,
     originalPrice: 600,
     stock:         1,
-    badge:         'LIMITED',
+    badge:         'Limitado',
   },
 ];

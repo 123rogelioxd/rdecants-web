@@ -17,7 +17,7 @@ import {
   PRICE_LABELS,
   SORT_LABELS,
   MOOD_LABELS,
-} from '../catalog/search.js';
+} from '../catalog/search.js?v=1.0.2';
 
 /* ── State ──────────────────────────────────────────────────── */
 const _DEFAULT = {
