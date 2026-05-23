@@ -8,6 +8,7 @@
    ============================================================= */
 
 import { ApiClient } from '../api/client.js';
+import { normalizeApiImageUrl } from '../api/config.js?v=1.0.2';
 import { primeImageStates } from '../ui/images.js';
 
 let _cache = null;
@@ -23,7 +24,7 @@ async function _load() {
         id:    p.id   ?? p.slug,
         name:  p.name,
         tag:   p.house ?? p.brand ?? p.tag ?? '',
-        image: p.image ?? p.image_url ?? '',
+        image: normalizeApiImageUrl(p.image_url) || normalizeApiImageUrl(p.image),
       }));
       return _cache;
     }

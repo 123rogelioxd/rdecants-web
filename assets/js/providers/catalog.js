@@ -10,7 +10,8 @@
    or local data directly.
    ============================================================= */
 
-import { ApiClient }         from '../api/client.js?v=1.0.2';
+import { ApiClient } from '../api/client.js?v=1.0.6';
+import { normalizeApiImageUrl } from '../api/config.js?v=1.0.6';
 import { PRODUCTS, PACKS }   from '../../../data/products.js?v=1.0.2';
 
 /* Session-level cache — one fetch per page load */
@@ -24,24 +25,28 @@ export const CatalogProvider = {
     try {
       const inventory = await ApiClient.getDecantsProducts();
       const items = Array.isArray(inventory?.data) ? inventory.data : inventory;
-      if (Array.isArray(items) && items.length) {
+      if (Array.isArray(items)) {
         _productsCache = items.map(_mapInventoryProduct).filter(Boolean);
-        if (_productsCache.length) return _productsCache;
+        return _productsCache;
       }
     } catch (err) {
       console.warn('[RDecants] decants inventory API unavailable, trying web catalog.', err.message);
     }
     try {
       const data = await ApiClient.getCatalog();
-      if (Array.isArray(data) && data.length) {
+      if (Array.isArray(data)) {
         _productsCache = data.map(_mapProduct);
         return _productsCache;
       }
     } catch (err) {
-      console.warn('[RDecants] catalog API unavailable, using local data.', err.message);
+      console.warn('[RDecants] catalog API unavailable.', err.message);
     }
-    _productsCache = PRODUCTS;
-    return _productsCache;
+    if (_hideDemoProducts()) {
+      _productsCache = [];
+      return _productsCache;
+    }
+    _productsCache = [];
+return _productsCache;
   },
 
   async getPacks() {
@@ -126,7 +131,7 @@ function _mapProduct(p) {
     desc:     p.desc     ?? p.description ?? '',
     story:    p.story    ?? p.tagline ?? '',
     notes,
-    image:    p.image    ?? p.image_url ?? '',
+    image:    _productImage(p),
     stock,
     badge:    p.badge    ?? p.label  ?? '',
     featured: !!p.featured,
@@ -159,7 +164,7 @@ function _mapInventoryProduct(p) {
     desc: p.description ?? _inventoryDesc(tags),
     story: p.story ?? _inventoryStory(p, tags),
     notes,
-    image: p.image ?? p.image_url ?? _fallbackImage(p),
+    image: _productImage(p, _fallbackImage(p)),
     stock,
     badge: _inventoryBadge(stock, tags),
     featured: Boolean(p.featured),
@@ -238,11 +243,24 @@ function _fallbackImage(p) {
   return 'assets/featured/jpg-le-male-elixir-hero.webp';
 }
 
+function _productImage(p, fallback = '') {
+  return normalizeApiImageUrl(p.image_url) || normalizeApiImageUrl(p.image) || fallback;
+}
+
 function _norm(value) {
   return String(value ?? '')
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
+}
+
+function _hideDemoProducts() {
+  const value =
+    window.__DECANTS_HIDE_DEMO_PRODUCTS__ ??
+    window.DECANTS_HIDE_DEMO_PRODUCTS ??
+    document.querySelector('meta[name="DECANTS_HIDE_DEMO_PRODUCTS"]')?.content;
+
+  return String(value ?? '').toLowerCase() === 'true';
 }
 
 function _mapPack(p) {
