@@ -1,0 +1,33 @@
+name: Deploy RDecants Web
+
+on:
+  push:
+    branches:
+      - production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout production
+        uses: actions/checkout@v4
+
+      - name: Install lftp
+        run: sudo apt-get update && sudo apt-get install -y lftp
+
+      - name: Deploy via FTPS with lftp
+        run: |
+          lftp -u "${{ secrets.FTP_USERNAME }}","${{ secrets.FTP_PASSWORD }}" "${{ secrets.FTP_SERVER }}" <<EOF
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ssl:verify-certificate no
+          set ftp:passive-mode true
+          mirror -R --verbose --only-newer \
+            --exclude-glob .git/ \
+            --exclude-glob .github/ \
+            --exclude-glob node_modules/ \
+            --exclude-glob "*.zip" \
+            ./ /public_html/
+          bye
+          EOF
