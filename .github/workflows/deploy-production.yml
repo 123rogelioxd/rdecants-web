@@ -28,6 +28,6 @@ jobs:
             --exclude-glob .github/ \
             --exclude-glob node_modules/ \
             --exclude-glob "*.zip" \
-            ./ /public_html/
+            ./ /
           bye
           EOF
