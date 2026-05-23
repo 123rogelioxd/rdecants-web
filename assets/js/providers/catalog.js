@@ -1,3 +1,5 @@
+console.log('CATALOG PROVIDER NUEVO 1.0.9 CARGADO');
+
 /* =============================================================
    RDECANTS — CATALOG PROVIDER
    Abstraction layer between rendering and data source.
