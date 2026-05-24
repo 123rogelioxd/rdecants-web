@@ -3,7 +3,7 @@
    Thin fetch wrapper for R Supply OS web endpoints.
    ============================================================= */
 
-import { API_BASE } from './config.js?v=1.0.6';
+import { API_BASE } from './config.js?v=1.0.7';
 
 async function _get(path) {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -16,9 +16,9 @@ async function _get(path) {
 }
 
 export const ApiClient = {
-  getDecantsProducts: () => _get('/catalog'),
-  getCatalog:         () => _get('/catalog'),
-  getFeatured:        () => _get('/featured'),
-  getTrending:        () => _get('/trending'),
-  getPacks:           () => _get('/packs'),
+  getDecantsProducts: () => _get('/api/web/catalog'),
+  getCatalog:         () => _get('/api/web/catalog'),
+  getFeatured:        () => _get('/api/web/featured'),
+  getTrending:        () => _get('/api/web/trending'),
+  getPacks:           () => _get('/api/web/packs'),
 };
