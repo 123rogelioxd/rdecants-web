@@ -3,11 +3,12 @@
    Customer data, validation, persistence and premium WA message.
    ============================================================= */
 
-import { Cart }      from './cart.js?v=1.0.3';
-import { ApiClient } from '../api/client.js?v=1.0.8';
+import { Cart }      from './cart.js?v=1.0.13';
+import { ApiClient } from '../api/client.js?v=1.0.13';
+import { CatalogProvider } from '../providers/catalog.js?v=1.0.13';
 import { Tracker }   from '../tracking/tracker.js';
 import { showToast } from '../ui/toast.js';
-import { formatPrice, isValidPrice } from '../utils/prices.js?v=1.0.3';
+import { formatPrice, getVariantForSize, isValidPrice } from '../utils/prices.js?v=1.0.13';
 
 const STORAGE_KEY = 'rdecants_checkout_customer';
 const LAST_ORDER_KEY = 'rdecants_last_web_order_folio';
@@ -81,9 +82,18 @@ export async function sendCheckoutWhatsApp(phoneNumber) {
   _clearError();
 
   try {
-    const payload = buildWebOrderPayload(items, data);
+    if (items.some(item => item.type === 'pack')) {
+      throw new Error('PACK_CHECKOUT_FALLBACK');
+    }
 
-    if (!payload.items.length || items.some(item => item.type === 'pack')) {
+    const reconciliation = await Cart.reconcile({ silent: false });
+    if (reconciliation.removed.length) {
+      throw new Error('STALE_CART_VARIANT');
+    }
+
+    const payload = await buildWebOrderPayload(Cart.items, data);
+
+    if (!payload.items.length) {
       throw new Error('PACK_CHECKOUT_FALLBACK');
     }
 
@@ -103,9 +113,13 @@ export async function sendCheckoutWhatsApp(phoneNumber) {
       window.location.href = order.whatsapp_url;
     }
   } catch (error) {
+    _logCheckoutError(error);
     const message = _readableApiError(error);
-    _showMessage(`${message} Puedes intentar de nuevo o continuar por WhatsApp sin folio.`, 'error');
+    const canFallback = _canFallbackToWhatsApp(error);
+    _showMessage(canFallback ? `${message} Puedes intentar de nuevo o continuar por WhatsApp sin folio.` : message, 'error');
     showToast(message);
+
+    if (!canFallback) return;
 
     const fallback = confirm(`${message}\n\nNo se creo el pedido en sistema. ¿Abrir WhatsApp sin folio?`);
     if (fallback) {
@@ -142,25 +156,19 @@ export function validateCheckout(data) {
   return null;
 }
 
-export function buildWebOrderPayload(items, data) {
+export async function buildWebOrderPayload(items, data) {
+  const orderItems = [];
+
+  for (const item of items.filter(item => item.type !== 'pack')) {
+    orderItems.push(await _buildOrderItem(item));
+  }
+
   return {
     customer: {
       name: data.name || null,
       phone: data.phone || null,
     },
-    items: items
-      .filter(item => item.type !== 'pack')
-      .map(item => {
-        const variantId = Number(item.variant_id);
-
-        return {
-          product_id: _orderProductId(item),
-          ...(Number.isInteger(variantId) && variantId > 0 ? { variant_id: variantId } : {}),
-          ml: Number(item.size) || null,
-          quantity: Number(item.qty) || 1,
-          unit_price: Number(item.price) || 0,
-        };
-      }),
+    items: orderItems,
     notes: data.notes || null,
     metadata: {
       source: 'rdecants-web',
@@ -177,14 +185,24 @@ export function buildWebOrderPayload(items, data) {
   };
 }
 
-function _orderProductId(item) {
-  const productId = item.product_id ?? item.sourceId;
+async function _buildOrderItem(item) {
+  const product = await CatalogProvider.getProductById(item.sourceId ?? item.product_id);
+  const variant = getVariantForSize(product, item.size);
+  const variantId = _validVariantId(variant?.variant_id);
 
-  if (Number.isInteger(Number(productId)) && Number(productId) > 0) {
-    return Number(productId);
+  if (!product || !variant || !variantId || variant.soldOut || variant.availability <= 0) {
+    const error = new Error('STALE_CART_VARIANT');
+    error.item = item;
+    throw error;
   }
 
-  return item.sku || productId;
+  return {
+    product_id: product.product_id ?? product.id,
+    variant_id: variantId,
+    ml: Number(variant.size) || Number(item.size) || null,
+    quantity: Number(item.qty) || 1,
+    unit_price: Number(variant.price) || Number(item.price) || 0,
+  };
 }
 
 export function buildWhatsAppMessage(items, total, data) {
@@ -314,10 +332,14 @@ function _setButtonLoading(button, isLoading, label = '') {
 }
 
 function _readableApiError(error) {
-  const raw = String(error?.data?.message || error?.message || '').toLowerCase();
+  const raw = `${error?.data?.message || ''} ${error?.message || ''} ${JSON.stringify(error?.data?.errors || {})}`.toLowerCase();
 
   if (raw.includes('pack_checkout_fallback')) {
     return 'Los packs todavia se coordinan directo por WhatsApp.';
+  }
+
+  if (raw.includes('stale_cart_variant')) {
+    return 'Actualizamos tu carrito porque una variante ya no esta disponible. Revisa tu seleccion e intenta de nuevo.';
   }
 
   if (raw.includes('stock')) {
@@ -337,4 +359,21 @@ function _readableApiError(error) {
   }
 
   return 'No pudimos crear el pedido en sistema.';
+}
+
+function _validVariantId(value) {
+  const normalized = String(value ?? '').trim();
+  if (!normalized || normalized === 'null' || normalized === 'undefined') return null;
+  return /^\d+$/.test(normalized) ? Number(normalized) : normalized;
+}
+
+function _logCheckoutError(error) {
+  if (error?.status === 422 && error?.data) {
+    console.error('[RDecants] checkout validation failed:', error.data);
+  }
+}
+
+function _canFallbackToWhatsApp(error) {
+  const raw = String(error?.message || '').toLowerCase();
+  return !raw.includes('stale_cart_variant');
 }

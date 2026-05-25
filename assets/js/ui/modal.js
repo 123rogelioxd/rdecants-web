@@ -21,7 +21,7 @@ import { getDefaultVariant,
          getDisplayVariant,
          getVariantForSize,
          getValidVariants,
-         formatPrice } from '../utils/prices.js?v=1.0.2';
+         formatPrice } from '../utils/prices.js?v=1.0.13';
 
 const WHATSAPP_NUMBER = '5219516513018';
 
@@ -126,7 +126,7 @@ function _render() {
     .map(ml => {
       const variant = variants.find(v => v.size === ml);
       if (!variant) return '';
-      const disabled = variant.soldOut || variant.availability <= 0;
+      const disabled = variant.soldOut || variant.availability <= 0 || !_validVariantId(variant.variant_id);
       return `
       <button
         class="pdm-size-btn ${ml === _selectedSize ? 'pdm-size-btn--active' : ''} ${disabled ? 'pdm-size-btn--disabled' : ''}"
@@ -211,9 +211,9 @@ function _render() {
 
           <div class="pdm-actions">
             <button class="btn-primary pdm-btn-add" id="pdm-btn-add"
-              ${activeVariant && !activeVariant.soldOut ? '' : 'disabled aria-disabled="true"'}
+              ${_isOrderableVariant(activeVariant) ? '' : 'disabled aria-disabled="true"'}
               aria-label="${activeVariant ? `Agregar ${p.name} ${_selectedSize}ml al carrito` : 'Precio por consultar'}">
-              ${activeVariant && !activeVariant.soldOut ? 'Agregar' : 'Agotado'}
+              ${_isOrderableVariant(activeVariant) ? 'Agregar' : 'Agotado'}
             </button>
             <button class="pdm-btn-wa"
               aria-label="Finalizar consulta de ${p.name} por WhatsApp">
@@ -271,7 +271,7 @@ function _updateSizeUI() {
   /* Update button label */
   const addBtn = _modal.querySelector('#pdm-btn-add');
   if (addBtn) {
-    const disabled = !variant || variant.soldOut || variant.availability <= 0;
+    const disabled = !_isOrderableVariant(variant);
     addBtn.disabled = disabled;
     addBtn.setAttribute('aria-disabled', String(disabled));
     addBtn.textContent = disabled ? 'Agotado' : 'Agregar';
@@ -291,7 +291,7 @@ function _updateSizeUI() {
 async function _handleAddToCart() {
   if (!_activeProduct) return;
   const variant = getVariantForSize(_activeProduct, _selectedSize);
-  if (_selectedSize === null || getPriceForSize(_activeProduct, _selectedSize) === null || variant?.soldOut) {
+  if (_selectedSize === null || getPriceForSize(_activeProduct, _selectedSize) === null || !_isOrderableVariant(variant)) {
     showToast('Precio por confirmar. Escribenos por WhatsApp.');
     return;
   }
@@ -419,6 +419,16 @@ function _normalizeBadge(badge) {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toUpperCase();
+}
+
+function _isOrderableVariant(variant) {
+  return Boolean(variant && !variant.soldOut && variant.availability > 0 && _validVariantId(variant.variant_id));
+}
+
+function _validVariantId(value) {
+  const normalized = String(value ?? '').trim();
+  if (!normalized || normalized === 'null' || normalized === 'undefined') return null;
+  return /^\d+$/.test(normalized) ? Number(normalized) : normalized;
 }
 
 

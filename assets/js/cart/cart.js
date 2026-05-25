@@ -3,11 +3,11 @@
    State management: add, remove, qty, persist, stock limits.
    ============================================================= */
 
-import { CatalogProvider } from '../providers/catalog.js?v=1.0.11';
+import { CatalogProvider } from '../providers/catalog.js?v=1.0.13';
 import { Tracker }         from '../tracking/tracker.js';
 import { EventBus }        from '../core/events.js';
 import { showToast }       from '../ui/toast.js';
-import { getPriceForSize, getVariantForSize, isValidPrice } from '../utils/prices.js?v=1.0.3';
+import { getPriceForSize, getVariantForSize, isValidPrice } from '../utils/prices.js?v=1.0.13';
 
 const STORAGE_KEY = 'rdecants_cart';
 
@@ -25,9 +25,15 @@ export const Cart = {
 
     const price = getPriceForSize(product, size);
     const variant = getVariantForSize(product, size);
+    const variantId = _validVariantId(variant?.variant_id);
     const stock = variant?.availability ?? product.stock ?? 0;
     if (price === null) {
       showToast('Precio no disponible para esa variante');
+      return;
+    }
+
+    if (!variantId) {
+      showToast('Esta variante aun no esta disponible para pedido en sistema');
       return;
     }
 
@@ -43,7 +49,7 @@ export const Cart = {
       existing.stock = stock;
       existing.product_id = product.product_id ?? product.id;
       existing.sku = product.sku ?? existing.sku;
-      existing.variant_id = variant?.variant_id ?? existing.variant_id;
+      existing.variant_id = variantId;
       existing.image = product.image ?? existing.image;
     } else {
       if (stock <= 0 || variant?.soldOut) {
@@ -55,7 +61,7 @@ export const Cart = {
         sourceId: product.id,
         product_id: product.product_id ?? product.id,
         sku: product.sku ?? null,
-        variant_id: variant?.variant_id ?? null,
+        variant_id: variantId,
         type:     'product',
         name:     product.name,
         house:    product.house,
@@ -158,6 +164,54 @@ export const Cart = {
     _items = [];
     _commit();
   },
+
+  async reconcile({ silent = true } = {}) {
+    let changed = false;
+    const removed = [];
+    const reconciled = [];
+
+    for (const item of _items) {
+      if (item.type === 'pack') {
+        reconciled.push(item);
+        continue;
+      }
+
+      const product = await CatalogProvider.getProductById(item.sourceId ?? item.product_id);
+      const variant = getVariantForSize(product, item.size);
+      const variantId = _validVariantId(variant?.variant_id);
+
+      if (!product || !variant || !variantId || variant.soldOut || variant.availability <= 0) {
+        removed.push(item);
+        changed = true;
+        continue;
+      }
+
+      const updated = {
+        ...item,
+        sourceId: product.id,
+        product_id: product.product_id ?? product.id,
+        sku: product.sku ?? item.sku ?? null,
+        variant_id: variantId,
+        price: variant.price,
+        qty: Math.min(Math.max(1, Number(item.qty) || 1), variant.availability),
+        stock: variant.availability,
+        image: product.image ?? item.image ?? null,
+      };
+
+      changed = changed || _cartItemChanged(item, updated);
+      reconciled.push(updated);
+    }
+
+    if (changed) {
+      _items = reconciled;
+      _commit();
+      if (removed.length && !silent) {
+        showToast('Actualizamos tu carrito porque una variante ya no esta disponible');
+      }
+    }
+
+    return { removed, items: Cart.items };
+  },
 };
 
 /* ── Internals ──────────────────────────────────────────────── */
@@ -194,4 +248,21 @@ async function _getStock(item) {
   const product = await CatalogProvider.getProductById(item.sourceId);
   const variant = getVariantForSize(product, item.size);
   return variant?.availability ?? item.stock ?? 0;
+}
+
+function _validVariantId(value) {
+  const normalized = String(value ?? '').trim();
+  if (!normalized || normalized === 'null' || normalized === 'undefined') return null;
+  return /^\d+$/.test(normalized) ? Number(normalized) : normalized;
+}
+
+function _cartItemChanged(prev, next) {
+  return prev.sourceId !== next.sourceId ||
+    prev.product_id !== next.product_id ||
+    prev.sku !== next.sku ||
+    prev.variant_id !== next.variant_id ||
+    prev.price !== next.price ||
+    prev.qty !== next.qty ||
+    prev.stock !== next.stock ||
+    prev.image !== next.image;
 }

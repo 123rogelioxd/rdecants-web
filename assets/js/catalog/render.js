@@ -10,16 +10,16 @@
      â€¢ no-match  â€” elegant empty state when filters return 0
    ============================================================= */
 
-import { CatalogProvider }  from '../providers/catalog.js?v=1.0.11';
+import { CatalogProvider }  from '../providers/catalog.js?v=1.0.13';
 import { Tracker }          from '../tracking/tracker.js';
-import { openProductModal } from '../ui/modal.js?v=1.0.6';
+import { openProductModal } from '../ui/modal.js?v=1.0.13';
 import { SearchBar }        from '../ui/searchbar.js?v=1.0.2';
 import { observeFadeUp }    from '../ui/animations.js';
 import { primeImageStates } from '../ui/images.js';
 import { getDefaultVariant,
          getDisplayVariant,
          getValidVariants,
-         formatPrice }      from '../utils/prices.js?v=1.0.3';
+         formatPrice }      from '../utils/prices.js?v=1.0.13';
 
 /* module-level ref kept for SearchBar callback */
 let _productsContainer = null;
@@ -40,6 +40,7 @@ export async function renderFeatured() {
 
   Tracker.productView(featured);
   const featuredVariant = getDefaultVariant(featured);
+  const canAddFeatured = _isOrderableVariant(featuredVariant);
   const featuredPrice = featuredVariant
     ? `${formatPrice(featuredVariant.price)} <small>/ ${featuredVariant.size}ml</small>`
     : 'Consultar precio';
@@ -66,9 +67,9 @@ export async function renderFeatured() {
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;">
         <button class="btn-primary"
-          ${featuredVariant ? `onclick="window.__rd.cart.add('${featured.id}', ${featuredVariant.size})"` : 'disabled aria-disabled="true"'}
-          aria-label="${featuredVariant ? `Agregar ${featured.name} ${featuredVariant.size}ml al carrito` : 'Precio por consultar'}">
-          ${featuredVariant ? 'Agregar a mi colección' : 'Consultar precio'}
+          ${canAddFeatured ? `onclick="window.__rd.cart.add('${featured.id}', ${featuredVariant.size})"` : 'disabled aria-disabled="true"'}
+          aria-label="${canAddFeatured ? `Agregar ${featured.name} ${featuredVariant.size}ml al carrito` : 'Precio por consultar'}">
+          ${canAddFeatured ? 'Agregar a mi colección' : 'Consultar precio'}
         </button>
         <button class="btn-ghost" onclick="window.__rd.ui.scrollToCatalog()">
           Ver coleccion
@@ -198,7 +199,7 @@ function _renderGrid(products) {
       : 'Consultar precio';
     const stockState = _stockState(p.stock);
     const isSoldOut = p.stock <= 0;
-    const canQuickAdd = !isSoldOut && Boolean(displayVariant);
+    const canQuickAdd = !isSoldOut && _isOrderableVariant(displayVariant);
     const concentrationChip = p.concentration
       ? `<span class="card-concentration">${p.concentration}</span>`
       : '';
@@ -304,6 +305,16 @@ function _sizeLabel(size) {
   if (size === 5) return 'Popular';
   if (size === 10) return 'Grande';
   return 'Decant';
+}
+
+function _isOrderableVariant(variant) {
+  return Boolean(variant && !variant.soldOut && variant.availability > 0 && _validVariantId(variant.variant_id));
+}
+
+function _validVariantId(value) {
+  const normalized = String(value ?? '').trim();
+  if (!normalized || normalized === 'null' || normalized === 'undefined') return null;
+  return /^\d+$/.test(normalized) ? Number(normalized) : normalized;
 }
 
 

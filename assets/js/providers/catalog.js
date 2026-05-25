@@ -1,12 +1,12 @@
-console.log('CATALOG PROVIDER NUEVO 1.0.9 CARGADO');
+console.log('CATALOG PROVIDER NUEVO 1.0.13 CARGADO');
 
 /* =============================================================
    RDECANTS — CATALOG PROVIDER
    Abstraction layer between rendering and data source.
    ============================================================= */
 
-import { ApiClient } from '../api/client.js?v=1.0.8';
-import { normalizeApiImageUrl } from '../api/config.js?v=1.0.8';
+import { ApiClient } from '../api/client.js?v=1.0.13';
+import { normalizeApiImageUrl } from '../api/config.js?v=1.0.13';
 import { PACKS } from '../../../data/products.js?v=1.0.2';
 
 let _productsCache = null;
@@ -150,7 +150,7 @@ function _mapVariant(v, fallbackProductId) {
   const size = Number.parseFloat(v.size ?? v.ml_size ?? v.ml ?? v.label);
   const price = Number(v.price ?? v.retail_price ?? v.precio_venta ?? 0);
   const stock = _safeStock(v.availability ?? v.stock ?? v.stock_unidades);
-  const variantId = v.variant_id ?? v.variante_producto_id ?? v.id ?? null;
+  const variantId = _variantId(v);
 
   return {
     ...v,
@@ -209,4 +209,10 @@ function _displayConcentration(value) {
   };
 
   return labels[normalized.toUpperCase()] ?? normalized;
+}
+
+function _variantId(raw = {}) {
+  if (Object.prototype.hasOwnProperty.call(raw, 'variant_id')) return raw.variant_id;
+  if (Object.prototype.hasOwnProperty.call(raw, 'variante_producto_id')) return raw.variante_producto_id;
+  return raw.id ?? null;
 }

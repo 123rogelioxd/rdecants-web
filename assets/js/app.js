@@ -6,23 +6,23 @@
    handlers use window.__rd.* instead of loose globals.
    ============================================================= */
 
-import { Cart }                           from './cart/cart.js?v=1.0.3';
-import { setupCheckout }                  from './cart/checkout.js?v=1.0.3';
+import { Cart }                           from './cart/cart.js?v=1.0.13';
+import { setupCheckout }                  from './cart/checkout.js?v=1.0.13';
 import { renderCart, updateCartCount,
          openCart, closeCart,
-         toggleCart, sendWhatsApp }       from './cart/render.js?v=1.0.3';
-import { renderProducts, renderPacks }     from './catalog/render.js?v=1.0.4';
+         toggleCart, sendWhatsApp }       from './cart/render.js?v=1.0.13';
+import { renderProducts, renderPacks }     from './catalog/render.js?v=1.0.13';
 import { setupScrollAnimations,
          observeFadeUp,
          setupHeroParallax }             from './ui/animations.js';
 import { setupHeader }                    from './ui/header.js';
 import { showToast }                      from './ui/toast.js';
 import { openProductModal,
-         closeProductModal }             from './ui/modal.js?v=1.0.6';
+         closeProductModal }             from './ui/modal.js?v=1.0.13';
 import { SearchBar }                     from './ui/searchbar.js';
 import { setupImageStates }              from './ui/images.js';
-import { Tracker }                        from './tracking/tracker.js';
-import { trackEvent }                     from './tracking/events.js';
+import { Tracker }                        from './tracking/tracker.js?v=1.0.13';
+import { trackEvent }                     from './tracking/events.js?v=1.0.13';
 import { EventBus }                       from './core/events.js';
 import { AppState }                       from './core/state.js';
 
@@ -143,6 +143,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   /* Initial cart state */
   setupCheckout();
+  await Cart.reconcile({ silent: true });
   renderCart();
   updateCartCount();
 

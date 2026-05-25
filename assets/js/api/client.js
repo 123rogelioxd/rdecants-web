@@ -3,7 +3,7 @@
    Thin fetch wrapper for R Supply OS web endpoints.
    ============================================================= */
 
-import { API_BASE } from './config.js?v=1.0.7';
+import { API_BASE } from './config.js?v=1.0.13';
 
 async function _get(path) {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -30,6 +30,10 @@ async function _post(path, payload) {
   const data = await res.json().catch(() => null);
 
   if (!res.ok || data?.ok === false) {
+    if (res.status === 422) {
+      console.error('[RDecants] API validation failed:', { path, status: res.status, response: data });
+    }
+
     const message = data?.message || `API ${path} -> ${res.status}`;
     const error = new Error(message);
     error.status = res.status;

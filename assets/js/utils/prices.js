@@ -88,7 +88,7 @@ function _normalizeVariant(raw = {}) {
     stock: availability,
     soldOut,
     sold_out: soldOut,
-    variant_id: raw.variant_id ?? raw.variante_producto_id ?? raw.id ?? null,
+    variant_id: _variantId(raw),
     product_id: raw.product_id,
   };
 }
@@ -96,4 +96,10 @@ function _normalizeVariant(raw = {}) {
 function _safeStock(value) {
   const n = Number(value);
   return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function _variantId(raw = {}) {
+  if (Object.prototype.hasOwnProperty.call(raw, 'variant_id')) return raw.variant_id;
+  if (Object.prototype.hasOwnProperty.call(raw, 'variante_producto_id')) return raw.variante_producto_id;
+  return raw.id ?? null;
 }
