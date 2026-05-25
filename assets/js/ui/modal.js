@@ -23,8 +23,6 @@ import { getDefaultVariant,
          getValidVariants,
          formatPrice } from '../utils/prices.js?v=1.0.13';
 
-const WHATSAPP_NUMBER = '5219516513018';
-
 /* â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 let _activeProduct  = null;
 let _selectedSize   = 5;          /* default size */
@@ -197,9 +195,9 @@ function _render() {
 
       <div class="pdm-buybar" aria-label="Compra rapida">
         ${variants.length
-          ? '<div class="pdm-sizes-label">Elige ml</div>'
+          ? '<div class="pdm-sizes-label">Elige presentación</div>'
           : '<div class="pdm-price-consult">Precio disponible por consulta personalizada.</div>'}
-        <div class="pdm-sizes" role="group" aria-label="Seleccionar tamano" ${variants.length ? '' : 'hidden'}>
+        <div class="pdm-sizes" role="group" aria-label="Seleccionar presentación" ${variants.length ? '' : 'hidden'}>
           ${sizesHtml}
         </div>
 
@@ -216,7 +214,7 @@ function _render() {
               ${_isOrderableVariant(activeVariant) ? 'Agregar' : 'Agotado'}
             </button>
             <button class="pdm-btn-wa"
-              aria-label="Finalizar consulta de ${p.name} por WhatsApp">
+              aria-label="Preparar pedido de ${p.name} por WhatsApp">
               WhatsApp
             </button>
           </div>
@@ -308,28 +306,27 @@ async function _handleAddToCart() {
 }
 
 /* â”€â”€ WhatsApp action â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-function _handleWhatsApp() {
+async function _handleWhatsApp() {
   const p     = _activeProduct;
   if (!p) return;
   const btn = _modal?.querySelector('.pdm-btn-wa');
-  _setButtonLoading(btn, true, 'Abriendo WhatsApp...');
-  const price = getPriceForSize(p, _selectedSize);
   const variant = getVariantForSize(p, _selectedSize);
-  const priceText = price === null ? 'Por confirmar' : `$${price} MXN`;
-  const sizeText = _selectedSize ? `${_selectedSize}ml` : 'Tamano por confirmar';
-  const msg   = encodeURIComponent(
-    `*RDecants - Consulta de disponibilidad*\n\n` +
-    `Producto: *${p.name}*\n` +
-    `product_id: ${p.product_id ?? p.id}\n` +
-    `variant_id: ${variant?.variant_id ?? 'Por confirmar'}\n` +
-    `Casa: ${p.house}\n` +
-    `Tamano: ${sizeText}\n` +
-    `Precio: ${priceText}\n\n` +
-    `Stock sujeto a confirmacion.\n\n` +
-    `Hola, me interesa este producto. Esta disponible?`
-  );
-  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, '_blank');
-  setTimeout(() => _setButtonLoading(btn, false), 700);
+  if (!_isOrderableVariant(variant)) {
+    showToast('Tu pedido se crea al presionar Finalizar por WhatsApp.');
+    closeProductModal();
+    setTimeout(() => window.__rd?.ui?.openCart?.(), 300);
+    return;
+  }
+
+  _setButtonLoading(btn, true, 'Preparando...');
+  try {
+    await window.__rd?.cart?.add(p.id, _selectedSize);
+    showToast('Tu pedido se crea al presionar Finalizar por WhatsApp.');
+    closeProductModal();
+    setTimeout(() => window.__rd?.ui?.openCart?.(), 300);
+  } finally {
+    _setButtonLoading(btn, false);
+  }
 }
 
 /* â”€â”€ Overlay click â€” close only if clicking backdrop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */

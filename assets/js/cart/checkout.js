@@ -8,7 +8,7 @@ import { ApiClient } from '../api/client.js?v=1.0.13';
 import { CatalogProvider } from '../providers/catalog.js?v=1.0.13';
 import { Tracker }   from '../tracking/tracker.js';
 import { showToast } from '../ui/toast.js';
-import { formatPrice, getVariantForSize, isValidPrice } from '../utils/prices.js?v=1.0.13';
+import { formatPrice, getVariantForSize } from '../utils/prices.js?v=1.0.13';
 
 const STORAGE_KEY = 'rdecants_checkout_customer';
 const LAST_ORDER_KEY = 'rdecants_last_web_order_folio';
@@ -91,7 +91,9 @@ export async function sendCheckoutWhatsApp(phoneNumber) {
       throw new Error('STALE_CART_VARIANT');
     }
 
-    const payload = await buildWebOrderPayload(Cart.items, data);
+    const checkoutItems = Cart.items;
+    const checkoutTotal = Cart.total();
+    const payload = await buildWebOrderPayload(checkoutItems, data);
 
     if (!payload.items.length) {
       throw new Error('PACK_CHECKOUT_FALLBACK');
@@ -100,17 +102,21 @@ export async function sendCheckoutWhatsApp(phoneNumber) {
     const response = await ApiClient.createWebOrder(payload);
     const order = response?.order;
 
-    if (!response?.ok || !order?.whatsapp_url) {
+    if (!response?.ok || !order?.folio) {
       throw new Error('No se pudo crear el pedido.');
     }
 
     localStorage.setItem(LAST_ORDER_KEY, order.folio || '');
-    _showMessage(`Pedido ${order.folio} creado. Abriendo WhatsApp...`, 'success');
-    showToast(`Pedido ${order.folio} creado`);
+    _showMessage('Listo, abriremos WhatsApp para finalizar tu pedido.', 'success');
+    showToast('Listo, abriremos WhatsApp para finalizar tu pedido.');
 
-    const opened = window.open(order.whatsapp_url, '_blank');
+    const messageText = buildWhatsAppMessage(checkoutItems, checkoutTotal, data, order.folio);
+    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(messageText)}`;
+    Cart.clear();
+
+    const opened = window.open(whatsappUrl, '_blank');
     if (!opened) {
-      window.location.href = order.whatsapp_url;
+      window.location.href = whatsappUrl;
     }
   } catch (error) {
     _logCheckoutError(error);
@@ -205,37 +211,50 @@ async function _buildOrderItem(item) {
   };
 }
 
-export function buildWhatsAppMessage(items, total, data) {
+export function buildWhatsAppMessage(items, total, data, folio = '') {
   const lines = [
-    'Hola RDecants, quiero confirmar mi pedido.',
+    'Bienvenido a RDECANTS, tu pedido es:',
     '',
-    '*Datos del cliente*',
-    `Nombre: ${data.name || 'Por confirmar'}`,
-    `Telefono: ${data.phone || 'Por confirmar'}`,
-    '',
-    '*Seleccion*',
   ];
 
-  items.forEach(item => {
-    const size = item.type === 'pack' ? 'Pack' : `${item.size}ml`;
-    const subtotal = isValidPrice(item.price) ? item.price * item.qty : null;
-    lines.push(
-      `- ${item.name} | ${size} | Cantidad: ${item.qty} | Subtotal: ${formatPrice(subtotal, 'Por confirmar')}`,
-      `  product_id: ${item.product_id ?? item.sourceId ?? 'Por confirmar'} | variant_id: ${item.variant_id ?? item.key ?? 'Por confirmar'}`
-    );
-  });
-
-  lines.push(
-    '',
-    `*Total general: ${formatPrice(total, 'Por confirmar')}*`,
-    'Stock sujeto a confirmacion.',
-  );
-
-  if (data.notes) {
-    lines.push('', '*Notas*', data.notes);
+  if (folio) {
+    lines.push(`Folio: ${folio}`);
+  } else {
+    lines.push('Folio: Por confirmar');
   }
 
-  lines.push('', 'Quedo atento para coordinar los detalles.');
+  const isSingleUnit = items.length === 1 && (Number(items[0]?.qty) || 1) === 1;
+
+  if (isSingleUnit) {
+    const item = items[0];
+    lines.push(
+      `Producto: ${item.name}`,
+      `Casa: ${item.house || 'Por confirmar'}`,
+      `Presentación: ${_presentationText(item)}`,
+      `Solo a: ${formatPrice(item.price, 'Por confirmar')}`,
+    );
+  } else {
+    lines.push('');
+    items.forEach((item, index) => {
+      lines.push(
+        `${index + 1}. ${item.name}`,
+        `Casa: ${item.house || 'Por confirmar'}`,
+        `Presentación: ${_presentationText(item)}`,
+        `Solo a: ${formatPrice(item.price, 'Por confirmar')}`,
+        `Cantidad: ${Number(item.qty) || 1}`,
+      );
+
+      if (index < items.length - 1) lines.push('');
+    });
+
+    lines.push('', `Total: ${formatPrice(total, 'Por confirmar')}`);
+  }
+
+  if (data.notes) {
+    lines.push('', 'Notas:', data.notes);
+  }
+
+  lines.push('', 'Hola, quiero finalizar mi pedido.');
 
   return lines.join('\n');
 }
@@ -365,6 +384,11 @@ function _validVariantId(value) {
   const normalized = String(value ?? '').trim();
   if (!normalized || normalized === 'null' || normalized === 'undefined') return null;
   return /^\d+$/.test(normalized) ? Number(normalized) : normalized;
+}
+
+function _presentationText(item) {
+  if (item.type === 'pack') return 'Pack';
+  return item.size ? `${item.size}ml` : 'Por confirmar';
 }
 
 function _logCheckoutError(error) {
