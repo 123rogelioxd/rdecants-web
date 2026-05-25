@@ -5,8 +5,8 @@ console.log('CATALOG PROVIDER NUEVO 1.0.9 CARGADO');
    Abstraction layer between rendering and data source.
    ============================================================= */
 
-import { ApiClient } from '../api/client.js?v=1.0.7';
-import { normalizeApiImageUrl } from '../api/config.js?v=1.0.7';
+import { ApiClient } from '../api/client.js?v=1.0.8';
+import { normalizeApiImageUrl } from '../api/config.js?v=1.0.8';
 import { PACKS } from '../../../data/products.js?v=1.0.2';
 
 let _productsCache = null;
@@ -106,24 +106,30 @@ function _mapProduct(p) {
         10: Number(p.price_10ml ?? p.price10 ?? 0),
       };
 
-  const variants = Object.entries(prices)
-    .map(([size, price]) => ({
-      id: `${id}-${size}`,
-      product_id: id,
-      variant_id: `${id}-${size}`,
-      size: Number(size),
-      ml_size: Number(size),
-      price: Number(price),
-      retail_price: Number(price),
-      availability: 10,
-      stock: 10,
-      soldOut: false,
-      sold_out: false,
-    }))
-    .filter(v => Number.isFinite(v.size) && Number.isFinite(v.price) && v.price > 0);
+  const apiVariants = Array.isArray(p.variants ?? p.variantes)
+    ? (p.variants ?? p.variantes)
+    : [];
+
+  const variants = (apiVariants.length
+    ? apiVariants.map(v => _mapVariant(v, id))
+    : Object.entries(prices).map(([size, price]) => _mapVariant({
+        id: `${id}-${size}`,
+        product_id: p.product_id ?? p.id ?? id,
+        variant_id: null,
+        size,
+        ml_size: size,
+        price,
+        retail_price: price,
+        availability: p.stock ?? 10,
+        stock: p.stock ?? 10,
+        soldOut: false,
+        sold_out: false,
+      }, id))
+  ).filter(v => Number.isFinite(v.size) && Number.isFinite(v.price) && v.price > 0);
 
   return {
     id,
+    sku: p.sku ?? p.product_sku ?? null,
     product_id: p.product_id ?? p.id ?? id,
     name: p.name ?? p.nombre ?? 'Perfume',
     house: p.house ?? p.brand ?? p.marca ?? '',
@@ -132,11 +138,33 @@ function _mapProduct(p) {
     concentration: _displayConcentration(p.concentration ?? p.concentracion ?? p.display_concentration),
     notes,
     image: _productImage(p),
-    stock: 10,
+    stock: variants.length ? Math.max(...variants.map(v => v.availability)) : _safeStock(p.stock),
     badge: p.badge ?? p.label ?? 'Disponible',
     featured: Boolean(p.featured),
     prices,
     variants,
+  };
+}
+
+function _mapVariant(v, fallbackProductId) {
+  const size = Number.parseFloat(v.size ?? v.ml_size ?? v.ml ?? v.label);
+  const price = Number(v.price ?? v.retail_price ?? v.precio_venta ?? 0);
+  const stock = _safeStock(v.availability ?? v.stock ?? v.stock_unidades);
+  const variantId = v.variant_id ?? v.variante_producto_id ?? v.id ?? null;
+
+  return {
+    ...v,
+    id: variantId ?? `${fallbackProductId}-${size}`,
+    product_id: v.product_id ?? v.producto_id ?? fallbackProductId,
+    variant_id: variantId,
+    size,
+    ml_size: size,
+    price,
+    retail_price: price,
+    availability: stock,
+    stock,
+    soldOut: Boolean(v.sold_out ?? v.soldOut ?? stock <= 0),
+    sold_out: Boolean(v.sold_out ?? v.soldOut ?? stock <= 0),
   };
 }
 

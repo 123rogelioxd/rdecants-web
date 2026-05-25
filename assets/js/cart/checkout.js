@@ -3,33 +3,24 @@
    Customer data, validation, persistence and premium WA message.
    ============================================================= */
 
-import { Cart }      from './cart.js?v=1.0.2';
+import { Cart }      from './cart.js?v=1.0.3';
+import { ApiClient } from '../api/client.js?v=1.0.8';
 import { Tracker }   from '../tracking/tracker.js';
 import { showToast } from '../ui/toast.js';
-import { formatPrice, isValidPrice } from '../utils/prices.js?v=1.0.2';
+import { formatPrice, isValidPrice } from '../utils/prices.js?v=1.0.3';
 
 const STORAGE_KEY = 'rdecants_checkout_customer';
+const LAST_ORDER_KEY = 'rdecants_last_web_order_folio';
+const APP_VERSION = '1.0.3';
 
 const FIELD_IDS = {
-  name:     'checkout-name',
-  location: 'checkout-location',
-  delivery: 'checkout-delivery',
-  payment:  'checkout-payment',
-  notes:    'checkout-notes',
-};
-
-const DELIVERY_LABELS = {
-  local:    'Entrega local',
-  national: 'Envio nacional',
-};
-
-const PAYMENT_LABELS = {
-  cash:     'Efectivo',
-  transfer: 'Transferencia',
-  oxxo:     'Deposito OXXO',
+  name:  'checkout-name',
+  phone: 'checkout-phone',
+  notes: 'checkout-notes',
 };
 
 let _startedSignature = '';
+let _isSubmitting = false;
 
 export function setupCheckout() {
   const form = _form();
@@ -54,14 +45,18 @@ export function trackCheckoutStarted(source = 'cart_drawer') {
   Tracker.checkoutStarted(items, Cart.total());
 }
 
-export function sendCheckoutWhatsApp(phoneNumber) {
+export async function sendCheckoutWhatsApp(phoneNumber) {
   const items = Cart.items;
 
   if (!items.length) {
-    showToast('Agrega una fragancia antes de confirmar por WhatsApp');
+    const message = 'Agrega una fragancia antes de finalizar por WhatsApp';
+    _showMessage(message, 'error');
+    showToast(message);
     _syncAvailability();
     return;
   }
+
+  if (_isSubmitting) return;
 
   const data = readCheckoutData();
   const error = validateCheckout(data);
@@ -77,24 +72,57 @@ export function sendCheckoutWhatsApp(phoneNumber) {
 
   const total = Cart.total();
   const button = document.getElementById('checkout-whatsapp');
-  _setButtonLoading(button, true, 'Abriendo WhatsApp...');
+  _setButtonLoading(button, true, 'Creando pedido...');
   Tracker.checkoutWhatsappClicked(items, total, {
-    delivery: data.delivery,
-    payment:  data.payment,
+    phone: Boolean(data.phone),
   });
 
-  const message = buildWhatsAppMessage(items, total, data);
-  window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`, '_blank');
-  setTimeout(() => _setButtonLoading(button, false), 700);
+  _isSubmitting = true;
+  _clearError();
+
+  try {
+    const payload = buildWebOrderPayload(items, data);
+
+    if (!payload.items.length || items.some(item => item.type === 'pack')) {
+      throw new Error('PACK_CHECKOUT_FALLBACK');
+    }
+
+    const response = await ApiClient.createWebOrder(payload);
+    const order = response?.order;
+
+    if (!response?.ok || !order?.whatsapp_url) {
+      throw new Error('No se pudo crear el pedido.');
+    }
+
+    localStorage.setItem(LAST_ORDER_KEY, order.folio || '');
+    _showMessage(`Pedido ${order.folio} creado. Abriendo WhatsApp...`, 'success');
+    showToast(`Pedido ${order.folio} creado`);
+
+    const opened = window.open(order.whatsapp_url, '_blank');
+    if (!opened) {
+      window.location.href = order.whatsapp_url;
+    }
+  } catch (error) {
+    const message = _readableApiError(error);
+    _showMessage(`${message} Puedes intentar de nuevo o continuar por WhatsApp sin folio.`, 'error');
+    showToast(message);
+
+    const fallback = confirm(`${message}\n\nNo se creo el pedido en sistema. ¿Abrir WhatsApp sin folio?`);
+    if (fallback) {
+      const messageText = buildWhatsAppMessage(items, total, data);
+      window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(messageText)}`, '_blank');
+    }
+  } finally {
+    _isSubmitting = false;
+    _setButtonLoading(button, false);
+  }
 }
 
 export function readCheckoutData() {
   return {
-    name:     _field('name')?.value.trim() || '',
-    location: _field('location')?.value.trim() || '',
-    delivery: _field('delivery')?.value || 'local',
-    payment:  _field('payment')?.value || 'transfer',
-    notes:    _field('notes')?.value.trim() || '',
+    name:  _field('name')?.value.trim() || '',
+    phone: _field('phone')?.value.trim() || '',
+    notes: _field('notes')?.value.trim() || '',
   };
 }
 
@@ -103,23 +131,60 @@ export function saveCheckoutData(data = readCheckoutData()) {
 }
 
 export function validateCheckout(data) {
-  if (!data.name) {
+  if (data.phone && data.phone.replace(/\D/g, '').length < 8) {
     return {
-      key: 'name',
-      field: _field('name'),
-      message: 'Tu nombre es necesario para preparar el pedido',
-    };
-  }
-
-  if (data.delivery === 'national' && !data.location) {
-    return {
-      key: 'location',
-      field: _field('location'),
-      message: 'Agrega ciudad y estado para envio nacional',
+      key: 'phone',
+      field: _field('phone'),
+      message: 'Revisa tu telefono para poder coordinar el pedido',
     };
   }
 
   return null;
+}
+
+export function buildWebOrderPayload(items, data) {
+  return {
+    customer: {
+      name: data.name || null,
+      phone: data.phone || null,
+    },
+    items: items
+      .filter(item => item.type !== 'pack')
+      .map(item => {
+        const variantId = Number(item.variant_id);
+
+        return {
+          product_id: _orderProductId(item),
+          ...(Number.isInteger(variantId) && variantId > 0 ? { variant_id: variantId } : {}),
+          ml: Number(item.size) || null,
+          quantity: Number(item.qty) || 1,
+          unit_price: Number(item.price) || 0,
+        };
+      }),
+    notes: data.notes || null,
+    metadata: {
+      source: 'rdecants-web',
+      user_agent: navigator.userAgent,
+      cart_version: APP_VERSION,
+      cart_items: items.map(item => ({
+        key: item.key,
+        name: item.name,
+        house: item.house,
+        type: item.type,
+        image: item.image,
+      })),
+    },
+  };
+}
+
+function _orderProductId(item) {
+  const productId = item.product_id ?? item.sourceId;
+
+  if (Number.isInteger(Number(productId)) && Number(productId) > 0) {
+    return Number(productId);
+  }
+
+  return item.sku || productId;
 }
 
 export function buildWhatsAppMessage(items, total, data) {
@@ -127,8 +192,8 @@ export function buildWhatsAppMessage(items, total, data) {
     'Hola RDecants, quiero confirmar mi pedido.',
     '',
     '*Datos del cliente*',
-    `Nombre: ${data.name}`,
-    `Ciudad/estado: ${data.location || 'Por confirmar'}`,
+    `Nombre: ${data.name || 'Por confirmar'}`,
+    `Telefono: ${data.phone || 'Por confirmar'}`,
     '',
     '*Seleccion*',
   ];
@@ -146,10 +211,6 @@ export function buildWhatsAppMessage(items, total, data) {
     '',
     `*Total general: ${formatPrice(total, 'Por confirmar')}*`,
     'Stock sujeto a confirmacion.',
-    '',
-    '*Entrega y pago*',
-    `Entrega: ${DELIVERY_LABELS[data.delivery] || data.delivery}`,
-    `Pago: ${PAYMENT_LABELS[data.payment] || data.payment}`,
   );
 
   if (data.notes) {
@@ -167,6 +228,7 @@ export function syncCheckoutAvailability() {
 
 function _handleFormInput() {
   _clearError();
+  _showMessage('', 'neutral');
   saveCheckoutData();
 }
 
@@ -196,8 +258,8 @@ function _syncAvailability() {
   const form = _form();
 
   if (button) {
-    button.disabled = isEmpty;
-    button.setAttribute('aria-disabled', String(isEmpty));
+    button.disabled = isEmpty || _isSubmitting;
+    button.setAttribute('aria-disabled', String(isEmpty || _isSubmitting));
   }
 
   form?.classList.toggle('checkout-form--disabled', isEmpty);
@@ -206,8 +268,14 @@ function _syncAvailability() {
 function _showError(error) {
   _clearError();
   error.field?.classList.add('checkout-field--error');
+  _showMessage(error.message, 'error');
+}
+
+function _showMessage(message, tone = 'neutral') {
   const errorEl = document.getElementById('checkout-error');
-  if (errorEl) errorEl.textContent = error.message;
+  if (!errorEl) return;
+  errorEl.textContent = message;
+  errorEl.dataset.tone = tone;
 }
 
 function _clearError() {
@@ -216,7 +284,10 @@ function _clearError() {
     .forEach(field => field.classList.remove('checkout-field--error'));
 
   const errorEl = document.getElementById('checkout-error');
-  if (errorEl) errorEl.textContent = '';
+  if (errorEl) {
+    errorEl.textContent = '';
+    errorEl.dataset.tone = 'neutral';
+  }
 }
 
 function _field(key) {
@@ -240,4 +311,30 @@ function _setButtonLoading(button, isLoading, label = '') {
     if (button.dataset.label) button.textContent = button.dataset.label;
     delete button.dataset.label;
   }
+}
+
+function _readableApiError(error) {
+  const raw = String(error?.data?.message || error?.message || '').toLowerCase();
+
+  if (raw.includes('pack_checkout_fallback')) {
+    return 'Los packs todavia se coordinan directo por WhatsApp.';
+  }
+
+  if (raw.includes('stock')) {
+    return 'Este producto ya no tiene stock disponible. Actualiza el carrito e intenta de nuevo.';
+  }
+
+  if (raw.includes('inactive') || raw.includes('inactivo')) {
+    return 'Uno de los productos ya no esta disponible. Actualiza el carrito e intenta de nuevo.';
+  }
+
+  if (raw.includes('variant') || raw.includes('variante')) {
+    return 'No pudimos confirmar una variante del carrito. Actualiza el carrito e intenta de nuevo.';
+  }
+
+  if (raw.includes('cart is empty') || raw.includes('items')) {
+    return 'Agrega una fragancia antes de finalizar por WhatsApp.';
+  }
+
+  return 'No pudimos crear el pedido en sistema.';
 }

@@ -88,7 +88,7 @@ function _normalizeVariant(raw = {}) {
     stock: availability,
     soldOut,
     sold_out: soldOut,
-    variant_id: raw.variant_id ?? raw.id ?? `${raw.product_id ?? 'product'}-${size}`,
+    variant_id: raw.variant_id ?? raw.variante_producto_id ?? raw.id ?? null,
     product_id: raw.product_id,
   };
 }

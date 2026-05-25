@@ -1106,6 +1106,14 @@
   margin-top: -4px;
 }
 
+.checkout-error[data-tone="success"] {
+  color: #25D366;
+}
+
+.checkout-error[data-tone="neutral"] {
+  color: rgba(255, 255, 255, 0.35);
+}
+
 .checkout-form--disabled {
   opacity: 0.48;
 }
@@ -1491,7 +1499,7 @@
   .cart-footer .checkout-panel {
     flex: 1 1 auto;
     margin-bottom: 12px;
-    max-height: 24svh;
+    max-height: 22svh;
     min-height: 0;
     overflow-y: auto;
     padding-bottom: 12px;

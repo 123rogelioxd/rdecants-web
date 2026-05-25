@@ -32,11 +32,11 @@
     HTML itself is served no-cache so browsers always get
     the latest version string.
 
-  Current version: 1.0.2 — update all ?v= values on deploy.
+  Current version: 1.0.3 - update all ?v= values on deploy.
 -->
 <link rel="stylesheet" href="assets/css/tokens.css?v=1.0.2">
 <link rel="stylesheet" href="assets/css/animations.css?v=1.0.2">
-<link rel="stylesheet" href="assets/css/components.css?v=1.0.4">
+<link rel="stylesheet" href="assets/css/components.css?v=1.0.5">
 <link rel="stylesheet" href="assets/css/styles.css?v=1.0.2">
 </head>
 
@@ -217,28 +217,15 @@
         <span class="checkout-note">Datos para coordinar por WhatsApp</span>
       </div>
 
-      <label class="checkout-label" for="checkout-name">Nombre</label>
-      <input class="checkout-field" id="checkout-name" type="text" autocomplete="name" placeholder="Tu nombre">
-
-      <label class="checkout-label" for="checkout-location">Ciudad / estado</label>
-      <input class="checkout-field" id="checkout-location" type="text" autocomplete="address-level2" placeholder="Ej. Oaxaca, Oaxaca">
-
       <div class="checkout-grid">
-        <label class="checkout-control" for="checkout-delivery">
-          <span>Entrega</span>
-          <select id="checkout-delivery" class="checkout-field">
-            <option value="local">Local</option>
-            <option value="national">Envio nacional</option>
-          </select>
+        <label class="checkout-control" for="checkout-name">
+          <span>Nombre recomendado</span>
+          <input class="checkout-field" id="checkout-name" type="text" autocomplete="name" placeholder="Tu nombre">
         </label>
 
-        <label class="checkout-control" for="checkout-payment">
-          <span>Pago</span>
-          <select id="checkout-payment" class="checkout-field">
-            <option value="cash">Efectivo</option>
-            <option value="transfer">Transferencia</option>
-            <option value="oxxo">Deposito OXXO</option>
-          </select>
+        <label class="checkout-control" for="checkout-phone">
+          <span>Telefono</span>
+          <input class="checkout-field" id="checkout-phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="951...">
         </label>
       </div>
 
@@ -278,7 +265,7 @@
   ?v= must match the version in CSS links above.
   Update on every deploy: increment VERSION file + all ?v= strings.
 -->
-<script type="module" src="assets/js/app.js?v=1.0.11"></script>
+<script type="module" src="assets/js/app.js?v=1.0.12"></script>
 
 </body>
 </html>

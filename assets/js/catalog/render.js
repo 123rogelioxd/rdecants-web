@@ -10,7 +10,7 @@
      â€¢ no-match  â€” elegant empty state when filters return 0
    ============================================================= */
 
-import { CatalogProvider }  from '../providers/catalog.js?v=1.0.10';
+import { CatalogProvider }  from '../providers/catalog.js?v=1.0.11';
 import { Tracker }          from '../tracking/tracker.js';
 import { openProductModal } from '../ui/modal.js?v=1.0.6';
 import { SearchBar }        from '../ui/searchbar.js?v=1.0.2';
@@ -19,7 +19,7 @@ import { primeImageStates } from '../ui/images.js';
 import { getDefaultVariant,
          getDisplayVariant,
          getValidVariants,
-         formatPrice }      from '../utils/prices.js?v=1.0.2';
+         formatPrice }      from '../utils/prices.js?v=1.0.3';
 
 /* module-level ref kept for SearchBar callback */
 let _productsContainer = null;

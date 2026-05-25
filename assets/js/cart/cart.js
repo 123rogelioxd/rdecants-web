@@ -3,11 +3,11 @@
    State management: add, remove, qty, persist, stock limits.
    ============================================================= */
 
-import { CatalogProvider } from '../providers/catalog.js?v=1.0.10';
+import { CatalogProvider } from '../providers/catalog.js?v=1.0.11';
 import { Tracker }         from '../tracking/tracker.js';
 import { EventBus }        from '../core/events.js';
 import { showToast }       from '../ui/toast.js';
-import { getPriceForSize, getVariantForSize, isValidPrice } from '../utils/prices.js?v=1.0.2';
+import { getPriceForSize, getVariantForSize, isValidPrice } from '../utils/prices.js?v=1.0.3';
 
 const STORAGE_KEY = 'rdecants_cart';
 
@@ -42,7 +42,9 @@ export const Cart = {
       existing.qty++;
       existing.stock = stock;
       existing.product_id = product.product_id ?? product.id;
+      existing.sku = product.sku ?? existing.sku;
       existing.variant_id = variant?.variant_id ?? existing.variant_id;
+      existing.image = product.image ?? existing.image;
     } else {
       if (stock <= 0 || variant?.soldOut) {
         showToast(`${product.name} está agotado`);
@@ -52,7 +54,8 @@ export const Cart = {
         key,
         sourceId: product.id,
         product_id: product.product_id ?? product.id,
-        variant_id: variant?.variant_id ?? `${product.id}-${size}`,
+        sku: product.sku ?? null,
+        variant_id: variant?.variant_id ?? null,
         type:     'product',
         name:     product.name,
         house:    product.house,
@@ -60,6 +63,7 @@ export const Cart = {
         price,
         qty:      1,
         stock,
+        image:    product.image,
       });
     }
 
@@ -90,7 +94,8 @@ export const Cart = {
         key,
         sourceId: pack.id,
         product_id: pack.id,
-        variant_id: `pack-${pack.id}`,
+        sku: pack.sku ?? null,
+        variant_id: null,
         type:     'pack',
         name:     pack.name,
         house:    'PACK',
@@ -98,6 +103,7 @@ export const Cart = {
         price:    pack.price,
         qty:      1,
         stock:    pack.stock,
+        image:    pack.image ?? null,
       });
     }
 
@@ -169,7 +175,9 @@ function _load() {
       .map(i => ({
         ...i,
         product_id: i.product_id ?? i.sourceId,
-        variant_id: i.variant_id ?? i.key,
+        sku: i.sku ?? null,
+        variant_id: i.variant_id ?? null,
+        image: i.image ?? null,
         stock: Math.max(0, Number(i.stock) || 0),
         qty: Math.max(1, Number(i.qty) || 1),
       }));
