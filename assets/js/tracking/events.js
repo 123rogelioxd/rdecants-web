@@ -6,8 +6,8 @@
      trackEvent('product_viewed', { product_id: '...', metadata: {...} })
 
    Transport:
-     sendBeacon (preferred) → fetch keepalive (fallback)
-   Both are fire-and-forget and do not block the UX.
+     fetch keepalive with credentials omitted.
+   Fire-and-forget and does not block the UX.
    ============================================================= */
 
 import { API_BASE } from '../api/config.js';
@@ -37,15 +37,10 @@ export function trackEvent(eventName, payload = {}) {
 
   const url = `${API_BASE}/api/web/events`;
 
-  /* sendBeacon: reliable for navigation events (WA redirect, etc.) */
-  if (typeof navigator.sendBeacon === 'function') {
-    const queued = navigator.sendBeacon(url, new Blob([body], { type: 'application/json' }));
-    if (queued) return;
-  }
-
-  /* fetch keepalive: fallback when sendBeacon is unavailable or queue is full */
+  /* fetch keepalive preserves navigation reliability while omitting cookies for wildcard CORS. */
   fetch(url, {
     method:    'POST',
+    credentials: 'omit',
     headers:   { 'Content-Type': 'application/json' },
     body,
     keepalive: true,

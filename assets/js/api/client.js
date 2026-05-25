@@ -7,6 +7,7 @@ import { API_BASE } from './config.js?v=1.0.7';
 
 async function _get(path) {
   const res = await fetch(`${API_BASE}${path}`, {
+    credentials: 'omit',
     headers: { 'Accept': 'application/json' },
   });
 
@@ -18,6 +19,7 @@ async function _get(path) {
 async function _post(path, payload) {
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
+    credentials: 'omit',
     headers: {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
