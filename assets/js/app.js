@@ -11,14 +11,14 @@ import { setupCheckout }                  from './cart/checkout.js?v=1.0.2';
 import { renderCart, updateCartCount,
          openCart, closeCart,
          toggleCart, sendWhatsApp }       from './cart/render.js?v=1.0.2';
-import { renderProducts, renderPacks }     from './catalog/render.js?v=1.0.2';
+import { renderProducts, renderPacks }     from './catalog/render.js?v=1.0.3';
 import { setupScrollAnimations,
          observeFadeUp,
          setupHeroParallax }             from './ui/animations.js';
 import { setupHeader }                    from './ui/header.js';
 import { showToast }                      from './ui/toast.js';
 import { openProductModal,
-         closeProductModal }             from './ui/modal.js?v=1.0.2';
+         closeProductModal }             from './ui/modal.js?v=1.0.3';
 import { SearchBar }                     from './ui/searchbar.js';
 import { setupImageStates }              from './ui/images.js';
 import { Tracker }                        from './tracking/tracker.js';

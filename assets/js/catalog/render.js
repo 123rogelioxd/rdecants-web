@@ -10,9 +10,9 @@
      â€¢ no-match  â€” elegant empty state when filters return 0
    ============================================================= */
 
-import { CatalogProvider }  from '../providers/catalog.js?v=1.0.7';
+import { CatalogProvider }  from '../providers/catalog.js?v=1.0.10';
 import { Tracker }          from '../tracking/tracker.js';
-import { openProductModal } from '../ui/modal.js?v=1.0.2';
+import { openProductModal } from '../ui/modal.js?v=1.0.3';
 import { SearchBar }        from '../ui/searchbar.js?v=1.0.2';
 import { observeFadeUp }    from '../ui/animations.js';
 import { primeImageStates } from '../ui/images.js';
@@ -198,6 +198,10 @@ function _renderGrid(products) {
       : 'Consultar precio';
     const stockState = _stockState(p.stock);
     const isSoldOut = p.stock <= 0;
+    const canQuickAdd = !isSoldOut && Boolean(displayVariant);
+    const concentrationChip = p.concentration
+      ? `<span class="card-concentration">${p.concentration}</span>`
+      : '';
 
     const badgeText = _normalizeBadge(stockState.label);
     const badgeClass =
@@ -219,7 +223,10 @@ function _renderGrid(products) {
       </div>
       <div class="card-body">
         <p class="card-house">${p.house}</p>
-        <h3 class="card-name">${p.name}</h3>
+        <div class="card-title-row">
+          <h3 class="card-name">${p.name}</h3>
+          ${concentrationChip}
+        </div>
         <p class="card-story">${p.story}</p>
         <div class="card-purchase">
           <div>
@@ -230,8 +237,8 @@ function _renderGrid(products) {
           </div>
           <button class="btn-primary card-action"
             ${isSoldOut ? 'disabled aria-disabled="true"' : ''}
-            aria-label="${isSoldOut ? `${p.name} agotado` : `Ver detalle de ${p.name}`}">
-            ${isSoldOut ? 'Agotado' : 'Ver detalle'}
+            aria-label="${isSoldOut ? `${p.name} agotado` : canQuickAdd ? `Agregar ${p.name} al carrito` : `Consultar disponibilidad de ${p.name}`}">
+            ${isSoldOut ? 'Agotado' : canQuickAdd ? 'Agregar' : 'Consultar'}
           </button>
         </div>
       </div>
@@ -241,8 +248,13 @@ function _renderGrid(products) {
     card.querySelector('.card-action')?.addEventListener('click', e => {
       e.stopPropagation();
       if (isSoldOut) return;
-      openProductModal(p);
-      Tracker.productClicked(p, 'card_action');
+      if (canQuickAdd) {
+        window.__rd?.cart?.add(p.id, displayVariant.size);
+        window.__rd?.ui?.openCart?.();
+      } else {
+        openProductModal(p);
+      }
+      Tracker.productClicked(p, canQuickAdd ? 'quick_add' : 'card_action');
     });
 
     card.addEventListener('click', e => {

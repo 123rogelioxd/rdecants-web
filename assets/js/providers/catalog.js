@@ -129,6 +129,7 @@ function _mapProduct(p) {
     house: p.house ?? p.brand ?? p.marca ?? '',
     desc: p.desc ?? p.description ?? p.descripcion ?? '',
     story: p.story ?? p.tagline ?? p.desc ?? p.description ?? p.descripcion ?? 'Fragancia original en decant premium.',
+    concentration: _displayConcentration(p.concentration ?? p.concentracion ?? p.display_concentration),
     notes,
     image: _productImage(p),
     stock: 10,
@@ -165,4 +166,19 @@ function _mapPack(p) {
     stock: _safeStock(p.stock) || 10,
     badge: p.badge ?? p.label ?? '',
   };
+}
+
+function _displayConcentration(value) {
+  const normalized = String(value ?? '').trim();
+  if (!normalized || /^other$/i.test(normalized)) return null;
+
+  const labels = {
+    PARFUM: 'Parfum',
+    EXTRAIT: 'Extrait',
+    ELIXIR: 'Elixir',
+    EDT: 'EDT',
+    EDP: 'EDP',
+  };
+
+  return labels[normalized.toUpperCase()] ?? normalized;
 }

@@ -111,6 +111,9 @@ function _render() {
   const hasImage = p.image && p.image.trim() !== '';
 
   const stockHtml = _stockHtml(p.stock);
+  const concentrationHtml = p.concentration
+    ? `<span class="pdm-concentration">${p.concentration}</span>`
+    : '';
   const badgeHtml = p.badge
     ? `<span class="pdm-badge ${_badgeClass(p.badge, p.stock)}">${p.badge}</span>`
     : '';
@@ -172,7 +175,10 @@ function _render() {
       <div class="pdm-info-scroll">
 
         <p class="pdm-house">${p.house ?? ''}</p>
-        <h2 class="pdm-name" id="pdm-name">${p.name}</h2>
+        <div class="pdm-title-row">
+          <h2 class="pdm-name" id="pdm-name">${p.name}</h2>
+          ${concentrationHtml}
+        </div>
 
         ${p.story
           ? `<p class="pdm-story">${p.story}</p>`
