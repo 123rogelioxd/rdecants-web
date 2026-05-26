@@ -94,6 +94,7 @@ export function openCart() {
   drawer?.classList.add('active');
   drawer?.setAttribute('aria-hidden', 'false');
   document.getElementById('cart-overlay')?.classList.add('active');
+  document.body.classList.add('cart-open');
   document.body.style.overflow = 'hidden';
   Tracker.cartOpened();
   trackCheckoutStarted();
@@ -107,6 +108,7 @@ export function closeCart() {
   drawer?.classList.remove('active');
   drawer?.setAttribute('aria-hidden', 'true');
   document.getElementById('cart-overlay')?.classList.remove('active');
+  document.body.classList.remove('cart-open');
   document.body.style.overflow = '';
   Tracker.cartClosed();
   document.removeEventListener('keydown', _handleCartKey);

@@ -34,6 +34,11 @@ body {
   min-width: 0;
 }
 
+body.cart-open {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 img  { display: block; max-width: 100%; }
 
 button {

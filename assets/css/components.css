@@ -839,7 +839,7 @@
   position: fixed; inset: 0;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
-  z-index: 900;
+  z-index: 1200;
   opacity: 0;
   pointer-events: none;
   transition: var(--transition);
@@ -855,13 +855,16 @@
   top: 0; right: 0; bottom: 0;
   height: 100svh;
   width: min(440px, 100vw);
+  max-width: 440px;
   background: #0c0c0c;
   border-left: 1px solid var(--border);
-  z-index: 910;
+  z-index: 1210;
   display: flex; flex-direction: column;
   transform: translateX(100%);
   transition: var(--transition);
   box-shadow: -20px 0 80px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
+  overscroll-behavior: contain;
 }
 
 .cart-drawer.active { transform: translateX(0); }
@@ -1483,11 +1486,20 @@
   .trust-grid { grid-template-columns: 1fr 1fr; }
 
   .cart-drawer {
+    inset: 0;
+    bottom: auto;
     width: 100vw;
+    max-width: none;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-left: 0;
+    overflow-x: hidden;
   }
   .cart-items {
     flex: 1 1 auto;
     min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
   .cart-footer {
     display: flex;
@@ -1495,6 +1507,7 @@
     flex: 0 0 auto;
     max-height: 54svh;
     padding: 14px 16px calc(16px + env(safe-area-inset-bottom));
+    overflow-x: hidden;
   }
   .cart-footer .checkout-panel {
     flex: 1 1 auto;
@@ -3220,5 +3233,134 @@ textarea:focus-visible {
 
   .pdm-info-scroll {
     padding-bottom: 14px;
+  }
+}
+
+@media (max-width: 768px) {
+  .products-grid {
+    gap: 12px;
+  }
+
+  .product-card {
+    border-radius: 12px;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.42);
+  }
+
+  .product-card::before {
+    opacity: 0.38;
+  }
+
+  .card-badge {
+    top: 8px;
+    left: 8px;
+    max-width: calc(100% - 16px);
+    padding: 4px 7px;
+    font-size: 7px;
+    letter-spacing: 0.12em;
+  }
+
+  .card-img-wrap {
+    aspect-ratio: 1 / 1;
+    height: auto;
+  }
+
+  .card-img-wrap img {
+    padding: 12px;
+  }
+
+  .card-body {
+    padding: 11px;
+  }
+
+  .card-house {
+    margin-bottom: 6px;
+    font-size: 8px;
+    letter-spacing: 0.16em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card-title-row {
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .card-name {
+    font-size: 21px;
+    line-height: 1.04;
+    -webkit-line-clamp: 2;
+  }
+
+  .card-concentration {
+    padding: 5px 6px;
+    font-size: 8px;
+    letter-spacing: 0.08em;
+  }
+
+  .card-story {
+    display: none;
+  }
+
+  .card-purchase {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .card-price {
+    font-size: 21px;
+  }
+
+  .card-price small {
+    font-size: 9px;
+    margin-left: 2px;
+  }
+
+  .card-stock {
+    margin-top: 4px;
+    font-size: 9px;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+  }
+
+  .card-action {
+    width: 100%;
+    min-height: 38px;
+    justify-content: center;
+    padding: 9px 10px;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+  }
+
+  .whatsapp-float {
+    right: 14px;
+    bottom: calc(14px + env(safe-area-inset-bottom));
+    width: 48px;
+    height: 48px;
+    box-shadow: 0 8px 24px rgba(37, 211, 102, 0.32);
+  }
+
+  .whatsapp-float svg {
+    width: 23px;
+    height: 23px;
+  }
+
+  body.cart-open .whatsapp-float {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.9);
+  }
+}
+
+@media (min-width: 340px) and (max-width: 768px) {
+  .products-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 339px) {
+  .products-grid {
+    grid-template-columns: 1fr;
   }
 }
