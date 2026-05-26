@@ -3,22 +3,24 @@
    Customer data, validation, persistence and premium WA message.
    ============================================================= */
 
-import { Cart }      from './cart.js?v=1.0.14';
-import { ApiClient } from '../api/client.js?v=1.0.14';
-import { CatalogProvider } from '../providers/catalog.js?v=1.0.14';
+import { Cart }      from './cart.js?v=1.0.15';
+import { ApiClient } from '../api/client.js?v=1.0.15';
+import { CatalogProvider } from '../providers/catalog.js?v=1.0.15';
 import { Tracker }   from '../tracking/tracker.js';
 import { showToast } from '../ui/toast.js';
-import { formatPrice, getVariantForSize } from '../utils/prices.js?v=1.0.14';
+import { formatPrice, getVariantForSize } from '../utils/prices.js?v=1.0.15';
 
 const STORAGE_KEY = 'rdecants_checkout_customer';
 const LAST_ORDER_KEY = 'rdecants_last_web_order_folio';
-const APP_VERSION = '1.0.4';
+const APP_VERSION = '1.0.5';
 
 const FIELD_IDS = {
   name:  'checkout-name',
   phone: 'checkout-phone',
   notes: 'checkout-notes',
 };
+
+const MIN_NAME_CHARS = 2;
 
 let _startedSignature = '';
 let _isSubmitting = false;
@@ -33,6 +35,7 @@ export function setupCheckout() {
   form.addEventListener('input', _handleFormInput);
   form.addEventListener('change', _handleFormInput);
   form.addEventListener('focusin', () => trackCheckoutStarted('form_focus'), { once: true });
+  _field('name')?.addEventListener('blur', () => _validateNameForDisplay({ force: true }));
 }
 
 export function trackCheckoutStarted(source = 'cart_drawer') {
@@ -151,6 +154,14 @@ export function saveCheckoutData(data = readCheckoutData()) {
 }
 
 export function validateCheckout(data) {
+  if (!_isValidCustomerName(data.name)) {
+    return {
+      key: 'name',
+      field: _field('name'),
+      message: 'Enter your name to continue.',
+    };
+  }
+
   if (data.phone && data.phone.replace(/\D/g, '').length < 8) {
     return {
       key: 'phone',
@@ -225,6 +236,8 @@ export function buildWhatsAppMessage(items, total, data, folio = '') {
     lines.push('Folio: Por confirmar');
   }
 
+  lines.push(`Nombre: ${data.name}`);
+
   const isSingleUnit = items.length === 1 && (Number(items[0]?.qty) || 1) === 1;
 
   if (isSingleUnit) {
@@ -269,6 +282,8 @@ function _handleFormInput() {
   _clearError();
   _showMessage('', 'neutral');
   saveCheckoutData();
+  _syncAvailability();
+  _validateNameForDisplay();
 }
 
 function _hydrate() {
@@ -293,20 +308,24 @@ function _load() {
 
 function _syncAvailability() {
   const isEmpty = Cart.count() === 0;
+  const hasValidName = _isValidCustomerName(readCheckoutData().name);
   const button = document.getElementById('checkout-whatsapp');
   const form = _form();
 
   if (button) {
-    button.disabled = isEmpty || _isSubmitting;
-    button.setAttribute('aria-disabled', String(isEmpty || _isSubmitting));
+    const isDisabled = isEmpty || !hasValidName || _isSubmitting;
+    button.disabled = isDisabled;
+    button.setAttribute('aria-disabled', String(isDisabled));
   }
 
   form?.classList.toggle('checkout-form--disabled', isEmpty);
+  form?.classList.toggle('checkout-form--ready', !isEmpty && hasValidName);
 }
 
 function _showError(error) {
   _clearError();
   error.field?.classList.add('checkout-field--error');
+  error.field?.setAttribute('aria-invalid', 'true');
   _showMessage(error.message, 'error');
 }
 
@@ -320,7 +339,10 @@ function _showMessage(message, tone = 'neutral') {
 function _clearError() {
   const form = _form();
   form?.querySelectorAll('.checkout-field--error')
-    .forEach(field => field.classList.remove('checkout-field--error'));
+    .forEach(field => {
+      field.classList.remove('checkout-field--error');
+      field.removeAttribute('aria-invalid');
+    });
 
   const errorEl = document.getElementById('checkout-error');
   if (errorEl) {
@@ -346,9 +368,32 @@ function _setButtonLoading(button, isLoading, label = '') {
     if (label) button.textContent = label;
   } else {
     button.classList.remove('is-loading');
-    button.disabled = Cart.count() === 0;
     if (button.dataset.label) button.textContent = button.dataset.label;
     delete button.dataset.label;
+    _syncAvailability();
+  }
+}
+
+function _isValidCustomerName(value) {
+  return String(value ?? '').trim().replace(/\s+/g, '').length >= MIN_NAME_CHARS;
+}
+
+function _validateNameForDisplay({ force = false } = {}) {
+  if (Cart.count() === 0) return;
+
+  const field = _field('name');
+  if (!field) return;
+
+  const value = field.value;
+  const hasAnyInput = value.length > 0;
+  if (_isValidCustomerName(value)) return;
+
+  if (force || hasAnyInput) {
+    _showError({
+      key: 'name',
+      field,
+      message: 'Enter your name to continue.',
+    });
   }
 }
 

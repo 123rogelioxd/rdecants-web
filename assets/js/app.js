@@ -6,19 +6,19 @@
    handlers use window.__rd.* instead of loose globals.
    ============================================================= */
 
-import { Cart }                           from './cart/cart.js?v=1.0.14';
-import { setupCheckout }                  from './cart/checkout.js?v=1.0.14';
+import { Cart }                           from './cart/cart.js?v=1.0.15';
+import { setupCheckout }                  from './cart/checkout.js?v=1.0.15';
 import { renderCart, updateCartCount,
          openCart, closeCart,
-         toggleCart, sendWhatsApp }       from './cart/render.js?v=1.0.14';
+         toggleCart, sendWhatsApp }       from './cart/render.js?v=1.0.15';
 import { renderProducts, renderPacks }     from './catalog/render.js?v=1.0.13';
 import { setupScrollAnimations,
          observeFadeUp,
-         setupHeroParallax }             from './ui/animations.js';
+         setupHeroParallax }             from './ui/animations.js?v=1.0.15';
 import { setupHeader }                    from './ui/header.js';
 import { showToast }                      from './ui/toast.js';
 import { openProductModal,
-         closeProductModal }             from './ui/modal.js?v=1.0.14';
+         closeProductModal }             from './ui/modal.js?v=1.0.15';
 import { SearchBar }                     from './ui/searchbar.js';
 import { setupImageStates }              from './ui/images.js';
 import { Tracker }                        from './tracking/tracker.js?v=1.0.13';

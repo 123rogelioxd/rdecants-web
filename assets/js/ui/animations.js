@@ -35,8 +35,18 @@ export function setupHeroParallax() {
   const wrap = document.querySelector('.hero-img-wrap');
   if (!wrap) return;
 
-  window.addEventListener('scroll', () => {
+  const getBaseTop = () => {
+    if (window.matchMedia('(max-width: 380px)').matches) return '41%';
+    if (window.matchMedia('(max-width: 768px)').matches) return '39%';
+    return '50%';
+  };
+
+  const updateHeroTop = () => {
     const offset = window.scrollY * 0.04;
-    wrap.style.top = `calc(50% + ${-offset}px)`;
-  }, { passive: true });
+    wrap.style.top = `calc(${getBaseTop()} + ${-offset}px)`;
+  };
+
+  updateHeroTop();
+  window.addEventListener('scroll', updateHeroTop, { passive: true });
+  window.addEventListener('resize', updateHeroTop, { passive: true });
 }

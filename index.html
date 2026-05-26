@@ -32,11 +32,11 @@
     HTML itself is served no-cache so browsers always get
     the latest version string.
 
-  Current version: 1.0.4 - update all ?v= values on deploy.
+  Current version: 1.0.5 - update all ?v= values on deploy.
 -->
 <link rel="stylesheet" href="assets/css/tokens.css?v=1.0.2">
 <link rel="stylesheet" href="assets/css/animations.css?v=1.0.2">
-<link rel="stylesheet" href="assets/css/components.css?v=1.0.6">
+<link rel="stylesheet" href="assets/css/components.css?v=1.0.7">
 <link rel="stylesheet" href="assets/css/styles.css?v=1.0.2">
 </head>
 
@@ -219,9 +219,9 @@
 
       <div class="checkout-grid">
         <label class="checkout-control" for="checkout-name">
-          <span>Nombre para tu pedido</span>
-          <input class="checkout-field" id="checkout-name" type="text" autocomplete="name" placeholder="Ej. Roger">
-          <small class="checkout-helper">Opcional, nos ayuda a identificar tu orden.</small>
+          <span>Name for your order *</span>
+          <input class="checkout-field" id="checkout-name" type="text" autocomplete="name" placeholder="e.g. Roger Diaz" aria-required="true">
+          <small class="checkout-helper">We&rsquo;ll use this name to identify your order.</small>
         </label>
 
         <label class="checkout-control" for="checkout-phone">
@@ -278,7 +278,7 @@
   ?v= must match the version in CSS links above.
   Update on every deploy: increment VERSION file + all ?v= strings.
 -->
-<script type="module" src="assets/js/app.js?v=1.0.14"></script>
+<script type="module" src="assets/js/app.js?v=1.0.15"></script>
 
 </body>
 </html>
