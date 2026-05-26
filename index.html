@@ -32,11 +32,11 @@
     HTML itself is served no-cache so browsers always get
     the latest version string.
 
-  Current version: 1.0.3 - update all ?v= values on deploy.
+  Current version: 1.0.4 - update all ?v= values on deploy.
 -->
 <link rel="stylesheet" href="assets/css/tokens.css?v=1.0.2">
 <link rel="stylesheet" href="assets/css/animations.css?v=1.0.2">
-<link rel="stylesheet" href="assets/css/components.css?v=1.0.5">
+<link rel="stylesheet" href="assets/css/components.css?v=1.0.6">
 <link rel="stylesheet" href="assets/css/styles.css?v=1.0.2">
 </head>
 
@@ -213,14 +213,15 @@
   <div class="cart-footer">
     <div class="checkout-panel" id="checkout-form" aria-label="Datos de checkout">
       <div class="checkout-head">
-        <span class="checkout-kicker">Checkout</span>
-        <span class="checkout-note">Tu pedido se crea al presionar Finalizar por WhatsApp.</span>
+        <span class="checkout-kicker">Datos rápidos del pedido</span>
+        <span class="checkout-note">Al finalizar, apartamos tu pedido y te llevamos a WhatsApp para confirmar pago y entrega.</span>
       </div>
 
       <div class="checkout-grid">
         <label class="checkout-control" for="checkout-name">
-          <span>Nombre recomendado</span>
-          <input class="checkout-field" id="checkout-name" type="text" autocomplete="name" placeholder="Tu nombre">
+          <span>Nombre para tu pedido</span>
+          <input class="checkout-field" id="checkout-name" type="text" autocomplete="name" placeholder="Ej. Roger">
+          <small class="checkout-helper">Opcional, nos ayuda a identificar tu orden.</small>
         </label>
 
         <label class="checkout-control" for="checkout-phone">
@@ -235,18 +236,30 @@
       <p class="checkout-error" id="checkout-error" aria-live="polite"></p>
     </div>
 
-    <div class="cart-total-row">
-      <span class="cart-total-label">Total</span>
-      <span class="cart-total-amount">$<span id="cart-total">0</span></span>
+    <div class="cart-action-panel">
+      <div class="cart-summary" aria-label="Resumen del pedido">
+        <div class="cart-summary-head">
+          <span class="cart-summary-title">Resumen</span>
+          <span class="cart-summary-count" id="cart-summary-count">0 artículos</span>
+        </div>
+        <div class="cart-summary-line">
+          <span>Subtotal</span>
+          <span id="cart-subtotal">$0 MXN</span>
+        </div>
+        <div class="cart-total-row">
+          <span class="cart-total-label">Total</span>
+          <span class="cart-total-amount">$<span id="cart-total">0</span> <small>MXN</small></span>
+        </div>
+      </div>
+
+      <button class="btn-whatsapp" id="checkout-whatsapp" onclick="sendWhatsApp()" aria-label="Finalizar pedido por WhatsApp">
+        Finalizar por WhatsApp
+      </button>
+
+      <button class="btn-continue" onclick="closeCart()" aria-label="Cerrar carrito y seguir explorando">
+        Seguir comprando
+      </button>
     </div>
-
-    <button class="btn-whatsapp" id="checkout-whatsapp" onclick="sendWhatsApp()" aria-label="Finalizar pedido por WhatsApp">
-      Finalizar por WhatsApp
-    </button>
-
-    <button class="btn-continue" onclick="closeCart()" aria-label="Cerrar carrito y seguir explorando">
-      Continuar compra
-    </button>
   </div>
 </aside>
 
@@ -265,7 +278,7 @@
   ?v= must match the version in CSS links above.
   Update on every deploy: increment VERSION file + all ?v= strings.
 -->
-<script type="module" src="assets/js/app.js?v=1.0.13"></script>
+<script type="module" src="assets/js/app.js?v=1.0.14"></script>
 
 </body>
 </html>

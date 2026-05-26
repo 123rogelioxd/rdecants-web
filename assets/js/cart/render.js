@@ -3,13 +3,13 @@
    Renders cart drawer from current Cart state.
    ============================================================= */
 
-import { Cart }      from './cart.js?v=1.0.13';
+import { Cart }      from './cart.js?v=1.0.14';
 import { sendCheckoutWhatsApp,
          syncCheckoutAvailability,
-         trackCheckoutStarted } from './checkout.js?v=1.0.13';
+         trackCheckoutStarted } from './checkout.js?v=1.0.14';
 import { EventBus }  from '../core/events.js';
 import { Tracker }   from '../tracking/tracker.js';
-import { formatPrice, isValidPrice } from '../utils/prices.js?v=1.0.13';
+import { formatPrice, isValidPrice } from '../utils/prices.js?v=1.0.14';
 
 const WHATSAPP_NUMBER = '5219516513018';
 let _prevFocus = null;
@@ -21,26 +21,33 @@ export function renderCart() {
   if (!container) return;
 
   const items = Cart.items;
+  document.getElementById('cart-drawer')?.classList.toggle('cart-drawer--empty', !items.length);
 
   if (!items.length) {
     container.innerHTML = `
       <div class="cart-empty">
-        <div class="cart-empty-icon">✦</div>
-        <h3 class="cart-empty-title">Tu colección está vacía</h3>
-        <p class="cart-empty-desc">Explora fragancias premium y arma una seleccion a tu medida.</p>
+        <div class="cart-empty-icon">R</div>
+        <h3 class="cart-empty-title">Tu colecci&oacute;n est&aacute; vac&iacute;a</h3>
+        <p class="cart-empty-desc">Agrega tus decants favoritos para armar tu pedido.</p>
         <button class="btn-continue cart-empty-cta" onclick="window.__rd.ui.scrollToCatalog()">
-          Ver catalogo
+          Explorar cat&aacute;logo
         </button>
       </div>
     `;
     if (totalEl) totalEl.textContent = '0';
+    _updateSummary(0, 0);
     syncCheckoutAvailability();
     return;
   }
 
   const total = Cart.total();
+  const count = Cart.count();
 
-  container.innerHTML = items.map(item => {
+  container.innerHTML = `
+    <section class="cart-section cart-products-section" aria-label="Productos agregados">
+      <p class="cart-section-label">Productos agregados</p>
+      <div class="cart-product-list">
+        ${items.map(item => {
     const isMaxed = item.qty >= item.stock;
     const label   = item.type === 'pack' ? 'Pack' : `${item.size}ml`;
     const subtotal = isValidPrice(item.price) ? item.price * item.qty : null;
@@ -50,10 +57,11 @@ export function renderCart() {
         <div class="cart-item-info">
           <p class="cart-item-house">${item.house}</p>
           <p class="cart-item-name">${item.name}</p>
-          <p class="cart-item-detail">${label} × ${item.qty}</p>
-          <p class="cart-item-detail" style="color:${isMaxed ? 'var(--danger)' : 'var(--muted)'};">
-            ${isMaxed ? 'Límite de stock alcanzado' : `Disponibles: ${item.stock}`}
-          </p>
+          <div class="cart-item-meta">
+            <span>${label} &times; ${item.qty}</span>
+            <span>Disponibles: ${item.stock}</span>
+          </div>
+          ${isMaxed ? '<p class="cart-stock-note">Máximo disponible seleccionado</p>' : ''}
           <p class="cart-item-price">${formatPrice(subtotal, 'Precio por confirmar')}</p>
         </div>
         <div class="cart-item-controls">
@@ -73,10 +81,22 @@ export function renderCart() {
         </div>
       </div>
     `;
-  }).join('');
+        }).join('')}
+      </div>
+    </section>
+  `;
 
   if (totalEl) totalEl.textContent = total;
+  _updateSummary(count, total);
   syncCheckoutAvailability();
+}
+
+function _updateSummary(count, total) {
+  const countEl = document.getElementById('cart-summary-count');
+  const subtotalEl = document.getElementById('cart-subtotal');
+
+  if (countEl) countEl.textContent = `${count} ${count === 1 ? 'artículo' : 'artículos'}`;
+  if (subtotalEl) subtotalEl.textContent = formatPrice(total, '$0 MXN');
 }
 
 export function updateCartCount() {

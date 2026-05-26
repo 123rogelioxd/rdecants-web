@@ -314,7 +314,7 @@ async function _handleWhatsApp() {
   const btn = _modal?.querySelector('.pdm-btn-wa');
   const variant = getVariantForSize(p, _selectedSize);
   if (!_isOrderableVariant(variant)) {
-    showToast('Tu pedido se crea al presionar Finalizar por WhatsApp.');
+    showToast('Apartamos tu pedido y te llevamos a WhatsApp para confirmar.');
     closeProductModal();
     setTimeout(() => window.__rd?.ui?.openCart?.(), 300);
     return;
@@ -323,7 +323,7 @@ async function _handleWhatsApp() {
   _setButtonLoading(btn, true, 'Preparando...');
   try {
     await window.__rd?.cart?.add(p.id, _selectedSize);
-    showToast('Tu pedido se crea al presionar Finalizar por WhatsApp.');
+    showToast('Apartamos tu pedido y te llevamos a WhatsApp para confirmar.');
     closeProductModal();
     setTimeout(() => window.__rd?.ui?.openCart?.(), 300);
   } finally {
@@ -415,5 +415,4 @@ function _validVariantId(value) {
   if (!normalized || normalized === 'null' || normalized === 'undefined') return null;
   return /^\d+$/.test(normalized) ? Number(normalized) : normalized;
 }
-
 
