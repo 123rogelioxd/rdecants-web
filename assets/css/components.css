@@ -98,13 +98,10 @@
 }
 
 .hero-img-wrap {
-  position: absolute;
-  right: -2%;
-  top: 50%;
-  transform: translateY(-50%);   /* centering — JS must not override this */
-  width: clamp(300px, 55%, 700px);
-  opacity: 0.85;
-  will-change: top;
+  opacity: 0.88;
+  right: -58px;
+  top: 42%;
+  width: min(88vw, 420px);
 }
 
 .hero-img-wrap.img-shell {
@@ -1796,17 +1793,16 @@
     padding-bottom: max(32px, env(safe-area-inset-bottom));
   }
 
-  .hero-img-wrap {
-    opacity: 0.8;
-    right: -132px;
-    top: 40%;
-    width: 450px;
-  }
+.hero-img-wrap {
+  opacity: 0.84;
+  right: -52px;
+  top: 43%;
+  width: 88vw;
+  max-width: 390px;
+}
 
-  .hero-content {
-    max-width: 310px;
-    padding: 0 18px;
-  }
+.hero-content {
+  max-width: 300px;
 
   .hero-title {
     font-size: 52px;
