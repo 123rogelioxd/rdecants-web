@@ -22,6 +22,7 @@ import { getDefaultVariant,
          getVariantForSize,
          getValidVariants,
          formatPrice } from '../utils/prices.js?v=1.0.13';
+import { getScarcityDisplay } from '../utils/scarcity.js?v=1.0.13';
 
 /* â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 let _activeProduct  = null;
@@ -108,13 +109,14 @@ function _render() {
   const price = activeVariant?.price ?? null;
   const hasImage = p.image && p.image.trim() !== '';
 
-  const stockHtml = _stockHtml(p.stock);
+  const scarcity = getScarcityDisplay(p);
+  const stockHtml = _stockHtml(scarcity);
   const concentrationHtml = p.concentration
     ? `<span class="pdm-concentration">${p.concentration}</span>`
     : '';
-  const badgeHtml = p.badge
-    ? `<span class="pdm-badge ${_badgeClass(p.badge, p.stock)}">${p.badge}</span>`
-    : '';
+  const badgeHtml = scarcity.state === 'available'
+    ? ''
+    : `<span class="pdm-badge ${scarcity.badgeClass}">${scarcity.label}</span>`;
 
   const notesHtml = (p.notes ?? [])
     .map(n => `<span class="note-tag">${n}</span>`)
@@ -373,22 +375,15 @@ function _sizeLabel(ml) {
   return '';
 }
 
-function _badgeClass(badge, stock) {
-  const badgeText = _normalizeBadge(badge);
-  if (badgeText === 'ULTIMAS UNIDADES' || stock <= 2) return 'danger';
-  if (badgeText === 'TRENDING' || badgeText === 'ALTA DEMANDA') return 'trend';
-  return '';
-}
-
-function _stockHtml(stock) {
-  if (stock <= 0) return `
+function _stockHtml(scarcity) {
+  if (scarcity.state === 'sold_out') return `
     <p class="card-stock pdm-stock">
       <span class="stock-dot" style="background:var(--danger)"></span>
       Agotado
     </p>`;
-  if (stock <= 3) return `
+  if (scarcity.state === 'last_units') return `
     <p class="card-stock pdm-stock">
-      <span class="stock-dot"></span>Pocas piezas
+      <span class="stock-dot"></span>Ultimas unidades
     </p>`;
   return `
     <p class="card-stock pdm-stock card-stock--ok">
@@ -409,13 +404,6 @@ function _setButtonLoading(btn, isLoading, label = '') {
     if (btn.dataset.label) btn.innerHTML = btn.dataset.label;
     delete btn.dataset.label;
   }
-}
-
-function _normalizeBadge(badge) {
-  return String(badge ?? '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toUpperCase();
 }
 
 function _isOrderableVariant(variant) {

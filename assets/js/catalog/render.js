@@ -18,8 +18,8 @@ import { observeFadeUp }    from '../ui/animations.js';
 import { primeImageStates } from '../ui/images.js';
 import { getDefaultVariant,
          getDisplayVariant,
-         getValidVariants,
          formatPrice }      from '../utils/prices.js?v=1.0.13';
+import { getScarcityDisplay } from '../utils/scarcity.js?v=1.0.13';
 
 /* module-level ref kept for SearchBar callback */
 let _productsContainer = null;
@@ -197,18 +197,14 @@ function _renderGrid(products) {
     const priceHtml = displayVariant
       ? `${formatPrice(displayVariant.price)} <small>${displayVariant.size}ml</small>`
       : 'Consultar precio';
-    const stockState = _stockState(p.stock);
-    const isSoldOut = p.stock <= 0;
+    const stockState = getScarcityDisplay(p);
+    const isSoldOut = stockState.state === 'sold_out';
     const canQuickAdd = !isSoldOut && _isOrderableVariant(displayVariant);
     const concentrationChip = p.concentration
       ? `<span class="card-concentration">${p.concentration}</span>`
       : '';
 
-    const badgeText = _normalizeBadge(stockState.label);
-    const badgeClass =
-      isSoldOut ? 'danger'
-        : p.stock <= 3 ? 'trend'
-          : '';
+    const badgeClass = stockState.badgeClass;
 
     const card = document.createElement('div');
     card.className             = 'product-card product-card--clickable fade-up';
@@ -285,19 +281,6 @@ function _stockText(stock) {
   if (stock <= 3) return `Solo ${stock} unidades disponibles`;
   if (stock <= 5) return 'Alta demanda esta semana';
   return 'Disponible';
-}
-
-function _stockState(stock) {
-  if (stock <= 0) return { key: 'out', label: 'Agotado' };
-  if (stock <= 3) return { key: 'low', label: 'Pocas piezas' };
-  return { key: 'ok', label: 'Disponible' };
-}
-
-function _normalizeBadge(badge) {
-  return String(badge ?? '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toUpperCase();
 }
 
 function _sizeLabel(size) {

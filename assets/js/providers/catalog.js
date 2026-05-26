@@ -150,7 +150,9 @@ function _mapVariant(v, fallbackProductId) {
   const size = Number.parseFloat(v.size ?? v.ml_size ?? v.ml ?? v.label);
   const price = Number(v.price ?? v.retail_price ?? v.precio_venta ?? 0);
   const stock = _safeStock(v.availability ?? v.stock ?? v.stock_unidades);
+  const publicStock = _safeStock(v.stock ?? v.stock_unidades ?? v.availability);
   const variantId = _variantId(v);
+  const soldOut = Boolean(v.sold_out ?? v.soldOut ?? stock <= 0);
 
   return {
     ...v,
@@ -163,8 +165,10 @@ function _mapVariant(v, fallbackProductId) {
     retail_price: price,
     availability: stock,
     stock,
-    soldOut: Boolean(v.sold_out ?? v.soldOut ?? stock <= 0),
-    sold_out: Boolean(v.sold_out ?? v.soldOut ?? stock <= 0),
+    public_stock: publicStock,
+    available: Object.prototype.hasOwnProperty.call(v, 'available') ? Boolean(v.available) : !soldOut,
+    soldOut,
+    sold_out: soldOut,
   };
 }
 
