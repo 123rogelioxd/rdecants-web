@@ -36,8 +36,8 @@ export function setupHeroParallax() {
   if (!wrap) return;
 
   const getBaseTop = () => {
-    if (window.matchMedia('(max-width: 380px)').matches) return '41%';
-    if (window.matchMedia('(max-width: 768px)').matches) return '39%';
+    if (window.matchMedia('(max-width: 380px)').matches) return '40%';
+    if (window.matchMedia('(max-width: 768px)').matches) return '37%';
     return '50%';
   };
 

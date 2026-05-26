@@ -1600,33 +1600,33 @@
     align-items: flex-end;
     height: 100svh;
     min-height: 620px;
-    padding: 104px 0 max(42px, env(safe-area-inset-bottom));
+    padding: 92px 0 max(38px, env(safe-area-inset-bottom));
   }
 
   .hero-bg {
     background:
-      radial-gradient(ellipse 86% 54% at 88% 31%, rgba(201, 169, 110, 0.14) 0%, rgba(201, 169, 110, 0.035) 35%, transparent 68%),
-      radial-gradient(ellipse 72% 66% at 20% 86%, rgba(30, 30, 60, 0.34) 0%, transparent 58%),
+      radial-gradient(ellipse 95% 58% at 94% 26%, rgba(201, 169, 110, 0.16) 0%, rgba(201, 169, 110, 0.04) 38%, transparent 70%),
+      radial-gradient(ellipse 72% 66% at 16% 86%, rgba(30, 30, 60, 0.34) 0%, transparent 58%),
       linear-gradient(170deg, #0b0b13 0%, #030303 62%);
   }
 
   .hero-img-wrap {
-    opacity: 0.76;
-    right: -76px;
-    top: 39%;
-    width: min(94vw, 430px);
+    opacity: 0.82;
+    right: -142px;
+    top: 37%;
+    width: min(124vw, 500px);
   }
 
   .hero-img-wrap img {
     filter:
-      brightness(1.12)
-      contrast(1.08)
+      brightness(1.15)
+      contrast(1.1)
       saturate(1.04)
-      drop-shadow(0 28px 62px rgba(201, 169, 110, 0.2));
+      drop-shadow(0 30px 70px rgba(201, 169, 110, 0.22));
   }
 
   .hero-content {
-    max-width: 340px;
+    max-width: 350px;
     padding: 0 22px;
     text-shadow: 0 2px 18px rgba(0, 0, 0, 0.72);
   }
@@ -1643,16 +1643,16 @@
   }
 
   .hero-title {
-    font-size: 58px;
+    font-size: 60px;
     line-height: 0.94;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
   }
 
   .hero-desc {
     color: rgba(255, 255, 255, 0.62);
     font-size: 13px;
     line-height: 1.62;
-    margin-bottom: 24px;
+    margin-bottom: 22px;
     max-width: 292px;
   }
 
@@ -1793,14 +1793,14 @@
 @media (max-width: 380px) {
   .hero {
     min-height: 600px;
-    padding-bottom: max(34px, env(safe-area-inset-bottom));
+    padding-bottom: max(32px, env(safe-area-inset-bottom));
   }
 
   .hero-img-wrap {
-    opacity: 0.74;
-    right: -86px;
-    top: 41%;
-    width: 380px;
+    opacity: 0.8;
+    right: -132px;
+    top: 40%;
+    width: 450px;
   }
 
   .hero-content {
@@ -1809,7 +1809,7 @@
   }
 
   .hero-title {
-    font-size: 50px;
+    font-size: 52px;
   }
 
   .hero-desc {
