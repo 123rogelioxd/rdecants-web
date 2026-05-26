@@ -26,7 +26,7 @@ export const Cart = {
     const price = getPriceForSize(product, size);
     const variant = getVariantForSize(product, size);
     const variantId = _validVariantId(variant?.variant_id);
-    const stock = variant?.availability ?? product.stock ?? 0;
+    const stock = _selectedVariantStock(variant);
     if (price === null) {
       showToast('Precio no disponible para esa variante');
       return;
@@ -126,6 +126,7 @@ export const Cart = {
 
     if (delta > 0) {
       const stock = await _getStock(item);
+      item.stock = stock;
       if (item.qty >= stock) {
         showToast(`Solo quedan ${stock} de ${item.name}`);
         return;
@@ -180,7 +181,9 @@ export const Cart = {
       const variant = getVariantForSize(product, item.size);
       const variantId = _validVariantId(variant?.variant_id);
 
-      if (!product || !variant || !variantId || variant.soldOut || variant.availability <= 0) {
+      const stock = _selectedVariantStock(variant);
+
+      if (!product || !variant || !variantId || variant.soldOut || stock <= 0) {
         removed.push(item);
         changed = true;
         continue;
@@ -193,8 +196,8 @@ export const Cart = {
         sku: product.sku ?? item.sku ?? null,
         variant_id: variantId,
         price: variant.price,
-        qty: Math.min(Math.max(1, Number(item.qty) || 1), variant.availability),
-        stock: variant.availability,
+        qty: Math.min(Math.max(1, Number(item.qty) || 1), stock),
+        stock,
         image: product.image ?? item.image ?? null,
       };
 
@@ -247,7 +250,12 @@ async function _getStock(item) {
   }
   const product = await CatalogProvider.getProductById(item.sourceId);
   const variant = getVariantForSize(product, item.size);
-  return variant?.availability ?? item.stock ?? 0;
+  return _selectedVariantStock(variant);
+}
+
+function _selectedVariantStock(variant) {
+  const stock = Number(variant?.stock);
+  return Number.isFinite(stock) && stock > 0 ? stock : 0;
 }
 
 function _validVariantId(value) {

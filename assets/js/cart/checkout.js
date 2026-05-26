@@ -196,7 +196,9 @@ async function _buildOrderItem(item) {
   const variant = getVariantForSize(product, item.size);
   const variantId = _validVariantId(variant?.variant_id);
 
-  if (!product || !variant || !variantId || variant.soldOut || variant.availability <= 0) {
+  const stock = _selectedVariantStock(variant);
+
+  if (!product || !variant || !variantId || variant.soldOut || stock <= 0 || item.qty > stock) {
     const error = new Error('STALE_CART_VARIANT');
     error.item = item;
     throw error;
@@ -384,6 +386,11 @@ function _validVariantId(value) {
   const normalized = String(value ?? '').trim();
   if (!normalized || normalized === 'null' || normalized === 'undefined') return null;
   return /^\d+$/.test(normalized) ? Number(normalized) : normalized;
+}
+
+function _selectedVariantStock(variant) {
+  const stock = Number(variant?.stock);
+  return Number.isFinite(stock) && stock > 0 ? stock : 0;
 }
 
 function _presentationText(item) {

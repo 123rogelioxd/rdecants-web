@@ -75,8 +75,9 @@ export function formatPrice(value, fallback = 'Consultar precio') {
 function _normalizeVariant(raw = {}) {
   const size = Number(raw.size ?? raw.ml_size);
   const price = raw.price ?? raw.retail_price;
-  const availability = _safeStock(raw.availability ?? raw.stock);
-  const soldOut = Boolean(raw.sold_out ?? raw.soldOut ?? availability <= 0);
+  const stock = _safeStock(raw.stock ?? raw.availability);
+  const available = Object.prototype.hasOwnProperty.call(raw, 'available') ? Boolean(raw.available) : stock > 0;
+  const soldOut = Boolean(raw.sold_out ?? raw.soldOut ?? false) || !available || stock <= 0;
 
   return {
     ...raw,
@@ -84,8 +85,9 @@ function _normalizeVariant(raw = {}) {
     ml_size: size,
     price: isValidPrice(price) ? Number(price) : null,
     retail_price: isValidPrice(price) ? Number(price) : null,
-    availability,
-    stock: availability,
+    availability: stock,
+    stock,
+    available,
     soldOut,
     sold_out: soldOut,
     variant_id: _variantId(raw),
