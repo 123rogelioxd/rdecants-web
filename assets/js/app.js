@@ -14,7 +14,7 @@ import { renderCart, updateCartCount,
 import { renderProducts, renderPacks }     from './catalog/render.js?v=1.0.13';
 import { setupScrollAnimations,
          observeFadeUp,
-         setupHeroParallax }             from './ui/animations.js?v=1.0.16';
+         setupHeroParallax }             from './ui/animations.js?v=1.0.17';
 import { setupHeader }                    from './ui/header.js';
 import { showToast }                      from './ui/toast.js';
 import { openProductModal,

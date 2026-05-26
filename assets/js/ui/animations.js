@@ -35,15 +35,14 @@ export function setupHeroParallax() {
   const wrap = document.querySelector('.hero-img-wrap');
   if (!wrap) return;
 
-  const getBaseTop = () => {
-    if (window.matchMedia('(max-width: 380px)').matches) return '40%';
-    if (window.matchMedia('(max-width: 768px)').matches) return '37%';
-    return '50%';
-  };
-
   const updateHeroTop = () => {
+    if (window.matchMedia('(max-width: 768px)').matches) {
+      wrap.style.top = '';
+      return;
+    }
+
     const offset = window.scrollY * 0.04;
-    wrap.style.top = `calc(${getBaseTop()} + ${-offset}px)`;
+    wrap.style.top = `calc(50% + ${-offset}px)`;
   };
 
   updateHeroTop();

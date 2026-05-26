@@ -98,10 +98,13 @@
 }
 
 .hero-img-wrap {
-  opacity: 0.88;
-  right: -58px;
-  top: 42%;
-  width: min(88vw, 420px);
+  position: absolute;
+  right: -2%;
+  top: 50%;
+  transform: translateY(-50%);   /* centering - JS must not override this */
+  width: clamp(300px, 55%, 700px);
+  opacity: 0.85;
+  will-change: top;
 }
 
 .hero-img-wrap.img-shell {
@@ -1601,25 +1604,44 @@
   }
 
   .hero-bg {
+    z-index: 0;
     background:
-      radial-gradient(ellipse 95% 58% at 94% 26%, rgba(201, 169, 110, 0.16) 0%, rgba(201, 169, 110, 0.04) 38%, transparent 70%),
-      radial-gradient(ellipse 72% 66% at 16% 86%, rgba(30, 30, 60, 0.34) 0%, transparent 58%),
-      linear-gradient(170deg, #0b0b13 0%, #030303 62%);
+      radial-gradient(ellipse 80% 62% at 86% 28%, rgba(201, 169, 110, 0.08) 0%, transparent 62%),
+      linear-gradient(170deg, #08080f 0%, #030303 64%);
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background:
+      linear-gradient(180deg, rgba(3, 3, 3, 0.2) 0%, rgba(3, 3, 3, 0) 28%, rgba(3, 3, 3, 0.78) 74%, #030303 100%),
+      linear-gradient(90deg, rgba(3, 3, 3, 0.72) 0%, rgba(3, 3, 3, 0.22) 44%, rgba(3, 3, 3, 0.08) 100%);
   }
 
   .hero-img-wrap {
-    opacity: 0.82;
-    right: -142px;
-    top: 37%;
-    width: min(124vw, 500px);
+    inset: 0;
+    height: 100%;
+    opacity: 0.92;
+    right: auto;
+    top: 0;
+    transform: none;
+    width: 100%;
+    z-index: 0;
   }
 
   .hero-img-wrap img {
+    animation: none;
     filter:
-      brightness(1.15)
-      contrast(1.1)
-      saturate(1.04)
-      drop-shadow(0 30px 70px rgba(201, 169, 110, 0.22));
+      brightness(1.08)
+      contrast(1.08)
+      saturate(1.04);
+    height: 100%;
+    object-fit: cover;
+    object-position: 68% center;
+    width: 100%;
   }
 
   .hero-content {
@@ -1793,16 +1815,10 @@
     padding-bottom: max(32px, env(safe-area-inset-bottom));
   }
 
-.hero-img-wrap {
-  opacity: 0.84;
-  right: -52px;
-  top: 43%;
-  width: 88vw;
-  max-width: 390px;
-}
-
-.hero-content {
-  max-width: 300px;
+  .hero-content {
+    max-width: 300px;
+    padding: 0 18px;
+  }
 
   .hero-title {
     font-size: 52px;
