@@ -1388,6 +1388,40 @@
   opacity: 0.48;
 }
 
+/* ── Cart momentum (honest completion confidence) ───────────── */
+.checkout-momentum {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.025);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.checkout-momentum::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.checkout-momentum[data-key="ready"] {
+  border-color: rgba(37, 211, 102, 0.25);
+  background: rgba(37, 211, 102, 0.06);
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.checkout-momentum[data-key="ready"]::before {
+  background: #25D366;
+}
+
 .cart-summary {
   background:
     linear-gradient(180deg, rgba(201, 169, 110, 0.07), rgba(255, 255, 255, 0.022));

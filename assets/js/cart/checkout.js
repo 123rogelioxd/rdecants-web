@@ -9,6 +9,7 @@ import { CatalogProvider } from '../providers/catalog.js?v=1.0.15';
 import { Tracker }   from '../tracking/tracker.js';
 import { showToast } from '../ui/toast.js';
 import { formatPrice, getVariantForSize } from '../utils/prices.js?v=1.0.15';
+import { getCartMomentum } from './momentum.js?v=1.0.15';
 
 const STORAGE_KEY = 'rdecants_checkout_customer';
 const LAST_ORDER_KEY = 'rdecants_last_web_order_folio';
@@ -307,7 +308,8 @@ function _load() {
 }
 
 function _syncAvailability() {
-  const isEmpty = Cart.count() === 0;
+  const count = Cart.count();
+  const isEmpty = count === 0;
   const hasValidName = _isValidCustomerName(readCheckoutData().name);
   const button = document.getElementById('checkout-whatsapp');
   const form = _form();
@@ -320,6 +322,18 @@ function _syncAvailability() {
 
   form?.classList.toggle('checkout-form--disabled', isEmpty);
   form?.classList.toggle('checkout-form--ready', !isEmpty && hasValidName);
+
+  _syncMomentum(count, hasValidName);
+}
+
+function _syncMomentum(count, hasValidName) {
+  const el = document.getElementById('checkout-momentum');
+  if (!el) return;
+
+  const momentum = getCartMomentum({ count, hasValidName });
+  el.textContent = momentum.message;
+  el.dataset.key = momentum.key;
+  el.hidden = !momentum.message;
 }
 
 function _showError(error) {
