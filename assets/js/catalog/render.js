@@ -218,7 +218,7 @@ function _renderGrid(products) {
     card.setAttribute('aria-label', `Ver detalle de ${p.name}`);
 
     card.innerHTML = `
-      <span class="card-badge ${badgeClass}">${stockState.label}</span>
+      ${stockState.key !== 'ok' ? `<span class="card-badge ${badgeClass}">${stockState.label}</span>` : ''}
       <div class="card-img-wrap">
         <img src="${p.image}" alt="${p.name}" loading="lazy" decoding="async">
       </div>

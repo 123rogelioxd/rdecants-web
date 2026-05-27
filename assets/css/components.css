@@ -1964,6 +1964,11 @@
     font-size: 11px;
     line-height: 1.45;
   }
+  .checkout-momentum {
+    margin-bottom: 10px;
+    padding: 8px 10px;
+    font-size: 11px;
+  }
   .cart-total-row {
     flex: 0 0 auto;
   }
@@ -2429,7 +2434,7 @@
 /* Action buttons */
 .pdm-actions {
   display: grid;
-  grid-template-columns: 1fr 0.72fr;
+  grid-template-columns: 1.4fr 0.6fr;
   gap: 10px;
 }
 
@@ -2677,6 +2682,21 @@
 
   .pdm-btn-wa {
     letter-spacing: 0.08em;
+  }
+
+  .pdm-related {
+    margin-top: 16px;
+    padding-top: 14px;
+  }
+  .pdm-related-row {
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+    gap: 8px;
+  }
+  .pdm-related-img {
+    height: 68px;
+  }
+  .pdm-related-name {
+    font-size: 14px;
   }
 }
 

@@ -159,7 +159,7 @@ export function validateCheckout(data) {
     return {
       key: 'name',
       field: _field('name'),
-      message: 'Enter your name to continue.',
+      message: 'Ingresa tu nombre para continuar.',
     };
   }
 
@@ -406,7 +406,7 @@ function _validateNameForDisplay({ force = false } = {}) {
     _showError({
       key: 'name',
       field,
-      message: 'Enter your name to continue.',
+      message: 'Ingresa tu nombre para continuar.',
     });
   }
 }
