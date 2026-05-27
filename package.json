@@ -1,0 +1,10 @@
+{
+  "name": "rdecants-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "RDecants storefront — static Netlify site (vanilla JS modules).",
+  "scripts": {
+    "test": "node --test"
+  }
+}

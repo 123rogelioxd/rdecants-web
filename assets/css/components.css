@@ -492,7 +492,35 @@
 }
 .card-stock--low { color: var(--accent); }
 .card-stock--low .stock-dot { background: var(--accent); }
+.card-stock--few { color: var(--accent); }
+.card-stock--few .stock-dot { background: var(--accent); }
+.card-stock--demand { color: var(--accent); }
+.card-stock--demand .stock-dot { background: var(--accent); }
 .card-stock--out { color: var(--danger); }
+
+/* ── Purchase guidance chips (beginner orientation) ─────────── */
+.card-guidance,
+.pdm-guidance {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.pdm-guidance { margin-top: 6px; }
+
+.guidance-chip {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid var(--border-hl);
+  border-radius: 999px;
+  padding: 5px 11px;
+}
 
 .card-purchase {
   display: flex;

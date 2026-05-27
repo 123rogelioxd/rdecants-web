@@ -23,6 +23,7 @@ import { getDefaultVariant,
          getValidVariants,
          formatPrice } from '../utils/prices.js?v=1.0.13';
 import { getScarcityDisplay } from '../utils/scarcity.js?v=1.0.13';
+import { getGuidanceBadges } from '../utils/guidance.js?v=1.0.13';
 
 /* â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 let _activeProduct  = null;
@@ -114,12 +115,16 @@ function _render() {
   const concentrationHtml = p.concentration
     ? `<span class="pdm-concentration">${p.concentration}</span>`
     : '';
-  const badgeHtml = scarcity.state === 'available'
+  const badgeHtml = scarcity.key === 'ok'
     ? ''
     : `<span class="pdm-badge ${scarcity.badgeClass}">${scarcity.label}</span>`;
 
   const notesHtml = (p.notes ?? [])
     .map(n => `<span class="note-tag">${n}</span>`)
+    .join('');
+
+  const guidanceHtml = getGuidanceBadges(p)
+    .map(g => `<span class="guidance-chip guidance-chip--${g.key}">${g.label}</span>`)
     .join('');
 
   const sizesHtml = [3, 5, 10]
@@ -189,6 +194,10 @@ function _render() {
 
         ${notesHtml
           ? `<div class="pdm-notes card-notes">${notesHtml}</div>`
+          : ''}
+
+        ${guidanceHtml
+          ? `<div class="pdm-guidance" aria-label="Recomendado para">${guidanceHtml}</div>`
           : ''}
 
         ${stockHtml}
@@ -381,13 +390,9 @@ function _stockHtml(scarcity) {
       <span class="stock-dot" style="background:var(--danger)"></span>
       Agotado
     </p>`;
-  if (scarcity.state === 'last_units') return `
-    <p class="card-stock pdm-stock">
-      <span class="stock-dot"></span>Ultimas unidades
-    </p>`;
   return `
-    <p class="card-stock pdm-stock card-stock--ok">
-      <span class="stock-dot"></span>Disponible
+    <p class="card-stock pdm-stock card-stock--${scarcity.key}">
+      <span class="stock-dot"></span>${scarcity.label}
     </p>`;
 }
 

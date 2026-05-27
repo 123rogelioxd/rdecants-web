@@ -20,6 +20,7 @@ import { getDefaultVariant,
          getDisplayVariant,
          formatPrice }      from '../utils/prices.js?v=1.0.13';
 import { getScarcityDisplay } from '../utils/scarcity.js?v=1.0.13';
+import { getGuidanceBadges }  from '../utils/guidance.js?v=1.0.13';
 
 /* module-level ref kept for SearchBar callback */
 let _productsContainer = null;
@@ -205,6 +206,9 @@ function _renderGrid(products) {
       : '';
 
     const badgeClass = stockState.badgeClass;
+    const guidanceHtml = getGuidanceBadges(p)
+      .map(g => `<span class="guidance-chip guidance-chip--${g.key}">${g.label}</span>`)
+      .join('');
 
     const card = document.createElement('div');
     card.className             = 'product-card product-card--clickable fade-up';
@@ -224,6 +228,7 @@ function _renderGrid(products) {
           <h3 class="card-name">${p.name}</h3>
           ${concentrationChip}
         </div>
+        ${guidanceHtml ? `<div class="card-guidance" aria-label="Recomendado para">${guidanceHtml}</div>` : ''}
         <p class="card-story">${p.story}</p>
         <div class="card-purchase">
           <div>
