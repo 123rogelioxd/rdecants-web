@@ -59,6 +59,7 @@ function _render(bundles) {
     bundles.flatMap(b => b.items),
     { railId: 'smart_bundles', railTitle: 'Kits inteligentes' },
   );
+  bundles.forEach(bundle => Tracker.bundleViewed(bundle));
   _bind();
 }
 
@@ -126,6 +127,7 @@ function _bind() {
 
 async function _addBundle(bundle) {
   let added = 0;
+  Tracker.bundleAdded(bundle);
   for (const product of bundle.items) {
     const variant = getDefaultVariant(product);
     if (!variant) continue;

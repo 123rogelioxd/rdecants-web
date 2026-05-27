@@ -12,6 +12,7 @@ import { Tracker }   from '../tracking/tracker.js';
 import { formatPrice, isValidPrice, getDefaultVariant } from '../utils/prices.js?v=1.0.15';
 import { CatalogProvider } from '../providers/catalog.js?v=1.0.15';
 import { getCartUpsells }  from '../recommendations/upsells.js?v=1.0.13';
+import { getCartMinimumState } from './momentum.js?v=1.0.15';
 
 const WHATSAPP_NUMBER = '5219516513018';
 let _prevFocus = null;
@@ -97,6 +98,7 @@ export function renderCart() {
 
 /* ── Add-on upsells (operational-first, low friction) ───────── */
 let _lastUpsellSig = '';
+let _lastMinimumSig = '';
 
 async function _renderUpsells() {
   const slot = document.getElementById('cart-upsells');
@@ -120,8 +122,11 @@ async function _renderUpsells() {
   /* Cart may have changed while awaiting the catalog */
   if (Cart.items.length !== items.length) return;
 
-  const suggestions = getCartUpsells(Cart.items, products)
-    .map(product => ({ product, variant: getDefaultVariant(product) }))
+  const minimum = getCartMinimumState(Cart.total());
+  const suggestions = getCartUpsells(Cart.items, products, {
+    targetRemaining: minimum.remaining,
+  })
+    .map(product => ({ product, variant: getDefaultVariant(product, 3) }))
     .filter(entry => entry.variant);
 
   if (!suggestions.length) {
@@ -132,13 +137,20 @@ async function _renderUpsells() {
   }
 
   slot.innerHTML = `
-    <p class="cart-section-label">Completa tu pedido</p>
+    ${!minimum.isComplete ? _minimumPrompt(minimum) : ''}
+    <p class="cart-section-label">${minimum.isComplete ? 'Tambien te puede gustar' : 'Decants faciles de sumar'}</p>
     <div class="cart-upsell-list">
       ${suggestions.map(_upsellRow).join('')}
     </div>`;
   slot.hidden = false;
 
-  const sig = suggestions.map(s => s.product.id).join('|');
+  const minimumSig = `${Cart.total()}:${minimum.remaining}:${suggestions.map(s => s.product.id).join('|')}`;
+  if (!minimum.isComplete && minimumSig !== _lastMinimumSig) {
+    _lastMinimumSig = minimumSig;
+    Tracker.cartMinimumPromptShown(minimum, suggestions.map(s => s.product));
+  }
+
+  const sig = `${minimum.isComplete ? 'general' : 'minimum'}:${suggestions.map(s => s.product.id).join('|')}`;
   if (sig !== _lastUpsellSig) {
     _lastUpsellSig = sig;
     Tracker.recommendationView(
@@ -153,9 +165,30 @@ async function _renderUpsells() {
       if (!entry) return;
       const position = Number(btn.dataset.position) + 1;
       Tracker.recommendationClicked(entry.product, position, { railId: 'cart_upsell', railTitle: 'Completa tu pedido' });
+      if (!minimum.isComplete) {
+        Tracker.recommendationAdded(entry.product, position, {
+          railId: 'cart_minimum_completion',
+          railTitle: 'Pedido minimo',
+          remaining: minimum.remaining,
+        });
+      }
       window.__rd?.cart?.add(entry.product.id, entry.variant.size);
     });
   });
+}
+
+function _minimumPrompt(minimum) {
+  return `
+    <div class="cart-minimum" aria-label="Progreso del pedido minimo">
+      <div class="cart-minimum-head">
+        <span>Tu pedido casi esta listo.</span>
+        <strong>${minimum.progress}%</strong>
+      </div>
+      <div class="cart-minimum-bar" aria-hidden="true">
+        <span style="width:${minimum.progress}%"></span>
+      </div>
+      <p>Te faltan ${formatPrice(minimum.remaining)} para completar el pedido minimo.</p>
+    </div>`;
 }
 
 function _upsellRow({ product, variant }, idx) {

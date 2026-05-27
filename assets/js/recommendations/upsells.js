@@ -16,7 +16,16 @@
    ============================================================= */
 
 import { getScarcityState, hasHighDemand } from '../utils/scarcity.js?v=1.0.13';
-import { getOrderableVariants } from '../utils/prices.js?v=1.0.13';
+import {
+  getOrderableVariants,
+  getDefaultVariant,
+} from '../utils/prices.js?v=1.0.13';
+import {
+  USE_CASE_PROFILES,
+  SCENT_FAMILIES,
+  productSignals,
+  scoreProfileMatch,
+} from './taxonomy.js?v=1.0.13';
 
 const RELATED_LIMIT = 4;
 const CART_LIMIT = 3;
@@ -30,6 +39,11 @@ const LAST_UNITS_PENALTY = 6;
 const LOW_STOCK_PENALTY = 1;
 const FEATURED_BOOST = 3;
 const DEMAND_BOOST = 2;
+const SMALL_VARIANT_BOOST = 7;
+const AFFORDABLE_BOOST = 5;
+const BEGINNER_BOOST = 3;
+const FAMILY_WEIGHT = 4;
+const USE_CASE_WEIGHT = 2;
 
 export function getRelatedProducts(seed, products, { limit = RELATED_LIMIT } = {}) {
   if (!seed || !Array.isArray(products)) return [];
@@ -43,7 +57,7 @@ export function getRelatedProducts(seed, products, { limit = RELATED_LIMIT } = {
   );
 }
 
-export function getCartUpsells(cartItems, products, { limit = CART_LIMIT } = {}) {
+export function getCartUpsells(cartItems, products, { limit = CART_LIMIT, targetRemaining = null } = {}) {
   if (!Array.isArray(cartItems) || !cartItems.length || !Array.isArray(products)) return [];
 
   const inCart = new Set(
@@ -62,26 +76,30 @@ export function getCartUpsells(cartItems, products, { limit = CART_LIMIT } = {})
     products.filter(p => p && !inCart.has(String(p.id))),
     profile,
     limit,
+    { targetRemaining },
   );
 }
 
 /* ── Ranking ───────────────────────────────────────────────── */
-function _rank(candidates, profile, limit) {
+function _rank(candidates, profile, limit, options = {}) {
   return candidates
-    .map(product => ({ product, score: _score(product, profile) }))
+    .map(product => ({ product, score: _score(product, profile, options) }))
     .filter(item => item.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
     .map(item => item.product);
 }
 
-function _score(product, profile) {
+function _score(product, profile, options = {}) {
   if (getScarcityState(product) === 'sold_out') return 0;
-  if (!getOrderableVariants(product).length) return 0;
+  const variants = getOrderableVariants(product);
+  if (!variants.length) return 0;
 
   const notes = (product.notes ?? []).map(_norm);
   const house = _norm(product.house);
   const text = _productText(product);
+  const family = _bestFamily(product);
+  const useCase = _bestUseCase(product);
 
   let score = 0;
 
@@ -90,10 +108,12 @@ function _score(product, profile) {
   score += notes.filter(note => profile.notes.has(note)).length * SHARED_NOTE_WEIGHT;
 
   score += [...profile.tokens].filter(token => text.includes(token)).length * SHARED_TEXT_WEIGHT;
+  if (family && profile.families.has(family)) score += FAMILY_WEIGHT;
+  if (useCase && profile.useCases.has(useCase)) score += USE_CASE_WEIGHT;
 
   if (score <= 0) return 0;
 
-  return Math.max(0, score + _healthAdjust(product));
+  return Math.max(0, score + _healthAdjust(product) + _frictionAdjust(product, options));
 }
 
 function _healthAdjust(product) {
@@ -111,6 +131,8 @@ function _profile(seedProducts) {
   const houses = new Set();
   const notes = new Set();
   const tokens = new Set();
+  const families = new Set();
+  const useCases = new Set();
 
   seedProducts.forEach(product => {
     const house = _norm(product.house);
@@ -124,9 +146,57 @@ function _profile(seedProducts) {
       .filter(token => token.length >= 4)
       .slice(0, MAX_TEXT_TOKENS)
       .forEach(token => tokens.add(token));
+    const family = _bestFamily(product);
+    const useCase = _bestUseCase(product);
+    if (family) families.add(family);
+    if (useCase) useCases.add(useCase);
   });
 
-  return { houses, notes, tokens };
+  return { houses, notes, tokens, families, useCases };
+}
+
+function _frictionAdjust(product, { targetRemaining = null } = {}) {
+  const variants = getOrderableVariants(product);
+  const smallest = variants[0];
+  const defaultVariant = getDefaultVariant(product);
+  const price = smallest?.price ?? defaultVariant?.price ?? null;
+  let adj = 0;
+
+  if (smallest && smallest.size <= 3) adj += SMALL_VARIANT_BOOST;
+  else if (smallest && smallest.size <= 5) adj += Math.floor(SMALL_VARIANT_BOOST / 2);
+
+  if (Number.isFinite(Number(targetRemaining)) && price !== null) {
+    const remaining = Number(targetRemaining);
+    if (price <= Math.max(remaining + 60, remaining * 1.35)) adj += AFFORDABLE_BOOST;
+    else if (price > remaining * 2) adj -= AFFORDABLE_BOOST;
+  } else if (price !== null && price <= 140) {
+    adj += AFFORDABLE_BOOST;
+  }
+
+  if (_isBeginnerFriendly(product)) adj += BEGINNER_BOOST;
+  return adj;
+}
+
+function _bestFamily(product) {
+  return _bestProfile(Object.values(SCENT_FAMILIES), product)?.key ?? null;
+}
+
+function _bestUseCase(product) {
+  return _bestProfile(USE_CASE_PROFILES, product)?.key ?? null;
+}
+
+function _bestProfile(profiles, product) {
+  const signals = productSignals(product);
+  return profiles
+    .map(profile => ({ profile, score: scoreProfileMatch(profile, signals) }))
+    .filter(item => item.score > 0)
+    .sort((a, b) => b.score - a.score)[0]?.profile ?? null;
+}
+
+function _isBeginnerFriendly(product) {
+  const text = _productText(product);
+  return ['facil', 'versatil', 'diario', 'limpio', 'fresco', 'popular', 'recomendado']
+    .some(term => text.includes(term));
 }
 
 function _productText(product) {

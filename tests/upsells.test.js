@@ -25,6 +25,11 @@ const product = (id, house, notes, stock = 20, extra = {}) => ({
   ...extra,
 });
 
+const productWithVariants = (id, house, notes, variants, extra = {}) => ({
+  ...product(id, house, notes, 20, extra),
+  variants,
+});
+
 const ids = (list) => list.map(p => p.id);
 
 test('related: same-house + shared note outranks shared-note-only', () => {
@@ -112,4 +117,32 @@ test('cart upsells: scores against the combined cart profile', () => {
   assert.ok(result.includes('matchA'));
   assert.ok(result.includes('matchB'));
   assert.ok(!result.includes('unrelated'));
+});
+
+test('cart upsells: prioritizes low-friction small add-ons near the minimum', () => {
+  const products = [
+    product('cartFresh', 'JPG', ['bergamota', 'lavanda']),
+    productWithVariants('smallFresh', 'YSL', ['bergamota', 'lavanda'], [
+      variant(3, 90, 20),
+      variant(5, 130, 20),
+    ], { desc: 'fresco facil de usar diario' }),
+    productWithVariants('largeFresh', 'YSL', ['bergamota', 'lavanda'], [
+      variant(10, 260, 20),
+    ]),
+  ];
+
+  const result = ids(getCartUpsells([{ sourceId: 'cartFresh' }], products, { targetRemaining: 40 }));
+  assert.equal(result[0], 'smallFresh');
+});
+
+test('cart upsells: same family can connect related houses without random products', () => {
+  const products = [
+    product('leBeau', 'JPG', ['coco', 'bergamota'], 20, { desc: 'tropical fresco verano' }),
+    product('yslY', 'YSL', ['bergamota', 'manzana'], 20, { desc: 'fresco versatil diario' }),
+    product('khamrah', 'Lattafa', ['vainilla', 'canela'], 20, { desc: 'dulce noche intenso' }),
+  ];
+
+  const result = ids(getCartUpsells([{ sourceId: 'leBeau' }], products, { targetRemaining: 60 }));
+  assert.ok(result.includes('yslY'));
+  assert.ok(!result.includes('khamrah'));
 });

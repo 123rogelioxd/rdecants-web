@@ -70,7 +70,8 @@ async function _recordTaste(productId) {
   } catch { /* no-op: personalization stays off if catalog is unavailable */ }
 }
 
-EventBus.on('track:product_viewed', payload => _recordTaste(payload?.productId));
+EventBus.on('track:viewed_product', payload => _recordTaste(payload?.productId));
+EventBus.on('track:opened_product_modal', payload => _recordTaste(payload?.productId));
 EventBus.on('track:recommendation_clicked', payload => _recordTaste(payload?.productId));
 
 /* ── Backwards-compat shims (used by existing HTML event attrs) */
@@ -82,11 +83,21 @@ window.scrollToCatalog = window.__rd.ui.scrollToCatalog;
 
 /* ── API event bridge ───────────────────────────────────────── */
 const _API_EVENT_MAP = {
-  product_viewed:            'product_viewed',
+  viewed_product:            'product_viewed',
+  opened_product_modal:      'opened_product_modal',
   add_to_cart:               'product_added_to_cart',
   checkout_started:          'checkout_started',
+  checkout_completed:        'checkout_completed',
   checkout_whatsapp_clicked: 'whatsapp_checkout_clicked',
+  cart_minimum_prompt_shown: 'cart_minimum_prompt_shown',
+  cart_minimum_prompt_converted: 'cart_minimum_prompt_converted',
+  recommendation_viewed:     'recommendation_viewed',
   recommendation_clicked:    'recommendation_clicked',
+  recommendation_added:      'recommendation_added',
+  bundle_viewed:             'bundle_viewed',
+  bundle_added:              'bundle_added',
+  assistant_started:         'assistant_started',
+  assistant_completed:       'assistant_completed',
 };
 
 Tracker.use((event, payload) => {
@@ -97,7 +108,8 @@ Tracker.use((event, payload) => {
 
 function _toApiPayload(event, payload) {
   switch (event) {
-    case 'product_viewed':
+    case 'viewed_product':
+    case 'opened_product_modal':
       return {
         product_id: payload.productId,
         metadata: {
@@ -125,6 +137,7 @@ function _toApiPayload(event, payload) {
         },
       };
     case 'checkout_whatsapp_clicked':
+    case 'checkout_completed':
       return {
         metadata: {
           cart_total:  payload.total,
@@ -133,7 +146,17 @@ function _toApiPayload(event, payload) {
           payment:     payload.payment,
         },
       };
+    case 'recommendation_viewed':
+      return {
+        metadata: {
+          ids:        payload.ids,
+          count:      payload.count,
+          rail_id:    payload.context?.railId,
+          rail_title: payload.context?.railTitle,
+        },
+      };
     case 'recommendation_clicked':
+    case 'recommendation_added':
       return {
         product_id: payload.productId,
         metadata: {
@@ -142,6 +165,36 @@ function _toApiPayload(event, payload) {
           rail_title:       payload.context?.railTitle,
           position:         payload.position,
           source_component: 'recommendation_rail',
+        },
+      };
+    case 'cart_minimum_prompt_shown':
+    case 'cart_minimum_prompt_converted':
+      return {
+        metadata: {
+          cart_total: payload.total,
+          threshold:  payload.threshold,
+          remaining:  payload.remaining,
+          progress:   payload.progress,
+          ids:        payload.ids,
+        },
+      };
+    case 'bundle_viewed':
+    case 'bundle_added':
+      return {
+        metadata: {
+          bundle_id: payload.bundleId,
+          title:     payload.title,
+          ids:       payload.ids,
+          total:     payload.total,
+        },
+      };
+    case 'assistant_started':
+    case 'assistant_completed':
+      return {
+        metadata: {
+          answers: payload.answers,
+          ids:     payload.ids,
+          count:   payload.count,
         },
       };
     default:

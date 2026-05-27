@@ -75,6 +75,7 @@ function _bindForm() {
   form.addEventListener('click', (event) => {
     const chip = event.target.closest('.asst-chip');
     if (!chip) return;
+    Tracker.assistantStarted(_answers);
     const { q, value } = chip.dataset;
     _answers[q] = value;
     form.querySelectorAll(`.asst-chip[data-q="${q}"]`).forEach(btn => {
@@ -86,6 +87,7 @@ function _bindForm() {
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
+    Tracker.assistantStarted(_answers);
     await _generate();
   });
 }
@@ -107,6 +109,7 @@ async function _generate() {
 
   const results = getAssistantRecommendations(_answers, products);
   _lastResults = results;
+  Tracker.assistantCompleted(results, _answers);
 
   submit?.classList.remove('is-loading');
   if (submit) submit.disabled = false;

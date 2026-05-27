@@ -25,6 +25,7 @@ const MIN_NAME_CHARS = 2;
 
 let _startedSignature = '';
 let _isSubmitting = false;
+let _wasBelowMinimum = false;
 
 export function setupCheckout() {
   const form = _form();
@@ -55,6 +56,15 @@ export async function sendCheckoutWhatsApp(phoneNumber) {
 
   if (!items.length) {
     const message = 'Agrega una fragancia antes de finalizar por WhatsApp';
+    _showMessage(message, 'error');
+    showToast(message);
+    _syncAvailability();
+    return;
+  }
+
+  const minimum = getCartMomentum({ count: Cart.count(), total: Cart.total(), hasValidName: true }).minimum;
+  if (!minimum.isComplete) {
+    const message = `Te faltan ${formatPrice(minimum.remaining)} para completar el pedido minimo.`;
     _showMessage(message, 'error');
     showToast(message);
     _syncAvailability();
@@ -111,6 +121,7 @@ export async function sendCheckoutWhatsApp(phoneNumber) {
     }
 
     localStorage.setItem(LAST_ORDER_KEY, order.folio || '');
+    Tracker.checkoutCompleted(Cart.items, checkoutTotal, { folio: order.folio });
     _showMessage('Listo, abriremos WhatsApp para finalizar tu pedido.', 'success');
     showToast('Listo, abriremos WhatsApp para finalizar tu pedido.');
 
@@ -309,29 +320,38 @@ function _load() {
 
 function _syncAvailability() {
   const count = Cart.count();
+  const total = Cart.total();
   const isEmpty = count === 0;
   const hasValidName = _isValidCustomerName(readCheckoutData().name);
+  const minimum = getCartMomentum({ count, total, hasValidName }).minimum;
   const button = document.getElementById('checkout-whatsapp');
   const form = _form();
 
   if (button) {
-    const isDisabled = isEmpty || !hasValidName || _isSubmitting;
+    const isDisabled = isEmpty || !minimum.isComplete || !hasValidName || _isSubmitting;
     button.disabled = isDisabled;
     button.setAttribute('aria-disabled', String(isDisabled));
   }
 
   form?.classList.toggle('checkout-form--disabled', isEmpty);
-  form?.classList.toggle('checkout-form--ready', !isEmpty && hasValidName);
+  form?.classList.toggle('checkout-form--ready', !isEmpty && minimum.isComplete && hasValidName);
 
-  _syncMomentum(count, hasValidName);
+  if (!isEmpty && _wasBelowMinimum && minimum.isComplete) {
+    Tracker.cartMinimumPromptConverted(minimum);
+  }
+  _wasBelowMinimum = !isEmpty && !minimum.isComplete;
+
+  _syncMomentum(count, total, hasValidName);
 }
 
-function _syncMomentum(count, hasValidName) {
+function _syncMomentum(count, total, hasValidName) {
   const el = document.getElementById('checkout-momentum');
   if (!el) return;
 
-  const momentum = getCartMomentum({ count, hasValidName });
-  el.textContent = momentum.message;
+  const momentum = getCartMomentum({ count, total, hasValidName });
+  el.innerHTML = momentum.key === 'minimum'
+    ? `${momentum.message}<span class="checkout-progress" aria-hidden="true"><span style="width:${momentum.minimum.progress}%"></span></span>`
+    : momentum.message;
   el.dataset.key = momentum.key;
   el.hidden = !momentum.message;
 }
