@@ -39,16 +39,16 @@ function _render(bundles) {
   _root.hidden = false;
   _root.innerHTML = `
     <div class="container">
-      <div class="section-header fade-up">
+      <div class="bundle-section-head fade-up">
         <div>
-          <p class="section-label">Kits inteligentes</p>
-          <h2 class="section-title">Listos<br><em>para combinar</em></h2>
+          <p class="section-label">Colecciones curadas</p>
+          <h2 class="section-title">Kits<br><em>inteligentes</em></h2>
         </div>
-        <p style="font-size:12px;color:var(--muted);max-width:240px;line-height:1.7;">
-          Selecciones armadas en vivo según mood, ocasión y disponibilidad real.
+        <p class="bundle-section-copy">
+          Menos exploracion, mas intencion: cada kit combina mood, ocasion, ambiente y stock real.
         </p>
       </div>
-      <div class="bundle-grid">
+      <div class="bundle-editorial-grid">
         ${bundles.map(_bundleCard).join('')}
       </div>
     </div>
@@ -64,22 +64,50 @@ function _render(bundles) {
 }
 
 function _bundleCard(bundle) {
+  const hero = bundle.items[0];
+  const supporting = bundle.items.slice(1);
+  const heroVariant = hero ? getDefaultVariant(hero, bundle.itemSize) : null;
+  const hasHeroImage = hero?.image && hero.image.trim() !== '';
+
   return `
     <article class="bundle-card fade-up" data-bundle-id="${bundle.id}">
-      <header class="bundle-head">
-        <h3 class="bundle-title">${bundle.title}</h3>
-        <p class="bundle-desc">${bundle.description}</p>
-      </header>
-
-      <div class="bundle-items">
-        ${bundle.items.map(_bundleItem).join('')}
+      <div class="bundle-hero">
+        <button class="bundle-hero-img" data-product-id="${hero?.id ?? ''}" aria-label="Ver ${hero?.name ?? bundle.title}">
+          ${hasHeroImage
+            ? `<img src="${hero.image}" alt="${hero.name}" loading="lazy" decoding="async"
+                 onerror="this.parentElement.classList.add('bundle-hero-img--fallback');this.remove()">`
+            : ''}
+        </button>
+        <div class="bundle-savings-badge">
+          <span>Ahorra</span>
+          <strong>${formatPrice(bundle.savings, '$0 MXN')}</strong>
+        </div>
       </div>
 
-      <p class="bundle-why"><span>Por qué funciona</span>${bundle.why}</p>
+      <div class="bundle-copy">
+        <p class="bundle-mood">${_bundleMood(bundle.id)}</p>
+        <h3 class="bundle-title">${bundle.title}</h3>
+        <p class="bundle-desc">${bundle.description}</p>
+        <p class="bundle-why"><span>Por que funciona</span>${bundle.why}</p>
+
+        ${hero ? `
+          <button class="bundle-feature" data-product-id="${hero.id}" aria-label="Ver ${hero.name}">
+            <span>${hero.house}</span>
+            <strong>${hero.name}</strong>
+            <small>${heroVariant ? `${formatPrice(heroVariant.price)} · ${heroVariant.size}ml` : 'Consultar'}</small>
+          </button>
+        ` : ''}
+
+        <div class="bundle-items">
+          ${supporting.map(product => _bundleItem(product, bundle)).join('')}
+        </div>
+      </div>
 
       <div class="bundle-foot">
         <div class="bundle-total">
-          <span class="bundle-total-label">Total del kit</span>
+          <span class="bundle-total-label">Valor separado</span>
+          <span class="bundle-total-original">${formatPrice(bundle.originalTotal)}</span>
+          <span class="bundle-total-label">Precio del kit</span>
           <strong class="bundle-total-amount">${formatPrice(bundle.total)}</strong>
         </div>
         <button class="btn-primary bundle-add" data-bundle-id="${bundle.id}"
@@ -89,8 +117,8 @@ function _bundleCard(bundle) {
   `;
 }
 
-function _bundleItem(product) {
-  const variant = getDefaultVariant(product);
+function _bundleItem(product, bundle = {}) {
+  const variant = getDefaultVariant(product, bundle.itemSize);
   const hasImage = product.image && product.image.trim() !== '';
   return `
     <button class="bundle-item" data-product-id="${product.id}" aria-label="Ver ${product.name}">
@@ -114,7 +142,7 @@ function _bind() {
     const bundle = _bundles.find(b => b.id === card.dataset.bundleId);
     if (!bundle) return;
 
-    card.querySelectorAll('.bundle-item').forEach(itemEl => {
+    card.querySelectorAll('.bundle-item, .bundle-feature, .bundle-hero-img').forEach(itemEl => {
       itemEl.addEventListener('click', () => {
         const product = bundle.items.find(p => String(p.id) === itemEl.dataset.productId);
         if (product) openProductModal(product);
@@ -126,15 +154,21 @@ function _bind() {
 }
 
 async function _addBundle(bundle) {
-  let added = 0;
   Tracker.bundleAdded(bundle);
-  for (const product of bundle.items) {
-    const variant = getDefaultVariant(product);
-    if (!variant) continue;
-    Tracker.recommendationClicked(product, added + 1, { railId: `bundle_${bundle.id}`, railTitle: bundle.title });
-    // eslint-disable-next-line no-await-in-loop
-    await window.__rd?.cart?.add(product.id, variant.size);
-    added += 1;
-  }
-  if (added) window.__rd?.ui?.openCart?.();
+  bundle.items.forEach((product, index) => {
+    Tracker.recommendationClicked(product, index + 1, { railId: `bundle_${bundle.id}`, railTitle: bundle.title });
+  });
+  await window.__rd?.cart?.addBundle?.(bundle);
+  window.__rd?.ui?.openCart?.();
+}
+
+function _bundleMood(id) {
+  const labels = {
+    'calor-tropical': 'Ambiente: calor / terraza / playa',
+    'oficina-clean': 'Mood: limpio / profesional',
+    'seduccion-nocturna': 'Ocasion: noche / cita',
+    'fresh-luxury': 'Personalidad: lujo fresco',
+    'arabic-intensity': 'Presencia: intensa / envolvente',
+  };
+  return labels[id] ?? 'Seleccion editorial';
 }

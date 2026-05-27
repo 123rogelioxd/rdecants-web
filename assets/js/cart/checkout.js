@@ -232,7 +232,7 @@ async function _buildOrderItem(item) {
     variant_id: variantId,
     ml: Number(variant.size) || Number(item.size) || null,
     quantity: Number(item.qty) || 1,
-    unit_price: Number(variant.price) || Number(item.price) || 0,
+    unit_price: Number(item.price) || Number(variant.price) || 0,
   };
 }
 

@@ -42,17 +42,20 @@ test('each bundle has the required shape and >= 2 items', () => {
   }
 });
 
-test('never fabricates a savings figure (no real discount data)', () => {
+test('bundles expose meaningful real kit savings', () => {
   for (const b of generateBundles(catalog)) {
-    assert.equal(b.savings, null);
+    assert.equal(typeof b.originalTotal, 'number');
+    assert.equal(typeof b.savings, 'number');
+    assert.ok(b.savings >= 45);
+    assert.equal(b.total, b.originalTotal - b.savings);
   }
 });
 
-test('total equals the sum of the items default-variant prices', () => {
+test('original total equals the sum of the items default-variant prices', () => {
   const bundle = generateBundles(catalog).find(b => b.id === 'calor-tropical');
   assert.ok(bundle);
   const expected = bundle.items.reduce((sum, p) => sum + p.variants[0].price, 0);
-  assert.equal(bundle.total, expected);
+  assert.equal(bundle.originalTotal, expected);
 });
 
 test('excludes sold-out products from bundles', () => {

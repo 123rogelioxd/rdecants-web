@@ -118,6 +118,68 @@ export const Cart = {
     _commit();
   },
 
+  async addBundle(bundle) {
+    if (!bundle?.items?.length) return;
+
+    const originalTotal = Number(bundle.originalTotal ?? bundle.items.reduce((sum, product) => {
+      const variant = getVariantForSize(product, bundle.itemSize ?? 3) || product.variants?.[0];
+      return sum + (Number(variant?.price) || 0);
+    }, 0));
+    const kitTotal = Number(bundle.total ?? originalTotal);
+    const ratio = originalTotal > 0 && kitTotal > 0 ? kitTotal / originalTotal : 1;
+    let added = 0;
+
+    for (const seed of bundle.items) {
+      const product = await CatalogProvider.getProductById(seed.id);
+      if (!product) continue;
+
+      const variant = getVariantForSize(product, bundle.itemSize ?? 3) || getVariantForSize(product, seed.size) || product.variants?.[0];
+      const size = variant?.size;
+      const variantId = _validVariantId(variant?.variant_id);
+      const stock = _selectedVariantStock(variant);
+      const originalPrice = Number(variant?.price);
+      const price = Math.max(1, Math.round(originalPrice * ratio));
+
+      if (!size || !variantId || !Number.isFinite(originalPrice) || stock <= 0 || variant?.soldOut) continue;
+
+      const key = `${product.id}-${size}-bundle-${bundle.id}`;
+      const existing = _items.find(i => i.key === key);
+
+      if (existing) {
+        if (existing.qty >= stock) continue;
+        existing.qty++;
+        existing.stock = stock;
+      } else {
+        _items.push({
+          key,
+          sourceId: product.id,
+          product_id: product.product_id ?? product.id,
+          sku: product.sku ?? null,
+          variant_id: variantId,
+          type: 'product',
+          bundle_id: bundle.id,
+          bundle_title: bundle.title,
+          name: product.name,
+          house: product.house,
+          size,
+          price,
+          original_price: originalPrice,
+          qty: 1,
+          stock,
+          image: product.image,
+        });
+      }
+
+      Tracker.addToCart(product, size, price, `bundle_${bundle.id}`);
+      added += 1;
+    }
+
+    if (added) {
+      showToast(`${bundle.title} — Kit agregado`);
+      _commit();
+    }
+  },
+
   async changeQty(key, delta) {
     const idx  = _items.findIndex(i => i.key === key);
     if (idx === -1) return;
@@ -195,7 +257,8 @@ export const Cart = {
         product_id: product.product_id ?? product.id,
         sku: product.sku ?? item.sku ?? null,
         variant_id: variantId,
-        price: variant.price,
+        price: item.bundle_id ? item.price : variant.price,
+        original_price: item.bundle_id ? (item.original_price ?? variant.price) : item.original_price,
         qty: Math.min(Math.max(1, Number(item.qty) || 1), stock),
         stock,
         image: product.image ?? item.image ?? null,

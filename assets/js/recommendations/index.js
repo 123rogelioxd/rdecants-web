@@ -12,7 +12,7 @@ import { getSafePrice, formatPrice } from '../utils/prices.js';
 import { hasHighDemand } from '../utils/scarcity.js?v=1.0.13';
 import { Personalization, personalizeRails } from './personalization.js?v=1.0.13';
 
-const MAX_PER_RAIL = 8;
+const MAX_PER_RAIL = 6;
 const MIN_PER_RAIL = 2;
 
 const RAILS = [
@@ -61,13 +61,6 @@ const RAILS = [
       badges: ['ultra luxury', 'limited', 'nicho'],
       text: ['lujo', 'exclusivo', 'carisimo'],
     },
-  },
-  {
-    id: 'trending',
-    title: 'Trending ahora',
-    mark: '↑',
-    desc: 'Lo que mas se mueve: featured, alta demanda y pocas unidades.',
-    trending: true,
   },
 ];
 
@@ -188,9 +181,12 @@ function _renderRails(root, rails) {
           <p class="section-label">Curadurias dinamicas</p>
           <h2 class="section-title">Descubre<br><em>por mood</em></h2>
         </div>
-        <p class="rr-head-copy">
-          Selecciones armadas en vivo con notas, demanda, stock y casas del catalogo.
-        </p>
+      <p class="rr-head-copy">
+        Selecciones armadas en vivo con notas, demanda, stock y casas del catalogo.
+      </p>
+      </div>
+      <div class="rr-editorial-grid fade-up">
+        ${rails.slice(0, 3).map(_collectionTemplate).join('')}
       </div>
     </div>
     <div class="rr-stack">
@@ -205,9 +201,43 @@ function _renderRails(root, rails) {
     Tracker.recommendationView(rail.items, { railId: rail.id, railTitle: rail.title });
   });
 
+  _bindCollections(root, rails);
   _observeRailCards(root);
   primeImageStates(root);
   observeFadeUp();
+}
+
+function _collectionTemplate(rail) {
+  const featured = rail.items[0];
+  const supporting = rail.items.slice(1, 3);
+  if (!featured) return '';
+
+  return `
+    <article class="rr-collection" data-product-id="${featured.id}" data-rail-id="${rail.id}">
+      <div class="rr-collection-media">
+        <img src="${featured.image}" alt="${featured.name}" loading="lazy" decoding="async"
+             onerror="this.parentElement.classList.add('rr-collection-media--fallback');this.remove()">
+      </div>
+      <div class="rr-collection-copy">
+        <p class="rr-collection-kicker">${rail.title}</p>
+        <h3>${_collectionTitle(rail.id)}</h3>
+        <p>${rail.desc}</p>
+        <div class="rr-collection-feature">
+          <span>${featured.house}</span>
+          <strong>${featured.name}</strong>
+        </div>
+        <div class="rr-collection-support">
+          ${supporting.map(product => `
+            <button type="button" data-product-id="${product.id}" aria-label="Ver ${product.name}">
+              <span>${product.house}</span>
+              ${product.name}
+            </button>
+          `).join('')}
+        </div>
+        <button type="button" class="btn-primary rr-collection-cta">Explorar mood</button>
+      </div>
+    </article>
+  `;
 }
 
 function _renderEmpty(root) {
@@ -248,7 +278,7 @@ function _cardTemplate(product, rail, idx) {
   const publicBadge = product.badge && !hasHighDemand(product) ? product.badge : '';
 
   return `
-    <article class="rr-card" data-product-id="${product.id}" data-position="${idx}" style="--i:${idx}">
+    <article class="rr-card rr-card--${_cardVariant(idx)}" data-product-id="${product.id}" data-position="${idx}" style="--i:${idx}">
       ${publicBadge ? `<span class="rr-badge">${publicBadge}</span>` : ''}
       <div class="rr-img">
         <img src="${product.image}" alt="${product.name}" loading="lazy" decoding="async"
@@ -267,6 +297,38 @@ function _cardTemplate(product, rail, idx) {
       </div>
     </article>
   `;
+}
+
+function _bindCollections(root, rails) {
+  root.querySelectorAll('.rr-collection').forEach(card => {
+    const rail = rails.find(item => item.id === card.dataset.railId);
+    if (!rail) return;
+
+    card.addEventListener('click', event => {
+      const target = event.target.closest('[data-product-id]');
+      const productId = target?.dataset.productId || card.dataset.productId;
+      const product = rail.items.find(item => String(item.id) === String(productId));
+      if (!product) return;
+      Tracker.recommendationClicked(product, 1, { railId: rail.id, railTitle: rail.title });
+      openProductModal(product);
+    });
+  });
+}
+
+function _cardVariant(idx) {
+  if (idx === 0) return 'hero';
+  if (idx === 3) return 'wide';
+  return 'standard';
+}
+
+function _collectionTitle(id) {
+  const titles = {
+    heat: 'Calor Tropical',
+    party: 'Noche / Seduccion',
+    daily: 'Fresh Office',
+    niche: 'Fresh Luxury',
+  };
+  return titles[id] ?? 'Seleccion curada';
 }
 
 function _bindRail(track, rail) {

@@ -10,9 +10,8 @@
      • prefer healthy stock + featured + rotation (operational score)
      • avoid leaning on nearly-gone stock
 
-   Honesty note: dynamic bundles are groupings of individual decants
-   added at their normal price. There is no backend bundle discount,
-   so we show the real total and DO NOT fabricate a "savings" figure.
+   Dynamic bundles include a real prorated kit price. The cart stores
+   those kit item prices so checkout totals stay consistent.
    ============================================================= */
 
 import {
@@ -27,6 +26,8 @@ import { getDefaultVariant } from '../utils/prices.js?v=1.0.13';
 
 const DEFAULT_SIZE = 3;
 const MIN_ITEMS = 2;
+const KIT_DISCOUNT_RATE = 0.14;
+const KIT_DISCOUNT_MIN = 45;
 
 const _profileByKey = new Map(USE_CASE_PROFILES.map(p => [p.key, p]));
 
@@ -111,7 +112,10 @@ function _buildBundle(template, sellable) {
   if (items.length < MIN_ITEMS) return null;
 
   const ordered = template.progression ? _orderByIntensity(items) : items;
-  const total = ordered.reduce((sum, p) => sum + (getDefaultVariant(p)?.price ?? 0), 0);
+  const itemSize = template.size ?? DEFAULT_SIZE;
+  const originalTotal = ordered.reduce((sum, p) => sum + (getDefaultVariant(p, itemSize)?.price ?? 0), 0);
+  const savings = _bundleSavings(originalTotal, ordered.length);
+  const total = Math.max(0, originalTotal - savings);
 
   return {
     id: template.id,
@@ -120,9 +124,19 @@ function _buildBundle(template, sellable) {
     why: template.why,
     items: ordered,
     size: ordered.length,
+    itemSize,
+    originalTotal,
     total,
-    savings: null, // no real bundle discount exists — never fabricated
+    savings,
   };
+}
+
+function _bundleSavings(originalTotal, itemCount) {
+  if (!Number.isFinite(originalTotal) || originalTotal <= 0 || itemCount < MIN_ITEMS) return 0;
+  return Math.min(
+    originalTotal - 1,
+    Math.max(KIT_DISCOUNT_MIN, Math.round(originalTotal * KIT_DISCOUNT_RATE / 5) * 5),
+  );
 }
 
 function _scoreForTemplate(product, signals, template) {

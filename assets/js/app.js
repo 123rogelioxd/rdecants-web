@@ -36,6 +36,7 @@ window.__rd = {
   cart: {
     add:       (id, size) => Cart.add(id, size),
     addPack:   (id)       => Cart.addPack(id),
+    addBundle: (bundle)   => Cart.addBundle(bundle),
     remove:    (key)      => Cart.remove(key),
     changeQty: (key, d)   => Cart.changeQty(key, d),
   },
