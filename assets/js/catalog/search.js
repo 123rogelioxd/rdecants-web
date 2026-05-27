@@ -177,29 +177,66 @@ function _matchesMood(product, mood) {
 }
 
 function _matchesSearch(product, query) {
+  /* Alias-strict path: when the query references a known fragrance alias
+     (ysl, bdc, jpg, "y edp", …), the result must belong to that alias
+     group. This prevents Spanish " y " inside descriptions/stories from
+     creating false positives for the YSL "y" alias. */
   const aliasGroups = _matchingAliasGroups(query);
   if (aliasGroups.length) {
-    const productAliasText = _norm(_productAliases(product).join(' '));
-    const productText = _searchText(product);
-    return aliasGroups.some(group =>
-      group.match.some(term => productText.includes(_norm(term))) ||
-      group.terms.some(term => productAliasText.includes(_norm(term)))
+    return aliasGroups.some(group => _productInAliasGroup(product, group));
+  }
+
+  /* Skip super-short queries from full-text fuzzy: a single letter (like
+     "y") would match almost everything via word boundaries. */
+  if (query.length < 2) return false;
+
+  const haystack = _searchText(product);
+  const identityText = _identityText(product);
+  const tokens = haystack.split(/\s+/).filter(Boolean);
+
+  /* Multi-token query: require every token to match identity or notes —
+     keeps "ysl tropical" honest while tolerating typos. */
+  const queryTokens = query.split(/\s+/).filter(t => t.length > 1);
+  if (queryTokens.length > 1) {
+    return queryTokens.every(part =>
+      identityText.includes(part) ||
+      _fuzzyTokenMatch(part, tokens)
     );
   }
 
-  const expanded = _expandQuery(query);
-  const haystack = _searchText(product);
-  const tokens = haystack.split(/\s+/).filter(Boolean);
-
-  return expanded.some(term =>
-    (term.length > 1 && haystack.includes(term)) ||
-    (term.length === 1 && tokens.includes(term)) ||
-    term.split(/\s+/).every(part => _fuzzyTokenMatch(part, tokens))
+  return (
+    haystack.includes(query) ||
+    _fuzzyTokenMatch(query, tokens)
   );
 }
 
+/** Alias groups whose terms appear in the query (whole-word for 1-char terms). */
 function _matchingAliasGroups(query) {
-  return SEARCH_ALIASES.filter(group => group.terms.some(term => query === _norm(term) || query.includes(_norm(term))));
+  const queryTokens = new Set(query.split(/\s+/).filter(Boolean));
+  return SEARCH_ALIASES.filter(group => group.terms.some(term => {
+    const t = _norm(term);
+    if (!t) return false;
+    if (t.length === 1) return queryTokens.has(t);
+    return query === t || query.includes(t);
+  }));
+}
+
+/** A product belongs to an alias group iff its identity (name+house+brand+sku)
+    matches one of the group's identifying terms. */
+function _productInAliasGroup(product, group) {
+  const identity = _identityText(product);
+  return group.match.some(term => identity.includes(_norm(term)));
+}
+
+/** Identity-only text — used for alias group membership. Excludes story/desc
+    so Spanish connectives like " y " don't pollute alias matching. */
+function _identityText(product) {
+  return _norm([
+    product.name,
+    product.house,
+    product.brand,
+    product.sku,
+  ].filter(Boolean).join(' '));
 }
 
 function _searchText(product) {
@@ -214,16 +251,6 @@ function _searchText(product) {
     ...(product.notes ?? []),
     ..._productAliases(product),
   ].join(' '));
-}
-
-function _expandQuery(query) {
-  const terms = new Set([query]);
-  SEARCH_ALIASES.forEach(group => {
-    if (!group.terms.some(term => query.includes(term))) return;
-    group.terms.forEach(term => terms.add(_norm(term)));
-    group.match.forEach(term => terms.add(_norm(term)));
-  });
-  return [...terms].filter(Boolean).sort((a, b) => b.length - a.length);
 }
 
 function _productAliases(product) {

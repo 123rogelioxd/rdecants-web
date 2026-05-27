@@ -218,8 +218,7 @@ function _collectionTemplate(rail) {
             </button>
           `).join('')}
         </div>
-        <button type="button" class="btn-primary rr-collection-cta" data-action="explore"
-          onclick="window.__rd?.ui?.applyMoodFilter?.('${_railMood(rail.id)}')">Explorar mood</button>
+        <button type="button" class="btn-primary rr-collection-cta" data-action="explore">Explorar mood</button>
       </div>
     </article>
   `;

@@ -13,7 +13,12 @@ import { getCartMomentum } from './momentum.js?v=1.0.15';
 
 const STORAGE_KEY = 'rdecants_checkout_customer';
 const LAST_ORDER_KEY = 'rdecants_last_web_order_folio';
+const LAST_FIRED_KEY = 'rdecants_checkout_last_fired_at';
 const APP_VERSION = '1.0.5';
+
+/* Debounce window between consecutive WhatsApp checkout submissions.
+   Prevents double-taps and bfcache restores from re-firing the order. */
+const CHECKOUT_LOCK_MS = 4000;
 
 const FIELD_IDS = {
   name:  'checkout-name',
@@ -52,6 +57,23 @@ export function trackCheckoutStarted(source = 'cart_drawer') {
 }
 
 export async function sendCheckoutWhatsApp(phoneNumber) {
+  /* Idempotency guard — covers double-tap AND bfcache re-fire. We take
+     the lock synchronously before any awaits so a second click in the
+     same tick can never slip past. */
+  if (_isSubmitting) return;
+  if (_recentlyFired()) return;
+  _isSubmitting = true;
+  _syncAvailability();
+
+  try {
+    await _performCheckout(phoneNumber);
+  } finally {
+    _isSubmitting = false;
+    _syncAvailability();
+  }
+}
+
+async function _performCheckout(phoneNumber) {
   const items = Cart.items;
 
   if (!items.length) {
@@ -70,8 +92,6 @@ export async function sendCheckoutWhatsApp(phoneNumber) {
     _syncAvailability();
     return;
   }
-
-  if (_isSubmitting) return;
 
   const data = readCheckoutData();
   const error = validateCheckout(data);
@@ -92,7 +112,6 @@ export async function sendCheckoutWhatsApp(phoneNumber) {
     phone: Boolean(data.phone),
   });
 
-  _isSubmitting = true;
   _clearError();
 
   try {
@@ -129,6 +148,7 @@ export async function sendCheckoutWhatsApp(phoneNumber) {
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(messageText)}`;
     Cart.clear();
 
+    _markFired();
     const opened = window.open(whatsappUrl, '_blank');
     if (!opened) {
       window.location.href = whatsappUrl;
@@ -144,13 +164,30 @@ export async function sendCheckoutWhatsApp(phoneNumber) {
 
     const fallback = confirm(`${message}\n\nNo se creo el pedido en sistema. ¿Abrir WhatsApp sin folio?`);
     if (fallback) {
+      _markFired();
       const messageText = buildWhatsAppMessage(items, total, data);
       window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(messageText)}`, '_blank');
+      Cart.clear();
     }
   } finally {
-    _isSubmitting = false;
     _setButtonLoading(button, false);
   }
+}
+
+function _recentlyFired() {
+  try {
+    const raw = Number(sessionStorage.getItem(LAST_FIRED_KEY));
+    if (!Number.isFinite(raw) || raw <= 0) return false;
+    return Date.now() - raw < CHECKOUT_LOCK_MS;
+  } catch {
+    return false;
+  }
+}
+
+function _markFired() {
+  try {
+    sessionStorage.setItem(LAST_FIRED_KEY, String(Date.now()));
+  } catch { /* sessionStorage unavailable — best-effort lock */ }
 }
 
 export function readCheckoutData() {

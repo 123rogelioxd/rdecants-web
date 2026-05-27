@@ -50,7 +50,11 @@ window.__rd = {
     clearSearch:  () => SearchBar.clearAll(),
     applyMoodFilter: (mood) => {
       SearchBar.applyMood(mood);
-      document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
+      /* Scroll the search bar into view so the user can see the active
+         filter chip + "Explorando" indicator, not just the grid. */
+      const target = document.getElementById('sf-bar')
+        || document.getElementById('catalog');
+      target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     },
     scrollToCatalog: () => {
       document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });

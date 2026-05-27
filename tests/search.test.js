@@ -39,3 +39,33 @@ test('search tolerates lightweight typos', () => {
   assert.ok(ids('chanle').includes('bleu'));
   assert.ok(ids('profndo').includes('adg'));
 });
+
+test('alias queries do not leak Spanish " y " false positives', () => {
+  /* Products whose desc/story uses the Spanish connective "y" must NOT
+     surface when the query is a YSL alias. */
+  const noisy = [
+    product('le-beau', 'Jean Paul Gaultier', 'Le Beau Le Parfum', ['coco'], 'tropical fresco y seductor'),
+    product('torino', 'Xerjoff', 'Torino 22', ['miel'], 'dulce y opulento'),
+    product('nine-pm', 'Afnan', '9PM Night Out', ['manzana'], 'dulce y juvenil'),
+    product('ysl-y', 'Yves Saint Laurent', 'Y EDP', ['bergamota'], 'fresco versatil'),
+  ];
+  const search = q => filterProducts(noisy, { query: q }).map(p => p.id);
+
+  assert.deepEqual(search('ysl').sort(),       ['ysl-y']);
+  assert.deepEqual(search('y edp').sort(),     ['ysl-y']);
+  assert.deepEqual(search('ysl y edp').sort(), ['ysl-y']);
+});
+
+test('alias queries scoped to brand: bdc and jpg', () => {
+  const list = [
+    product('bdc',    'Chanel',             'Bleu de Chanel EDT',  ['cedro'],   'limpio elegante'),
+    product('jpg-lm', 'Jean Paul Gaultier', 'Le Male Elixir',      ['vainilla'], 'dulce noche'),
+    product('jpg-lb', 'Jean Paul Gaultier', 'Le Beau Le Parfum',   ['coco'],    'fresco y tropical'),
+    product('noise',  'Dior',               'Sauvage EDP',         ['ambar'],   'fresco y especiado'),
+  ];
+  const search = q => filterProducts(list, { query: q }).map(p => p.id).sort();
+
+  assert.deepEqual(search('bdc'),         ['bdc']);
+  assert.deepEqual(search('jpg'),         ['jpg-lb', 'jpg-lm']);
+  assert.deepEqual(search('jpg le male'), ['jpg-lb', 'jpg-lm']);
+});

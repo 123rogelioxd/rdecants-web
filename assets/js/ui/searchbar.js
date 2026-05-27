@@ -112,6 +112,9 @@ function _buildBar() {
   _bar.setAttribute('aria-label', 'Buscar y filtrar fragancias');
 
   _bar.innerHTML = `
+    <!-- Active mood explorer banner (visible only when a mood is set) -->
+    <div class="sf-exploring" id="sf-exploring" hidden aria-live="polite"></div>
+
     <!-- Row 1: search input + controls -->
     <div class="sf-row sf-row-top">
 
@@ -412,6 +415,31 @@ function _run() {
   _updateCount(result.length);
   _updateClear();
   _updateBadge();
+  _updateExploring();
+}
+
+function _updateExploring() {
+  const banner = _bar?.querySelector('#sf-exploring');
+  if (!banner) return;
+  const label = _state.mood ? MOOD_LABELS[_state.mood] : null;
+  if (!label) {
+    banner.hidden = true;
+    banner.innerHTML = '';
+    return;
+  }
+  banner.hidden = false;
+  banner.innerHTML = `
+    <span class="sf-exploring-kicker">Explorando</span>
+    <strong class="sf-exploring-label">${label}</strong>
+    <button type="button" class="sf-exploring-clear"
+      aria-label="Quitar filtro de mood">Quitar</button>`;
+  banner.querySelector('.sf-exploring-clear')
+    ?.addEventListener('click', () => {
+      _state.mood = null;
+      _syncBarFromState();
+      _syncDrawer();
+      _run();
+    });
 }
 
 function _debounce() {

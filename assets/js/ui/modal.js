@@ -209,10 +209,13 @@ function _render() {
 
         ${stockHtml}
 
+        <!-- Related pairings live INSIDE the scroll area so they never
+             push the sticky buy controls below the fold on mobile. -->
+        <div class="pdm-related" id="pdm-related" hidden></div>
+
       </div><!-- /pdm-info-scroll -->
 
       <div class="pdm-buybar" aria-label="Compra rapida">
-        <div class="pdm-related" id="pdm-related" hidden></div>
         ${variants.length
           ? '<div class="pdm-sizes-label">Elige presentación</div>'
           : '<div class="pdm-price-consult">Precio disponible por consulta personalizada.</div>'}
