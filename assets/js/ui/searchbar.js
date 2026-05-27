@@ -65,6 +65,14 @@ export const SearchBar = {
     if (!_onFilter) return;
     _clearAll();
   },
+
+  applyMood(mood) {
+    if (!_onFilter) return;
+    _state.mood = mood || null;
+    _syncBarFromState();
+    _syncDrawer();
+    _run();
+  },
 };
 
 /* ══════════════════════════════════════════════════════════════

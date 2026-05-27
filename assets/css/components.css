@@ -242,7 +242,7 @@
   padding: 0 clamp(16px, 4vw, 48px);
 }
 
-.section { padding: var(--space-6) 0; }
+.section { padding: clamp(92px, 11vw, 148px) 0; }
 
 .section-header {
   margin-bottom: clamp(40px, 6vw, 80px);
@@ -310,8 +310,8 @@
 /* ── Product grid ────────────────────────────────────────────── */
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
-  gap: 22px;
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  gap: clamp(24px, 3vw, 38px);
   max-width: 100%;
   min-width: 0;
 }
@@ -582,23 +582,23 @@
 
 /* ── Modal related products (upsell) ────────────────────────── */
 .pdm-related {
-  margin-top: 22px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border);
+  margin: 0 0 20px;
+  padding: 0 0 18px;
+  border-bottom: 1px solid var(--border);
 }
 
 .pdm-related-label {
   font-size: 11px;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--accent);
   margin-bottom: 14px;
 }
 
 .pdm-related-row {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .pdm-related-card {
@@ -606,10 +606,10 @@
   flex-direction: column;
   gap: 6px;
   text-align: left;
-  padding: 10px;
+  padding: 12px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: 12px;
   cursor: pointer;
   transition: border-color 0.25s ease, transform 0.25s ease;
 }
@@ -621,7 +621,7 @@
 
 .pdm-related-img {
   display: block;
-  height: 84px;
+  height: 118px;
   border-radius: 8px;
   overflow: hidden;
   background:
@@ -645,7 +645,7 @@
 
 .pdm-related-name {
   font-family: var(--font-serif);
-  font-size: 16px;
+  font-size: 20px;
   line-height: 1.1;
   color: #fff;
 }
@@ -2823,18 +2823,18 @@
   }
 
   .pdm-related {
-    margin-top: 16px;
-    padding-top: 14px;
+    margin: 0 0 16px;
+    padding: 0 0 14px;
   }
   .pdm-related-row {
-    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
   }
   .pdm-related-img {
-    height: 68px;
+    height: 88px;
   }
   .pdm-related-name {
-    font-size: 14px;
+    font-size: 16px;
   }
 }
 
@@ -3366,7 +3366,7 @@
 
 /* Recommendation rails */
 .rr-section {
-  padding: var(--space-6) 0 var(--space-5);
+  padding: clamp(100px, 12vw, 156px) 0;
   overflow: hidden;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.015), rgba(255, 255, 255, 0)),
@@ -3379,7 +3379,7 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: 20px;
-  margin-bottom: clamp(32px, 5vw, 54px);
+  margin-bottom: clamp(42px, 6vw, 72px);
 }
 
 .rr-head .section-title em {
@@ -3388,7 +3388,7 @@
 }
 
 .rr-head-copy {
-  max-width: 270px;
+  max-width: 340px;
   color: rgba(255, 255, 255, 0.42);
   font-size: 13px;
   line-height: 1.75;
@@ -3396,27 +3396,27 @@
 
 .rr-editorial-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) repeat(2, minmax(0, 0.82fr));
-  gap: 16px;
-  margin: 0 0 clamp(42px, 6vw, 74px);
+  grid-template-columns: minmax(0, 1.45fr) repeat(2, minmax(0, 0.86fr));
+  gap: clamp(18px, 2vw, 26px);
+  margin: 0;
 }
 
 .rr-collection {
   position: relative;
-  min-height: 430px;
+  min-height: 500px;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 18px;
+  border-radius: 20px;
   background: #080808;
   cursor: pointer;
   isolation: isolate;
 }
 
 .rr-collection:first-child {
-  min-height: 520px;
+  min-height: 590px;
 }
 
 .rr-collection-media {
@@ -3425,7 +3425,7 @@
   display: grid;
   place-items: center;
   background:
-    radial-gradient(circle at 50% 32%, rgba(201, 169, 110, 0.16), transparent 46%),
+    radial-gradient(circle at 62% 32%, rgba(201, 169, 110, 0.14), transparent 44%),
     linear-gradient(180deg, #151515, #050505);
   z-index: -2;
 }
@@ -3435,20 +3435,21 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.82)),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.44), transparent 62%);
+    linear-gradient(180deg, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.86)),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.62), transparent 68%);
 }
 
 .rr-collection-media img {
-  width: 86%;
-  height: 70%;
+  width: 68%;
+  height: 64%;
   object-fit: contain;
   padding: 18px;
   filter: drop-shadow(0 32px 62px rgba(0, 0, 0, 0.62));
+  transform: translate(18%, -8%);
 }
 
 .rr-collection-copy {
-  padding: clamp(18px, 3vw, 28px);
+  padding: clamp(22px, 3vw, 36px);
 }
 
 .rr-collection-kicker {
@@ -3460,7 +3461,7 @@
 }
 
 .rr-collection h3 {
-  max-width: 360px;
+  max-width: 330px;
   font-family: var(--font-serif);
   font-size: clamp(30px, 4vw, 56px);
   font-weight: 300;
@@ -3469,7 +3470,7 @@
 }
 
 .rr-collection p {
-  max-width: 360px;
+  max-width: 340px;
   color: rgba(255, 255, 255, 0.62);
   font-size: 13px;
   line-height: 1.65;
@@ -3500,7 +3501,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 14px;
+  margin-top: 18px;
 }
 
 .rr-collection-support button {
@@ -3521,7 +3522,16 @@
 }
 
 .rr-collection-cta {
-  margin-top: 18px;
+  margin-top: 24px;
+}
+
+.rr-editorial-grid--loading {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.rr-skeleton-card--mood {
+  width: auto;
+  min-height: 430px;
 }
 
 .rr-stack {
@@ -3792,32 +3802,36 @@
 
   .rr-editorial-grid {
     grid-template-columns: 1fr;
-    gap: 12px;
-    margin-bottom: 40px;
+    gap: 18px;
+    margin-bottom: 0;
   }
 
   .rr-collection,
   .rr-collection:first-child {
-    min-height: 430px;
-    border-radius: 14px;
+    min-height: 500px;
+    border-radius: 16px;
+  }
+
+  .rr-collection-media::after {
+    background:
+      linear-gradient(180deg, rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.88)),
+      linear-gradient(90deg, rgba(0, 0, 0, 0.18), transparent 72%);
+  }
+
+  .rr-collection-media img {
+    width: 72%;
+    height: 58%;
+    transform: translate(12%, -18%);
   }
 
   .rr-collection h3 {
-    font-size: 34px;
+    max-width: 280px;
+    font-size: 38px;
   }
 
   .rr-collection-support button {
     flex: 1 1 130px;
     max-width: none;
-  }
-
-  .rr-stack {
-    gap: 44px;
-  }
-
-  .rr-head {
-    align-items: flex-start;
-    flex-direction: column;
   }
 
   .rr-card {

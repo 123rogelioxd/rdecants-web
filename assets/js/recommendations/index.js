@@ -8,11 +8,9 @@ import { Tracker }          from '../tracking/tracker.js';
 import { openProductModal } from '../ui/modal.js';
 import { observeFadeUp }    from '../ui/animations.js';
 import { primeImageStates } from '../ui/images.js';
-import { getSafePrice, formatPrice } from '../utils/prices.js';
-import { hasHighDemand } from '../utils/scarcity.js?v=1.0.13';
 import { Personalization, personalizeRails } from './personalization.js?v=1.0.13';
 
-const MAX_PER_RAIL = 6;
+const MAX_PER_RAIL = 5;
 const MIN_PER_RAIL = 2;
 
 const RAILS = [
@@ -159,15 +157,8 @@ function _renderSkeleton(root) {
           <h2 class="section-title">Descubre<br><em>por mood</em></h2>
         </div>
       </div>
-      <div class="rr-skeleton-list" aria-label="Cargando recomendaciones">
-        ${Array.from({ length: 3 }).map(() => `
-          <div class="rr-skeleton-rail">
-            <div class="rr-skeleton-title"></div>
-            <div class="rr-skeleton-track">
-              ${Array.from({ length: 4 }).map(() => '<div class="rr-skeleton-card"></div>').join('')}
-            </div>
-          </div>
-        `).join('')}
+      <div class="rr-editorial-grid rr-editorial-grid--loading" aria-label="Cargando recomendaciones">
+        ${Array.from({ length: 3 }).map(() => '<div class="rr-skeleton-card rr-skeleton-card--mood"></div>').join('')}
       </div>
     </div>
   `;
@@ -189,20 +180,13 @@ function _renderRails(root, rails) {
         ${rails.slice(0, 3).map(_collectionTemplate).join('')}
       </div>
     </div>
-    <div class="rr-stack">
-      ${rails.map(_railTemplate).join('')}
-    </div>
   `;
 
   rails.forEach(rail => {
-    const track = root.querySelector(`[data-rail-track="${rail.id}"]`);
-    _bindRail(track, rail);
-    _setupDrag(track?.parentElement);
     Tracker.recommendationView(rail.items, { railId: rail.id, railTitle: rail.title });
   });
 
   _bindCollections(root, rails);
-  _observeRailCards(root);
   primeImageStates(root);
   observeFadeUp();
 }
@@ -213,7 +197,7 @@ function _collectionTemplate(rail) {
   if (!featured) return '';
 
   return `
-    <article class="rr-collection" data-product-id="${featured.id}" data-rail-id="${rail.id}">
+    <article class="rr-collection" data-rail-id="${rail.id}" data-mood="${_railMood(rail.id)}">
       <div class="rr-collection-media">
         <img src="${featured.image}" alt="${featured.name}" loading="lazy" decoding="async"
              onerror="this.parentElement.classList.add('rr-collection-media--fallback');this.remove()">
@@ -234,7 +218,8 @@ function _collectionTemplate(rail) {
             </button>
           `).join('')}
         </div>
-        <button type="button" class="btn-primary rr-collection-cta">Explorar mood</button>
+        <button type="button" class="btn-primary rr-collection-cta" data-action="explore"
+          onclick="window.__rd?.ui?.applyMoodFilter?.('${_railMood(rail.id)}')">Explorar mood</button>
       </div>
     </article>
   `;
@@ -254,71 +239,27 @@ function _renderEmpty(root) {
   `;
 }
 
-function _railTemplate(rail) {
-  return `
-    <section class="rr-rail" aria-label="${rail.title}">
-      <div class="container rr-rail-head">
-        <div>
-          <p class="rr-eyebrow">${rail.mark} ${rail.title}</p>
-          <p class="rr-desc">${rail.desc}</p>
-        </div>
-      </div>
-      <div class="rr-scroll">
-        <div class="rr-track" data-rail-track="${rail.id}">
-          ${rail.items.map((product, idx) => _cardTemplate(product, rail, idx)).join('')}
-        </div>
-      </div>
-    </section>
-  `;
-}
-
-function _cardTemplate(product, rail, idx) {
-  const price = getSafePrice(product);
-  const notes = (product.notes ?? []).slice(0, 2);
-  const publicBadge = product.badge && !hasHighDemand(product) ? product.badge : '';
-
-  return `
-    <article class="rr-card rr-card--${_cardVariant(idx)}" data-product-id="${product.id}" data-position="${idx}" style="--i:${idx}">
-      ${publicBadge ? `<span class="rr-badge">${publicBadge}</span>` : ''}
-      <div class="rr-img">
-        <img src="${product.image}" alt="${product.name}" loading="lazy" decoding="async"
-             onerror="this.parentElement.classList.add('rr-img--fallback');this.remove()">
-      </div>
-      <div class="rr-body">
-        <p class="rr-house">${product.house}</p>
-        <h3 class="rr-name">${product.name}</h3>
-        <div class="rr-notes">
-          ${notes.map(note => `<span>${note}</span>`).join('')}
-        </div>
-        <div class="rr-foot">
-          <span class="rr-price">${formatPrice(price, 'Consultar precio')}</span>
-          <span class="rr-open" aria-hidden="true">Ver</span>
-        </div>
-      </div>
-    </article>
-  `;
-}
-
 function _bindCollections(root, rails) {
   root.querySelectorAll('.rr-collection').forEach(card => {
     const rail = rails.find(item => item.id === card.dataset.railId);
     if (!rail) return;
 
-    card.addEventListener('click', event => {
-      const target = event.target.closest('[data-product-id]');
-      const productId = target?.dataset.productId || card.dataset.productId;
-      const product = rail.items.find(item => String(item.id) === String(productId));
-      if (!product) return;
-      Tracker.recommendationClicked(product, 1, { railId: rail.id, railTitle: rail.title });
-      openProductModal(product);
+    card.querySelectorAll('[data-product-id]').forEach(productButton => {
+      productButton.addEventListener('click', event => {
+        event.stopPropagation();
+        const product = rail.items.find(item => String(item.id) === String(productButton.dataset.productId));
+        if (!product) return;
+        Tracker.recommendationClicked(product, 1, { railId: rail.id, railTitle: rail.title });
+        openProductModal(product);
+      });
+    });
+
+    card.querySelector('[data-action="explore"]')?.addEventListener('click', event => {
+      event.stopPropagation();
+      Tracker.recommendationClicked(rail.items[0], 1, { railId: rail.id, railTitle: `${rail.title} catalog filter` });
+      window.__rd?.ui?.applyMoodFilter?.(card.dataset.mood);
     });
   });
-}
-
-function _cardVariant(idx) {
-  if (idx === 0) return 'hero';
-  if (idx === 3) return 'wide';
-  return 'standard';
 }
 
 function _collectionTitle(id) {
@@ -331,78 +272,14 @@ function _collectionTitle(id) {
   return titles[id] ?? 'Seleccion curada';
 }
 
-function _bindRail(track, rail) {
-  if (!track) return;
-  track.addEventListener('click', (event) => {
-    const card = event.target.closest('.rr-card');
-    if (!card) return;
-
-    const product = rail.items.find(item => item.id === card.dataset.productId);
-    if (!product) return;
-
-    const position = Number(card.dataset.position) + 1;
-    Tracker.recommendationClicked(product, position, {
-      railId: rail.id,
-      railTitle: rail.title,
-    });
-    openProductModal(product);
-  });
-
-  track.querySelectorAll('.rr-card').forEach(card => {
-    card.setAttribute('role', 'button');
-    card.setAttribute('tabindex', '0');
-    card.addEventListener('keydown', event => {
-      if (event.key !== 'Enter' && event.key !== ' ') return;
-      event.preventDefault();
-      card.click();
-    });
-  });
-}
-
-function _observeRailCards(root) {
-  const cards = root.querySelectorAll('.rr-card');
-  if (!('IntersectionObserver' in window)) {
-    cards.forEach(card => card.classList.add('rr-card--in'));
-    return;
-  }
-
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (!entry.isIntersecting) return;
-      entry.target.classList.add('rr-card--in');
-      observer.unobserve(entry.target);
-    });
-  }, { rootMargin: '80px 0px', threshold: 0.12 });
-
-  cards.forEach(card => observer.observe(card));
-}
-
-function _setupDrag(scroller) {
-  if (!scroller) return;
-  let isDown = false;
-  let startX = 0;
-  let scrollLeft = 0;
-
-  scroller.addEventListener('mousedown', event => {
-    isDown = true;
-    startX = event.pageX - scroller.offsetLeft;
-    scrollLeft = scroller.scrollLeft;
-    scroller.classList.add('rr-scroll--grabbing');
-  });
-
-  const stop = () => {
-    isDown = false;
-    scroller.classList.remove('rr-scroll--grabbing');
+function _railMood(id) {
+  const moods = {
+    heat: 'fresco',
+    party: 'fiesta',
+    daily: 'diario',
+    niche: 'lujo',
   };
-
-  scroller.addEventListener('mouseleave', stop);
-  scroller.addEventListener('mouseup', stop);
-  scroller.addEventListener('mousemove', event => {
-    if (!isDown) return;
-    event.preventDefault();
-    const x = event.pageX - scroller.offsetLeft;
-    scroller.scrollLeft = scrollLeft - ((x - startX) * 1.25);
-  });
+  return moods[id] ?? '';
 }
 
 async function _getFeaturedSafe() {

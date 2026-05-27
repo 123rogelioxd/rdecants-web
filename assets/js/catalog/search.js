@@ -68,6 +68,13 @@ const BADGE_SCORE = {
   'VALUE':             2,
 };
 
+const SEARCH_ALIASES = [
+  { terms: ['yves saint laurent', 'ysl', 'y edp', 'y'], match: ['yves saint laurent', 'ysl', ' y ', 'y edp'] },
+  { terms: ['bleu de chanel', 'bleu', 'bdc'], match: ['bleu de chanel', 'bleu', 'chanel'] },
+  { terms: ['jean paul gaultier', 'jpg', 'le male', 'gaultier'], match: ['jean paul gaultier', 'jpg', 'le male', 'gaultier'] },
+  { terms: ['acqua di gio', 'adg', 'aqua di gio'], match: ['acqua di gio', 'acqua', 'adg'] },
+];
+
 /* ── Public constants ──────────────────────────────────────────── */
 
 export const PRICE_RANGES = {
@@ -111,13 +118,7 @@ export function filterProducts(products, state) {
   /* 1 — Text search (name, house, notes, story, desc) */
   if (state.query?.trim()) {
     const q = _norm(state.query);
-    result = result.filter(p =>
-      _norm(p.name).includes(q)  ||
-      _norm(p.house).includes(q) ||
-      (p.notes ?? []).some(n => _norm(n).includes(q)) ||
-      _norm(p.story ?? '').includes(q) ||
-      _norm(p.desc  ?? '').includes(q)
-    );
+    result = result.filter(p => _matchesSearch(p, q));
   }
 
   /* 2 — Mood */
@@ -173,6 +174,96 @@ function _matchesMood(product, mood) {
     rules.badges.some(kw => badge.includes(kw)) ||
     rules.text.some(kw   => text.includes(kw))
   );
+}
+
+function _matchesSearch(product, query) {
+  const aliasGroups = _matchingAliasGroups(query);
+  if (aliasGroups.length) {
+    const productAliasText = _norm(_productAliases(product).join(' '));
+    const productText = _searchText(product);
+    return aliasGroups.some(group =>
+      group.match.some(term => productText.includes(_norm(term))) ||
+      group.terms.some(term => productAliasText.includes(_norm(term)))
+    );
+  }
+
+  const expanded = _expandQuery(query);
+  const haystack = _searchText(product);
+  const tokens = haystack.split(/\s+/).filter(Boolean);
+
+  return expanded.some(term =>
+    (term.length > 1 && haystack.includes(term)) ||
+    (term.length === 1 && tokens.includes(term)) ||
+    term.split(/\s+/).every(part => _fuzzyTokenMatch(part, tokens))
+  );
+}
+
+function _matchingAliasGroups(query) {
+  return SEARCH_ALIASES.filter(group => group.terms.some(term => query === _norm(term) || query.includes(_norm(term))));
+}
+
+function _searchText(product) {
+  return _norm([
+    product.name,
+    product.house,
+    product.brand,
+    product.sku,
+    product.badge,
+    product.story,
+    product.desc,
+    ...(product.notes ?? []),
+    ..._productAliases(product),
+  ].join(' '));
+}
+
+function _expandQuery(query) {
+  const terms = new Set([query]);
+  SEARCH_ALIASES.forEach(group => {
+    if (!group.terms.some(term => query.includes(term))) return;
+    group.terms.forEach(term => terms.add(_norm(term)));
+    group.match.forEach(term => terms.add(_norm(term)));
+  });
+  return [...terms].filter(Boolean).sort((a, b) => b.length - a.length);
+}
+
+function _productAliases(product) {
+  const text = _norm(`${product.house ?? ''} ${product.name ?? ''}`);
+  const aliases = [];
+  SEARCH_ALIASES.forEach(group => {
+    if (group.match.some(term => text.includes(_norm(term)))) {
+      aliases.push(...group.terms, ...group.match);
+    }
+  });
+  return aliases;
+}
+
+function _fuzzyTokenMatch(queryToken, tokens) {
+  if (queryToken.length <= 1) return tokens.includes(queryToken);
+  return tokens.some(token =>
+    token.includes(queryToken) ||
+    queryToken.includes(token) ||
+    _distanceWithin(queryToken, token, queryToken.length > 5 ? 2 : 1)
+  );
+}
+
+function _distanceWithin(a, b, max) {
+  if (Math.abs(a.length - b.length) > max) return false;
+  const prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    let last = prev[0];
+    prev[0] = i;
+    let rowMin = prev[0];
+    for (let j = 1; j <= b.length; j++) {
+      const temp = prev[j];
+      prev[j] = a[i - 1] === b[j - 1]
+        ? last
+        : Math.min(last, prev[j - 1], prev[j]) + 1;
+      last = temp;
+      rowMin = Math.min(rowMin, prev[j]);
+    }
+    if (rowMin > max) return false;
+  }
+  return prev[b.length] <= max;
 }
 
 /** Reference price for sorting (first valid product price) */

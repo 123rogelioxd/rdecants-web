@@ -209,11 +209,10 @@ function _render() {
 
         ${stockHtml}
 
-        <div class="pdm-related" id="pdm-related" hidden></div>
-
       </div><!-- /pdm-info-scroll -->
 
       <div class="pdm-buybar" aria-label="Compra rapida">
+        <div class="pdm-related" id="pdm-related" hidden></div>
         ${variants.length
           ? '<div class="pdm-sizes-label">Elige presentación</div>'
           : '<div class="pdm-price-consult">Precio disponible por consulta personalizada.</div>'}
@@ -266,20 +265,20 @@ async function _renderRelated(seed) {
   /* Guard against a stale async fill if the user already moved on */
   if (!_activeProduct || String(_activeProduct.id) !== String(seed.id)) return;
 
-  const related = getRelatedProducts(seed, products);
+  const related = getRelatedProducts(seed, products, { limit: 2 });
   if (!related.length) {
     slot.hidden = true;
     return;
   }
 
   slot.innerHTML = `
-    <p class="pdm-related-label">Te puede gustar</p>
+    <p class="pdm-related-label">Combina perfecto con</p>
     <div class="pdm-related-row">
       ${related.map(_relatedCard).join('')}
     </div>`;
   slot.hidden = false;
 
-  Tracker.recommendationView(related, { railId: 'modal_related', railTitle: 'Te puede gustar' });
+  Tracker.recommendationView(related, { railId: 'modal_related', railTitle: 'Combina perfecto con' });
   primeImageStates(slot);
 
   slot.querySelectorAll('.pdm-related-card').forEach(card => {
@@ -287,7 +286,7 @@ async function _renderRelated(seed) {
       const product = related.find(item => String(item.id) === card.dataset.productId);
       if (!product) return;
       const position = Number(card.dataset.position) + 1;
-      Tracker.recommendationClicked(product, position, { railId: 'modal_related', railTitle: 'Te puede gustar' });
+      Tracker.recommendationClicked(product, position, { railId: 'modal_related', railTitle: 'Combina perfecto con' });
       openProductModal(product);
     });
   });

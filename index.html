@@ -88,8 +88,8 @@
       <button class="btn-primary" onclick="scrollToCatalog()" aria-label="Ver catalogo">
         Ver Catálogo
       </button>
-      <button class="btn-ghost" onclick="document.getElementById('packs-section').scrollIntoView({behavior:'smooth'})" aria-label="Ver packs">
-        Ver Packs
+      <button class="btn-ghost" onclick="document.getElementById('recommendation-rails').scrollIntoView({behavior:'smooth'})" aria-label="Descubrir por mood">
+        Descubrir mood
       </button>
     </div>
   </div>
@@ -137,6 +137,20 @@
 
 <div class="divider"></div>
 
+<!-- RECOMMENDATION RAILS (mood-based discovery, dynamic from catalog) -->
+<section class="section" id="recommendation-rails" aria-label="Recomendaciones por mood">
+  <!-- Rendered by recommendations/index.js -->
+</section>
+
+<div class="divider"></div>
+
+<!-- SMART BUNDLES (dynamic kits from real metadata) -->
+<section class="section" id="smart-bundles" aria-label="Kits inteligentes" hidden>
+  <!-- Rendered by ui/bundles.js -->
+</section>
+
+<div class="divider"></div>
+
 <!-- CATALOG -->
 <section class="section" id="catalog">
   <div class="container">
@@ -158,46 +172,6 @@
   </div>
 </section>
 
-<div class="divider"></div>
-
-<!-- RECOMMENDATION RAILS (mood-based discovery, dynamic from catalog) -->
-<section class="section" id="recommendation-rails" aria-label="Recomendaciones por mood">
-  <!-- Rendered by recommendations/index.js -->
-</section>
-
-<div class="divider"></div>
-
-<!-- SMART BUNDLES (dynamic kits from real metadata) -->
-<section class="section" id="smart-bundles" aria-label="Kits inteligentes" hidden>
-  <!-- Rendered by ui/bundles.js -->
-</section>
-
-<div class="divider"></div>
-
-<!-- PACKS -->
-<section class="section" id="packs-section">
-  <div class="container">
-
-    <div class="section-header fade-up">
-      <div>
-        <p class="section-label">Conjuntos Seleccionados</p>
-        <h2 class="section-title">Paquetes<br>De Lujo</h2>
-        <p style="font-size:13px;color:var(--muted);margin-top:8px;">
-          Curados para distintas ocasiones, moods y estilos.
-        </p>
-      </div>
-      <p style="font-size:12px;color:var(--muted);max-width:220px;line-height:1.7;">
-        Combinaciones pensadas para cada ocasión. Más ahorro, más presencia.
-      </p>
-    </div>
-
-    <div class="packs-grid" id="packs-grid">
-      <!-- Rendered by catalog/render.js -->
-    </div>
-
-  </div>
-</section>
-
 <!-- FOOTER -->
 <footer class="footer">
   <div class="container">
@@ -207,7 +181,7 @@
     <nav class="footer-links">
       <a href="https://wa.me/5219516513018" target="_blank">WhatsApp</a>
       <a href="#catalog">Catálogo</a>
-      <a href="#packs-section">Packs</a>
+      <a href="#smart-bundles">Kits</a>
     </nav>
 
     <p class="footer-copy">

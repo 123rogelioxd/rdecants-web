@@ -11,7 +11,7 @@ import { setupCheckout }                  from './cart/checkout.js?v=1.0.15';
 import { renderCart, updateCartCount,
          openCart, closeCart,
          toggleCart, sendWhatsApp }       from './cart/render.js?v=1.0.15';
-import { renderProducts, renderPacks }     from './catalog/render.js?v=1.0.13';
+import { renderProducts }                   from './catalog/render.js?v=1.0.13';
 import { Recommendations }                 from './recommendations/index.js?v=1.0.13';
 import { setupAssistant }                   from './ui/assistant.js?v=1.0.13';
 import { setupBundles }                      from './ui/bundles.js?v=1.0.13';
@@ -24,7 +24,7 @@ import { setupHeader }                    from './ui/header.js';
 import { showToast }                      from './ui/toast.js';
 import { openProductModal,
          closeProductModal }             from './ui/modal.js?v=1.0.15';
-import { SearchBar }                     from './ui/searchbar.js';
+import { SearchBar }                     from './ui/searchbar.js?v=1.0.2';
 import { setupImageStates }              from './ui/images.js';
 import { Tracker }                        from './tracking/tracker.js?v=1.0.13';
 import { trackEvent }                     from './tracking/events.js?v=1.0.13';
@@ -48,6 +48,10 @@ window.__rd = {
     openProductModal,
     closeProductModal,
     clearSearch:  () => SearchBar.clearAll(),
+    applyMoodFilter: (mood) => {
+      SearchBar.applyMood(mood);
+      document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
+    },
     scrollToCatalog: () => {
       document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
       closeCart();
@@ -227,7 +231,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   /* Render catalog (async — provider pattern) */
   await renderProducts();
-  await renderPacks();
 
   /* Guided shopping assistant (inline, metadata-driven) */
   setupAssistant('assistant');
