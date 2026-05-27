@@ -9,7 +9,9 @@ import { sendCheckoutWhatsApp,
          trackCheckoutStarted } from './checkout.js?v=1.0.15';
 import { EventBus }  from '../core/events.js';
 import { Tracker }   from '../tracking/tracker.js';
-import { formatPrice, isValidPrice } from '../utils/prices.js?v=1.0.15';
+import { formatPrice, isValidPrice, getDefaultVariant } from '../utils/prices.js?v=1.0.15';
+import { CatalogProvider } from '../providers/catalog.js?v=1.0.15';
+import { getCartUpsells }  from '../recommendations/upsells.js?v=1.0.13';
 
 const WHATSAPP_NUMBER = '5219516513018';
 let _prevFocus = null;
@@ -84,11 +86,96 @@ export function renderCart() {
         }).join('')}
       </div>
     </section>
+    <section class="cart-upsells" id="cart-upsells" aria-label="Completa tu pedido" hidden></section>
   `;
 
   if (totalEl) totalEl.textContent = total;
   _updateSummary(count, total);
   syncCheckoutAvailability();
+  _renderUpsells();
+}
+
+/* ── Add-on upsells (operational-first, low friction) ───────── */
+let _lastUpsellSig = '';
+
+async function _renderUpsells() {
+  const slot = document.getElementById('cart-upsells');
+  if (!slot) return;
+
+  const items = Cart.items;
+  if (!items.length) {
+    slot.hidden = true;
+    slot.innerHTML = '';
+    _lastUpsellSig = '';
+    return;
+  }
+
+  let products = [];
+  try {
+    products = await CatalogProvider.getProducts();
+  } catch {
+    return;
+  }
+
+  /* Cart may have changed while awaiting the catalog */
+  if (Cart.items.length !== items.length) return;
+
+  const suggestions = getCartUpsells(Cart.items, products)
+    .map(product => ({ product, variant: getDefaultVariant(product) }))
+    .filter(entry => entry.variant);
+
+  if (!suggestions.length) {
+    slot.hidden = true;
+    slot.innerHTML = '';
+    _lastUpsellSig = '';
+    return;
+  }
+
+  slot.innerHTML = `
+    <p class="cart-section-label">Completa tu pedido</p>
+    <div class="cart-upsell-list">
+      ${suggestions.map(_upsellRow).join('')}
+    </div>`;
+  slot.hidden = false;
+
+  const sig = suggestions.map(s => s.product.id).join('|');
+  if (sig !== _lastUpsellSig) {
+    _lastUpsellSig = sig;
+    Tracker.recommendationView(
+      suggestions.map(s => s.product),
+      { railId: 'cart_upsell', railTitle: 'Completa tu pedido' },
+    );
+  }
+
+  slot.querySelectorAll('.cart-upsell-add').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const entry = suggestions.find(s => String(s.product.id) === btn.dataset.productId);
+      if (!entry) return;
+      const position = Number(btn.dataset.position) + 1;
+      Tracker.recommendationClicked(entry.product, position, { railId: 'cart_upsell', railTitle: 'Completa tu pedido' });
+      window.__rd?.cart?.add(entry.product.id, entry.variant.size);
+    });
+  });
+}
+
+function _upsellRow({ product, variant }, idx) {
+  const hasImage = product.image && product.image.trim() !== '';
+  return `
+    <div class="cart-upsell-item">
+      <span class="cart-upsell-img">
+        ${hasImage
+          ? `<img src="${product.image}" alt="${product.name}" loading="lazy" decoding="async"
+               onerror="this.parentElement.classList.add('cart-upsell-img--fallback');this.remove()">`
+          : ''}
+      </span>
+      <div class="cart-upsell-info">
+        <p class="cart-upsell-house">${product.house ?? ''}</p>
+        <p class="cart-upsell-name">${product.name}</p>
+        <p class="cart-upsell-meta">${variant.size}ml &middot; ${formatPrice(variant.price)}</p>
+      </div>
+      <button class="cart-upsell-add" data-product-id="${product.id}" data-position="${idx}"
+        aria-label="Agregar ${product.name} ${variant.size}ml a tu pedido">+</button>
+    </div>`;
 }
 
 function _updateSummary(count, total) {
