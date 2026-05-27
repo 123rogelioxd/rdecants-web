@@ -312,6 +312,8 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
   gap: 22px;
+  max-width: 100%;
+  min-width: 0;
 }
 
 /* ── Product card ────────────────────────────────────────────── */
@@ -333,7 +335,9 @@
   isolation: isolate;
   display: flex;
   flex-direction: column;
+  max-width: 100%;
   min-width: 0;
+  width: 100%;
 }
 
 .product-card::before {
@@ -738,8 +742,10 @@
 .card-purchase {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 16px;
+  max-width: 100%;
   margin-top: auto;
   min-width: 0;
 }
@@ -767,6 +773,7 @@
 }
 
 .card-action {
+  max-width: 100%;
   flex: 0 0 auto;
   padding: 12px 18px;
   box-sizing: border-box;
@@ -3821,6 +3828,7 @@ textarea:focus-visible {
 @media (max-width: 768px) {
   .products-grid {
     gap: 12px;
+    grid-template-columns: 1fr;
   }
 
   .product-card {
@@ -3851,7 +3859,7 @@ textarea:focus-visible {
   }
 
   .card-body {
-    padding: 11px;
+    padding: 16px;
   }
 
   .card-house {
@@ -3870,7 +3878,7 @@ textarea:focus-visible {
   }
 
   .card-name {
-    font-size: 21px;
+    font-size: 25px;
     line-height: 1.04;
     -webkit-line-clamp: 2;
   }
@@ -3903,7 +3911,7 @@ textarea:focus-visible {
   }
 
   .card-price {
-    font-size: 19px;
+    font-size: 23px;
   }
 
   .card-price small {
@@ -3920,9 +3928,9 @@ textarea:focus-visible {
 
   .card-action {
     width: 100%;
-    min-height: 38px;
+    min-height: 44px;
     justify-content: center;
-    padding: 9px 10px;
+    padding: 11px 12px;
     font-size: 10px;
     letter-spacing: 0.12em;
   }
@@ -3947,7 +3955,7 @@ textarea:focus-visible {
   }
 }
 
-@media (min-width: 340px) and (max-width: 768px) {
+@media (min-width: 481px) and (max-width: 768px) {
   .products-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -4056,6 +4064,8 @@ textarea:focus-visible {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
   gap: 16px;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .asst-card {
@@ -4065,7 +4075,9 @@ textarea:focus-visible {
   border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--card);
+  max-width: 100%;
   min-width: 0;
+  width: 100%;
 }
 
 .asst-card-media {
@@ -4171,8 +4183,10 @@ textarea:focus-visible {
 .asst-card-foot {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 10px;
+  max-width: 100%;
   margin-top: auto;
   min-width: 0;
 }
@@ -4194,7 +4208,10 @@ textarea:focus-visible {
 .asst-card-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
+  justify-content: flex-end;
+  max-width: 100%;
   min-width: 0;
 }
 
@@ -4203,6 +4220,7 @@ textarea:focus-visible {
   border: 1px solid var(--border-hl);
   border-radius: 999px;
   color: rgba(255, 255, 255, 0.7);
+  box-sizing: border-box;
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -4217,7 +4235,9 @@ textarea:focus-visible {
 }
 
 .asst-card-add {
+  box-sizing: border-box;
   font-size: 11px;
+  max-width: 100%;
   padding: 10px 16px;
   min-width: 0;
 }
@@ -4247,6 +4267,7 @@ textarea:focus-visible {
     grid-template-columns: 1fr;
     padding: 18px;
     gap: 16px;
+    max-width: 100%;
   }
   .asst-submit {
     width: 100%;
@@ -4255,20 +4276,20 @@ textarea:focus-visible {
     grid-template-columns: 1fr;
   }
   .asst-card {
-    display: grid;
-    grid-template-columns: 96px minmax(0, 1fr);
+    display: flex;
+    flex-direction: column;
   }
   .asst-card-media {
-    height: auto;
+    height: 132px;
   }
   .asst-card-name {
     font-size: 20px;
   }
   .asst-card-body {
-    padding: 13px;
+    padding: 15px;
   }
   .asst-card-foot {
-    align-items: flex-start;
+    align-items: stretch;
     flex-direction: column;
     gap: 9px;
   }
@@ -4276,6 +4297,7 @@ textarea:focus-visible {
     white-space: normal;
   }
   .asst-card-actions {
+    justify-content: stretch;
     width: 100%;
   }
   .asst-card-detail {
@@ -4283,6 +4305,7 @@ textarea:focus-visible {
   }
   .asst-card-add {
     flex: 1 1 auto;
+    min-height: 42px;
     padding-left: 10px;
     padding-right: 10px;
   }
