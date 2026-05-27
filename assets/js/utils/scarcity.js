@@ -63,11 +63,7 @@ export function getScarcityDisplay(product) {
     return _display(state, 'few', 'Pocas unidades disponibles', 'trend', demand);
   }
 
-  if (demand) {
-    return _display(state, 'demand', 'Alta rotacion esta semana', 'trend', true);
-  }
-
-  return _display(state, 'ok', 'Disponible', '', false);
+  return _display(state, 'ok', 'Disponible', '', demand);
 }
 
 function _display(state, key, label, badgeClass, demand) {

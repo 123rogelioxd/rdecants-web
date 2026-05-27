@@ -9,6 +9,7 @@ import { openProductModal } from '../ui/modal.js';
 import { observeFadeUp }    from '../ui/animations.js';
 import { primeImageStates } from '../ui/images.js';
 import { getSafePrice, formatPrice } from '../utils/prices.js';
+import { hasHighDemand } from '../utils/scarcity.js?v=1.0.13';
 import { Personalization, personalizeRails } from './personalization.js?v=1.0.13';
 
 const MAX_PER_RAIL = 8;
@@ -244,10 +245,11 @@ function _railTemplate(rail) {
 function _cardTemplate(product, rail, idx) {
   const price = getSafePrice(product);
   const notes = (product.notes ?? []).slice(0, 2);
+  const publicBadge = product.badge && !hasHighDemand(product) ? product.badge : '';
 
   return `
     <article class="rr-card" data-product-id="${product.id}" data-position="${idx}" style="--i:${idx}">
-      ${product.badge ? `<span class="rr-badge">${product.badge}</span>` : ''}
+      ${publicBadge ? `<span class="rr-badge">${publicBadge}</span>` : ''}
       <div class="rr-img">
         <img src="${product.image}" alt="${product.name}" loading="lazy" decoding="async"
              onerror="this.parentElement.classList.add('rr-img--fallback');this.remove()">

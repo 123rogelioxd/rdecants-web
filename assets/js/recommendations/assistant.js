@@ -18,7 +18,7 @@ import {
 } from './taxonomy.js?v=1.0.13';
 import { getReasons, getMatchTier } from './reasoning.js?v=1.0.13';
 import { isSellable, getOperationalScore, getAovSignal } from './scoring.js?v=1.0.13';
-import { getOrderableVariants } from '../utils/prices.js?v=1.0.13';
+import { getDefaultVariant, getOrderableVariants } from '../utils/prices.js?v=1.0.13';
 
 const MIN_RESULTS = 2;
 const MAX_RESULTS = 4;
@@ -101,11 +101,12 @@ export function getAssistantRecommendations(answers = {}, products = [], { limit
 
   const candidates = products
     .filter(isSellable)
-    .filter(product => _fitsBudget(product, answers.budget))
-    .map(product => {
-      const signals = productSignals(product);
-      const matchScore = _matchScore(product, signals, answers);
-      return { product, matchScore };
+    .map(product => ({ product, variant: _variantForBudget(product, answers.budget) }))
+    .filter(entry => entry.variant)
+    .map(entry => {
+      const signals = productSignals(entry.product);
+      const matchScore = _matchScore(entry.product, signals, answers);
+      return { ...entry, matchScore };
     })
     .filter(entry => entry.matchScore > 0);
 
@@ -120,8 +121,9 @@ export function getAssistantRecommendations(answers = {}, products = [], { limit
 
   const top = ranked.slice(0, Math.max(MIN_RESULTS, Math.min(limit, MAX_RESULTS)));
 
-  return top.map(({ product, matchScore }) => ({
+  return top.map(({ product, variant, matchScore }) => ({
     product,
+    variant,
     matchScore,
     matchTier: getMatchTier(matchScore, maxScore),
     reasons: getReasons(product),
@@ -166,12 +168,19 @@ function _levelAdjust(product, signals, level) {
   return 0;
 }
 
-function _fitsBudget(product, budget) {
+function _variantForBudget(product, budget) {
   const [min, max] = BUDGET_RANGES[budget] ?? BUDGET_RANGES.any;
-  const prices = getOrderableVariants(product).map(v => v.price).filter(Number.isFinite);
-  if (!prices.length) return false;
-  // Passes if any orderable variant falls within the chosen band.
-  return prices.some(price => price >= min && price <= max);
+  const defaultVariant = getDefaultVariant(product);
+
+  if (budget === 'any' || !budget) return defaultVariant;
+  if (defaultVariant && _priceInRange(defaultVariant.price, min, max)) return defaultVariant;
+
+  return getOrderableVariants(product)
+    .find(variant => _priceInRange(variant.price, min, max)) ?? null;
+}
+
+function _priceInRange(price, min, max) {
+  return Number.isFinite(price) && price >= min && price <= max;
 }
 
 function _topUseCaseLabel(product) {

@@ -8,9 +8,9 @@ const variant = (size, price, stock) => ({
   available: stock > 0, soldOut: stock <= 0,
   variant_id: 900 + size,
 });
-const product = (id, notes, desc, { stock = 20, price = 180, badge = 'Disponible', featured = false } = {}) => ({
+const product = (id, notes, desc, { stock = 20, price = 180, badge = 'Disponible', featured = false, variants = null } = {}) => ({
   id, name: id, house: 'House', notes, desc, story: desc, badge, featured,
-  variants: [variant(5, price, stock)],
+  variants: variants ?? [variant(5, price, stock)],
 });
 
 const freshOffice = product('FreshOffice', ['marino', 'citrico', 'vetiver'], 'fresco limpio para oficina y verano', { price: 160 });
@@ -63,6 +63,48 @@ test('budget filtering excludes out-of-band prices', () => {
     catalog,
   );
   assert.deepEqual(res, []);
+});
+
+test('budget filtering uses the exact displayed purchasable variant', () => {
+  const splitPrice = product(
+    'SplitPrice',
+    ['marino', 'citrico', 'vetiver'],
+    'fresco limpio para oficina y verano',
+    {
+      variants: [
+        variant(3, 180, 10),
+        variant(5, 300, 10),
+      ],
+    },
+  );
+
+  const res = getAssistantRecommendations(
+    { family: 'fresco', occasion: 'oficina', climate: 'calido', level: 'beginner', budget: 'mid' },
+    [splitPrice],
+  );
+
+  assert.equal(res.length, 1);
+  assert.equal(res[0].product.id, 'SplitPrice');
+  assert.equal(res[0].variant.size, 3);
+  assert.ok(res[0].variant.price >= 150 && res[0].variant.price <= 250);
+});
+
+test('budget boundaries are strict and inclusive for displayed variants', () => {
+  const lowEdge = product('LowEdge', ['marino', 'citrico'], 'fresco oficina verano', { price: 150 });
+  const midEdge = product('MidEdge', ['marino', 'citrico'], 'fresco oficina verano', { price: 250 });
+  const overMid = product('OverMid', ['marino', 'citrico'], 'fresco oficina verano', { price: 251 });
+
+  const low = getAssistantRecommendations(
+    { family: 'fresco', occasion: 'oficina', climate: 'calido', budget: 'low' },
+    [lowEdge, midEdge, overMid],
+  );
+  assert.deepEqual(ids(low), ['LowEdge']);
+
+  const mid = getAssistantRecommendations(
+    { family: 'fresco', occasion: 'oficina', climate: 'calido', budget: 'mid' },
+    [lowEdge, midEdge, overMid],
+  );
+  assert.deepEqual(ids(mid).sort(), ['LowEdge', 'MidEdge']);
 });
 
 test('each result carries a tier and reasons', () => {

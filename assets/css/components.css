@@ -310,7 +310,7 @@
 /* ── Product grid ────────────────────────────────────────────── */
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
   gap: 22px;
 }
 
@@ -333,6 +333,7 @@
   isolation: isolate;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .product-card::before {
@@ -406,6 +407,7 @@
   flex: 1;
   flex-direction: column;
   padding: 24px;
+  min-width: 0;
 }
 
 .card-house {
@@ -423,6 +425,7 @@
   gap: 8px;
   justify-content: space-between;
   margin-bottom: 14px;
+  min-width: 0;
 }
 
 .card-name {
@@ -437,6 +440,7 @@
   margin-bottom: 0;
   min-width: 0;
   overflow: hidden;
+  overflow-wrap: anywhere;
 }
 
 .card-concentration,
@@ -450,6 +454,7 @@
   line-height: 1;
   padding: 7px 9px;
   text-transform: uppercase;
+  max-width: 100%;
 }
 
 .card-story {
@@ -520,6 +525,10 @@
   border: 1px solid var(--border-hl);
   border-radius: 999px;
   padding: 5px 11px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ── "¿Por qué esta fragancia?" reasoning block ─────────────── */
@@ -732,6 +741,11 @@
   justify-content: space-between;
   gap: 16px;
   margin-top: auto;
+  min-width: 0;
+}
+
+.card-purchase > div {
+  min-width: 0;
 }
 
 .card-price {
@@ -740,6 +754,9 @@
   color: var(--accent);
   line-height: 1;
   white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .card-price small {
@@ -752,6 +769,7 @@
 .card-action {
   flex: 0 0 auto;
   padding: 12px 18px;
+  box-sizing: border-box;
 }
 
 .card-action:disabled {
@@ -3848,6 +3866,7 @@ textarea:focus-visible {
   .card-title-row {
     gap: 6px;
     margin-bottom: 8px;
+    flex-wrap: wrap;
   }
 
   .card-name {
@@ -3862,6 +3881,17 @@ textarea:focus-visible {
     letter-spacing: 0.08em;
   }
 
+  .card-guidance {
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+
+  .guidance-chip {
+    padding: 4px 7px;
+    font-size: 7px;
+    letter-spacing: 0.08em;
+  }
+
   .card-story {
     display: none;
   }
@@ -3873,7 +3903,7 @@ textarea:focus-visible {
   }
 
   .card-price {
-    font-size: 21px;
+    font-size: 19px;
   }
 
   .card-price small {
@@ -4024,7 +4054,7 @@ textarea:focus-visible {
 
 .asst-results-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
   gap: 16px;
 }
 
@@ -4035,6 +4065,7 @@ textarea:focus-visible {
   border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--card);
+  min-width: 0;
 }
 
 .asst-card-media {
@@ -4081,6 +4112,7 @@ textarea:focus-visible {
   flex-direction: column;
   flex: 1;
   padding: 16px 16px 18px;
+  min-width: 0;
 }
 
 .asst-card-house {
@@ -4088,6 +4120,9 @@ textarea:focus-visible {
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .asst-card-name {
@@ -4095,6 +4130,7 @@ textarea:focus-visible {
   font-size: 22px;
   line-height: 1.05;
   margin: 4px 0 6px;
+  overflow-wrap: anywhere;
 }
 
 .asst-card-usecase {
@@ -4138,6 +4174,7 @@ textarea:focus-visible {
   justify-content: space-between;
   gap: 10px;
   margin-top: auto;
+  min-width: 0;
 }
 
 .asst-card-price {
@@ -4145,6 +4182,7 @@ textarea:focus-visible {
   font-size: 19px;
   color: var(--accent);
   white-space: nowrap;
+  min-width: 0;
 }
 
 .asst-card-price small {
@@ -4157,6 +4195,7 @@ textarea:focus-visible {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 
 .asst-card-detail {
@@ -4180,6 +4219,7 @@ textarea:focus-visible {
 .asst-card-add {
   font-size: 11px;
   padding: 10px 16px;
+  min-width: 0;
 }
 
 /* ── Empty state ───────────────────────────────────────────── */
@@ -4215,14 +4255,36 @@ textarea:focus-visible {
     grid-template-columns: 1fr;
   }
   .asst-card {
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr);
   }
   .asst-card-media {
-    flex: 0 0 116px;
     height: auto;
   }
   .asst-card-name {
     font-size: 20px;
+  }
+  .asst-card-body {
+    padding: 13px;
+  }
+  .asst-card-foot {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 9px;
+  }
+  .asst-card-price {
+    white-space: normal;
+  }
+  .asst-card-actions {
+    width: 100%;
+  }
+  .asst-card-detail {
+    flex: 0 0 auto;
+  }
+  .asst-card-add {
+    flex: 1 1 auto;
+    padding-left: 10px;
+    padding-right: 10px;
   }
 }
 

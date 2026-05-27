@@ -13,7 +13,7 @@ import { CatalogProvider } from '../providers/catalog.js?v=1.0.13';
 import { Tracker } from '../tracking/tracker.js';
 import { openProductModal } from './modal.js?v=1.0.13';
 import { primeImageStates } from './images.js';
-import { getDefaultVariant, formatPrice } from '../utils/prices.js?v=1.0.13';
+import { formatPrice } from '../utils/prices.js?v=1.0.13';
 
 const RAIL_CONTEXT = { railId: 'assistant', railTitle: 'Asistente de fragancias' };
 
@@ -138,8 +138,7 @@ async function _generate() {
 }
 
 function _resultCard(result, idx) {
-  const { product, matchTier, reasons, useCase } = result;
-  const variant = getDefaultVariant(product);
+  const { product, variant, matchTier, reasons, useCase } = result;
   const canAdd = Boolean(variant);
   const hasImage = product.image && product.image.trim() !== '';
   const reasonsHtml = reasons.map(r => `<li>${r}</li>`).join('');
@@ -186,10 +185,9 @@ function _bindResults(resultsEl, results) {
     });
 
     card.querySelector('[data-action="add"]')?.addEventListener('click', () => {
-      const variant = getDefaultVariant(result.product);
-      if (!variant) return;
+      if (!result.variant) return;
       Tracker.recommendationClicked(result.product, position, RAIL_CONTEXT);
-      window.__rd?.cart?.add(result.product.id, variant.size);
+      window.__rd?.cart?.add(result.product.id, result.variant.size);
       window.__rd?.ui?.openCart?.();
     });
   });

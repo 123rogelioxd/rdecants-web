@@ -89,12 +89,24 @@ test('display: low tier uses the subtle "pocas unidades" copy', () => {
   assert.equal(d.badgeClass, 'trend');
 });
 
-test('display: healthy stock + demand badge surfaces rotation copy', () => {
+test('display: healthy stock + demand badge keeps demand internal', () => {
   const d = getScarcityDisplay(product([variant(5, 100, 30)], 'Alta demanda'));
   assert.equal(d.state, 'available');
-  assert.equal(d.key, 'demand');
-  assert.equal(d.label, 'Alta rotacion esta semana');
+  assert.equal(d.key, 'ok');
+  assert.equal(d.label, 'Disponible');
   assert.equal(d.demand, true);
+});
+
+test('public scarcity copy never exposes high-rotation wording', () => {
+  const labels = [
+    getScarcityDisplay(product([variant(5, 100, 30)], 'Alta rotacion')).label,
+    getScarcityDisplay(product([variant(5, 100, 1)], 'Alta rotacion')).label,
+    getScarcityDisplay(product([variant(5, 100, 0)], 'Alta rotacion')).label,
+  ];
+
+  for (const label of labels) {
+    assert.doesNotMatch(label.toLowerCase(), /alta rotaci[oó]n|alta rotacion/);
+  }
 });
 
 test('display: healthy stock without demand is the calm default', () => {
