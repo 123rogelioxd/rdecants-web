@@ -9,6 +9,7 @@ import { openProductModal } from '../ui/modal.js';
 import { observeFadeUp }    from '../ui/animations.js';
 import { primeImageStates } from '../ui/images.js';
 import { getSafePrice, formatPrice } from '../utils/prices.js';
+import { Personalization, personalizeRails } from './personalization.js?v=1.0.13';
 
 const MAX_PER_RAIL = 8;
 const MIN_PER_RAIL = 2;
@@ -101,11 +102,17 @@ export const Recommendations = {
 
       const products = await CatalogProvider.getProducts();
       const featured = await _getFeaturedSafe();
-      const rails = buildRails(products, featured, context);
+      let rails = buildRails(products, featured, context);
 
       if (!rails.length) {
         _renderEmpty(root);
         return;
+      }
+
+      /* Subtle personalized discovery: nudge rails/items toward the
+         visitor's local taste signal (ties keep original order). */
+      if (Personalization.hasSignal()) {
+        rails = personalizeRails(rails, Personalization.getTaste());
       }
 
       _renderRails(root, rails);

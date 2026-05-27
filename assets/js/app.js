@@ -15,6 +15,8 @@ import { renderProducts, renderPacks }     from './catalog/render.js?v=1.0.13';
 import { Recommendations }                 from './recommendations/index.js?v=1.0.13';
 import { setupAssistant }                   from './ui/assistant.js?v=1.0.13';
 import { setupBundles }                      from './ui/bundles.js?v=1.0.13';
+import { Personalization }                  from './recommendations/personalization.js?v=1.0.13';
+import { CatalogProvider }                  from './providers/catalog.js?v=1.0.13';
 import { setupScrollAnimations,
          observeFadeUp,
          setupHeroParallax }             from './ui/animations.js?v=1.0.17';
@@ -50,7 +52,26 @@ window.__rd = {
       closeCart();
     },
   },
+  /* Privacy: let the visitor wipe their local taste signal at will. */
+  personalization: {
+    reset: () => Personalization.reset(),
+  },
 };
+
+/* ── Personalized discovery — record genuine interest signals ──
+   Only real interactions (opening a product or a recommendation)
+   feed the local taste profile; the bulk on-load product_view is
+   intentionally ignored. Privacy-safe, localStorage only. */
+async function _recordTaste(productId) {
+  if (!productId) return;
+  try {
+    const product = await CatalogProvider.getProductById(productId);
+    if (product) Personalization.recordView(product);
+  } catch { /* no-op: personalization stays off if catalog is unavailable */ }
+}
+
+EventBus.on('track:product_viewed', payload => _recordTaste(payload?.productId));
+EventBus.on('track:recommendation_clicked', payload => _recordTaste(payload?.productId));
 
 /* ── Backwards-compat shims (used by existing HTML event attrs) */
 window.toggleCart     = toggleCart;
