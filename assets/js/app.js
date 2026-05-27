@@ -12,6 +12,7 @@ import { renderCart, updateCartCount,
          openCart, closeCart,
          toggleCart, sendWhatsApp }       from './cart/render.js?v=1.0.15';
 import { renderProducts, renderPacks }     from './catalog/render.js?v=1.0.13';
+import { Recommendations }                 from './recommendations/index.js?v=1.0.13';
 import { setupScrollAnimations,
          observeFadeUp,
          setupHeroParallax }             from './ui/animations.js?v=1.0.17';
@@ -150,6 +151,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   /* Render catalog (async — provider pattern) */
   await renderProducts();
   await renderPacks();
+
+  /* Activate mood-based discovery rails (lazy-hydrates on scroll) */
+  Recommendations.render('recommendation-rails');
 
   /* After dynamic content is in DOM, observe scroll animations */
   observeFadeUp();
