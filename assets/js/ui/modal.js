@@ -26,6 +26,7 @@ import { getScarcityDisplay } from '../utils/scarcity.js?v=1.0.13';
 import { getGuidanceBadges } from '../utils/guidance.js?v=1.0.13';
 import { getRelatedProducts } from '../recommendations/upsells.js?v=1.0.13';
 import { CatalogProvider } from '../providers/catalog.js?v=1.0.13';
+import { buildWhyHtml } from './why.js?v=1.0.13';
 
 /* â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 let _activeProduct  = null;
@@ -129,6 +130,8 @@ function _render() {
     .map(g => `<span class="guidance-chip guidance-chip--${g.key}">${g.label}</span>`)
     .join('');
 
+  const whyHtml = buildWhyHtml(p);
+
   const sizesHtml = [3, 5, 10]
     .map(ml => {
       const variant = variants.find(v => v.size === ml);
@@ -201,6 +204,8 @@ function _render() {
         ${guidanceHtml
           ? `<div class="pdm-guidance" aria-label="Recomendado para">${guidanceHtml}</div>`
           : ''}
+
+        ${whyHtml}
 
         ${stockHtml}
 
