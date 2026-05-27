@@ -14,6 +14,7 @@ import { renderCart, updateCartCount,
 import { renderProducts, renderPacks }     from './catalog/render.js?v=1.0.13';
 import { Recommendations }                 from './recommendations/index.js?v=1.0.13';
 import { setupAssistant }                   from './ui/assistant.js?v=1.0.13';
+import { setupBundles }                      from './ui/bundles.js?v=1.0.13';
 import { setupScrollAnimations,
          observeFadeUp,
          setupHeroParallax }             from './ui/animations.js?v=1.0.17';
@@ -158,6 +159,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   /* Activate mood-based discovery rails (lazy-hydrates on scroll) */
   Recommendations.render('recommendation-rails');
+
+  /* Dynamic smart bundles (kits from real metadata) */
+  setupBundles('smart-bundles');
 
   /* After dynamic content is in DOM, observe scroll animations */
   observeFadeUp();
