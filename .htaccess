@@ -1,0 +1,30 @@
+# =============================================================
+#  RDECANTS — FRONTEND ROUTING (Hostinger / LiteSpeed / Apache)
+#  Lives next to index.html and product.html.
+#  Hostinger does NOT honor Netlify _redirects or netlify.toml;
+#  this file is the authoritative production routing for the
+#  static frontend.
+# =============================================================
+
+# Disable MultiViews so /product is not silently rewritten to
+# /product.html before our rules run (which would break the
+# /perfume/{slug} → product.html rewrite below).
+Options -MultiViews
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # ── Slug routes for product detail pages ─────────────────
+    # /perfume/{slug}      → product.html
+    # /perfume/{slug}/     → product.html
+    # The PDP reads the slug from window.location.pathname.
+    RewriteRule ^perfume/([^/]+)/?$ product.html [L,QSA]
+
+    # ── SPA-safe fallback for the bare root ──────────────────
+    # If a request maps to a real file or directory, serve it
+    # untouched. Otherwise, fall back to index.html.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^$ index.html [L]
+</IfModule>
