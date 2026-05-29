@@ -16,7 +16,7 @@ import { Recommendations }                 from './recommendations/index.js?v=1.
 import { setupAssistant }                   from './ui/assistant.js?v=1.0.13';
 import { setupBundles }                      from './ui/bundles.js?v=1.0.13';
 import { Personalization }                  from './recommendations/personalization.js?v=1.0.13';
-import { CatalogProvider }                  from './providers/catalog.js?v=1.0.13';
+import { CatalogProvider }                  from './providers/catalog.js?v=1.0.16';
 import { setupScrollAnimations,
          observeFadeUp,
          setupHeroParallax }             from './ui/animations.js?v=1.0.17';

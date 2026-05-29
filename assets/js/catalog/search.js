@@ -231,26 +231,41 @@ function _productInAliasGroup(product, group) {
 /** Identity-only text — used for alias group membership. Excludes story/desc
     so Spanish connectives like " y " don't pollute alias matching. */
 function _identityText(product) {
+  const f = product.fragrance ?? null;
   return _norm([
     product.name,
     product.house,
     product.brand,
     product.sku,
+    product.slug,
+    f?.canonical_name,
+    ...(f?.aliases ?? []),
   ].filter(Boolean).join(' '));
 }
 
 function _searchText(product) {
+  const f = product.fragrance ?? null;
   return _norm([
     product.name,
     product.house,
     product.brand,
     product.sku,
+    product.slug,
     product.badge,
     product.story,
     product.desc,
+    product.category,
+    product.concentration,
     ...(product.notes ?? []),
     ..._productAliases(product),
-  ].join(' '));
+    f?.canonical_name,
+    f?.scent_family_normalized,
+    ...(f?.aliases ?? []),
+    ...(f?.mood_tags ?? []),
+    ...(f?.recommended_context_tags ?? []),
+    ...(f?.style_tags ?? []),
+    ...(f?.accords ?? []),
+  ].filter(Boolean).join(' '));
 }
 
 function _productAliases(product) {

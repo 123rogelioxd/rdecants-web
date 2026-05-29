@@ -5,7 +5,7 @@
    ============================================================= */
 
 import { generateBundles } from '../recommendations/bundles.js?v=1.0.13';
-import { CatalogProvider } from '../providers/catalog.js?v=1.0.13';
+import { CatalogProvider } from '../providers/catalog.js?v=1.0.16';
 import { Tracker } from '../tracking/tracker.js';
 import { openProductModal } from './modal.js?v=1.0.13';
 import { primeImageStates } from './images.js';

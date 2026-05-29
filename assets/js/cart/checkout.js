@@ -5,7 +5,7 @@
 
 import { Cart }      from './cart.js?v=1.0.15';
 import { ApiClient } from '../api/client.js?v=1.0.15';
-import { CatalogProvider } from '../providers/catalog.js?v=1.0.15';
+import { CatalogProvider } from '../providers/catalog.js?v=1.0.16';
 import { Tracker }   from '../tracking/tracker.js';
 import { showToast } from '../ui/toast.js';
 import { formatPrice, getVariantForSize } from '../utils/prices.js?v=1.0.15';

@@ -1,4 +1,4 @@
-console.log('CATALOG PROVIDER NUEVO 1.0.13 CARGADO');
+console.log('CATALOG PROVIDER NUEVO 1.0.16 CARGADO');
 
 /* =============================================================
    RDECANTS — CATALOG PROVIDER
@@ -131,6 +131,8 @@ function _mapProduct(p) {
     id,
     sku: p.sku ?? p.product_sku ?? null,
     product_id: p.product_id ?? p.id ?? id,
+    slug: p.slug ?? null,
+    category: p.category ?? p.categoria ?? null,
     name: p.name ?? p.nombre ?? 'Perfume',
     house: p.house ?? p.brand ?? p.marca ?? '',
     desc: p.desc ?? p.description ?? p.descripcion ?? '',
@@ -141,8 +143,24 @@ function _mapProduct(p) {
     stock: variants.length ? Math.max(...variants.map(v => v.availability)) : _safeStock(p.stock),
     badge: p.badge ?? p.label ?? 'Disponible',
     featured: Boolean(p.featured),
+    fragrance: _mapFragrance(p.fragrance),
     prices,
     variants,
+  };
+}
+
+function _mapFragrance(f) {
+  if (!f || typeof f !== 'object') return null;
+  const arr = (v) => Array.isArray(v) ? v.filter(Boolean) : [];
+  return {
+    canonical_name: f.canonical_name ?? null,
+    aliases: arr(f.aliases),
+    scent_family_normalized: f.scent_family_normalized ?? null,
+    mood_tags: arr(f.mood_tags),
+    recommended_context_tags: arr(f.recommended_context_tags),
+    style_tags: arr(f.style_tags),
+    accords: arr(f.accords),
+    scores: f.scores && typeof f.scores === 'object' ? f.scores : {},
   };
 }
 

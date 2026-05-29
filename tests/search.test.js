@@ -56,6 +56,38 @@ test('alias queries do not leak Spanish " y " false positives', () => {
   assert.deepEqual(search('ysl y edp').sort(), ['ysl-y']);
 });
 
+test('search matches fragrance.aliases with partial query', () => {
+  const sauvage = {
+    ...product('sauvage', 'Dior', 'Sauvage', ['pimienta'], 'fresco especiado'),
+    fragrance: {
+      canonical_name: 'Dior Sauvage',
+      aliases: ['jhony deep', 'sauvage', 'dior', 'dior sauvage edt', 'roger'],
+      scent_family_normalized: 'amber-fougere',
+      mood_tags: ['confident'],
+      recommended_context_tags: ['office'],
+      style_tags: ['masculine'],
+      accords: ['ambroxan', 'bergamot'],
+    },
+  };
+  const list = [sauvage, product('other', 'Chanel', 'Allure', ['rosa'], 'floral')];
+  const search = q => filterProducts(list, { query: q }).map(p => p.id);
+
+  assert.ok(search('rog').includes('sauvage'), 'partial alias "rog" should match "roger"');
+  assert.ok(search('ROG').includes('sauvage'), 'search is case-insensitive');
+  assert.ok(search('jhony').includes('sauvage'), 'matches another alias');
+  assert.ok(search('ambroxan').includes('sauvage'), 'matches an accord');
+  assert.ok(search('confident').includes('sauvage'), 'matches a mood tag');
+});
+
+test('search is defensive when fragrance is null/missing', () => {
+  const list = [
+    { ...product('a', 'Dior', 'Sauvage', ['pimienta'], 'fresco'), fragrance: null },
+    product('b', 'Chanel', 'Allure', ['rosa'], 'floral'),
+  ];
+  assert.doesNotThrow(() => filterProducts(list, { query: 'sauvage' }));
+  assert.ok(filterProducts(list, { query: 'sauvage' }).map(p => p.id).includes('a'));
+});
+
 test('alias queries scoped to brand: bdc and jpg', () => {
   const list = [
     product('bdc',    'Chanel',             'Bleu de Chanel EDT',  ['cedro'],   'limpio elegante'),

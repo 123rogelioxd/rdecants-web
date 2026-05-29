@@ -3,7 +3,7 @@
    State management: add, remove, qty, persist, stock limits.
    ============================================================= */
 
-import { CatalogProvider } from '../providers/catalog.js?v=1.0.13';
+import { CatalogProvider } from '../providers/catalog.js?v=1.0.16';
 import { Tracker }         from '../tracking/tracker.js';
 import { EventBus }        from '../core/events.js';
 import { showToast }       from '../ui/toast.js';

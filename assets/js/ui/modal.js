@@ -25,7 +25,7 @@ import { getDefaultVariant,
 import { getScarcityDisplay } from '../utils/scarcity.js?v=1.0.13';
 import { getGuidanceBadges } from '../utils/guidance.js?v=1.0.13';
 import { getRelatedProducts } from '../recommendations/upsells.js?v=1.0.13';
-import { CatalogProvider } from '../providers/catalog.js?v=1.0.13';
+import { CatalogProvider } from '../providers/catalog.js?v=1.0.16';
 import { buildWhyHtml } from './why.js?v=1.0.13';
 
 /* â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */

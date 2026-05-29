@@ -10,7 +10,7 @@ import { sendCheckoutWhatsApp,
 import { EventBus }  from '../core/events.js';
 import { Tracker }   from '../tracking/tracker.js';
 import { formatPrice, isValidPrice, getDefaultVariant } from '../utils/prices.js?v=1.0.15';
-import { CatalogProvider } from '../providers/catalog.js?v=1.0.15';
+import { CatalogProvider } from '../providers/catalog.js?v=1.0.16';
 import { getCartUpsells }  from '../recommendations/upsells.js?v=1.0.13';
 import { getCartMinimumState } from './momentum.js?v=1.0.15';
 
