@@ -12,7 +12,7 @@
 
 import { CatalogProvider }  from '../providers/catalog.js?v=1.0.16';
 import { Tracker }          from '../tracking/tracker.js';
-import { openProductModal } from '../ui/modal.js?v=1.0.13';
+import { openProductModal } from '../ui/modal.js?v=1.0.16';
 import { SearchBar }        from '../ui/searchbar.js?v=1.0.2';
 import { observeFadeUp }    from '../ui/animations.js';
 import { primeImageStates } from '../ui/images.js';

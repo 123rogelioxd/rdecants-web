@@ -23,7 +23,7 @@ import { setupScrollAnimations,
 import { setupHeader }                    from './ui/header.js';
 import { showToast }                      from './ui/toast.js';
 import { openProductModal,
-         closeProductModal }             from './ui/modal.js?v=1.0.15';
+         closeProductModal }             from './ui/modal.js?v=1.0.16';
 import { SearchBar }                     from './ui/searchbar.js?v=1.0.2';
 import { setupImageStates }              from './ui/images.js';
 import { Tracker }                        from './tracking/tracker.js?v=1.0.13';

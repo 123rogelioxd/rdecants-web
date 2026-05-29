@@ -24,10 +24,8 @@ import { getDefaultVariant,
          formatPrice } from '../utils/prices.js?v=1.0.13';
 import { getScarcityDisplay } from '../utils/scarcity.js?v=1.0.13';
 import { getGuidanceBadges } from '../utils/guidance.js?v=1.0.13';
-import { getRelatedProducts } from '../recommendations/upsells.js?v=1.0.14';
-import { CatalogProvider } from '../providers/catalog.js?v=1.0.16';
 import { buildWhyHtml } from './why.js?v=1.0.13';
-import { buildFragranceProfileHtml } from './fragranceProfile.js?v=1.0.0';
+import { productPageUrl } from './productPage.js?v=1.0.0';
 
 /* â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 let _activeProduct  = null;
@@ -132,7 +130,7 @@ function _render() {
     .join('');
 
   const whyHtml = buildWhyHtml(p);
-  const fragranceProfileHtml = buildFragranceProfileHtml(p);
+  const detailsHref = productPageUrl(p);
 
   const sizesHtml = [3, 5, 10]
     .map(ml => {
@@ -209,13 +207,13 @@ function _render() {
 
         ${whyHtml}
 
-        ${fragranceProfileHtml}
-
         ${stockHtml}
 
-        <!-- Related pairings live INSIDE the scroll area so they never
-             push the sticky buy controls below the fold on mobile. -->
-        <div class="pdm-related" id="pdm-related" hidden></div>
+        <a class="pdm-details-cta" href="${detailsHref}"
+           aria-label="Ver detalles completos de ${p.name}">
+          Ver detalles
+          <span aria-hidden="true">→</span>
+        </a>
 
       </div><!-- /pdm-info-scroll -->
 
@@ -252,69 +250,6 @@ function _render() {
 
   /* Bind events after render */
   _bindEvents();
-
-  /* Lazily hydrate related products (operational-first upsell) */
-  _renderRelated(p);
-}
-
-/* â”€â”€ Related products (upsell) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-async function _renderRelated(seed) {
-  const slot = _modal?.querySelector('#pdm-related');
-  if (!slot) return;
-
-  let products = [];
-  try {
-    products = await CatalogProvider.getProducts();
-  } catch {
-    return;
-  }
-
-  /* Guard against a stale async fill if the user already moved on */
-  if (!_activeProduct || String(_activeProduct.id) !== String(seed.id)) return;
-
-  const related = getRelatedProducts(seed, products, { limit: 2 });
-  if (!related.length) {
-    slot.hidden = true;
-    return;
-  }
-
-  slot.innerHTML = `
-    <p class="pdm-related-label">Si te gusta esto...</p>
-    <div class="pdm-related-row">
-      ${related.map(_relatedCard).join('')}
-    </div>`;
-  slot.hidden = false;
-
-  Tracker.recommendationView(related, { railId: 'modal_related', railTitle: 'Si te gusta esto...' });
-  primeImageStates(slot);
-
-  slot.querySelectorAll('.pdm-related-card').forEach(card => {
-    card.addEventListener('click', () => {
-      const product = related.find(item => String(item.id) === card.dataset.productId);
-      if (!product) return;
-      const position = Number(card.dataset.position) + 1;
-      Tracker.recommendationClicked(product, position, { railId: 'modal_related', railTitle: 'Si te gusta esto...' });
-      openProductModal(product);
-    });
-  });
-}
-
-function _relatedCard(product, idx) {
-  const price = getDisplayVariant(product)?.price ?? null;
-  const hasImage = product.image && product.image.trim() !== '';
-  return `
-    <button class="pdm-related-card" data-product-id="${product.id}" data-position="${idx}"
-      aria-label="Ver ${product.name}">
-      <span class="pdm-related-img">
-        ${hasImage
-          ? `<img src="${product.image}" alt="${product.name}" loading="lazy" decoding="async"
-               onerror="this.parentElement.classList.add('pdm-related-img--fallback');this.remove()">`
-          : ''}
-      </span>
-      <span class="pdm-related-house">${product.house ?? ''}</span>
-      <span class="pdm-related-name">${product.name}</span>
-      <span class="pdm-related-price">${formatPrice(price, 'Ver')}</span>
-    </button>`;
 }
 
 /* â”€â”€ Event binding â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */

@@ -47,6 +47,12 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
+# ── Slug routes for product detail pages ────────────────────────────────────
+[[redirects]]
+  from   = "/perfume/*"
+  to     = "/product.html"
+  status = 200
+
 # ── Redirects — SPA-safe (not needed for MPA but future-proof) ───────────────
 [[redirects]]
   from   = "/404"
