@@ -415,10 +415,12 @@ function _run() {
   _updateCount(result.length);
   _updateClear();
   _updateBadge();
-  _updateExploring();
+  _updateExploring(result.length);
 }
 
-function _updateExploring() {
+/** Visible "Mood activo" badge. The catalog NEVER filters silently —
+   if a mood is on, the user sees what's active and how to remove it. */
+function _updateExploring(count = 0) {
   const banner = _bar?.querySelector('#sf-exploring');
   if (!banner) return;
   const label = _state.mood ? MOOD_LABELS[_state.mood] : null;
@@ -427,12 +429,14 @@ function _updateExploring() {
     banner.innerHTML = '';
     return;
   }
+  const noun = count === 1 ? 'perfume encontrado' : 'perfumes encontrados';
   banner.hidden = false;
   banner.innerHTML = `
-    <span class="sf-exploring-kicker">Explorando</span>
+    <span class="sf-exploring-kicker">Mood activo</span>
     <strong class="sf-exploring-label">${label}</strong>
+    <span class="sf-exploring-count">${count} ${noun}</span>
     <button type="button" class="sf-exploring-clear"
-      aria-label="Quitar filtro de mood">Quitar</button>`;
+      aria-label="Quitar filtro de mood">Quitar filtro</button>`;
   banner.querySelector('.sf-exploring-clear')
     ?.addEventListener('click', () => {
       _state.mood = null;

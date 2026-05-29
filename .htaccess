@@ -21,6 +21,11 @@ Options -MultiViews
     # The PDP reads the slug from window.location.pathname.
     RewriteRule ^perfume/([^/]+)/?$ product.html [L,QSA]
 
+    # ── Slug routes for mood collection pages ────────────────
+    # /mood/{slug}         → mood.html
+    # The mood page reads the slug from window.location.pathname.
+    RewriteRule ^mood/([^/]+)/?$ mood.html [L,QSA]
+
     # ── SPA-safe fallback for the bare root ──────────────────
     # If a request maps to a real file or directory, serve it
     # untouched. Otherwise, fall back to index.html.

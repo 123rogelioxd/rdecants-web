@@ -255,8 +255,15 @@ function _bindCollections(root, rails) {
 
     card.querySelector('[data-action="explore"]')?.addEventListener('click', event => {
       event.stopPropagation();
-      Tracker.recommendationClicked(rail.items[0], 1, { railId: rail.id, railTitle: `${rail.title} catalog filter` });
-      window.__rd?.ui?.applyMoodFilter?.(card.dataset.mood);
+      Tracker.recommendationClicked(rail.items[0], 1, { railId: rail.id, railTitle: `${rail.title} mood page` });
+      const moodSlug = _railMoodSlug(rail.id);
+      if (moodSlug) {
+        /* Navigate to the curated mood collection page (NOT a filtered
+           catalog) so the user enters an editorial experience. */
+        window.location.href = `/mood/${encodeURIComponent(moodSlug)}`;
+      } else {
+        window.__rd?.ui?.applyMoodFilter?.(card.dataset.mood);
+      }
     });
   });
 }
@@ -279,6 +286,17 @@ function _railMood(id) {
     niche: 'lujo',
   };
   return moods[id] ?? '';
+}
+
+/** Map a home-rail id to its dedicated curated mood page slug. */
+function _railMoodSlug(id) {
+  const slugs = {
+    heat:  'calor-tropical',
+    party: 'noche-seduccion',
+    daily: 'fresh-office',
+    niche: 'lujo-elegante',
+  };
+  return slugs[id] ?? null;
 }
 
 async function _getFeaturedSafe() {
