@@ -18,7 +18,8 @@
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('items:', len\\(d\\) if isinstance\\(d,list\\) else 'not array'\\); print\\('first keys:', list\\(d[0].keys\\(\\)\\) if isinstance\\(d,list\\) and d else 'empty'\\)\")",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\PC\\\\Desktop\\\\rdecants-web\" -Recurse -Directory)",
       "Bash(Select-Object -ExpandProperty FullName)",
-      "Bash(Sort-Object)"
+      "Bash(Sort-Object)",
+      "Bash(git checkout *)"
     ]
   }
 }

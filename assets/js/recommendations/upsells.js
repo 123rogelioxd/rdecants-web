@@ -44,6 +44,9 @@ const AFFORDABLE_BOOST = 5;
 const BEGINNER_BOOST = 3;
 const FAMILY_WEIGHT = 4;
 const USE_CASE_WEIGHT = 2;
+const FRAGRANCE_FAMILY_WEIGHT = 6;
+const FRAGRANCE_TAG_WEIGHT = 2;
+const FRAGRANCE_ACCORD_WEIGHT = 2;
 
 export function getRelatedProducts(seed, products, { limit = RELATED_LIMIT } = {}) {
   if (!seed || !Array.isArray(products)) return [];
@@ -111,6 +114,17 @@ function _score(product, profile, options = {}) {
   if (family && profile.families.has(family)) score += FAMILY_WEIGHT;
   if (useCase && profile.useCases.has(useCase)) score += USE_CASE_WEIGHT;
 
+  /* Fragrance metadata similarity (canonical, when API provides it) */
+  const f = product.fragrance;
+  if (f) {
+    const scentFamily = _norm(f.scent_family_normalized);
+    if (scentFamily && profile.scentFamilies.has(scentFamily)) score += FRAGRANCE_FAMILY_WEIGHT;
+    score += _normList(f.mood_tags).filter(t => profile.moodTags.has(t)).length * FRAGRANCE_TAG_WEIGHT;
+    score += _normList(f.style_tags).filter(t => profile.styleTags.has(t)).length * FRAGRANCE_TAG_WEIGHT;
+    score += _normList(f.recommended_context_tags).filter(t => profile.contextTags.has(t)).length * FRAGRANCE_TAG_WEIGHT;
+    score += _normList(f.accords).filter(t => profile.accords.has(t)).length * FRAGRANCE_ACCORD_WEIGHT;
+  }
+
   if (score <= 0) return 0;
 
   return Math.max(0, score + _healthAdjust(product) + _frictionAdjust(product, options));
@@ -133,6 +147,11 @@ function _profile(seedProducts) {
   const tokens = new Set();
   const families = new Set();
   const useCases = new Set();
+  const scentFamilies = new Set();
+  const moodTags = new Set();
+  const styleTags = new Set();
+  const contextTags = new Set();
+  const accords = new Set();
 
   seedProducts.forEach(product => {
     const house = _norm(product.house);
@@ -150,9 +169,24 @@ function _profile(seedProducts) {
     const useCase = _bestUseCase(product);
     if (family) families.add(family);
     if (useCase) useCases.add(useCase);
+
+    const f = product.fragrance;
+    if (f) {
+      const sf = _norm(f.scent_family_normalized);
+      if (sf) scentFamilies.add(sf);
+      _normList(f.mood_tags).forEach(t => moodTags.add(t));
+      _normList(f.style_tags).forEach(t => styleTags.add(t));
+      _normList(f.recommended_context_tags).forEach(t => contextTags.add(t));
+      _normList(f.accords).forEach(t => accords.add(t));
+    }
   });
 
-  return { houses, notes, tokens, families, useCases };
+  return { houses, notes, tokens, families, useCases, scentFamilies, moodTags, styleTags, contextTags, accords };
+}
+
+function _normList(list) {
+  if (!Array.isArray(list)) return [];
+  return list.map(_norm).filter(Boolean);
 }
 
 function _frictionAdjust(product, { targetRemaining = null } = {}) {

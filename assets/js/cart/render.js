@@ -11,7 +11,7 @@ import { EventBus }  from '../core/events.js';
 import { Tracker }   from '../tracking/tracker.js';
 import { formatPrice, isValidPrice, getDefaultVariant } from '../utils/prices.js?v=1.0.15';
 import { CatalogProvider } from '../providers/catalog.js?v=1.0.16';
-import { getCartUpsells }  from '../recommendations/upsells.js?v=1.0.13';
+import { getCartUpsells }  from '../recommendations/upsells.js?v=1.0.14';
 import { getCartMinimumState } from './momentum.js?v=1.0.15';
 
 const WHATSAPP_NUMBER = '5219516513018';

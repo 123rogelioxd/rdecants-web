@@ -24,9 +24,10 @@ import { getDefaultVariant,
          formatPrice } from '../utils/prices.js?v=1.0.13';
 import { getScarcityDisplay } from '../utils/scarcity.js?v=1.0.13';
 import { getGuidanceBadges } from '../utils/guidance.js?v=1.0.13';
-import { getRelatedProducts } from '../recommendations/upsells.js?v=1.0.13';
+import { getRelatedProducts } from '../recommendations/upsells.js?v=1.0.14';
 import { CatalogProvider } from '../providers/catalog.js?v=1.0.16';
 import { buildWhyHtml } from './why.js?v=1.0.13';
+import { buildFragranceProfileHtml } from './fragranceProfile.js?v=1.0.0';
 
 /* â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 let _activeProduct  = null;
@@ -131,6 +132,7 @@ function _render() {
     .join('');
 
   const whyHtml = buildWhyHtml(p);
+  const fragranceProfileHtml = buildFragranceProfileHtml(p);
 
   const sizesHtml = [3, 5, 10]
     .map(ml => {
@@ -207,6 +209,8 @@ function _render() {
 
         ${whyHtml}
 
+        ${fragranceProfileHtml}
+
         ${stockHtml}
 
         <!-- Related pairings live INSIDE the scroll area so they never
@@ -275,13 +279,13 @@ async function _renderRelated(seed) {
   }
 
   slot.innerHTML = `
-    <p class="pdm-related-label">Combina perfecto con</p>
+    <p class="pdm-related-label">Si te gusta esto...</p>
     <div class="pdm-related-row">
       ${related.map(_relatedCard).join('')}
     </div>`;
   slot.hidden = false;
 
-  Tracker.recommendationView(related, { railId: 'modal_related', railTitle: 'Combina perfecto con' });
+  Tracker.recommendationView(related, { railId: 'modal_related', railTitle: 'Si te gusta esto...' });
   primeImageStates(slot);
 
   slot.querySelectorAll('.pdm-related-card').forEach(card => {
@@ -289,7 +293,7 @@ async function _renderRelated(seed) {
       const product = related.find(item => String(item.id) === card.dataset.productId);
       if (!product) return;
       const position = Number(card.dataset.position) + 1;
-      Tracker.recommendationClicked(product, position, { railId: 'modal_related', railTitle: 'Combina perfecto con' });
+      Tracker.recommendationClicked(product, position, { railId: 'modal_related', railTitle: 'Si te gusta esto...' });
       openProductModal(product);
     });
   });
