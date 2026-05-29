@@ -20,7 +20,7 @@ import {
   renderRelated,
   readSlugFromLocation,
   findProductBySlug,
-} from '../ui/productPage.js?v=1.0.0';
+} from '../ui/productPage.js?v=1.0.1';
 
 /* ── Global bridge (shared with rest of the app) ─────────────── */
 window.__rd = window.__rd || {};

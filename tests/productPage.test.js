@@ -109,3 +109,136 @@ test('modal "Ver detalles" CTA targets /perfume/{slug}', () => {
   /* The modal builds the href via productPageUrl — verify the contract. */
   assert.equal(productPageUrl(sample), '/perfume/dior-sauvage');
 });
+
+/* ── Editorial UX redesign ──────────────────────────────────── */
+
+test('PDP order: editorial sections come BEFORE buy controls', () => {
+  const html = buildProductPageHtml(sample);
+  /* Reorder spec: hero → why → summary → fit → intelligence → buy → related.
+     Buy must not be the first repeated thing the user sees. */
+  const i = needle => html.indexOf(needle);
+  assert.ok(i('id="pdp-hero"') >= 0);
+  assert.ok(i('¿Por qué esta fragancia?') > i('id="pdp-hero"'));
+  assert.ok(i('Resumen del perfil') > i('¿Por qué esta fragancia?'));
+  assert.ok(i('id="pdp-fit"') > i('Resumen del perfil'));
+  assert.ok(i('id="pdp-buy"') > i('id="pdp-fit"'));
+  assert.ok(i('id="pdp-related"') > i('id="pdp-buy"'));
+});
+
+test('PDP hero does NOT contain the variant selector (moved to buy section)', () => {
+  const html = buildProductPageHtml(sample);
+  const heroSlice = html.slice(
+    html.indexOf('id="pdp-hero"'),
+    html.indexOf('<!-- B. Why')
+  );
+  assert.ok(!heroSlice.includes('pdp-sizes'), 'hero should not show variant grid');
+  assert.ok(!heroSlice.includes('pdp-btn-add'), 'hero should not show Add button');
+  assert.ok(heroSlice.includes('pdp-jump-buy'), 'hero exposes a "Comprar" jump button');
+  assert.ok(heroSlice.includes('pdp-jump-fit'), 'hero exposes "¿Es para mí?" jump');
+});
+
+test('PDP renders the interactive fit quiz with 3 metadata-driven questions', () => {
+  const html = buildProductPageHtml(sample);
+  assert.ok(html.includes('id="pdp-fit"'));
+  assert.ok(html.includes('¿Buscas algo fresco?'));
+  assert.ok(html.includes('¿Lo quieres para diario?'));
+  assert.ok(html.includes('¿Quieres que llame atención?'));
+  assert.ok(html.includes('data-q="fresh"'));
+  assert.ok(html.includes('data-q="daily"'));
+  assert.ok(html.includes('data-q="standout"'));
+});
+
+test('PDP shows the compact profile summary card', () => {
+  const html = buildProductPageHtml(sample);
+  assert.ok(html.includes('Resumen del perfil'));
+  assert.ok(html.includes('Familia'));
+  assert.ok(html.includes('Vibra'));
+  assert.ok(html.includes('Ideal para'));
+});
+
+test('PDP includes the sticky mini-buy CTA', () => {
+  const html = buildProductPageHtml(sample);
+  assert.ok(html.includes('id="pdp-sticky-cta"'));
+  assert.ok(html.includes('pdp-sticky-cta-btn'));
+});
+
+test('score bars render text bands (Alta / Media / Fuerte) next to the bar', async () => {
+  const { buildFragranceProfileHtml, scoreBand, getScoreSummary } =
+    await import('../assets/js/ui/fragranceProfile.js');
+
+  /* Pure helpers */
+  assert.equal(scoreBand('freshness', 80), 'Alta');
+  assert.equal(scoreBand('freshness', 40), 'Media');
+  assert.equal(scoreBand('freshness', 10), 'Baja');
+  assert.equal(scoreBand('projection', 80), 'Fuerte');
+  assert.equal(scoreBand('longevity', 80), 'Larga');
+
+  /* Rendered output exposes the bands as user-visible text */
+  const html = buildFragranceProfileHtml(sample);
+  assert.match(html, /class="fp-bar-band">Alta</);
+  assert.match(html, /class="fp-bar-band">Fuerte</);
+
+  const summary = getScoreSummary(sample.fragrance);
+  assert.equal(summary.length, 5);
+  assert.ok(summary.every(s => typeof s.band === 'string' && s.band.length));
+});
+
+test('evaluateFitAnswers gives a positive verdict when product matches', async () => {
+  const { evaluateFitAnswers } = await import('../assets/js/ui/productPage.js');
+  /* Sauvage has projection 0.85, versatility 0.85, freshness 0.7 — should pass all three */
+  const verdict = evaluateFitAnswers(sample, { fresh: 'yes', daily: 'yes', standout: 'yes' });
+  assert.equal(verdict.tone, 'positive');
+  assert.equal(verdict.headline, 'Sí, este va contigo.');
+});
+
+test('evaluateFitAnswers gives a mixed verdict on partial matches', async () => {
+  const { evaluateFitAnswers } = await import('../assets/js/ui/productPage.js');
+  const sweetCandy = {
+    ...sample,
+    fragrance: {
+      ...sample.fragrance,
+      scent_family_normalized: 'gourmand',
+      mood_tags: ['playful', 'sensual'],
+      style_tags: ['bold'],
+      recommended_context_tags: ['night', 'date'],
+      scores: { freshness: 0.1, sweetness: 0.9, projection: 0.85, longevity: 0.85, versatility: 0.3 },
+    },
+  };
+  const verdict = evaluateFitAnswers(sweetCandy, { fresh: 'yes', daily: 'yes', standout: 'yes' });
+  assert.equal(verdict.tone, 'mixed');
+  assert.match(verdict.headline, /Coincide en 1 de 3/);
+});
+
+test('evaluateFitAnswers is defensive when fragrance is missing', async () => {
+  const { evaluateFitAnswers } = await import('../assets/js/ui/productPage.js');
+  assert.equal(evaluateFitAnswers({ ...sample, fragrance: null }, { fresh: 'yes' }), null);
+});
+
+test('PDP keeps cart Add + WhatsApp wired in the buy section', () => {
+  const html = buildProductPageHtml(sample);
+  const buySlice = html.slice(
+    html.indexOf('id="pdp-buy"'),
+    html.indexOf('id="pdp-related"')
+  );
+  assert.ok(buySlice.includes('id="pdp-btn-add"'));
+  assert.ok(buySlice.includes('id="pdp-btn-wa"'));
+  assert.ok(buySlice.includes('pdp-sizes'));
+});
+
+test('PDP is defensive: hero+buy still render when fragrance is null', () => {
+  const lean = { ...sample, fragrance: null };
+  const html = buildProductPageHtml(lean);
+  assert.ok(html.includes('id="pdp-hero"'));
+  assert.ok(html.includes('id="pdp-buy"'));
+  assert.ok(html.includes('id="pdp-btn-add"'));
+  /* No editorial blocks that depend on fragrance */
+  assert.ok(!html.includes('Resumen del perfil'));
+  assert.ok(!html.includes('id="pdp-fit"'));
+  assert.ok(!html.includes('Perfil Olfativo'));
+});
+
+test('PDP never displays fragrance.aliases (search-only data)', () => {
+  const html = buildProductPageHtml(sample);
+  assert.ok(!html.includes('roger') && !html.includes('jhony'),
+    'aliases must never be rendered on the PDP');
+});

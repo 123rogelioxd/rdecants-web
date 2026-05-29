@@ -95,6 +95,57 @@ const SCORE_LABELS = {
 
 const SCORE_ORDER = ['freshness', 'sweetness', 'projection', 'longevity', 'versatility'];
 
+/* Per-metric human-friendly text bands so users don't have to interpret
+   the bar alone. Thresholds: <34 = low, 34–66 = mid, >66 = high. */
+const SCORE_BANDS = {
+  freshness:   ['Baja', 'Media', 'Alta'],
+  sweetness:   ['Bajo', 'Medio', 'Alto'],
+  projection:  ['Cercana', 'Media', 'Fuerte'],
+  longevity:   ['Corta', 'Media', 'Larga'],
+  versatility: ['Baja', 'Media', 'Alta'],
+};
+
+export function scoreBand(key, pct) {
+  const bands = SCORE_BANDS[key] ?? ['Bajo', 'Medio', 'Alto'];
+  if (pct >= 67) return bands[2];
+  if (pct >= 34) return bands[1];
+  return bands[0];
+}
+
+/* Expose helpers the PDP uses to build the editorial summary block. */
+export function getScoreSummary(fragrance) {
+  if (!fragrance?.scores) return [];
+  return SCORE_ORDER
+    .map(key => {
+      const raw = _findScore(fragrance.scores, key);
+      if (raw === null) return null;
+      const pct = _toPercent(raw);
+      return { key, label: SCORE_LABELS[key] ?? key, pct, band: scoreBand(key, pct) };
+    })
+    .filter(Boolean);
+}
+
+export function getProfileSummary(fragrance) {
+  if (!fragrance) return null;
+  return {
+    family: _label(FAMILY_LABELS, fragrance.scent_family_normalized) || null,
+    vibe: _labelList(MOOD_LABELS, fragrance.mood_tags, 3),
+    bestFor: _labelList(CONTEXT_LABELS, fragrance.recommended_context_tags, 3),
+    climate: _climateLabel(fragrance.recommended_context_tags),
+    style: _labelList(STYLE_LABELS, fragrance.style_tags, 2),
+  };
+}
+
+function _climateLabel(contextTags) {
+  if (!Array.isArray(contextTags)) return null;
+  const norm = contextTags.map(_normKey);
+  const has = (...keys) => keys.some(k => norm.includes(k));
+  if (has('warm-weather', 'hot-weather', 'summer', 'beach')) return 'Clima cálido';
+  if (has('cold-weather', 'winter')) return 'Clima frío';
+  if (has('spring', 'fall', 'autumn')) return 'Clima templado';
+  return null;
+}
+
 /* ── Public API ────────────────────────────────────────────────── */
 
 export function buildFragranceProfileHtml(product) {
@@ -172,17 +223,7 @@ function _contextBlock(f) {
 }
 
 function _scoresBlock(f) {
-  const scores = f.scores;
-  if (!scores || typeof scores !== 'object') return '';
-
-  const bars = SCORE_ORDER
-    .map(key => {
-      const raw = _findScore(scores, key);
-      if (raw === null) return null;
-      return { key, label: SCORE_LABELS[key] ?? key, pct: _toPercent(raw) };
-    })
-    .filter(Boolean);
-
+  const bars = getScoreSummary(f);
   if (!bars.length) return '';
 
   return `
@@ -193,9 +234,10 @@ function _scoresBlock(f) {
           <li class="fp-bar">
             <span class="fp-bar-label">${_escape(b.label)}</span>
             <span class="fp-bar-track" role="img"
-                  aria-label="${_escape(b.label)} ${b.pct} de 100">
+                  aria-label="${_escape(b.label)} ${_escape(b.band)}">
               <span class="fp-bar-fill" style="width:${b.pct}%"></span>
             </span>
+            <span class="fp-bar-band">${_escape(b.band)}</span>
           </li>`).join('')}
       </ul>
     </section>`;

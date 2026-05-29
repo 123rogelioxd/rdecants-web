@@ -25,7 +25,7 @@ import { getDefaultVariant,
 import { getScarcityDisplay } from '../utils/scarcity.js?v=1.0.13';
 import { getGuidanceBadges } from '../utils/guidance.js?v=1.0.13';
 import { buildWhyHtml } from './why.js?v=1.0.13';
-import { productPageUrl } from './productPage.js?v=1.0.0';
+import { productPageUrl } from './productPage.js?v=1.0.1';
 
 /* â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 let _activeProduct  = null;
@@ -205,15 +205,15 @@ function _render() {
           ? `<div class="pdm-guidance" aria-label="Recomendado para">${guidanceHtml}</div>`
           : ''}
 
-        ${whyHtml}
-
-        ${stockHtml}
-
         <a class="pdm-details-cta" href="${detailsHref}"
            aria-label="Ver detalles completos de ${p.name}">
           Ver detalles
           <span aria-hidden="true">→</span>
         </a>
+
+        ${whyHtml}
+
+        ${stockHtml}
 
       </div><!-- /pdm-info-scroll -->
 
