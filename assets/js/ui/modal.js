@@ -149,7 +149,7 @@ function _render() {
         aria-pressed="${ml === _selectedSize}"
         aria-label="${ml}ml - $${variant.price} MXN${disabled ? ' agotado' : ''}"
       >
-        <span class="pdm-size-ml">${ml}ml${ml === 5 ? ' · recomendado' : ''}</span>
+        <span class="pdm-size-ml">${ml}ml${ml === 5 ? '<span class="pdm-size-recommended"> · recomendado</span>' : ''}</span>
         <span class="pdm-size-price">$${variant.price}</span>
         <span class="pdm-size-label">${disabled ? 'Agotado' : getSizeLabel(ml)}</span>
       </button>
@@ -195,6 +195,12 @@ function _render() {
         </div>
         <p class="pdm-decant-hint">Decant auténtico · prueba antes de comprar el frasco</p>
 
+        <a class="pdm-details-cta" href="${detailsHref}"
+           aria-label="Ver detalles completos de ${p.name}">
+          Ver detalles
+          <span aria-hidden="true">→</span>
+        </a>
+
         ${p.story
           ? `<p class="pdm-story">${p.story}</p>`
           : ''}
@@ -209,12 +215,6 @@ function _render() {
         ${guidanceHtml
           ? `<div class="pdm-guidance" aria-label="Recomendado para">${guidanceHtml}</div>`
           : ''}
-
-        <a class="pdm-details-cta" href="${detailsHref}"
-           aria-label="Ver detalles completos de ${p.name}">
-          Ver detalles
-          <span aria-hidden="true">→</span>
-        </a>
 
         ${whyHtml}
 
@@ -234,8 +234,8 @@ function _render() {
           <div class="pdm-price-row">
             <span class="pdm-price" id="pdm-price">${formatPrice(price, 'Consultar precio')}</span>
             <span class="pdm-price-unit">${_selectedSize ? `${_selectedSize}ml` : 'WhatsApp'}</span>
+            ${lowestPrice !== null ? `<p class="pdm-value-prop">Una botella completa cuesta miles — pruébalo desde ${formatPrice(lowestPrice)}.</p>` : ''}
           </div>
-          ${lowestPrice !== null ? `<p class="pdm-value-prop">Una botella completa cuesta miles — pruébalo desde ${formatPrice(lowestPrice)}.</p>` : ''}
 
           <div class="pdm-actions">
             <button class="btn-primary pdm-btn-add" id="pdm-btn-add"
@@ -432,4 +432,3 @@ function _validVariantId(value) {
   if (!normalized || normalized === 'null' || normalized === 'undefined') return null;
   return /^\d+$/.test(normalized) ? Number(normalized) : normalized;
 }
-

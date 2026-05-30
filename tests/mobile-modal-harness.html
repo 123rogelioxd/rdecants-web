@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Mobile modal visual fixture</title>
+  <link rel="stylesheet" href="../assets/css/tokens.css?v=mobile-modal-ux">
+  <link rel="stylesheet" href="../assets/css/animations.css?v=mobile-modal-ux">
+  <link rel="stylesheet" href="../assets/css/components.css?v=mobile-modal-ux">
+  <link rel="stylesheet" href="../assets/css/styles.css?v=mobile-modal-ux">
+</head>
+<body>
+  <script type="module">
+    import { openProductModal } from '../assets/js/ui/modal.js?v=mobile-modal-ux';
+
+    window.__rd = {
+      cart: { add: async () => {} },
+      ui: { openCart: () => {} },
+    };
+
+    openProductModal({
+      id: 'fixture-naxos',
+      product_id: 901,
+      slug: 'xerjoff-naxos',
+      name: 'Xerjoff Naxos',
+      house: 'XERJOFF',
+      concentration: 'EDP',
+      story: 'Miel, tabaco y lujo real. Para cuando quieres oler carisimo.',
+      desc: 'Una fragancia intensa y elegante con presencia nocturna.',
+      notes: ['Miel', 'Tabaco', 'Lavanda', 'Vainilla'],
+      image: '../assets/featured/xerjoff-naxos-hero.webp',
+      stock: 3,
+      badge: 'Nicho',
+      fragrance: {
+        scent_family_normalized: 'Ambar',
+        mood_tags: ['noche'],
+        recommended_context_tags: ['cita'],
+        style_tags: ['intenso'],
+        accords: ['miel', 'tabaco'],
+        scores: {},
+      },
+      variants: [
+        { variant_id: 9013, size: 3, price: 220, availability: 3, soldOut: false },
+        { variant_id: 9015, size: 5, price: 300, availability: 3, soldOut: false },
+        { variant_id: 90110, size: 10, price: 590, availability: 3, soldOut: false },
+      ],
+    });
+  </script>
+</body>
+</html>

@@ -657,9 +657,9 @@
 
 /* ── Modal mobile sizing: keep the buybar above the fold ────── */
 @media (max-width: 600px) {
-  .pdm-img-panel { max-height: 38vh; }
-  .pdm-img-wrap { aspect-ratio: 1 / 1; max-height: 38vh; }
-  .pdm-img { max-height: 34vh; }
+  .pdm-img-panel { max-height: 150px; }
+  .pdm-img-wrap { max-height: 150px; }
+  .pdm-img { max-height: 138px; }
   .pdm-info-scroll { padding-bottom: 8px; }
 }
 
@@ -3325,7 +3325,7 @@
     bottom: max(env(safe-area-inset-bottom), 60px);
     display: flex;
     flex-direction: column;
-    height: min(88dvh, 744px);
+    height: min(64dvh, 560px);
     left: 0;
     min-height: 0;
     position: fixed;
@@ -3340,18 +3340,18 @@
   }
 
   .pdm-img-panel {
-    flex: 0 0 min(40svh, 300px);
-    min-height: 210px;
-    max-height: 42svh;
+    flex: 0 0 150px;
+    min-height: 0;
+    max-height: 150px;
   }
 
   .pdm-img-wrap {
-    padding: 18px 18px 12px;
-    width: 78%;
+    padding: 12px 18px 8px;
+    width: 68%;
   }
 
   .pdm-img {
-    max-height: 36svh;
+    max-height: 138px;
   }
 
   .pdm-info {
@@ -3365,7 +3365,7 @@
   .pdm-info-scroll {
     flex: 1 1 auto;
     overflow-y: auto;
-    padding: 18px 20px 14px;
+    padding: 14px 18px 10px;
   }
 
   .pdm-close {
@@ -3396,7 +3396,7 @@
     -webkit-line-clamp: 2;
     font-size: 30px;
     line-height: 1.02;
-    margin-bottom: 10px;
+    margin-bottom: 7px;
     overflow: hidden;
   }
 
@@ -3411,8 +3411,13 @@
     -webkit-line-clamp: 2;
     font-size: 13px;
     line-height: 1.55;
-    margin-bottom: 7px;
+    margin: 10px 0 7px;
     overflow: hidden;
+  }
+
+  .pdm-details-cta {
+    margin-top: 2px;
+    padding: 8px 12px;
   }
 
   .pdm-desc {
@@ -3437,7 +3442,7 @@
 
   .pdm-buybar {
     box-shadow: 0 -18px 42px rgba(0, 0, 0, 0.58);
-    padding: 11px 14px calc(12px + env(safe-area-inset-bottom));
+    padding: 9px 14px calc(10px + env(safe-area-inset-bottom));
     position: relative;
     z-index: 8;
   }
@@ -3445,19 +3450,19 @@
   .pdm-sizes-label {
     font-size: 8px;
     letter-spacing: 0.24em;
-    margin-bottom: 7px;
+    margin-bottom: 5px;
   }
 
   .pdm-sizes {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 7px;
-    margin-bottom: 10px;
+    gap: 6px;
+    margin-bottom: 8px;
   }
 
   .pdm-size-btn {
     min-width: 0;
-    padding: 9px 6px;
+    padding: 6px 5px;
   }
 
   .pdm-size-ml {
@@ -3466,15 +3471,17 @@
 
   .pdm-size-price {
     font-size: 11px;
+    margin-top: 0;
   }
 
-  .pdm-size-label {
+  .pdm-size-label,
+  .pdm-size-recommended {
     display: none;
   }
 
   .pdm-buybar-bottom {
     display: grid;
-    grid-template-columns: 86px 1fr;
+    grid-template-columns: 80px minmax(0, 1fr);
     gap: 10px;
   }
 
@@ -3487,6 +3494,10 @@
     font-size: 11px;
   }
 
+  .pdm-value-prop {
+    display: none;
+  }
+
   .pdm-actions {
     grid-template-columns: minmax(0, 1fr) 94px;
     gap: 8px;
@@ -3494,8 +3505,8 @@
 
   .pdm-btn-add,
   .pdm-btn-wa {
-    min-height: 46px;
-    padding: 12px 10px;
+    min-height: 44px;
+    padding: 10px 8px;
   }
 
   .pdm-btn-wa {

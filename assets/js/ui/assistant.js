@@ -11,7 +11,7 @@
 import { ASSISTANT_QUESTIONS, getAssistantRecommendations } from '../recommendations/assistant.js?v=1.0.13';
 import { CatalogProvider } from '../providers/catalog.js?v=1.0.16';
 import { Tracker } from '../tracking/tracker.js';
-import { openProductModal } from './modal.js?v=1.0.13';
+import { openProductModal } from './modal.js?v=1.0.17';
 import { primeImageStates } from './images.js';
 import { formatPrice } from '../utils/prices.js?v=1.0.13';
 
