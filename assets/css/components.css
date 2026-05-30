@@ -6108,3 +6108,21 @@ textarea:focus-visible {
   .mood-discover-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .mood-more-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
+
+/* ── Fase 1: Microcopy de decant + propuesta de valor ──────── */
+.pdm-decant-hint {
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--accent, #c9a96e);
+  margin: 4px 0 10px;
+  line-height: 1.4;
+}
+
+.pdm-value-prop,
+.pdp-value-prop {
+  font-size: 11px;
+  color: var(--muted, rgba(255,255,255,.45));
+  line-height: 1.5;
+  margin: 4px 0 10px;
+}

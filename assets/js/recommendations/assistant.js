@@ -46,22 +46,6 @@ export const ASSISTANT_QUESTIONS = [
     ],
   },
   {
-    id: 'climate',
-    label: '¿Qué clima?',
-    options: [
-      { value: 'calido', label: 'Cálido' },
-      { value: 'frio', label: 'Frío' },
-    ],
-  },
-  {
-    id: 'level',
-    label: '¿Cómo te describes?',
-    options: [
-      { value: 'beginner', label: 'Principiante' },
-      { value: 'enthusiast', label: 'Entusiasta' },
-    ],
-  },
-  {
     id: 'budget',
     label: '¿Presupuesto por decant?',
     options: [

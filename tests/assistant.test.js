@@ -21,8 +21,8 @@ const catalog = [freshOffice, sweetNight, intenseOud, soldOut];
 
 const ids = (list) => list.map(r => r.product.id);
 
-test('exposes five guided questions', () => {
-  assert.equal(ASSISTANT_QUESTIONS.length, 5);
+test('exposes three guided questions', () => {
+  assert.equal(ASSISTANT_QUESTIONS.length, 3);
   for (const q of ASSISTANT_QUESTIONS) {
     assert.ok(q.id && q.label && Array.isArray(q.options) && q.options.length >= 2);
   }

@@ -21,7 +21,8 @@ import { getDefaultVariant,
          getDisplayVariant,
          getVariantForSize,
          getValidVariants,
-         formatPrice } from '../utils/prices.js?v=1.0.13';
+         formatPrice,
+         getSizeLabel } from '../utils/prices.js?v=1.0.13';
 import { getScarcityDisplay } from '../utils/scarcity.js?v=1.0.13';
 import { getGuidanceBadges } from '../utils/guidance.js?v=1.0.13';
 import { buildWhyHtml } from './why.js?v=1.0.13';
@@ -110,6 +111,9 @@ function _render() {
   const activeVariant = variants.find(v => v.size === _selectedSize) || getDefaultVariant(p) || getDisplayVariant(p);
   _selectedSize = activeVariant?.size ?? null;
   const price = activeVariant?.price ?? null;
+  const lowestPrice = variants.length
+    ? Math.min(...variants.map(v => v.price).filter(Number.isFinite))
+    : null;
   const hasImage = p.image && p.image.trim() !== '';
 
   const scarcity = getScarcityDisplay(p);
@@ -147,7 +151,7 @@ function _render() {
       >
         <span class="pdm-size-ml">${ml}ml${ml === 5 ? ' · recomendado' : ''}</span>
         <span class="pdm-size-price">$${variant.price}</span>
-        <span class="pdm-size-label">${disabled ? 'Agotado' : _sizeLabel(ml)}</span>
+        <span class="pdm-size-label">${disabled ? 'Agotado' : getSizeLabel(ml)}</span>
       </button>
     `;
     }).join('');
@@ -189,6 +193,7 @@ function _render() {
           <h2 class="pdm-name" id="pdm-name">${p.name}</h2>
           ${concentrationHtml}
         </div>
+        <p class="pdm-decant-hint">Decant auténtico · prueba antes de comprar el frasco</p>
 
         ${p.story
           ? `<p class="pdm-story">${p.story}</p>`
@@ -230,6 +235,7 @@ function _render() {
             <span class="pdm-price" id="pdm-price">${formatPrice(price, 'Consultar precio')}</span>
             <span class="pdm-price-unit">${_selectedSize ? `${_selectedSize}ml` : 'WhatsApp'}</span>
           </div>
+          ${lowestPrice !== null ? `<p class="pdm-value-prop">Una botella completa cuesta miles — pruébalo desde ${formatPrice(lowestPrice)}.</p>` : ''}
 
           <div class="pdm-actions">
             <button class="btn-primary pdm-btn-add" id="pdm-btn-add"
@@ -388,13 +394,6 @@ function _trapFocus(e) {
 /* â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function _defaultSize(product) {
   return getDefaultVariant(product)?.size ?? null;
-}
-
-function _sizeLabel(ml) {
-  if (ml === 3)  return 'Prueba';
-  if (ml === 5)  return 'Popular';
-  if (ml === 10) return 'Grande';
-  return '';
 }
 
 function _stockHtml(scarcity) {

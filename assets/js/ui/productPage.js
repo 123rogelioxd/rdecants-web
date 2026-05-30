@@ -28,6 +28,7 @@ import {
   getVariantForSize,
   getValidVariants,
   formatPrice,
+  getSizeLabel,
 } from '../utils/prices.js?v=1.0.13';
 import { getScarcityDisplay } from '../utils/scarcity.js?v=1.0.13';
 import { getGuidanceBadges } from '../utils/guidance.js?v=1.0.13';
@@ -48,6 +49,9 @@ export function buildProductPageHtml(product) {
   const defaultVariant = getDefaultVariant(product) || getDisplayVariant(product);
   const defaultSize = defaultVariant?.size ?? null;
   const defaultPrice = defaultVariant?.price ?? null;
+  const lowestPrice = variants.length
+    ? Math.min(...variants.map(v => v.price).filter(Number.isFinite))
+    : null;
   const hasImage = product.image && product.image.trim() !== '';
 
   const scarcity = getScarcityDisplay(product);
@@ -134,6 +138,8 @@ export function buildProductPageHtml(product) {
         <div class="pdp-sizes" role="group" aria-label="Seleccionar presentación" ${variants.length ? '' : 'hidden'}>
           ${_sizesHtml(variants, defaultSize)}
         </div>
+
+        ${lowestPrice !== null ? `<p class="pdp-value-prop">Una botella completa cuesta miles — pruébalo desde ${formatPrice(lowestPrice)}.</p>` : ''}
 
         <div class="pdp-price-row">
           <span class="pdp-price" id="pdp-price">${formatPrice(defaultPrice, 'Consultar precio')}</span>
@@ -516,7 +522,7 @@ function _sizesHtml(variants, defaultSize) {
           aria-label="${ml}ml - $${variant.price} MXN${disabled ? ' agotado' : ''}">
           <span class="pdp-size-ml">${ml}ml${ml === 5 ? ' · recomendado' : ''}</span>
           <span class="pdp-size-price">$${variant.price}</span>
-          <span class="pdp-size-label">${disabled ? 'Agotado' : _sizeLabel(ml)}</span>
+          <span class="pdp-size-label">${disabled ? 'Agotado' : getSizeLabel(ml)}</span>
         </button>`;
     }).join('');
 }
@@ -586,13 +592,6 @@ function _stockHtml(scarcity) {
   return `<p class="card-stock pdp-stock card-stock--${scarcity.key}">
     <span class="stock-dot"></span>${_escape(scarcity.label)}
   </p>`;
-}
-
-function _sizeLabel(ml) {
-  if (ml === 3) return 'Prueba';
-  if (ml === 5) return 'Popular';
-  if (ml === 10) return 'Grande';
-  return '';
 }
 
 function _isOrderableVariant(variant) {

@@ -69,7 +69,16 @@ export function priceSortValue(product, direction = 'asc') {
 }
 
 export function formatPrice(value, fallback = 'Consultar precio') {
-  return isValidPrice(value) ? `$${Number(value)} MXN` : fallback;
+  if (!isValidPrice(value)) return fallback;
+  const n = Math.round(Number(value));
+  return `$${n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')} MXN`;
+}
+
+export function getSizeLabel(ml) {
+  if (ml === 3)  return 'Ideal para probar';
+  if (ml === 5)  return 'Uso frecuente';
+  if (ml === 10) return 'Mejor valor';
+  return '';
 }
 
 function _normalizeVariant(raw = {}) {

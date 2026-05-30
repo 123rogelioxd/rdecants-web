@@ -288,12 +288,6 @@ function _stockText(stock) {
   return 'Disponible';
 }
 
-function _sizeLabel(size) {
-  if (size === 3) return 'Prueba';
-  if (size === 5) return 'Popular';
-  if (size === 10) return 'Grande';
-  return 'Decant';
-}
 
 function _isOrderableVariant(variant) {
   return Boolean(variant && !variant.soldOut && variant.availability > 0 && _validVariantId(variant.variant_id));
