@@ -1401,6 +1401,183 @@
   .ds-card-add { width: 100%; text-align: center; }
 }
 
+/* ── Taste Builder (Descubre tu estilo) ─────────────────────────── */
+.tb-head {
+  text-align: center;
+  margin-bottom: 28px;
+}
+.tb-intro {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.65;
+  margin: 10px 0 0;
+}
+
+.tb-stage {
+  display: flex;
+  justify-content: center;
+  min-height: 460px;
+}
+
+/* Card */
+.tb-card {
+  width: 100%;
+  max-width: 340px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.025);
+  transition: transform 0.34s cubic-bezier(.25,.8,.25,1), opacity 0.34s ease;
+}
+
+/* Exit animations */
+.tb-exit--like    { transform: translateX(130%) rotate(12deg);  opacity: 0; pointer-events: none; }
+.tb-exit--dislike { transform: translateX(-130%) rotate(-12deg); opacity: 0; pointer-events: none; }
+.tb-exit--skip    { transform: translateY(-28px);                opacity: 0; pointer-events: none; }
+
+/* Image */
+.tb-card-img {
+  width: 100%;
+  height: 240px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tb-card-img img { width: 100%; height: 100%; object-fit: cover; }
+.tb-card-img--fallback::after {
+  content: "R";
+  font-family: var(--font-serif);
+  font-size: 72px;
+  color: rgba(255, 255, 255, 0.07);
+}
+
+/* Card body */
+.tb-card-body {
+  padding: 16px 20px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.tb-card-house {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0;
+}
+.tb-card-name {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 400;
+  color: #fff;
+  margin: 0;
+  line-height: 1.25;
+}
+.tb-hints {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.tb-hint {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.65);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+.tb-price {
+  font-size: 12px;
+  color: var(--accent);
+  margin: 6px 0 0;
+}
+
+/* Action buttons */
+.tb-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 24px 10px;
+}
+.tb-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.14s ease;
+}
+.tb-btn:active { transform: scale(0.88); }
+.tb-btn--dislike,
+.tb-btn--like {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.03);
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.14s ease;
+}
+.tb-btn--like    { border-color: rgba(201, 169, 110, 0.35); background: rgba(201, 169, 110, 0.05); }
+.tb-btn--dislike:hover { border-color: rgba(255, 80, 80, 0.45);  background: rgba(255, 80, 80, 0.07); }
+.tb-btn--like:hover    { border-color: var(--accent);             background: rgba(201, 169, 110, 0.14); }
+.tb-btn--skip {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 6px 12px;
+}
+.tb-btn--skip:hover { color: rgba(255, 255, 255, 0.65); }
+
+.tb-progress {
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  padding-bottom: 14px;
+  margin: 0;
+}
+
+/* Done state */
+.tb-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 24px;
+  text-align: center;
+  max-width: 320px;
+}
+.tb-done-icon {
+  font-size: 30px;
+  color: var(--accent);
+  margin: 0;
+}
+.tb-done-h {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  color: #fff;
+  margin: 0;
+}
+.tb-done-copy {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.62);
+  margin: 0;
+  line-height: 1.55;
+}
+
+@media (max-width: 400px) {
+  .tb-card { border-radius: 16px; }
+  .tb-card-img { height: 200px; }
+  .tb-btn--dislike, .tb-btn--like { width: 50px; height: 50px; font-size: 20px; }
+}
+
 /* ── Sticky mini-buy CTA (appears after hero scrolls out) ───── */
 .pdp-sticky-cta {
   position: fixed;

@@ -23,6 +23,9 @@ export const EVENTS = {
   ASSISTANT_STARTED: 'assistant_started',
   ASSISTANT_COMPLETED: 'assistant_completed',
   DISCOVERY_ANCHOR_SELECTED: 'discovery_anchor_selected',
+  TASTE_LIKE: 'taste_like',
+  TASTE_DISLIKE: 'taste_dislike',
+  TASTE_SKIP: 'taste_skip',
   DISCOVERY_SET_VIEWED: 'discovery_set_viewed',
   DISCOVERY_SET_CLICKED: 'discovery_set_clicked',
   DISCOVERY_SET_ADDED: 'discovery_set_added',
@@ -210,6 +213,18 @@ export const Tracker = {
       ids: results.map(result => result.product?.id ?? result.id).filter(Boolean),
       answers,
     });
+  },
+
+  tasteLike(product) {
+    this.emit(EVENTS.TASTE_LIKE, { ..._productPayload(product), source: 'taste_builder' });
+  },
+
+  tasteDislike(product) {
+    this.emit(EVENTS.TASTE_DISLIKE, { ..._productPayload(product), source: 'taste_builder' });
+  },
+
+  tasteSkip(product) {
+    this.emit(EVENTS.TASTE_SKIP, { ..._productPayload(product), source: 'taste_builder' });
   },
 
   discoveryAnchorSelected(anchor) {

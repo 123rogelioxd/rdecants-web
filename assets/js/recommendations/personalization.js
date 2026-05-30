@@ -22,6 +22,8 @@ const STORAGE_KEY = 'rd_taste';
 const MAX_VIEWED = 40;
 const HOUSE_WEIGHT = 2;
 const TOP_MOODS_PER_VIEW = 2;
+const LIKE_WEIGHT = 3;    // explicit like = 3× normal view signal
+const DISLIKE_WEIGHT = 2; // explicit dislike subtracts 2× from matched profiles
 
 /* ── Pure affinity scoring ─────────────────────────────────── */
 export function scoreAffinity(product, taste) {
@@ -92,17 +94,57 @@ export function applyView(taste, product) {
   return next;
 }
 
+/* ── Explicit taste signals (like / dislike) ───────────────────
+   Pure helpers that complement applyView with stronger signals.
+   Like = 3× view weight + added to likes list.
+   Dislike = reduces matched profile weights (floor 0) + added to dislikes list.
+   ─────────────────────────────────────────────────────────────── */
+export function applyLike(taste, product) {
+  const next = _normalizeTaste(taste);
+  if (!product) return next;
+
+  const id = String(product.id);
+  next.likes = [...new Set([id, ...(next.likes ?? [])])];
+  next.viewed = [id, ...next.viewed.filter(x => x !== id)].slice(0, MAX_VIEWED);
+
+  for (const mood of deriveProductMoods(product)) {
+    next.moods[mood] = (next.moods[mood] || 0) + LIKE_WEIGHT;
+  }
+  const house = normalizeText(product.house);
+  if (house) next.houses[house] = (next.houses[house] || 0) + LIKE_WEIGHT;
+
+  return next;
+}
+
+export function applyDislike(taste, product) {
+  const next = _normalizeTaste(taste);
+  if (!product) return next;
+
+  const id = String(product.id);
+  next.dislikes = [...new Set([id, ...(next.dislikes ?? [])])];
+
+  for (const mood of deriveProductMoods(product)) {
+    next.moods[mood] = Math.max(0, (next.moods[mood] || 0) - DISLIKE_WEIGHT);
+  }
+  const house = normalizeText(product.house);
+  if (house) next.houses[house] = Math.max(0, (next.houses[house] || 0) - DISLIKE_WEIGHT);
+
+  return next;
+}
+
 /* ── Store (localStorage, guarded for non-browser/SSR/tests) ── */
 function _emptyTaste() {
-  return { moods: {}, houses: {}, viewed: [] };
+  return { moods: {}, houses: {}, viewed: [], likes: [], dislikes: [] };
 }
 
 function _normalizeTaste(taste) {
   const t = taste && typeof taste === 'object' ? taste : {};
   return {
-    moods: { ...(t.moods || {}) },
-    houses: { ...(t.houses || {}) },
-    viewed: Array.isArray(t.viewed) ? [...t.viewed] : [],
+    moods:    { ...(t.moods || {}) },
+    houses:   { ...(t.houses || {}) },
+    viewed:   Array.isArray(t.viewed)   ? [...t.viewed]   : [],
+    likes:    Array.isArray(t.likes)    ? [...t.likes]    : [],
+    dislikes: Array.isArray(t.dislikes) ? [...t.dislikes] : [],
   };
 }
 
@@ -139,6 +181,24 @@ export const Personalization = {
 
   recordRecommendationOpen(product) {
     this.recordView(product);
+  },
+
+  recordLike(product) {
+    if (!product) return;
+    _save(applyLike(_load(), product));
+  },
+
+  recordDislike(product) {
+    if (!product) return;
+    _save(applyDislike(_load(), product));
+  },
+
+  getLikes() {
+    return _load().likes;
+  },
+
+  getDislikes() {
+    return _load().dislikes;
   },
 
   reset() {

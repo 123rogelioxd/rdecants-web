@@ -16,6 +16,7 @@ import { Recommendations }                 from './recommendations/index.js?v=1.
 import { setupAssistant }                   from './ui/assistant.js?v=1.0.13';
 import { setupDiscovery }                   from './ui/discovery.js?v=1.0.0';
 import { setupDiscoverySets }               from './ui/discoverySets.js?v=1.0.0';
+import { setupTasteBuilder }               from './ui/tasteBuilder.js?v=1.0.0';
 import { setupBundles }                      from './ui/bundles.js?v=1.0.13';
 import { Personalization }                  from './recommendations/personalization.js?v=1.0.13';
 import { CatalogProvider }                  from './providers/catalog.js?v=1.0.16';
@@ -110,9 +111,12 @@ const _API_EVENT_MAP = {
   assistant_started:           'assistant_started',
   assistant_completed:         'assistant_completed',
   discovery_anchor_selected:   'discovery_anchor_selected',
-  discovery_set_viewed:        'discovery_set_viewed',
+  discovery_set_viewed: 'discovery_set_viewed',
   discovery_set_clicked:       'discovery_set_clicked',
   discovery_set_added:         'discovery_set_added',
+  taste_like:                  'taste_like',
+  taste_dislike:               'taste_dislike',
+  taste_skip:                  'taste_skip',
 };
 
 Tracker.use((event, payload) => {
@@ -242,6 +246,17 @@ function _toApiPayload(event, payload) {
           source: payload.source,
         },
       };
+    case 'taste_like':
+    case 'taste_dislike':
+    case 'taste_skip':
+      return {
+        product_id: pid,
+        metadata: {
+          name:             payload.productName,
+          house:            payload.house,
+          source_component: 'taste_builder',
+        },
+      };
     default:
       return {};
   }
@@ -283,6 +298,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   /* Discovery Sets — novice conversion layer ("¿No sabes cuál elegir?") */
   setupDiscoverySets('discovery-sets');
+
+  /* Taste Builder — fast explicit preference capture */
+  setupTasteBuilder('taste-builder');
 
   /* Dynamic smart bundles (kits from real metadata) */
   setupBundles('smart-bundles');
