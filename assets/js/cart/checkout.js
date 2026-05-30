@@ -240,6 +240,7 @@ export async function buildWebOrderPayload(items, data) {
       source: 'rdecants-web',
       user_agent: navigator.userAgent,
       cart_version: APP_VERSION,
+      session_id: localStorage.getItem('rd_sid') || null,
       cart_items: items.map(item => ({
         key: item.key,
         name: item.name,
