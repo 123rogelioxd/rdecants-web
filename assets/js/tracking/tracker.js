@@ -23,6 +23,9 @@ export const EVENTS = {
   ASSISTANT_STARTED: 'assistant_started',
   ASSISTANT_COMPLETED: 'assistant_completed',
   DISCOVERY_ANCHOR_SELECTED: 'discovery_anchor_selected',
+  COLLECTION_BUILDER_VIEWED:  'collection_builder_viewed',
+  COLLECTION_BUILDER_CLICKED: 'collection_builder_clicked',
+  COLLECTION_BUILDER_ADDED:   'collection_builder_added',
   TASTE_LIKE: 'taste_like',
   TASTE_DISLIKE: 'taste_dislike',
   TASTE_SKIP: 'taste_skip',
@@ -212,6 +215,30 @@ export const Tracker = {
       count: results.length,
       ids: results.map(result => result.product?.id ?? result.id).filter(Boolean),
       answers,
+    });
+  },
+
+  collectionBuilderViewed(products, source = 'cart') {
+    this.emit(EVENTS.COLLECTION_BUILDER_VIEWED, {
+      ids: (products ?? []).map(p => p.id),
+      count: (products ?? []).length,
+      source,
+    });
+  },
+
+  collectionBuilderClicked(product, position, source = 'cart') {
+    this.emit(EVENTS.COLLECTION_BUILDER_CLICKED, {
+      ..._productPayload(product),
+      position,
+      source,
+    });
+  },
+
+  collectionBuilderAdded(product, position, source = 'cart') {
+    this.emit(EVENTS.COLLECTION_BUILDER_ADDED, {
+      ..._productPayload(product),
+      position,
+      source,
     });
   },
 

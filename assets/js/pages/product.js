@@ -18,6 +18,7 @@ import {
   buildProductPageHtml,
   hydrateProductPage,
   renderRelated,
+  renderCollectionPairs,
   readSlugFromLocation,
   findProductBySlug,
 } from '../ui/productPage.js?v=1.0.1';
@@ -78,6 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.title = `${product.name} — ${product.house ?? 'RDecants'}`;
   Tracker.productViewed(product);
   hydrateProductPage(root, product);
+  renderCollectionPairs(root, product, products);
   renderRelated(root, product, products);
 
   AppState.set('initialized', true);

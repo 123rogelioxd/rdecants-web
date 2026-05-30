@@ -53,6 +53,10 @@ import {
   renderDiscoverySetsFallback,
 } from './discoverySets.js?v=1.0.0';
 import { Personalization, filterDisliked } from '../recommendations/personalization.js?v=1.0.13';
+import {
+  getCollectionPairs,
+  getComplementReason,
+} from '../recommendations/crossSell.js?v=1.0.0';
 import { showToast } from './toast.js';
 
 /* ── Public: build the page HTML ─────────────────────────────── */
@@ -129,6 +133,9 @@ export function buildProductPageHtml(product) {
 
     <!-- A2. Novice-first guide — sells/orients before the technical detail -->
     ${_noviceBlock(product)}
+
+    <!-- CB. Combina bien con (hydrated async by renderCollectionPairs) -->
+    <section class="pdp-pairs" id="pdp-pairs" hidden aria-labelledby="pdp-pairs-h"></section>
 
     <!-- B. Why -->
     ${_whyEditorialBlock(product)}
@@ -305,6 +312,71 @@ export function renderRelated(root, seed, products) {
       window.location.href = productPageUrl(product);
     });
   });
+}
+
+/* ── PDP "Combina bien con" (collection pairs) ───────────────── */
+export function renderCollectionPairs(root, seed, products) {
+  const slot = root.querySelector('#pdp-pairs');
+  if (!slot) return;
+
+  const taste = Personalization.getTaste();
+  const eligible = filterDisliked(products, taste, { minCount: 3 });
+  const pairs = getCollectionPairs([seed], eligible, taste, { limit: 2 });
+
+  if (!pairs.length) { slot.hidden = true; return; }
+
+  const reason = getComplementReason([seed]);
+
+  slot.innerHTML = `
+    <h2 class="pdp-section-h" id="pdp-pairs-h">Combina bien con</h2>
+    ${reason ? `<p class="pdp-pairs-reason">${_escape(reason)} · Una buena combinación.</p>` : ''}
+    <div class="pdp-pairs-row">
+      ${pairs.map((p, idx) => _pairCard(p, idx)).join('')}
+    </div>`;
+  slot.hidden = false;
+
+  primeImageStates(slot);
+  Tracker.collectionBuilderViewed(pairs, 'pdp');
+
+  slot.querySelectorAll('.pdp-pair-card').forEach(card => {
+    const product = pairs.find(p => String(p.id) === card.dataset.productId);
+    if (!product) return;
+    const position = Number(card.dataset.position) + 1;
+    card.addEventListener('click', () => {
+      Tracker.collectionBuilderClicked(product, position, 'pdp');
+      window.__rd?.ui?.openProductModal?.(product);
+    });
+    card.querySelector('.pdp-pair-add')?.addEventListener('click', e => {
+      e.stopPropagation();
+      Tracker.collectionBuilderAdded(product, position, 'pdp');
+      const variant = product.variants?.find(v => v.size === 3) ?? product.variants?.[0];
+      if (variant) window.__rd?.cart?.add?.(product.id, variant.size);
+    });
+  });
+}
+
+function _pairCard(product, idx) {
+  const variant = product.variants?.find(v => v.size === 3) ?? product.variants?.[0];
+  const hasImage = product.image && product.image.trim() !== '';
+  return `
+    <div class="pdp-pair-card" role="button" tabindex="0"
+      data-product-id="${_escape(String(product.id))}" data-position="${idx}"
+      aria-label="Ver ${_escape(product.name)}">
+      <span class="pdp-pair-img${hasImage ? '' : ' pdp-pair-img--fallback'}">
+        ${hasImage
+          ? `<img src="${_escape(product.image)}" alt="${_escape(product.name)}"
+               loading="lazy" decoding="async"
+               onerror="this.parentElement.classList.add('pdp-pair-img--fallback');this.remove()">`
+          : ''}
+      </span>
+      <span class="pdp-pair-info">
+        <span class="pdp-pair-house">${_escape(product.house ?? '')}</span>
+        <span class="pdp-pair-name">${_escape(product.name)}</span>
+        ${variant ? `<span class="pdp-pair-price">${formatPrice(variant.price)} · ${variant.size}ml</span>` : ''}
+      </span>
+      <button class="pdp-pair-add btn-primary" type="button"
+        aria-label="Agregar ${_escape(product.name)} al carrito">+</button>
+    </div>`;
 }
 
 /* ── URL helpers ─────────────────────────────────────────────── */

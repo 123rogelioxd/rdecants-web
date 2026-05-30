@@ -1401,6 +1401,98 @@
   .ds-card-add { width: 100%; text-align: center; }
 }
 
+/* ── PDP collection pairs "Combina bien con" ─────────────────────── */
+.pdp-pairs { margin-bottom: 28px; }
+
+.pdp-pairs-reason {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin: -10px 0 14px;
+  line-height: 1.5;
+}
+
+.pdp-pairs-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.pdp-pair-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+  text-align: left;
+}
+.pdp-pair-card:hover { border-color: var(--border-hl); }
+
+.pdp-pair-img {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.05);
+  display: flex; align-items: center; justify-content: center;
+}
+.pdp-pair-img img { width: 100%; height: 100%; object-fit: cover; }
+.pdp-pair-img--fallback::after {
+  content: "R";
+  font-family: var(--font-serif);
+  font-size: 16px;
+  color: rgba(255,255,255,0.15);
+}
+
+.pdp-pair-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.pdp-pair-house {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pdp-pair-name {
+  font-size: 12.5px;
+  color: rgba(255,255,255,0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pdp-pair-price {
+  font-size: 11px;
+  color: var(--accent);
+}
+
+.pdp-pair-add {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 420px) {
+  .pdp-pairs-row { grid-template-columns: 1fr; }
+}
+
 /* ── Taste Builder (Descubre tu estilo) ─────────────────────────── */
 .tb-head {
   text-align: center;

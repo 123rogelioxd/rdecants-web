@@ -12,6 +12,7 @@ import { Tracker }   from '../tracking/tracker.js';
 import { formatPrice, isValidPrice, getDefaultVariant } from '../utils/prices.js?v=1.0.15';
 import { CatalogProvider } from '../providers/catalog.js?v=1.0.16';
 import { getCartUpsells }  from '../recommendations/upsells.js?v=1.0.14';
+import { getCollectionPairs } from '../recommendations/crossSell.js?v=1.0.0';
 import { Personalization, filterDisliked } from '../recommendations/personalization.js?v=1.0.13';
 import { getCartMinimumState } from './momentum.js?v=1.0.15';
 
@@ -126,9 +127,18 @@ async function _renderUpsells() {
   const minimum = getCartMinimumState(Cart.total());
   const taste = Personalization.getTaste();
   const eligible = filterDisliked(products, taste, { minCount: 3 });
-  const suggestions = getCartUpsells(Cart.items, eligible, {
+
+  /* Try complementary collection pairs first; fall back to similarity upsells. */
+  const cartProducts = Cart.items
+    .map(item => products.find(p => String(p.id) === String(item.sourceId ?? item.id)))
+    .filter(Boolean);
+
+  const pairs = getCollectionPairs(cartProducts, eligible, taste, { limit: 3 });
+  const isCollection = pairs.length > 0;
+
+  const suggestions = (isCollection ? pairs : getCartUpsells(Cart.items, eligible, {
     targetRemaining: minimum.remaining,
-  })
+  }))
     .map(product => ({ product, variant: getDefaultVariant(product, 3) }))
     .filter(entry => entry.variant);
 
@@ -139,9 +149,13 @@ async function _renderUpsells() {
     return;
   }
 
+  const sectionLabel = isCollection
+    ? 'Completa tu colección'
+    : minimum.isComplete ? 'Tambien te puede gustar' : 'Decants faciles de sumar';
+
   slot.innerHTML = `
     ${!minimum.isComplete ? _minimumPrompt(minimum) : ''}
-    <p class="cart-section-label">${minimum.isComplete ? 'Tambien te puede gustar' : 'Decants faciles de sumar'}</p>
+    <p class="cart-section-label">${sectionLabel}</p>
     <div class="cart-upsell-list">
       ${suggestions.map(_upsellRow).join('')}
     </div>`;
@@ -153,13 +167,16 @@ async function _renderUpsells() {
     Tracker.cartMinimumPromptShown(minimum, suggestions.map(s => s.product));
   }
 
-  const sig = `${minimum.isComplete ? 'general' : 'minimum'}:${suggestions.map(s => s.product.id).join('|')}`;
+  const railId = isCollection ? 'collection_builder_cart' : 'cart_upsell';
+  const railTitle = isCollection ? 'Completa tu colección' : 'Completa tu pedido';
+  const sig = `${railId}:${suggestions.map(s => s.product.id).join('|')}`;
   if (sig !== _lastUpsellSig) {
     _lastUpsellSig = sig;
-    Tracker.recommendationView(
-      suggestions.map(s => s.product),
-      { railId: 'cart_upsell', railTitle: 'Completa tu pedido' },
-    );
+    if (isCollection) {
+      Tracker.collectionBuilderViewed(suggestions.map(s => s.product), 'cart');
+    } else {
+      Tracker.recommendationView(suggestions.map(s => s.product), { railId, railTitle });
+    }
   }
 
   slot.querySelectorAll('.cart-upsell-add').forEach(btn => {
@@ -167,13 +184,18 @@ async function _renderUpsells() {
       const entry = suggestions.find(s => String(s.product.id) === btn.dataset.productId);
       if (!entry) return;
       const position = Number(btn.dataset.position) + 1;
-      Tracker.recommendationClicked(entry.product, position, { railId: 'cart_upsell', railTitle: 'Completa tu pedido' });
-      if (!minimum.isComplete) {
-        Tracker.recommendationAdded(entry.product, position, {
-          railId: 'cart_minimum_completion',
-          railTitle: 'Pedido minimo',
-          remaining: minimum.remaining,
-        });
+      if (isCollection) {
+        Tracker.collectionBuilderClicked(entry.product, position, 'cart');
+        Tracker.collectionBuilderAdded(entry.product, position, 'cart');
+      } else {
+        Tracker.recommendationClicked(entry.product, position, { railId, railTitle });
+        if (!minimum.isComplete) {
+          Tracker.recommendationAdded(entry.product, position, {
+            railId: 'cart_minimum_completion',
+            railTitle: 'Pedido minimo',
+            remaining: minimum.remaining,
+          });
+        }
       }
       window.__rd?.cart?.add(entry.product.id, entry.variant.size);
     });

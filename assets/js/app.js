@@ -114,6 +114,9 @@ const _API_EVENT_MAP = {
   discovery_set_viewed: 'discovery_set_viewed',
   discovery_set_clicked:       'discovery_set_clicked',
   discovery_set_added:         'discovery_set_added',
+  collection_builder_viewed:   'collection_builder_viewed',
+  collection_builder_clicked:  'collection_builder_clicked',
+  collection_builder_added:    'collection_builder_added',
   taste_like:                  'taste_like',
   taste_dislike:               'taste_dislike',
   taste_skip:                  'taste_skip',
@@ -244,6 +247,22 @@ function _toApiPayload(event, payload) {
           set_id: payload.setId,
           name:   payload.name,
           source: payload.source,
+        },
+      };
+    case 'collection_builder_viewed':
+      return {
+        metadata: { ids: payload.ids, count: payload.count, source: payload.source },
+      };
+    case 'collection_builder_clicked':
+    case 'collection_builder_added':
+      return {
+        product_id: pid,
+        metadata: {
+          name:             payload.productName,
+          house:            payload.house,
+          position:         payload.position,
+          source:           payload.source,
+          source_component: 'collection_builder',
         },
       };
     case 'taste_like':
