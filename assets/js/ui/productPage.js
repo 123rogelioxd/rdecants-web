@@ -57,6 +57,7 @@ import {
   getCollectionPairs,
   getComplementReason,
 } from '../recommendations/crossSell.js?v=1.0.0';
+import { buildConfidenceHtml } from './pdpConfidence.js?v=1.0.0';
 import { showToast } from './toast.js';
 
 /* ── Public: build the page HTML ─────────────────────────────── */
@@ -149,6 +150,9 @@ export function buildProductPageHtml(product) {
     <!-- E. ¿Cuándo usarlo? + F. Perfil (score bars) — secondary, opt-in -->
     ${_technicalBlock(product)}
 
+    <!-- G-pre. Confidence layer — reduces decision hesitation -->
+    ${buildConfidenceHtml(product)}
+
     <!-- G. Buy section -->
     <section class="pdp-buy" id="pdp-buy" aria-labelledby="pdp-buy-h">
       <h2 class="pdp-section-h" id="pdp-buy-h">Lo quiero</h2>
@@ -161,7 +165,10 @@ export function buildProductPageHtml(product) {
           ${_sizesHtml(variants, defaultSize)}
         </div>
 
-        ${lowestPrice !== null ? `<p class="pdp-value-prop">Una botella completa cuesta miles — pruébalo desde ${formatPrice(lowestPrice)}.</p>` : ''}
+        ${lowestPrice !== null ? `
+          <p class="pdp-value-prop">Una botella completa cuesta miles — pruébalo desde ${formatPrice(lowestPrice)}.</p>
+          <p class="pdp-decant-reassurance">¿Aún dudas? El decant es la forma más inteligente de probar antes de comprometerte.</p>
+        ` : ''}
 
         <div class="pdp-price-row">
           <span class="pdp-price" id="pdp-price">${formatPrice(defaultPrice, 'Consultar precio')}</span>
