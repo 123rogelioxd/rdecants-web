@@ -19,6 +19,7 @@
    ============================================================= */
 
 import { isSellable, getOperationalScore } from '../recommendations/scoring.js?v=1.0.13';
+import { Personalization, filterDisliked } from '../recommendations/personalization.js?v=1.0.13';
 import {
   USE_CASE_PROFILES,
   SCENT_FAMILIES,
@@ -197,7 +198,9 @@ export async function setupDiscoverySets(containerId) {
     products = [];
   }
 
-  const sets = resolveDiscoverySets(products);
+  const taste = Personalization.getTaste();
+  const eligible = filterDisliked(products, taste, { minCount: 3 });
+  const sets = resolveDiscoverySets(eligible);
   if (!sets.length) { root.hidden = true; return; }
 
   root.hidden = false;

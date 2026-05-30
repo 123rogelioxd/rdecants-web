@@ -8,7 +8,7 @@ import { Tracker }          from '../tracking/tracker.js';
 import { openProductModal } from '../ui/modal.js';
 import { observeFadeUp }    from '../ui/animations.js';
 import { primeImageStates } from '../ui/images.js';
-import { Personalization, personalizeRails } from './personalization.js?v=1.0.13';
+import { Personalization, personalizeRails, filterDisliked } from './personalization.js?v=1.0.13';
 
 const MAX_PER_RAIL = 5;
 const MIN_PER_RAIL = 2;
@@ -94,17 +94,22 @@ export const Recommendations = {
 
       const products = await CatalogProvider.getProducts();
       const featured = await _getFeaturedSafe();
-      let rails = buildRails(products, featured, context);
+
+      /* Apply explicit taste signals: filter disliked products from
+         the pool, fall back to full catalog if too few remain. */
+      const taste = Personalization.getTaste();
+      const eligible = filterDisliked(products, taste, { minCount: MIN_PER_RAIL * 2 });
+      let rails = buildRails(eligible, featured, context);
 
       if (!rails.length) {
         _renderEmpty(root);
         return;
       }
 
-      /* Subtle personalized discovery: nudge rails/items toward the
-         visitor's local taste signal (ties keep original order). */
+      /* Personalise rail + item order by taste moods/houses (likes
+         boost, dislikes reduce — already applied via applyLike/applyDislike). */
       if (Personalization.hasSignal()) {
-        rails = personalizeRails(rails, Personalization.getTaste());
+        rails = personalizeRails(rails, taste);
       }
 
       _renderRails(root, rails);

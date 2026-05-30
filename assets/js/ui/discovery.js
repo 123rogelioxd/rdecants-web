@@ -13,6 +13,7 @@
    ============================================================= */
 
 import { getAnchorProducts, getDiscoveryRecommendations } from '../recommendations/discovery.js?v=1.0.0';
+import { Personalization, filterDisliked } from '../recommendations/personalization.js?v=1.0.13';
 import { CatalogProvider }  from '../providers/catalog.js?v=1.0.16';
 import { Tracker }          from '../tracking/tracker.js';
 import { openProductModal } from './modal.js?v=1.0.17';
@@ -123,7 +124,9 @@ function _showRecs(anchor) {
   const el = _root.querySelector('#disc-results');
   if (!el) return;
 
-  const recs = getDiscoveryRecommendations(anchor, _products, { limit: 4 });
+  const taste = Personalization.getTaste();
+  const eligible = filterDisliked(_products, taste, { minCount: 2 });
+  const recs = getDiscoveryRecommendations(anchor, eligible, { limit: 4 });
 
   if (!recs.length) {
     el.innerHTML = `

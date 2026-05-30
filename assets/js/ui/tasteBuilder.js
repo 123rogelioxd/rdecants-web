@@ -162,6 +162,11 @@ function _run(root, queue) {
         if (stage.querySelector('.tb-card')?.classList.contains('tb-exit--' + action)) return;
 
         _handleAction(action, product);
+        /* Brief user feedback visible during the exit animation */
+        const progress = stage.querySelector('.tb-progress');
+        if (progress && action !== 'skip') {
+          progress.textContent = '✓ Tomado en cuenta';
+        }
         const card = stage.querySelector('.tb-card');
         _animateExit(card, action, () => { current++; render(); });
       });
@@ -198,11 +203,18 @@ function _showDone(stage) {
       <p class="tb-done-icon" aria-hidden="true">✦</p>
       <p class="tb-done-h">Ya sabemos más sobre tu estilo.</p>
       <p class="tb-done-copy">Tus preferencias mejoran tus recomendaciones.</p>
-      <button class="btn-primary tb-done-cta" type="button"
-        onclick="document.getElementById('recommendation-rails')?.scrollIntoView({behavior:'smooth'})">
-        Ver mis recomendaciones
-      </button>
+      <button class="btn-primary tb-done-cta" type="button">Ver mis recomendaciones</button>
+      <button class="tb-reset-link" type="button">Borrar mis preferencias</button>
     </div>`;
+
+  stage.querySelector('.tb-done-cta')?.addEventListener('click', () => {
+    document.getElementById('recommendation-rails')?.scrollIntoView({ behavior: 'smooth' });
+  });
+
+  stage.querySelector('.tb-reset-link')?.addEventListener('click', () => {
+    Personalization.reset();
+    stage.innerHTML = '<p class="tb-reset-msg">Preferencias borradas. Recarga para volver a empezar.</p>';
+  });
 }
 
 /* ── Helpers ────────────────────────────────────────────────────── */

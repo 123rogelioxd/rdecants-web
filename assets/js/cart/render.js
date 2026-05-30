@@ -12,6 +12,7 @@ import { Tracker }   from '../tracking/tracker.js';
 import { formatPrice, isValidPrice, getDefaultVariant } from '../utils/prices.js?v=1.0.15';
 import { CatalogProvider } from '../providers/catalog.js?v=1.0.16';
 import { getCartUpsells }  from '../recommendations/upsells.js?v=1.0.14';
+import { Personalization, filterDisliked } from '../recommendations/personalization.js?v=1.0.13';
 import { getCartMinimumState } from './momentum.js?v=1.0.15';
 
 const WHATSAPP_NUMBER = '5219516513018';
@@ -123,7 +124,9 @@ async function _renderUpsells() {
   if (Cart.items.length !== items.length) return;
 
   const minimum = getCartMinimumState(Cart.total());
-  const suggestions = getCartUpsells(Cart.items, products, {
+  const taste = Personalization.getTaste();
+  const eligible = filterDisliked(products, taste, { minCount: 3 });
+  const suggestions = getCartUpsells(Cart.items, eligible, {
     targetRemaining: minimum.remaining,
   })
     .map(product => ({ product, variant: getDefaultVariant(product, 3) }))

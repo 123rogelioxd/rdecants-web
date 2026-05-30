@@ -94,6 +94,20 @@ export function applyView(taste, product) {
   return next;
 }
 
+/* ── Dislike filter — pure, safe, with catalog-size fallback ──── */
+
+/**
+ * Returns `products` with all disliked products removed.
+ * Falls back to unfiltered if filtering would leave fewer than `minCount`.
+ */
+export function filterDisliked(products, taste, { minCount = 0 } = {}) {
+  if (!Array.isArray(products)) return products ?? [];
+  const dislikedIds = new Set((taste?.dislikes ?? []).map(String));
+  if (!dislikedIds.size) return products;
+  const filtered = products.filter(p => !dislikedIds.has(String(p?.id)));
+  return (minCount > 0 && filtered.length < minCount) ? products : filtered;
+}
+
 /* ── Explicit taste signals (like / dislike) ───────────────────
    Pure helpers that complement applyView with stronger signals.
    Like = 3× view weight + added to likes list.
@@ -171,7 +185,8 @@ export const Personalization = {
   },
 
   hasSignal() {
-    return _load().viewed.length > 0;
+    const t = _load();
+    return t.viewed.length > 0 || t.likes.length > 0 || t.dislikes.length > 0;
   },
 
   recordView(product) {

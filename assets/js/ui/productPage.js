@@ -52,7 +52,7 @@ import {
   resolveDiscoverySets,
   renderDiscoverySetsFallback,
 } from './discoverySets.js?v=1.0.0';
-import { Personalization } from '../recommendations/personalization.js?v=1.0.13';
+import { Personalization, filterDisliked } from '../recommendations/personalization.js?v=1.0.13';
 import { showToast } from './toast.js';
 
 /* ── Public: build the page HTML ─────────────────────────────── */
@@ -277,9 +277,11 @@ export function renderRelated(root, seed, products) {
   const row = root.querySelector('#pdp-related-row');
   if (!slot || !row) return;
 
-  const related = getRelatedProducts(seed, products, { limit: 4 });
+  const taste = Personalization.getTaste();
+  const eligible = filterDisliked(products, taste, { minCount: 4 });
+  const related = getRelatedProducts(seed, eligible, { limit: 4 });
   if (!related.length) {
-    const sets = resolveDiscoverySets(products);
+    const sets = resolveDiscoverySets(filterDisliked(products, taste, { minCount: 3 }));
     if (sets.length) {
       renderDiscoverySetsFallback(slot, sets);
     } else {

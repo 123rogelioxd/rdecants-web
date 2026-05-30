@@ -1572,6 +1572,25 @@
   line-height: 1.55;
 }
 
+.tb-reset-link {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-decoration: underline;
+  padding: 4px;
+  margin-top: 4px;
+}
+.tb-reset-link:hover { color: rgba(255,255,255,0.55); }
+.tb-reset-msg {
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+  padding: 24px;
+}
+
 @media (max-width: 400px) {
   .tb-card { border-radius: 16px; }
   .tb-card-img { height: 200px; }
