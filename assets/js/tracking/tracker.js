@@ -22,6 +22,7 @@ export const EVENTS = {
   BUNDLE_ADDED: 'bundle_added',
   ASSISTANT_STARTED: 'assistant_started',
   ASSISTANT_COMPLETED: 'assistant_completed',
+  DISCOVERY_ANCHOR_SELECTED: 'discovery_anchor_selected',
   CART_MINIMUM_PROMPT_SHOWN: 'cart_minimum_prompt_shown',
   CART_MINIMUM_PROMPT_CONVERTED: 'cart_minimum_prompt_converted',
   CHECKOUT_STARTED: 'checkout_started',
@@ -205,6 +206,10 @@ export const Tracker = {
       ids: results.map(result => result.product?.id ?? result.id).filter(Boolean),
       answers,
     });
+  },
+
+  discoveryAnchorSelected(anchor) {
+    this.emit(EVENTS.DISCOVERY_ANCHOR_SELECTED, _productPayload(anchor));
   },
 
   cartMinimumPromptShown(minimum, recs = []) {

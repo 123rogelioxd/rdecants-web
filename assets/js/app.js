@@ -14,6 +14,7 @@ import { renderCart, updateCartCount,
 import { renderProducts }                   from './catalog/render.js?v=1.0.13';
 import { Recommendations }                 from './recommendations/index.js?v=1.0.13';
 import { setupAssistant }                   from './ui/assistant.js?v=1.0.13';
+import { setupDiscovery }                   from './ui/discovery.js?v=1.0.0';
 import { setupBundles }                      from './ui/bundles.js?v=1.0.13';
 import { Personalization }                  from './recommendations/personalization.js?v=1.0.13';
 import { CatalogProvider }                  from './providers/catalog.js?v=1.0.16';
@@ -105,8 +106,9 @@ const _API_EVENT_MAP = {
   recommendation_added:      'recommendation_added',
   bundle_viewed:             'bundle_viewed',
   bundle_added:              'bundle_added',
-  assistant_started:         'assistant_started',
-  assistant_completed:       'assistant_completed',
+  assistant_started:           'assistant_started',
+  assistant_completed:         'assistant_completed',
+  discovery_anchor_selected:   'discovery_anchor_selected',
 };
 
 Tracker.use((event, payload) => {
@@ -206,6 +208,15 @@ function _toApiPayload(event, payload) {
           count:   payload.count,
         },
       };
+    case 'discovery_anchor_selected':
+      return {
+        product_id: payload.productId,
+        metadata: {
+          name:             payload.productName,
+          house:            payload.house,
+          source_component: 'discovery',
+        },
+      };
     default:
       return {};
   }
@@ -238,6 +249,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   /* Guided shopping assistant (inline, metadata-driven) */
   setupAssistant('assistant');
+
+  /* Anchor-based discovery — "¿Conoces alguno de estos?" */
+  setupDiscovery('discovery');
 
   /* Activate mood-based discovery rails (lazy-hydrates on scroll) */
   Recommendations.render('recommendation-rails');
