@@ -292,7 +292,8 @@ export const Tracker = {
 
 function _productPayload(product = {}) {
   return {
-    productId: product.id,
+    productId:  product.id,          // SKU — usado por personalization y EventBus
+    product_id: product.product_id,  // ID numérico — usado por API bridge
     productName: product.name,
     house: product.house,
   };

@@ -118,11 +118,14 @@ Tracker.use((event, payload) => {
 });
 
 function _toApiPayload(event, payload) {
+  // product_id: prefer numeric DB id (product_id) over SKU string (productId)
+  const pid = payload.product_id ?? payload.productId ?? null;
+
   switch (event) {
     case 'viewed_product':
     case 'opened_product_modal':
       return {
-        product_id: payload.productId,
+        product_id: pid,
         metadata: {
           name:             payload.productName,
           house:            payload.house,
@@ -131,8 +134,8 @@ function _toApiPayload(event, payload) {
       };
     case 'add_to_cart':
       return {
-        product_id: payload.product_id ?? payload.productId,
-        variant_id: payload.variant_id ?? `${payload.productId}-${payload.size}`,
+        product_id: pid,
+        variant_id: payload.variant_id || null,
         metadata: {
           name:             payload.productName,
           size:             payload.size,
@@ -169,7 +172,7 @@ function _toApiPayload(event, payload) {
     case 'recommendation_clicked':
     case 'recommendation_added':
       return {
-        product_id: payload.productId,
+        product_id: pid,
         metadata: {
           name:             payload.productName,
           rail_id:          payload.context?.railId,
@@ -210,7 +213,7 @@ function _toApiPayload(event, payload) {
       };
     case 'discovery_anchor_selected':
       return {
-        product_id: payload.productId,
+        product_id: pid,
         metadata: {
           name:             payload.productName,
           house:            payload.house,
