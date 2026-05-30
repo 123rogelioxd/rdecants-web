@@ -27,7 +27,7 @@ import { openProductModal,
          closeProductModal }             from './ui/modal.js?v=1.0.16';
 import { SearchBar }                     from './ui/searchbar.js?v=1.0.2';
 import { setupImageStates }              from './ui/images.js';
-import { Tracker }                        from './tracking/tracker.js?v=1.0.13';
+import { Tracker }                        from './tracking/tracker.js';
 import { trackEvent }                     from './tracking/events.js?v=1.0.13';
 import { EventBus }                       from './core/events.js';
 import { AppState }                       from './core/state.js';
