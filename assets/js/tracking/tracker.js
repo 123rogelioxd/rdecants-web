@@ -23,6 +23,9 @@ export const EVENTS = {
   ASSISTANT_STARTED: 'assistant_started',
   ASSISTANT_COMPLETED: 'assistant_completed',
   DISCOVERY_ANCHOR_SELECTED: 'discovery_anchor_selected',
+  DISCOVERY_SET_VIEWED: 'discovery_set_viewed',
+  DISCOVERY_SET_CLICKED: 'discovery_set_clicked',
+  DISCOVERY_SET_ADDED: 'discovery_set_added',
   CART_MINIMUM_PROMPT_SHOWN: 'cart_minimum_prompt_shown',
   CART_MINIMUM_PROMPT_CONVERTED: 'cart_minimum_prompt_converted',
   CHECKOUT_STARTED: 'checkout_started',
@@ -68,6 +71,7 @@ export function eventDedupKey(event, payload = {}) {
     payload.size,
     payload.packId,
     payload.bundleId,
+    payload.setId,
     payload.railId ?? context.railId,
     payload.position,
     payload.total,
@@ -210,6 +214,32 @@ export const Tracker = {
 
   discoveryAnchorSelected(anchor) {
     this.emit(EVENTS.DISCOVERY_ANCHOR_SELECTED, _productPayload(anchor));
+  },
+
+  discoverySetViewed(set) {
+    this.emit(EVENTS.DISCOVERY_SET_VIEWED, {
+      setId: set.id,
+      name: set.name,
+      ids: (set.products ?? []).map(p => p.id),
+      total: set.total,
+    });
+  },
+
+  discoverySetClicked(set, source = 'card') {
+    this.emit(EVENTS.DISCOVERY_SET_CLICKED, {
+      setId: set.id,
+      name: set.name,
+      source,
+    });
+  },
+
+  discoverySetAdded(set) {
+    this.emit(EVENTS.DISCOVERY_SET_ADDED, {
+      setId: set.id,
+      name: set.name,
+      ids: (set.products ?? []).map(p => p.id),
+      total: set.total,
+    });
   },
 
   cartMinimumPromptShown(minimum, recs = []) {
@@ -360,5 +390,6 @@ function _viewLike(event) {
     event === EVENTS.OPENED_PRODUCT_MODAL ||
     event === EVENTS.RECOMMENDATION_VIEWED ||
     event === EVENTS.BUNDLE_VIEWED ||
+    event === EVENTS.DISCOVERY_SET_VIEWED ||
     event === EVENTS.CART_MINIMUM_PROMPT_SHOWN;
 }

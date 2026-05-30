@@ -15,6 +15,7 @@ import { renderProducts }                   from './catalog/render.js?v=1.0.13';
 import { Recommendations }                 from './recommendations/index.js?v=1.0.13';
 import { setupAssistant }                   from './ui/assistant.js?v=1.0.13';
 import { setupDiscovery }                   from './ui/discovery.js?v=1.0.0';
+import { setupDiscoverySets }               from './ui/discoverySets.js?v=1.0.0';
 import { setupBundles }                      from './ui/bundles.js?v=1.0.13';
 import { Personalization }                  from './recommendations/personalization.js?v=1.0.13';
 import { CatalogProvider }                  from './providers/catalog.js?v=1.0.16';
@@ -109,6 +110,9 @@ const _API_EVENT_MAP = {
   assistant_started:           'assistant_started',
   assistant_completed:         'assistant_completed',
   discovery_anchor_selected:   'discovery_anchor_selected',
+  discovery_set_viewed:        'discovery_set_viewed',
+  discovery_set_clicked:       'discovery_set_clicked',
+  discovery_set_added:         'discovery_set_added',
 };
 
 Tracker.use((event, payload) => {
@@ -220,6 +224,24 @@ function _toApiPayload(event, payload) {
           source_component: 'discovery',
         },
       };
+    case 'discovery_set_viewed':
+    case 'discovery_set_added':
+      return {
+        metadata: {
+          set_id: payload.setId,
+          name:   payload.name,
+          ids:    payload.ids,
+          total:  payload.total,
+        },
+      };
+    case 'discovery_set_clicked':
+      return {
+        metadata: {
+          set_id: payload.setId,
+          name:   payload.name,
+          source: payload.source,
+        },
+      };
     default:
       return {};
   }
@@ -258,6 +280,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   /* Activate mood-based discovery rails (lazy-hydrates on scroll) */
   Recommendations.render('recommendation-rails');
+
+  /* Discovery Sets — novice conversion layer ("¿No sabes cuál elegir?") */
+  setupDiscoverySets('discovery-sets');
 
   /* Dynamic smart bundles (kits from real metadata) */
   setupBundles('smart-bundles');

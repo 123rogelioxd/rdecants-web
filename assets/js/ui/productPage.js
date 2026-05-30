@@ -48,6 +48,10 @@ import {
   getNegatives,
   getReturningUserLine,
 } from './pdpNovice.js?v=1.0.1';
+import {
+  resolveDiscoverySets,
+  renderDiscoverySetsFallback,
+} from './discoverySets.js?v=1.0.0';
 import { Personalization } from '../recommendations/personalization.js?v=1.0.13';
 import { showToast } from './toast.js';
 
@@ -275,7 +279,12 @@ export function renderRelated(root, seed, products) {
 
   const related = getRelatedProducts(seed, products, { limit: 4 });
   if (!related.length) {
-    slot.hidden = true;
+    const sets = resolveDiscoverySets(products);
+    if (sets.length) {
+      renderDiscoverySetsFallback(slot, sets);
+    } else {
+      slot.hidden = true;
+    }
     return;
   }
 

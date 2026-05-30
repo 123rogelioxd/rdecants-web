@@ -1266,6 +1266,141 @@
   .fp-bar-track { grid-column: 1 / 3; }
 }
 
+/* ── Discovery Sets (¿No sabes cuál elegir?) ───────────────────── */
+.ds-head {
+  margin-bottom: 28px;
+  max-width: 480px;
+}
+.ds-head-copy {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 10px 0 0;
+}
+
+.ds-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.ds-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.02);
+  transition: border-color 0.2s ease;
+}
+.ds-card:hover { border-color: var(--border-hl); }
+
+.ds-card-theme {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0;
+}
+.ds-card-name {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 400;
+  color: #fff;
+  margin: 0;
+}
+.ds-card-copy {
+  font-size: 13px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.65);
+  margin: 0;
+}
+
+.ds-card-items {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-top: 1px solid var(--border);
+}
+.ds-card-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.ds-card-item:last-child { border-bottom: none; }
+.ds-card-item-house {
+  grid-column: 1;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ds-card-item-name {
+  grid-column: 1;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.88);
+}
+.ds-card-item-price {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  font-size: 12px;
+  color: var(--accent);
+  white-space: nowrap;
+  align-self: center;
+}
+
+.ds-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 4px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.ds-card-price {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ds-card-price-label {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ds-card-price-total {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  color: #fff;
+}
+.ds-card-add {
+  flex: 0 0 auto;
+  padding: 10px 18px;
+  font-size: 11px;
+}
+
+/* PDP fallback: compact 2-col layout */
+.ds-pdp-fallback .ds-grid {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+.ds-pdp-fallback .ds-card {
+  padding: 16px;
+}
+
+@media (max-width: 480px) {
+  .ds-grid { grid-template-columns: 1fr; }
+  .ds-card-foot { flex-direction: column; align-items: flex-start; }
+  .ds-card-add { width: 100%; text-align: center; }
+}
+
 /* ── Sticky mini-buy CTA (appears after hero scrolls out) ───── */
 .pdp-sticky-cta {
   position: fixed;
