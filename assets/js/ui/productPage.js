@@ -5,14 +5,17 @@
    Order (top → bottom):
      A. Hero editorial (image + name + emotional sentence + chips,
         NO buy controls — modal already handles "lo compro fast")
+     A2. ¿Por qué te puede gustar? (novice-first lead + "best for"
+        chips + "no es para ti si…" + optional returning-user copy)
      B. ¿Por qué esta fragancia? (why bullets)
      C. Profile summary card (Familia / Vibra / Ideal para / Clima
         / Proyección · Duración text labels)
      D. ¿Es para mí? (mini interactive verdict, metadata-only)
-     E. ¿Cuándo usarlo? (context checklist)
-     F. Perfil (score bars with text bands)
+     E/F. Perfil olfativo completo — collapsed <details>, secondary:
+        ¿Cuándo usarlo? checklist + Perfil (score bars with bands)
      G. Buy section (price + variants + Add + WhatsApp)
      H. Si te gusta esto... (related)
+   The top sells/guides; the technical detail is opt-in and lower.
    A sticky mini-buy CTA appears after the hero scrolls out and
    hides when the real buy section is in view.
 
@@ -39,6 +42,13 @@ import {
   getProfileSummary,
   getScoreSummary,
 } from './fragranceProfile.js?v=1.0.1';
+import {
+  getNoviceLead,
+  getBestForChips,
+  getNegatives,
+  getReturningUserLine,
+} from './pdpNovice.js?v=1.0.1';
+import { Personalization } from '../recommendations/personalization.js?v=1.0.13';
 import { showToast } from './toast.js';
 
 /* ── Public: build the page HTML ─────────────────────────────── */
@@ -113,6 +123,9 @@ export function buildProductPageHtml(product) {
       </div>
     </section>
 
+    <!-- A2. Novice-first guide — sells/orients before the technical detail -->
+    ${_noviceBlock(product)}
+
     <!-- B. Why -->
     ${_whyEditorialBlock(product)}
 
@@ -122,10 +135,8 @@ export function buildProductPageHtml(product) {
     <!-- D. ¿Es para mí? interactive verdict -->
     ${_fitQuizBlock(product)}
 
-    <!-- E. ¿Cuándo usarlo? + F. Perfil (score bars) -->
-    <section class="pdp-intelligence">
-      ${buildFragranceProfileHtml(product)}
-    </section>
+    <!-- E. ¿Cuándo usarlo? + F. Perfil (score bars) — secondary, opt-in -->
+    ${_technicalBlock(product)}
 
     <!-- G. Buy section -->
     <section class="pdp-buy" id="pdp-buy" aria-labelledby="pdp-buy-h">
@@ -237,6 +248,23 @@ export function hydrateProductPage(root, product, deps = {}) {
 
   /* "¿Es para mí?" interactive verdict */
   _setupFitQuiz(root, product);
+
+  /* Returning-user line — only if local taste signal already supports it.
+     Built at hydrate time because it reads localStorage (not in SSR/tests). */
+  _setupReturningLine(root, product, deps);
+}
+
+function _setupReturningLine(root, product, deps = {}) {
+  const el = root.querySelector('#pdp-returning');
+  if (!el) return;
+  const personalization = deps.personalization ?? Personalization;
+  let taste;
+  try { taste = personalization?.getTaste?.(); } catch { taste = null; }
+  if (!taste) return;
+  const line = getReturningUserLine(product, taste);
+  if (!line) return;
+  el.textContent = line;
+  el.hidden = false;
 }
 
 /* ── Related rail (lazy, defensive) ─────────────────────────── */
@@ -291,6 +319,49 @@ export function findProductBySlug(products, slug) {
 }
 
 /* ── Editorial blocks ───────────────────────────────────────── */
+
+function _noviceBlock(product) {
+  const lead = getNoviceLead(product);
+  const chips = getBestForChips(product);
+  const negatives = getNegatives(product);
+
+  const chipsHtml = chips.length
+    ? `<ul class="pdp-bestfor" aria-label="Ideal para">
+        ${chips.map(c => `<li class="pdp-bestfor-chip pdp-bestfor-chip--${c.key}">${_escape(c.label)}</li>`).join('')}
+      </ul>`
+    : '';
+
+  const negativesHtml = negatives.length
+    ? `<div class="pdp-notfor" aria-label="Cuándo evitarlo">
+        <p class="pdp-notfor-h">No es para ti si…</p>
+        <ul class="pdp-notfor-list">
+          ${negatives.map(n => `<li>${_escape(n)}</li>`).join('')}
+        </ul>
+      </div>`
+    : '';
+
+  return `
+    <section class="pdp-novice" id="pdp-novice" aria-labelledby="pdp-novice-h">
+      <h2 class="pdp-section-h" id="pdp-novice-h">¿Por qué te puede gustar?</h2>
+      <p class="pdp-novice-lead">${_escape(lead)}</p>
+      <p class="pdp-returning" id="pdp-returning" hidden></p>
+      ${chipsHtml}
+      ${negativesHtml}
+    </section>`;
+}
+
+function _technicalBlock(product) {
+  const html = buildFragranceProfileHtml(product);
+  if (!html) return '';
+  return `
+    <details class="pdp-intelligence pdp-tech" id="pdp-tech">
+      <summary class="pdp-tech-summary">
+        <span class="pdp-tech-summary-t">Perfil olfativo completo</span>
+        <span class="pdp-tech-summary-d">Notas, acordes y barras de intensidad</span>
+      </summary>
+      <div class="pdp-tech-body">${html}</div>
+    </details>`;
+}
 
 function _whyEditorialBlock(product) {
   const html = buildWhyHtml(product);
@@ -513,14 +584,16 @@ function _sizesHtml(variants, defaultSize) {
       const variant = variants.find(v => v.size === ml);
       if (!variant) return '';
       const disabled = variant.soldOut || variant.availability <= 0 || !_validVariantId(variant.variant_id);
+      const recommended = ml === 5;
       return `
         <button
-          class="pdp-size-btn ${ml === defaultSize ? 'pdp-size-btn--active' : ''} ${disabled ? 'pdp-size-btn--disabled' : ''}"
+          class="pdp-size-btn ${ml === defaultSize ? 'pdp-size-btn--active' : ''} ${recommended ? 'pdp-size-btn--recommended' : ''} ${disabled ? 'pdp-size-btn--disabled' : ''}"
           data-size="${ml}"
           ${disabled ? 'disabled aria-disabled="true"' : ''}
           aria-pressed="${ml === defaultSize}"
-          aria-label="${ml}ml - $${variant.price} MXN${disabled ? ' agotado' : ''}">
-          <span class="pdp-size-ml">${ml}ml${ml === 5 ? ' · recomendado' : ''}</span>
+          aria-label="${ml}ml - $${variant.price} MXN — ${getSizeLabel(ml)}${disabled ? ' agotado' : ''}">
+          ${recommended ? '<span class="pdp-size-flag">Recomendado</span>' : ''}
+          <span class="pdp-size-ml">${ml}ml</span>
           <span class="pdp-size-price">$${variant.price}</span>
           <span class="pdp-size-label">${disabled ? 'Agotado' : getSizeLabel(ml)}</span>
         </button>`;

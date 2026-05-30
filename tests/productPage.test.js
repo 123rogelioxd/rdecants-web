@@ -242,3 +242,118 @@ test('PDP never displays fragrance.aliases (search-only data)', () => {
   assert.ok(!html.includes('roger') && !html.includes('jhony'),
     'aliases must never be rendered on the PDP');
 });
+
+/* ── Novice-first guidance (sprint: easier PDP) ─────────────── */
+
+test('PDP renders novice-first guidance above the why/technical detail', () => {
+  const html = buildProductPageHtml(sample);
+  assert.ok(html.includes('id="pdp-novice"'), 'novice section present');
+  assert.ok(html.includes('¿Por qué te puede gustar?'), 'novice heading');
+  assert.ok(html.includes('pdp-novice-lead'), 'plain-language lead');
+  const i = needle => html.indexOf(needle);
+  assert.ok(i('id="pdp-novice"') > i('id="pdp-hero"'), 'after hero');
+  assert.ok(i('id="pdp-novice"') < i('¿Por qué esta fragancia?'), 'before why bullets');
+  assert.ok(i('id="pdp-novice"') < i('id="pdp-tech"'), 'before technical profile');
+});
+
+test('PDP novice lead falls back to safe copy when fragrance is missing', () => {
+  const html = buildProductPageHtml({ ...sample, fragrance: null });
+  assert.ok(html.includes('id="pdp-novice"'), 'novice section still renders');
+  assert.ok(html.includes('sin comprar el frasco completo'), 'safe fallback copy');
+  assert.ok(!html.includes('pdp-bestfor-chip'), 'no chips without metadata');
+  assert.ok(!html.includes('No es para ti si'), 'no negatives without metadata');
+});
+
+test('best-for chips only appear when metadata/scores support them', async () => {
+  const { getBestForChips } = await import('../assets/js/ui/pdpNovice.js');
+
+  /* Sauvage: office+daily context, longevity .7, projection .8 */
+  const chips = getBestForChips(sample).map(c => c.label);
+  assert.ok(chips.includes('Oficina'), 'office context → chip');
+  assert.ok(chips.includes('Diario'), 'daily context → chip');
+  assert.ok(chips.includes('Larga duración'), 'high longevity → chip');
+  assert.ok(chips.includes('Buena proyección'), 'high projection → chip');
+  assert.ok(!chips.includes('Verano'), 'no summer chip when not tagged');
+
+  /* No fragrance → no chips */
+  assert.equal(getBestForChips({ ...sample, fragrance: null }).length, 0);
+
+  /* Lean fragrance with no qualifying scores/contexts → no chips */
+  const lean = { fragrance: { recommended_context_tags: [], scores: { freshness: 0.5 } } };
+  assert.equal(getBestForChips(lean).length, 0);
+});
+
+test('"no es para ti si" surfaces only confident, score-backed negatives', async () => {
+  const { getNegatives } = await import('../assets/js/ui/pdpNovice.js');
+
+  /* Sauvage projects strongly (0.8) → exactly the "discreto" warning */
+  const sauvage = getNegatives(sample);
+  assert.ok(sauvage.some(n => n.includes('muy discreto')), 'high projection warning');
+
+  /* Very sweet, heavy gourmand → sweet + discreto negatives */
+  const sweet = getNegatives({
+    fragrance: { scent_family_normalized: 'gourmand',
+      scores: { sweetness: 0.9, projection: 0.85, freshness: 0.1, longevity: 0.8 } },
+  });
+  assert.ok(sweet.some(n => n.includes('dulces')), 'sweet warning');
+  assert.ok(sweet.length <= 2, 'capped at two negatives');
+
+  /* Balanced, no extremes → block hidden */
+  const balanced = getNegatives({
+    fragrance: { scent_family_normalized: 'fresh',
+      scores: { freshness: 0.5, sweetness: 0.4, projection: 0.5, longevity: 0.5, versatility: 0.6 } },
+  });
+  assert.equal(balanced.length, 0, 'no confident negatives → empty');
+
+  assert.equal(getNegatives({ fragrance: null }).length, 0);
+});
+
+test('"no es para ti si" block is hidden in HTML when not confident', () => {
+  const balanced = {
+    ...sample,
+    fragrance: {
+      ...sample.fragrance,
+      scent_family_normalized: 'fresh',
+      scores: { freshness: 0.5, sweetness: 0.4, projection: 0.5, longevity: 0.5, versatility: 0.6 },
+    },
+  };
+  const html = buildProductPageHtml(balanced);
+  assert.ok(html.includes('id="pdp-novice"'), 'novice still renders');
+  assert.ok(!html.includes('No es para ti si'), 'defensive block hidden when not confident');
+});
+
+test('technical profile is rendered lower as an opt-in collapsible', () => {
+  const html = buildProductPageHtml(sample);
+  assert.ok(html.includes('id="pdp-tech"'), 'collapsible technical block');
+  assert.ok(html.includes('<details'), 'uses <details> so it is secondary/opt-in');
+  assert.ok(html.includes('Perfil Olfativo'), 'keeps olfactory profile inside');
+  const i = needle => html.indexOf(needle);
+  assert.ok(i('id="pdp-tech"') > i('id="pdp-fit"'), 'tech below the fit quiz');
+  assert.ok(i('id="pdp-tech"') < i('id="pdp-buy"'), 'tech above the buy section');
+});
+
+test('size guidance flags the recommended (5ml) presentation', () => {
+  const sample10 = {
+    ...sample,
+    variants: [
+      ...sample.variants,
+      { id: 'v10', size: 10, ml_size: 10, price: 320, retail_price: 320, availability: 10, stock: 10, available: true, soldOut: false, sold_out: false, variant_id: '3', product_id: 'dior-sauvage' },
+    ],
+  };
+  const html = buildProductPageHtml(sample10);
+  assert.ok(html.includes('pdp-size-btn--recommended'), 'recommended class on a size');
+  assert.ok(html.includes('pdp-size-flag'), 'visible "Recomendado" flag');
+});
+
+test('returning-user line is metadata+taste driven and safe by default', async () => {
+  const { getReturningUserLine } = await import('../assets/js/ui/pdpNovice.js');
+
+  /* No taste signal → no line (new visitor) */
+  assert.equal(getReturningUserLine(sample, { moods: {} }), '');
+  assert.equal(getReturningUserLine(sample, null), '');
+
+  /* Taste leaning toward this product's dominant moods → friendly line */
+  const taste = { moods: { diario: 5, oficina: 4, fiesta: 1 }, houses: {}, viewed: ['x'] };
+  const line = getReturningUserLine(sample, taste);
+  assert.match(line, /has explorado/, 'references prior browsing');
+});

@@ -999,11 +999,149 @@
 }
 .pdp-jump-buy:hover { filter: brightness(1.08); }
 
+.pdp-novice,
 .pdp-why,
 .pdp-summary,
 .pdp-fit,
 .pdp-buy {
   margin-bottom: 28px;
+}
+
+/* ── Novice-first guide (¿Por qué te puede gustar?) ─────────────── */
+.pdp-novice-lead {
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0 0 14px;
+  max-width: 60ch;
+}
+.pdp-returning {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--accent);
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border-left: 2px solid var(--accent);
+  background: rgba(201, 169, 110, 0.06);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.pdp-returning[hidden] { display: none; }
+
+.pdp-bestfor {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pdp-bestfor-chip {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.86);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid var(--border-hl);
+  border-radius: 999px;
+  padding: 7px 14px;
+  line-height: 1;
+}
+.pdp-bestfor-chip--beginner {
+  color: var(--accent);
+  border-color: rgba(201, 169, 110, 0.45);
+  background: rgba(201, 169, 110, 0.08);
+}
+
+.pdp-notfor {
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.02);
+}
+.pdp-notfor-h {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+.pdp-notfor-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pdp-notfor-list li {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.82);
+  padding-left: 18px;
+  position: relative;
+}
+.pdp-notfor-list li::before {
+  content: "—";
+  position: absolute;
+  left: 0;
+  color: var(--muted);
+}
+
+/* ── Technical profile pushed lower & made opt-in ───────────────── */
+.pdp-tech {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.015);
+  padding: 0 18px;
+  margin-bottom: 28px;
+}
+.pdp-tech-summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.pdp-tech-summary::-webkit-details-marker { display: none; }
+.pdp-tech-summary::after {
+  content: "+";
+  position: absolute;
+  right: 18px;
+  font-size: 18px;
+  color: var(--muted);
+}
+.pdp-tech[open] .pdp-tech-summary::after { content: "–"; }
+.pdp-tech-summary { position: relative; }
+.pdp-tech-summary-t {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  color: #fff;
+}
+.pdp-tech-summary-d {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.pdp-tech-body { padding-bottom: 12px; }
+
+/* ── Recommended size emphasis ──────────────────────────────────── */
+.pdp-size-btn { position: relative; }
+.pdp-size-btn--recommended { border-color: rgba(201, 169, 110, 0.4); }
+.pdp-size-flag {
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #1a1a1a;
+  background: var(--accent);
+  border-radius: 999px;
+  padding: 3px 8px;
+  white-space: nowrap;
+  line-height: 1;
 }
 
 .pdp-summary-rows {
