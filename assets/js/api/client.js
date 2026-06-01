@@ -3,10 +3,14 @@
    Thin fetch wrapper for R Supply OS web endpoints.
    ============================================================= */
 
-import { API_BASE } from './config.js?v=1.0.13';
+import { API_BASE, BUILD_VERSION } from './config.js?v=2026.06.01.1';
 
 async function _get(path) {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const url = new URL(`${API_BASE}${path}`);
+  url.searchParams.set('v', `${BUILD_VERSION}-${Date.now()}`);
+
+  const res = await fetch(url, {
+    cache: 'no-store',
     credentials: 'omit',
     headers: { 'Accept': 'application/json' },
   });

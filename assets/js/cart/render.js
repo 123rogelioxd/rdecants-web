@@ -10,7 +10,7 @@ import { sendCheckoutWhatsApp,
 import { EventBus }  from '../core/events.js';
 import { Tracker }   from '../tracking/tracker.js';
 import { formatPrice, isValidPrice, getDefaultVariant } from '../utils/prices.js?v=1.0.15';
-import { CatalogProvider } from '../providers/catalog.js?v=1.0.16';
+import { CatalogProvider } from '../providers/catalog.js?v=2026.06.01.1';
 import { getCartUpsells }  from '../recommendations/upsells.js?v=1.0.14';
 import { getCollectionPairs } from '../recommendations/crossSell.js?v=1.0.0';
 import { Personalization, filterDisliked } from '../recommendations/personalization.js?v=1.0.13';

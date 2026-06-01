@@ -115,7 +115,7 @@ export async function setupTasteBuilder(containerId) {
 
   let products = [];
   try {
-    const { CatalogProvider } = await import('../providers/catalog.js?v=1.0.16');
+    const { CatalogProvider } = await import('../providers/catalog.js?v=2026.06.01.1');
     products = await CatalogProvider.getProducts();
   } catch {
     products = [];

@@ -8,7 +8,7 @@ import {
   renderCart, updateCartCount,
   openCart, closeCart, toggleCart, sendWhatsApp,
 } from '../cart/render.js?v=1.0.15';
-import { CatalogProvider } from '../providers/catalog.js?v=1.0.16';
+import { CatalogProvider } from '../providers/catalog.js?v=2026.06.01.1';
 import { setupHeader } from '../ui/header.js';
 import { setupImageStates } from '../ui/images.js';
 import { Tracker } from '../tracking/tracker.js';

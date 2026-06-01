@@ -10,7 +10,7 @@
      â€¢ no-match  â€” elegant empty state when filters return 0
    ============================================================= */
 
-import { CatalogProvider }  from '../providers/catalog.js?v=1.0.16';
+import { CatalogProvider }  from '../providers/catalog.js?v=2026.06.01.1';
 import { Tracker }          from '../tracking/tracker.js';
 import { openProductModal } from '../ui/modal.js?v=1.0.17';
 import { SearchBar }        from '../ui/searchbar.js?v=1.0.2';
@@ -298,4 +298,3 @@ function _validVariantId(value) {
   if (!normalized || normalized === 'null' || normalized === 'undefined') return null;
   return /^\d+$/.test(normalized) ? Number(normalized) : normalized;
 }
-

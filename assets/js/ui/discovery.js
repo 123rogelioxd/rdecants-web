@@ -14,7 +14,7 @@
 
 import { getAnchorProducts, getDiscoveryRecommendations } from '../recommendations/discovery.js?v=1.0.0';
 import { Personalization, filterDisliked } from '../recommendations/personalization.js?v=1.0.13';
-import { CatalogProvider }  from '../providers/catalog.js?v=1.0.16';
+import { CatalogProvider }  from '../providers/catalog.js?v=2026.06.01.1';
 import { Tracker }          from '../tracking/tracker.js';
 import { openProductModal } from './modal.js?v=1.0.17';
 import { primeImageStates } from './images.js';

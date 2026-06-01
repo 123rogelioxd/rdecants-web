@@ -1,12 +1,12 @@
-console.log('CATALOG PROVIDER NUEVO 1.0.16 CARGADO');
+console.log('CATALOG PROVIDER BUILD 2026.06.01.1 LOADED');
 
 /* =============================================================
    RDECANTS — CATALOG PROVIDER
    Abstraction layer between rendering and data source.
    ============================================================= */
 
-import { ApiClient } from '../api/client.js?v=1.0.13';
-import { normalizeApiImageUrl } from '../api/config.js?v=1.0.13';
+import { ApiClient } from '../api/client.js?v=2026.06.01.1';
+import { API_BASE, normalizeApiImageUrl } from '../api/config.js?v=2026.06.01.1';
 import { PACKS } from '../../../data/products.js?v=1.0.2';
 
 let _productsCache = null;
@@ -22,6 +22,12 @@ export const CatalogProvider = {
 
       if (Array.isArray(items)) {
         _productsCache = items.map(_mapProduct).filter(Boolean);
+        console.info('[RDecants] catalog fetched', {
+          API_BASE,
+          fetchedAt: new Date().toISOString(),
+          productCount: _productsCache.length,
+          firstProductWithDescription: _productsCache.find(product => product.desc),
+        });
         return _productsCache;
       }
     } catch (err) {

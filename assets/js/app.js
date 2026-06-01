@@ -19,7 +19,7 @@ import { setupDiscoverySets }               from './ui/discoverySets.js?v=1.0.0'
 import { setupTasteBuilder }               from './ui/tasteBuilder.js?v=1.0.0';
 import { setupBundles }                      from './ui/bundles.js?v=1.0.13';
 import { Personalization }                  from './recommendations/personalization.js?v=1.0.13';
-import { CatalogProvider }                  from './providers/catalog.js?v=1.0.16';
+import { CatalogProvider }                  from './providers/catalog.js?v=2026.06.01.1';
 import { setupScrollAnimations,
          observeFadeUp,
          setupHeroParallax }             from './ui/animations.js?v=1.0.17';
