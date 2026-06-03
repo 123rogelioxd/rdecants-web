@@ -315,6 +315,26 @@ function _ref5ml(p) {
   return priceSortValue(p);
 }
 
+/* Audience-weighted gender priority for the default commercial sort.
+   Most current buyers shop men's/unisex, so those surface first; women's
+   fragrances drop only as a *tiebreaker* — featured/trending women still
+   rank by those higher-priority keys above and are never hidden.
+   Untagged (null) is treated as broad so it isn't penalised. */
+const GENDER_PRIORITY = { male: 2, unisex: 2, female: 1 };
+function _genderPriority(gender) {
+  return GENDER_PRIORITY[String(gender ?? '').toLowerCase()] ?? 2;
+}
+
+/* In-stock = 1, sold-out = 0. Prefers top-level stock, falls back to
+   variant availability, and stays permissive when neither is known. */
+function _availabilityRank(p) {
+  if (typeof p.stock === 'number') return p.stock > 0 ? 1 : 0;
+  if (Array.isArray(p.variants) && p.variants.length) {
+    return p.variants.some(v => ((v.availability ?? v.stock ?? 0) > 0) && !v.soldOut) ? 1 : 0;
+  }
+  return 1;
+}
+
 function _sort(products, sort) {
   const arr = [...products];
   switch (sort) {
@@ -327,8 +347,19 @@ function _sort(products, sort) {
       return arr.sort((a, b) => (a.stock ?? 99) - (b.stock ?? 99));
     case 'trending':
     default:
+      /* Commercial ranking (highest priority first):
+         1. available (in stock) before sold-out
+         2. featured products
+         3. trending / best-seller badge score
+         4. men's & unisex before women's (audience tiebreaker only)
+         5. more stock before less (slight freshness signal)
+         Stable: equal products keep their incoming order. */
       return arr.sort((a, b) =>
-        (BADGE_SCORE[b.badge] ?? 0) - (BADGE_SCORE[a.badge] ?? 0)
+        _availabilityRank(b) - _availabilityRank(a) ||
+        (b.featured ? 1 : 0) - (a.featured ? 1 : 0) ||
+        (BADGE_SCORE[b.badge] ?? 0) - (BADGE_SCORE[a.badge] ?? 0) ||
+        _genderPriority(b.gender) - _genderPriority(a.gender) ||
+        (b.stock ?? 0) - (a.stock ?? 0)
       );
   }
 }

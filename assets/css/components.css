@@ -434,6 +434,46 @@
   min-width: 0;
 }
 
+/* Compact mobile catalog — desktop always shows the full grid, so the
+   "Ver más perfumes" control and the cap are hidden outside mobile. */
+.catalog-more { display: none; }
+
+.catalog-more-count {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.catalog-more-btn {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--white);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius-sm);
+  padding: 12px 26px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+.catalog-more-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+@media (max-width: 768px) {
+  /* 9 = MOBILE_CATALOG_CAP (8) + 1 */
+  .products-grid--capped .product-card:nth-child(n + 9) { display: none; }
+  .catalog-more {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin: 24px auto 0;
+    text-align: center;
+  }
+}
+
 /* ── Product card ────────────────────────────────────────────── */
 .product-card {
   background: linear-gradient(
@@ -4484,7 +4524,19 @@
 }
 
 @media (max-width: 768px) {
-  .sf-row-gender { display: none; }  /* drawer handles mobile */
+  /* Quick gender chips stay visible on mobile as a single scrollable row,
+     so "Todos / Hombre / Mujer / Unisex" are reachable without opening the
+     drawer. Reuses the same buttons + handlers as desktop. */
+  .sf-row-gender {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .sf-row-gender::-webkit-scrollbar { display: none; }
+  .sf-genders { flex-wrap: nowrap; }
+  .sf-gender-btn { flex-shrink: 0; }
 }
 
 /* ── Search input ────────────────────────────────────────────── */

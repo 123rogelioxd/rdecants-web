@@ -121,6 +121,13 @@ export const SearchBar = {
     return { ..._state };
   },
 
+  /* True when a search/mood/house/price/gender filter is active.
+     Used by the catalog renderer to decide whether the compact mobile
+     cap applies — filtered/search views always show every result. */
+  hasActiveFilters() {
+    return _hasActiveFilters();
+  },
+
   applySort(sort) {
     if (!_onFilter) return;
     _state.sort = sort || 'trending';

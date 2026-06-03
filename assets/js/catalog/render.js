@@ -25,6 +25,13 @@ import { getGuidanceBadges }  from '../utils/guidance.js?v=2026.06.03.2';
 /* module-level ref kept for SearchBar callback */
 let _productsContainer = null;
 
+/* Compact mobile catalog: the default browse view shows the first
+   MOBILE_CATALOG_CAP cards; the rest sit behind "Ver más perfumes".
+   The cap is mobile-only (CSS media query) and NEVER applies while a
+   search/filter is active — those views always show every result. */
+const MOBILE_CATALOG_CAP = 8;
+let _catalogExpanded = false;
+
 /* ── Featured ────────────────────────────────────────────────── */
 export async function renderFeatured() {
   const el = document.getElementById('featured-product');
@@ -183,6 +190,10 @@ export async function renderPacks() {
 function _renderGrid(products) {
   if (!_productsContainer) return;
 
+  /* Reset any compact-cap UI from a previous render before re-painting */
+  _removeShowMore();
+  _productsContainer.classList.remove('products-grid--capped');
+
   _productsContainer.innerHTML = '';
 
   /* Empty state */
@@ -297,6 +308,61 @@ function _renderGrid(products) {
 
   _productsContainer.appendChild(frag);
   primeImageStates(_productsContainer);
+  _applyCatalogCap(products.length);
+}
+
+/* ── Compact mobile catalog ──────────────────────────────────── */
+
+/* Decide whether the compact cap + "Ver más perfumes" control applies.
+   Capping only happens in the default browse view: no active filters and
+   more items than the cap. Search/filtered views show everything. */
+function _applyCatalogCap(total) {
+  const filtersActive = SearchBar.hasActiveFilters?.() ?? false;
+
+  if (filtersActive || total <= MOBILE_CATALOG_CAP) {
+    _catalogExpanded = false;
+    return;
+  }
+
+  if (!_catalogExpanded) _productsContainer.classList.add('products-grid--capped');
+  _renderShowMore(total);
+}
+
+function _renderShowMore(total) {
+  const shown = _catalogExpanded ? total : Math.min(MOBILE_CATALOG_CAP, total);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'catalog-more';
+  wrap.id        = 'catalog-more';
+  wrap.innerHTML = `
+    <p class="catalog-more-count" id="catalog-more-count">Mostrando ${shown} de ${total} perfumes</p>
+    <button type="button" class="catalog-more-btn" id="catalog-more-btn"
+      aria-expanded="${_catalogExpanded}">
+      ${_catalogExpanded ? 'Mostrar menos' : 'Ver más perfumes'}
+    </button>`;
+
+  _productsContainer.insertAdjacentElement('afterend', wrap);
+  wrap.querySelector('#catalog-more-btn')
+    ?.addEventListener('click', () => _toggleCatalog(total));
+}
+
+function _toggleCatalog(total) {
+  _catalogExpanded = !_catalogExpanded;
+  _productsContainer.classList.toggle('products-grid--capped', !_catalogExpanded);
+
+  if (_catalogExpanded) {
+    Tracker.catalogExpanded(total, MOBILE_CATALOG_CAP);
+  } else {
+    Tracker.catalogCollapsed(total);
+    _productsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  _removeShowMore();
+  _renderShowMore(total);
+}
+
+function _removeShowMore() {
+  document.getElementById('catalog-more')?.remove();
 }
 
 /* ── Helpers ─────────────────────────────────────────────────── */

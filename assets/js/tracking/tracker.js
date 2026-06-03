@@ -60,6 +60,8 @@ export const EVENTS = {
   FILTER_APPLIED:        'filter_applied',
   FILTER_CLEARED:        'filter_cleared',
   SCROLL_DEPTH_REACHED:  'scroll_depth_reached',
+  CATALOG_EXPANDED:      'catalog_expanded',
+  CATALOG_COLLAPSED:     'catalog_collapsed',
 
   GENDER_FILTER_APPLIED:          'gender_filter_applied',
   RECOMMENDATION_GENDER_SELECTED: 'recommendation_gender_selected',
@@ -412,6 +414,16 @@ export const Tracker = {
 
   scrollDepthReached(pct) {
     this.emit(EVENTS.SCROLL_DEPTH_REACHED, { pct });
+  },
+
+  catalogExpanded(total, visibleBefore) {
+    this.emit(EVENTS.CATALOG_EXPANDED,
+      { total, visible_before: visibleBefore },
+      { allowDuplicate: true });
+  },
+
+  catalogCollapsed(total) {
+    this.emit(EVENTS.CATALOG_COLLAPSED, { total }, { allowDuplicate: true });
   },
 
   genderFilterApplied(genderPreference, source = 'catalog') {

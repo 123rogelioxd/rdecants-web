@@ -1,0 +1,157 @@
+/* =============================================================
+   CRO — compact mobile catalog + smart commercial order.
+
+   Two layers, mirroring the project's test conventions:
+     • Pure-logic: the default "trending" sort ranks the full catalog
+       commercially (available → featured → trending badge → gender
+       tiebreak), and featured/trending women are never buried.
+     • Static-source: the renderer caps the mobile browse view at 8,
+       exposes "Ver más perfumes" / "Mostrar menos" + a "Mostrando X
+       de Y" counter, never caps active search/filter views, and emits
+       catalog_expanded / catalog_collapsed.
+   ============================================================= */
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+import { filterProducts } from '../assets/js/catalog/search.js';
+
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const read = path => readFileSync(join(root, path), 'utf8');
+
+/* Minimal sellable product for sort assertions */
+const P = (id, o = {}) => ({
+  id,
+  name: id,
+  house: 'House',
+  notes: [],
+  badge: o.badge ?? 'Disponible',
+  featured: !!o.featured,
+  gender: o.gender ?? null,
+  stock: o.stock ?? 10,
+  variants: [{
+    size: 3, price: 100,
+    stock: o.stock ?? 10, availability: o.stock ?? 10,
+    available: (o.stock ?? 10) > 0, variant_id: id,
+  }],
+});
+
+const order = (list, state = {}) =>
+  filterProducts(list, { sort: 'trending', ...state }).map(p => p.id);
+
+/* ── A. Smart commercial order (default "trending" sort) ──────── */
+
+test('available products rank above sold-out ones', () => {
+  const list = [P('out', { stock: 0 }), P('live', { stock: 5 })];
+  assert.deepEqual(order(list), ['live', 'out']);
+});
+
+test('featured products surface above non-featured', () => {
+  const list = [P('plain'), P('star', { featured: true })];
+  assert.deepEqual(order(list), ['star', 'plain']);
+});
+
+test('trending badge beats a plain product', () => {
+  const list = [P('plain'), P('hot', { badge: 'TRENDING' })];
+  assert.deepEqual(order(list), ['hot', 'plain']);
+});
+
+test('men/unisex rank before women as a tiebreaker only', () => {
+  const list = [P('she', { gender: 'female' }), P('he', { gender: 'male' }), P('uni', { gender: 'unisex' })];
+  assert.deepEqual(order(list), ['he', 'uni', 'she']);
+});
+
+test('a featured women\'s fragrance is never buried below plain men\'s', () => {
+  const list = [
+    P('m1', { gender: 'male' }),
+    P('m2', { gender: 'male' }),
+    P('sheStar', { gender: 'female', featured: true }),
+  ];
+  assert.equal(order(list)[0], 'sheStar', 'featured female stays on top');
+});
+
+test('full commercial ranking composes all keys in priority order', () => {
+  const list = [
+    P('f1', { gender: 'female' }),
+    P('m1', { gender: 'male' }),
+    P('u1', { gender: 'unisex' }),
+    P('ffeat', { gender: 'female', featured: true }),
+    P('mtrend', { gender: 'male', badge: 'TRENDING' }),
+    P('out', { gender: 'male', stock: 0 }),
+  ];
+  assert.deepEqual(order(list), ['ffeat', 'mtrend', 'm1', 'u1', 'f1', 'out']);
+});
+
+test('a search query still returns every matching result (no cap in logic)', () => {
+  const list = Array.from({ length: 20 }, (_, i) =>
+    ({ ...P(`sauvage-${i}`), name: `Sauvage ${i}` }));
+  assert.equal(order(list, { query: 'sauvage' }).length, 20);
+});
+
+/* ── B. Renderer: compact cap + counter + tracking ───────────── */
+
+test('render.js caps the mobile browse view and offers show more/less', () => {
+  const r = read('assets/js/catalog/render.js');
+  assert.match(r, /MOBILE_CATALOG_CAP\s*=\s*8/, 'cap constant is 8');
+  assert.ok(r.includes('Ver más perfumes'), 'expand label present');
+  assert.ok(r.includes('Mostrar menos'), 'collapse label present');
+  assert.ok(r.includes('products-grid--capped'), 'cap class toggled');
+  assert.match(r, /Mostrando \$\{shown\} de \$\{total\} perfumes/, 'counter present');
+});
+
+test('render.js disables the cap whenever a filter/search is active', () => {
+  const r = read('assets/js/catalog/render.js');
+  assert.ok(r.includes('SearchBar.hasActiveFilters'), 'cap is gated on active filters');
+});
+
+test('render.js emits catalog_expanded / catalog_collapsed', () => {
+  const r = read('assets/js/catalog/render.js');
+  assert.ok(r.includes('Tracker.catalogExpanded'), 'expand tracked');
+  assert.ok(r.includes('Tracker.catalogCollapsed'), 'collapse tracked');
+});
+
+test('tracker exposes the catalog expand/collapse events + methods', () => {
+  const t = read('assets/js/tracking/tracker.js');
+  assert.ok(t.includes("CATALOG_EXPANDED:      'catalog_expanded'"), 'expanded event');
+  assert.ok(t.includes("CATALOG_COLLAPSED:     'catalog_collapsed'"), 'collapsed event');
+  assert.ok(/catalogExpanded\(total, visibleBefore\)/.test(t), 'expanded method');
+  assert.ok(/catalogCollapsed\(total\)/.test(t), 'collapsed method');
+});
+
+test('SearchBar exposes hasActiveFilters() reusing its private check', () => {
+  const s = read('assets/js/ui/searchbar.js');
+  assert.ok(/hasActiveFilters\(\)\s*\{[\s\S]*?_hasActiveFilters\(\)/.test(s),
+    'public hasActiveFilters delegates to existing logic');
+});
+
+/* ── C. CSS: cap is mobile-only, desktop unaffected ──────────── */
+
+test('CSS hides cards beyond the 8th on mobile and hides the control on desktop', () => {
+  const css = read('assets/css/components.css');
+  assert.ok(/\.products-grid--capped \.product-card:nth-child\(n \+ 9\)/.test(css),
+    'cards past the 8th hidden on mobile when capped');
+  assert.ok(/\.catalog-more\s*\{\s*display:\s*none;/.test(css),
+    '"Ver más" control hidden by default (desktop)');
+  assert.ok(css.includes('.catalog-more-btn'), 'show-more button styled');
+  assert.ok(css.includes('.catalog-more-count'), 'counter styled');
+});
+
+test('gender quick-chips stay visible (scrollable) on mobile instead of display:none', () => {
+  const css = read('assets/css/components.css');
+  const start = css.indexOf('.sf-row-gender {');
+  assert.ok(start > -1, 'gender row rule present');
+  /* the old "drawer handles mobile" display:none rule must be gone */
+  assert.ok(!/\.sf-row-gender \{ display: none; \}/.test(css),
+    'gender row no longer hidden on mobile');
+});
+
+/* ── D. Catalog still leads into the recommendation sections ──── */
+
+test('Assistant remains reachable right after the catalog', () => {
+  const html = read('index.html');
+  const catalog = html.indexOf('id="catalog"');
+  const assistant = html.indexOf('id="assistant"');
+  assert.ok(catalog > -1 && assistant > -1, 'both sections present');
+  assert.ok(catalog < assistant, 'assistant follows the catalog');
+});
