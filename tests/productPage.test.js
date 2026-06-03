@@ -112,16 +112,15 @@ test('modal "Ver detalles" CTA targets /perfume/{slug}', () => {
 
 /* ── Editorial UX redesign ──────────────────────────────────── */
 
-test('PDP order: editorial sections come BEFORE buy controls', () => {
+test('PDP order: fused sell/guide section comes BEFORE buy controls', () => {
   const html = buildProductPageHtml(sample);
-  /* Reorder spec: hero → why → summary → fit → intelligence → buy → related.
-     Buy must not be the first repeated thing the user sees. */
+  /* Simplified spec: hero → ¿Por qué te puede gustar? → pairs →
+     intelligence → buy → related. Buy is never the first thing repeated. */
   const i = needle => html.indexOf(needle);
   assert.ok(i('id="pdp-hero"') >= 0);
-  assert.ok(i('¿Por qué esta fragancia?') > i('id="pdp-hero"'));
-  assert.ok(i('Resumen del perfil') > i('¿Por qué esta fragancia?'));
-  assert.ok(i('id="pdp-fit"') > i('Resumen del perfil'));
-  assert.ok(i('id="pdp-buy"') > i('id="pdp-fit"'));
+  assert.ok(i('id="pdp-novice"') > i('id="pdp-hero"'));
+  assert.ok(i('id="pdp-tech"') > i('id="pdp-novice"'));
+  assert.ok(i('id="pdp-buy"') > i('id="pdp-tech"'));
   assert.ok(i('id="pdp-related"') > i('id="pdp-buy"'));
 });
 
@@ -129,31 +128,39 @@ test('PDP hero does NOT contain the variant selector (moved to buy section)', ()
   const html = buildProductPageHtml(sample);
   const heroSlice = html.slice(
     html.indexOf('id="pdp-hero"'),
-    html.indexOf('<!-- B. Why')
+    html.indexOf('id="pdp-novice"')
   );
   assert.ok(!heroSlice.includes('pdp-sizes'), 'hero should not show variant grid');
   assert.ok(!heroSlice.includes('pdp-btn-add'), 'hero should not show Add button');
   assert.ok(heroSlice.includes('pdp-jump-buy'), 'hero exposes a "Comprar" jump button');
-  assert.ok(heroSlice.includes('pdp-jump-fit'), 'hero exposes "¿Es para mí?" jump');
+  assert.ok(heroSlice.includes('pdp-hero-price'), 'hero shows a price-from line');
+  assert.ok(!heroSlice.includes('pdp-jump-fit'), 'fit quiz jump removed');
 });
 
-test('PDP renders the interactive fit quiz with 3 metadata-driven questions', () => {
+test('PDP no longer renders the interactive fit quiz', () => {
   const html = buildProductPageHtml(sample);
-  assert.ok(html.includes('id="pdp-fit"'));
-  assert.ok(html.includes('¿Buscas algo fresco?'));
-  assert.ok(html.includes('¿Lo quieres para diario?'));
-  assert.ok(html.includes('¿Quieres que llame atención?'));
-  assert.ok(html.includes('data-q="fresh"'));
-  assert.ok(html.includes('data-q="daily"'));
-  assert.ok(html.includes('data-q="standout"'));
+  assert.ok(!html.includes('id="pdp-fit"'), 'fit section removed');
+  assert.ok(!html.includes('¿Es para mí?'), 'fit heading removed');
+  assert.ok(!html.includes('data-q="fresh"'), 'no quiz questions');
 });
 
-test('PDP shows the compact profile summary card', () => {
+test('PDP no longer renders the standalone profile summary card', () => {
   const html = buildProductPageHtml(sample);
-  assert.ok(html.includes('Resumen del perfil'));
-  assert.ok(html.includes('Familia'));
-  assert.ok(html.includes('Vibra'));
-  assert.ok(html.includes('Ideal para'));
+  assert.ok(!html.includes('Resumen del perfil'), 'summary section removed');
+  assert.ok(!html.includes('pdp-summary-rows'), 'summary grid removed');
+});
+
+test('PDP fused section carries up to 2 why bullets next to the lead', () => {
+  const html = buildProductPageHtml(sample);
+  const novice = html.slice(
+    html.indexOf('id="pdp-novice"'),
+    html.indexOf('id="pdp-pairs"')
+  );
+  assert.ok(novice.includes('pdp-novice-lead'), 'lead present');
+  assert.ok(novice.includes('pdp-why-list'), 'why bullets folded into the section');
+  const bullets = (novice.match(/<li>/g) || []).length;
+  /* Best-for chips use pdp-bestfor-chip; counting plain <li> isolates why bullets. */
+  assert.ok(bullets <= 2, `why bullets capped at 2, got ${bullets}`);
 });
 
 test('PDP includes the sticky mini-buy CTA', () => {
@@ -181,37 +188,6 @@ test('score bars render text bands (Alta / Media / Fuerte) next to the bar', asy
   const summary = getScoreSummary(sample.fragrance);
   assert.equal(summary.length, 5);
   assert.ok(summary.every(s => typeof s.band === 'string' && s.band.length));
-});
-
-test('evaluateFitAnswers gives a positive verdict when product matches', async () => {
-  const { evaluateFitAnswers } = await import('../assets/js/ui/productPage.js');
-  /* Sauvage has projection 0.85, versatility 0.85, freshness 0.7 — should pass all three */
-  const verdict = evaluateFitAnswers(sample, { fresh: 'yes', daily: 'yes', standout: 'yes' });
-  assert.equal(verdict.tone, 'positive');
-  assert.equal(verdict.headline, 'Sí, este va contigo.');
-});
-
-test('evaluateFitAnswers gives a mixed verdict on partial matches', async () => {
-  const { evaluateFitAnswers } = await import('../assets/js/ui/productPage.js');
-  const sweetCandy = {
-    ...sample,
-    fragrance: {
-      ...sample.fragrance,
-      scent_family_normalized: 'gourmand',
-      mood_tags: ['playful', 'sensual'],
-      style_tags: ['bold'],
-      recommended_context_tags: ['night', 'date'],
-      scores: { freshness: 0.1, sweetness: 0.9, projection: 0.85, longevity: 0.85, versatility: 0.3 },
-    },
-  };
-  const verdict = evaluateFitAnswers(sweetCandy, { fresh: 'yes', daily: 'yes', standout: 'yes' });
-  assert.equal(verdict.tone, 'mixed');
-  assert.match(verdict.headline, /Coincide en 1 de 3/);
-});
-
-test('evaluateFitAnswers is defensive when fragrance is missing', async () => {
-  const { evaluateFitAnswers } = await import('../assets/js/ui/productPage.js');
-  assert.equal(evaluateFitAnswers({ ...sample, fragrance: null }, { fresh: 'yes' }), null);
 });
 
 test('PDP keeps cart Add + WhatsApp wired in the buy section', () => {
@@ -245,14 +221,16 @@ test('PDP never displays fragrance.aliases (search-only data)', () => {
 
 /* ── Novice-first guidance (sprint: easier PDP) ─────────────── */
 
-test('PDP renders novice-first guidance above the why/technical detail', () => {
+test('PDP renders the fused sell/guide section above the technical detail', () => {
   const html = buildProductPageHtml(sample);
-  assert.ok(html.includes('id="pdp-novice"'), 'novice section present');
-  assert.ok(html.includes('¿Por qué te puede gustar?'), 'novice heading');
+  assert.ok(html.includes('id="pdp-novice"'), 'fused section present');
+  assert.ok(html.includes('¿Por qué te puede gustar?'), 'section heading');
   assert.ok(html.includes('pdp-novice-lead'), 'plain-language lead');
+  assert.ok(html.includes('pdp-why-list'), 'why bullets folded in');
+  /* The old standalone "¿Por qué esta fragancia?" section is gone (merged). */
+  assert.ok(!html.includes('¿Por qué esta fragancia?'), 'standalone why section removed');
   const i = needle => html.indexOf(needle);
   assert.ok(i('id="pdp-novice"') > i('id="pdp-hero"'), 'after hero');
-  assert.ok(i('id="pdp-novice"') < i('¿Por qué esta fragancia?'), 'before why bullets');
   assert.ok(i('id="pdp-novice"') < i('id="pdp-tech"'), 'before technical profile');
 });
 
@@ -328,7 +306,7 @@ test('technical profile is rendered lower as an opt-in collapsible', () => {
   assert.ok(html.includes('<details'), 'uses <details> so it is secondary/opt-in');
   assert.ok(html.includes('Perfil Olfativo'), 'keeps olfactory profile inside');
   const i = needle => html.indexOf(needle);
-  assert.ok(i('id="pdp-tech"') > i('id="pdp-fit"'), 'tech below the fit quiz');
+  assert.ok(i('id="pdp-tech"') > i('id="pdp-novice"'), 'tech below the sell/guide section');
   assert.ok(i('id="pdp-tech"') < i('id="pdp-buy"'), 'tech above the buy section');
 });
 

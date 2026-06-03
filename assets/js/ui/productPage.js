@@ -3,18 +3,17 @@
    Editorial fragrance experience for /perfume/{slug}.
 
    Order (top → bottom):
-     A. Hero editorial (image + name + emotional sentence + chips,
-        NO buy controls — modal already handles "lo compro fast")
-     A2. ¿Por qué te puede gustar? (novice-first lead + "best for"
-        chips + "no es para ti si…" + optional returning-user copy)
-     B. ¿Por qué esta fragancia? (why bullets)
-     C. Profile summary card (Familia / Vibra / Ideal para / Clima
-        / Proyección · Duración text labels)
-     D. ¿Es para mí? (mini interactive verdict, metadata-only)
-     E/F. Perfil olfativo completo — collapsed <details>, secondary:
+     A. Hero editorial (image + name + emotional sentence + notes +
+        chips + optional "Muy solicitado" badge + price-from + a
+        single "Comprar" CTA — buy decision possible above the fold)
+     B. ¿Por qué te puede gustar? (ONE fused sell/guide section:
+        plain-language lead + up to 2 why bullets + "best for" chips
+        + a compact "no es para ti si…" line)
+     CB. Combina bien con (collection pairs, hydrated async)
+     C. Perfil olfativo completo — collapsed <details>, opt-in:
         ¿Cuándo usarlo? checklist + Perfil (score bars with bands)
-     G. Buy section (price + variants + Add + WhatsApp)
-     H. Si te gusta esto... (related)
+     D. Buy section (price + variants + Add + WhatsApp)
+     E. Si te gusta esto... (related)
    The top sells/guides; the technical detail is opt-in and lower.
    A sticky mini-buy CTA appears after the hero scrolls out and
    hides when the real buy section is in view.
@@ -36,12 +35,8 @@ import {
 import { getScarcityDisplay } from '../utils/scarcity.js?v=1.0.13';
 import { getGuidanceBadges } from '../utils/guidance.js?v=1.0.13';
 import { getRelatedProducts } from '../recommendations/upsells.js?v=1.0.14';
-import { buildWhyHtml } from './why.js?v=1.0.13';
-import {
-  buildFragranceProfileHtml,
-  getProfileSummary,
-  getScoreSummary,
-} from './fragranceProfile.js?v=1.0.1';
+import { getReasons } from '../recommendations/reasoning.js?v=1.0.13';
+import { buildFragranceProfileHtml } from './fragranceProfile.js?v=1.0.1';
 import {
   getNoviceLead,
   getBestForChips,
@@ -57,7 +52,7 @@ import {
   getCollectionPairs,
   getComplementReason,
 } from '../recommendations/crossSell.js?v=1.0.0';
-import { buildConfidenceHtml } from './pdpConfidence.js?v=1.0.0';
+import { getConfidenceBadge } from './pdpConfidence.js?v=1.0.0';
 import { showToast } from './toast.js';
 
 /* ── Public: build the page HTML ─────────────────────────────── */
@@ -91,6 +86,11 @@ export function buildProductPageHtml(product) {
     .map(g => `<span class="guidance-chip guidance-chip--${g.key}">${_escape(g.label)}</span>`)
     .join('');
 
+  const confBadge = getConfidenceBadge(product);
+  const confBadgeHtml = confBadge
+    ? `<span class="pdp-conf-badge pdp-conf-badge--${confBadge.key}">${_escape(confBadge.label)}</span>`
+    : '';
+
   return `
     <a href="/" class="pdp-back" aria-label="Volver al catálogo">
       <span aria-hidden="true">←</span> Volver
@@ -111,6 +111,7 @@ export function buildProductPageHtml(product) {
 
       <div class="pdp-hero-info">
         <p class="pdp-house">${_escape(product.house ?? '')}</p>
+        ${confBadgeHtml}
         <div class="pdp-title-row">
           <h1 class="pdp-name" id="pdp-name">${_escape(product.name)}</h1>
           ${concentrationHtml}
@@ -122,38 +123,26 @@ export function buildProductPageHtml(product) {
         ${guidanceHtml ? `<div class="pdp-guidance" aria-label="Recomendado para">${guidanceHtml}</div>` : ''}
 
         <div class="pdp-hero-actions">
-          <button class="btn-ghost pdp-jump-buy" type="button" data-jump="#pdp-buy">
-            Comprar ${defaultPrice !== null ? `· ${formatPrice(defaultPrice)}` : ''}
-          </button>
-          <button class="btn-ghost pdp-jump-fit" type="button" data-jump="#pdp-fit">
-            ¿Es para mí?
+          ${lowestPrice !== null
+            ? `<span class="pdp-hero-price">Desde <strong>${formatPrice(lowestPrice)}</strong></span>`
+            : ''}
+          <button class="pdp-jump-buy" type="button" data-jump="#pdp-buy">
+            Comprar
           </button>
         </div>
       </div>
     </section>
 
-    <!-- A2. Novice-first guide — sells/orients before the technical detail -->
-    ${_noviceBlock(product)}
+    <!-- B. ¿Por qué te puede gustar? — fused sell/guide section -->
+    ${_whyYouMightLikeBlock(product)}
 
     <!-- CB. Combina bien con (hydrated async by renderCollectionPairs) -->
     <section class="pdp-pairs" id="pdp-pairs" hidden aria-labelledby="pdp-pairs-h"></section>
 
-    <!-- B. Why -->
-    ${_whyEditorialBlock(product)}
-
-    <!-- C. Profile summary -->
-    ${_profileSummaryBlock(product)}
-
-    <!-- D. ¿Es para mí? interactive verdict -->
-    ${_fitQuizBlock(product)}
-
-    <!-- E. ¿Cuándo usarlo? + F. Perfil (score bars) — secondary, opt-in -->
+    <!-- C. ¿Cuándo usarlo? + Perfil (score bars) — secondary, opt-in -->
     ${_technicalBlock(product)}
 
-    <!-- G-pre. Confidence layer — reduces decision hesitation -->
-    ${buildConfidenceHtml(product)}
-
-    <!-- G. Buy section -->
+    <!-- D. Buy section -->
     <section class="pdp-buy" id="pdp-buy" aria-labelledby="pdp-buy-h">
       <h2 class="pdp-section-h" id="pdp-buy-h">Lo quiero</h2>
       <div class="pdp-buybar" aria-label="Compra rápida">
@@ -191,7 +180,7 @@ export function buildProductPageHtml(product) {
       </div>
     </section>
 
-    <!-- H. Related -->
+    <!-- E. Related -->
     <section class="pdp-related" id="pdp-related" hidden aria-labelledby="pdp-related-h">
       <h2 class="pdp-section-h" id="pdp-related-h">Si te gusta esto...</h2>
       <div class="pdp-related-row" id="pdp-related-row"></div>
@@ -263,9 +252,6 @@ export function hydrateProductPage(root, product, deps = {}) {
   /* Sticky CTA visibility — show after hero leaves viewport, hide while
      the real buy section is on screen so it never covers content. */
   _setupStickyCta(root);
-
-  /* "¿Es para mí?" interactive verdict */
-  _setupFitQuiz(root, product);
 
   /* Returning-user line — only if local taste signal already supports it.
      Built at hydrate time because it reads localStorage (not in SSR/tests). */
@@ -410,10 +396,24 @@ export function findProductBySlug(products, slug) {
 
 /* ── Editorial blocks ───────────────────────────────────────── */
 
-function _noviceBlock(product) {
+/* Single fused sell/guide section. Merges what used to be three
+   separate blocks (novice lead, "¿Por qué esta fragancia?" why bullets,
+   and "no es para ti si…") into one, with no repeated information:
+     · plain-language lead       (getNoviceLead)
+     · up to 2 why bullets       (getReasons — deterministic engine)
+     · "best for" chips          (getBestForChips)
+     · one compact negative line (getNegatives — first, most confident) */
+function _whyYouMightLikeBlock(product) {
   const lead = getNoviceLead(product);
   const chips = getBestForChips(product);
-  const negatives = getNegatives(product);
+  const reasons = getReasons(product, { limit: 2 });
+  const negative = getNegatives(product)[0] ?? null;
+
+  const reasonsHtml = reasons.length
+    ? `<ul class="why-list pdp-why-list">
+        ${reasons.map(r => `<li>${r}</li>`).join('')}
+      </ul>`
+    : '';
 
   const chipsHtml = chips.length
     ? `<ul class="pdp-bestfor" aria-label="Ideal para">
@@ -421,13 +421,8 @@ function _noviceBlock(product) {
       </ul>`
     : '';
 
-  const negativesHtml = negatives.length
-    ? `<div class="pdp-notfor" aria-label="Cuándo evitarlo">
-        <p class="pdp-notfor-h">No es para ti si…</p>
-        <ul class="pdp-notfor-list">
-          ${negatives.map(n => `<li>${_escape(n)}</li>`).join('')}
-        </ul>
-      </div>`
+  const negativeHtml = negative
+    ? `<p class="pdp-notfor-line">${_escape(negative)}</p>`
     : '';
 
   return `
@@ -435,8 +430,9 @@ function _noviceBlock(product) {
       <h2 class="pdp-section-h" id="pdp-novice-h">¿Por qué te puede gustar?</h2>
       <p class="pdp-novice-lead">${_escape(lead)}</p>
       <p class="pdp-returning" id="pdp-returning" hidden></p>
+      ${reasonsHtml}
       ${chipsHtml}
-      ${negativesHtml}
+      ${negativeHtml}
     </section>`;
 }
 
@@ -451,87 +447,6 @@ function _technicalBlock(product) {
       </summary>
       <div class="pdp-tech-body">${html}</div>
     </details>`;
-}
-
-function _whyEditorialBlock(product) {
-  const html = buildWhyHtml(product);
-  if (!html) return '';
-  return `<section class="pdp-why" aria-labelledby="pdp-why-h">
-    <h2 class="pdp-section-h" id="pdp-why-h">¿Por qué esta fragancia?</h2>
-    ${html}
-  </section>`;
-}
-
-function _profileSummaryBlock(product) {
-  const summary = getProfileSummary(product.fragrance);
-  if (!summary) return '';
-
-  const scores = getScoreSummary(product.fragrance);
-  const projection = scores.find(s => s.key === 'projection');
-  const longevity = scores.find(s => s.key === 'longevity');
-
-  const rows = [
-    summary.family ? _summaryRow('Familia', summary.family) : '',
-    summary.vibe.length ? _summaryRow('Vibra', summary.vibe.join(' · ')) : '',
-    summary.bestFor.length ? _summaryRow('Ideal para', summary.bestFor.join(' · ')) : '',
-    summary.climate ? _summaryRow('Clima', summary.climate) : '',
-    (projection || longevity)
-      ? _summaryRow(
-          'Carácter',
-          [
-            projection ? `Proyección ${projection.band.toLowerCase()}` : null,
-            longevity ? `duración ${longevity.band.toLowerCase()}` : null,
-          ].filter(Boolean).join(' · ')
-        )
-      : '',
-  ].filter(Boolean).join('');
-
-  if (!rows) return '';
-
-  return `
-    <section class="pdp-summary" aria-labelledby="pdp-summary-h">
-      <h2 class="pdp-section-h" id="pdp-summary-h">Resumen del perfil</h2>
-      <dl class="pdp-summary-rows">${rows}</dl>
-    </section>`;
-}
-
-function _summaryRow(label, value) {
-  return `
-    <div class="pdp-summary-row">
-      <dt>${_escape(label)}</dt>
-      <dd>${_escape(value)}</dd>
-    </div>`;
-}
-
-function _fitQuizBlock(product) {
-  const f = product.fragrance;
-  if (!f) return '';
-
-  /* Each question maps to a metadata-driven predicate evaluated at click
-     time by _setupFitQuiz. We render the questions; the verdict is empty
-     until the user answers at least one. */
-  const questions = [
-    { key: 'fresh',    text: '¿Buscas algo fresco?' },
-    { key: 'daily',    text: '¿Lo quieres para diario?' },
-    { key: 'standout', text: '¿Quieres que llame atención?' },
-  ];
-
-  return `
-    <section class="pdp-fit" id="pdp-fit" aria-labelledby="pdp-fit-h">
-      <h2 class="pdp-section-h" id="pdp-fit-h">¿Es para mí?</h2>
-      <p class="pdp-fit-intro">Contesta rápido y te decimos si encaja contigo.</p>
-      <ul class="pdp-fit-questions" role="list">
-        ${questions.map(q => `
-          <li class="pdp-fit-q" data-q="${q.key}">
-            <span class="pdp-fit-q-text">${_escape(q.text)}</span>
-            <span class="pdp-fit-q-actions" role="group" aria-label="${_escape(q.text)}">
-              <button class="pdp-fit-yes" type="button" data-answer="yes" aria-pressed="false">Sí</button>
-              <button class="pdp-fit-no" type="button" data-answer="no" aria-pressed="false">No</button>
-            </span>
-          </li>`).join('')}
-      </ul>
-      <p class="pdp-fit-verdict" id="pdp-fit-verdict" aria-live="polite"></p>
-    </section>`;
 }
 
 /* ── Interactivity helpers ──────────────────────────────────── */
@@ -559,111 +474,6 @@ function _setupStickyCta(root) {
     entries.forEach(e => { state.buyVisible = e.isIntersecting; });
     update();
   }, { threshold: 0.2 }).observe(buy);
-}
-
-export function evaluateFitAnswers(product, answers) {
-  /* Pure: given answers, return a verdict object. Exported so the test
-     suite can assert the metadata logic without touching the DOM. */
-  const f = product?.fragrance ?? null;
-  if (!f) return null;
-
-  const scores = Object.fromEntries(getScoreSummary(f).map(s => [s.key, s.pct]));
-  const moods = _normSet(f.mood_tags);
-  const styles = _normSet(f.style_tags);
-  const contexts = _normSet(f.recommended_context_tags);
-  const family = String(f.scent_family_normalized ?? '').toLowerCase();
-
-  const checks = {
-    fresh: () => (scores.freshness ?? 0) >= 55
-      || ['fresh', 'aquatic', 'acuatico', 'citrus', 'citrico'].some(k => family.includes(k))
-      || ['clean', 'fresh', 'cool'].some(k => moods.has(k)),
-    daily: () => (scores.versatility ?? 0) >= 55
-      || ['daily', 'daily-use', 'office', 'casual', 'work'].some(k => contexts.has(k))
-      || styles.has('minimal') || styles.has('versatile'),
-    standout: () => (scores.projection ?? 0) >= 60
-      || ['sensual', 'powerful', 'intense', 'mysterious', 'confident'].some(k => moods.has(k))
-      || styles.has('bold') || styles.has('luxurious')
-      || ['night', 'party', 'date', 'date-night'].some(k => contexts.has(k)),
-  };
-
-  let yesAsked = 0;
-  let matches = 0;
-  const detail = [];
-
-  Object.entries(answers).forEach(([key, answer]) => {
-    if (answer !== 'yes' && answer !== 'no') return;
-    const matchesProduct = checks[key]?.() ?? false;
-    if (answer === 'yes') {
-      yesAsked += 1;
-      if (matchesProduct) {
-        matches += 1;
-        detail.push(_fitPositiveLabel(key));
-      } else {
-        detail.push(_fitNegativeLabel(key));
-      }
-    } else if (matchesProduct) {
-      /* User said "no" but the product leans this way — soft warning. */
-      detail.push(_fitContraLabel(key));
-    }
-  });
-
-  if (yesAsked === 0 && detail.length === 0) return { tone: 'idle', headline: '', detail: '' };
-
-  let tone = 'mixed';
-  let headline = 'Tal vez te convenga revisar otras opciones.';
-  if (yesAsked > 0 && matches === yesAsked) {
-    tone = 'positive';
-    headline = 'Sí, este va contigo.';
-  } else if (yesAsked > 0 && matches === 0) {
-    tone = 'negative';
-    headline = 'Probablemente te conviene algo distinto.';
-  } else if (yesAsked > 0) {
-    tone = 'mixed';
-    headline = `Coincide en ${matches} de ${yesAsked} cosas que buscas.`;
-  }
-
-  return { tone, headline, detail: detail.join(' · ') };
-}
-
-function _setupFitQuiz(root, product) {
-  const section = root.querySelector('#pdp-fit');
-  const verdict = root.querySelector('#pdp-fit-verdict');
-  if (!section || !verdict) return;
-
-  const answers = { fresh: null, daily: null, standout: null };
-
-  section.querySelectorAll('.pdp-fit-q').forEach(li => {
-    const key = li.dataset.q;
-    li.querySelectorAll('button[data-answer]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const answer = btn.dataset.answer;
-        answers[key] = answers[key] === answer ? null : answer;
-
-        li.querySelectorAll('button[data-answer]').forEach(b => {
-          const isSelected = answers[key] === b.dataset.answer;
-          b.setAttribute('aria-pressed', String(isSelected));
-          b.classList.toggle('pdp-fit-btn--selected', isSelected);
-        });
-
-        const result = evaluateFitAnswers(product, answers);
-        _renderFitVerdict(verdict, result);
-      });
-    });
-  });
-}
-
-function _renderFitVerdict(el, result) {
-  if (!el) return;
-  if (!result || result.tone === 'idle') {
-    el.textContent = '';
-    el.removeAttribute('data-tone');
-    return;
-  }
-  el.dataset.tone = result.tone;
-  el.innerHTML = `
-    <strong class="pdp-fit-verdict-h">${_escape(result.headline)}</strong>
-    ${result.detail ? `<span class="pdp-fit-verdict-d">${_escape(result.detail)}</span>` : ''}
-  `;
 }
 
 /* ── Pure rendering helpers ─────────────────────────────────── */
@@ -774,30 +584,4 @@ function _escape(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
-}
-
-function _normSet(list) {
-  return new Set((Array.isArray(list) ? list : []).map(s => String(s ?? '').toLowerCase().trim()));
-}
-
-function _fitPositiveLabel(key) {
-  return ({
-    fresh:    'Tiene un alma fresca',
-    daily:    'Versátil para el día a día',
-    standout: 'Llama la atención',
-  })[key] ?? '';
-}
-function _fitNegativeLabel(key) {
-  return ({
-    fresh:    'no es lo más fresco del catálogo',
-    daily:    'es más para ocasiones puntuales',
-    standout: 'es más discreto que llamativo',
-  })[key] ?? '';
-}
-function _fitContraLabel(key) {
-  return ({
-    fresh:    'avisa: este sí tiende a fresco',
-    daily:    'avisa: este se siente cómodo a diario',
-    standout: 'avisa: este sí proyecta',
-  })[key] ?? '';
 }
