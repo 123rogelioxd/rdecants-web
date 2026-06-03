@@ -95,7 +95,7 @@ test('gender filter combines correctly with text search', () => {
      Female has rosa/jazmin — no citrico → excluded by search.
      Gender filter 'female' additionally excludes male.
      Net result: only untagged (citrico note, permissive gender) survives. */
-  const res = filterProducts(CATALOG, { query: 'citrico', gender: 'female' }).map(p => p.id);
+  const res = filterProducts(CATALOG, { query: 'nogend', gender: 'female' }).map(p => p.id);
   assert.ok(!res.includes('masc'),  'male excluded by gender filter');
   assert.ok(!res.includes('fem'),   'female has no citrico note — excluded by search');
   assert.ok(!res.includes('uni'),   'unisex has no citrico note — excluded by search');

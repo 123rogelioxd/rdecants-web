@@ -1,16 +1,16 @@
 /* =============================================================
-   RDECANTS Ã¢â‚¬â€ SEARCH ENGINE
+   RDECANTS — SEARCH ENGINE
    Pure filter + sort logic. Zero DOM, zero side effects.
 
    Exports:
-     filterProducts(products, state) Ã¢â€ â€™ filtered + sorted []
-     getUniqueHouses(products)       Ã¢â€ â€™ sorted string[]
+     filterProducts(products, state) → filtered + sorted []
+     getUniqueHouses(products)       → sorted string[]
      PRICE_RANGES / PRICE_LABELS / SORT_LABELS / MOOD_LABELS
    ============================================================= */
 
 import { getSafePrice, priceSortValue } from '../utils/prices.js';
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Mood rules Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+/* ── Mood rules ─────────────────────────────────────────────────
    All keywords are lowercase, diacritics stripped (see _norm).
    A product matches a mood if ANY note, badge, or text matches.   */
 const MOOD_MAP = {
@@ -46,19 +46,19 @@ const MOOD_MAP = {
   },
 };
 
-/* Badge score for "Trending" sort Ã¢â‚¬â€ higher = shown first */
+/* Badge score for "Trending" sort — higher = shown first */
 const BADGE_SCORE = {
-  'MÃƒÂS PEDIDO':       10,
+  'MÁS PEDIDO':       10,
   'TRENDING':          9,
   'BEST SELLER':       9,
   'ALTA DEMANDA':      8,
   'NUEVO':             7,
-  'CLÃƒÂSICO':           6,
+  'CLÁSICO':           6,
   'CLASSIC':           6,
   'ULTRA LUXURY':      5,
   'LIMITED':           5,
-  'ÃƒÅ¡LTIMAS':           4,
-  'ÃƒÅ¡LTIMAS UNIDADES':  4,
+  'ÚLTIMAS':           4,
+  'ÚLTIMAS UNIDADES':  4,
   'VERANO':            3,
   'SUMMER':            3,
   'FRESCO':            3,
@@ -68,7 +68,14 @@ const BADGE_SCORE = {
   'VALUE':             2,
 };
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Public constants Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
+const SEARCH_ALIASES = [
+  { terms: ['yves saint laurent', 'ysl', 'y edp', 'y'], match: ['yves saint laurent', 'ysl', ' y ', 'y edp'] },
+  { terms: ['bleu de chanel', 'bleu', 'bdc'], match: ['bleu de chanel', 'bleu', 'chanel'] },
+  { terms: ['jean paul gaultier', 'jpg', 'le male', 'gaultier'], match: ['jean paul gaultier', 'jpg', 'le male', 'gaultier'] },
+  { terms: ['acqua di gio', 'adg', 'aqua di gio'], match: ['acqua di gio', 'acqua', 'adg'] },
+];
+
+/* ── Public constants ──────────────────────────────────────────── */
 
 export const PRICE_RANGES = {
   accesible: [0,   149],
@@ -78,7 +85,7 @@ export const PRICE_RANGES = {
 
 export const PRICE_LABELS = {
   accesible: 'Hasta $150',
-  premium:   '$150 Ã¢â‚¬â€œ $250',
+  premium:   '$150 – $250',
   luxury:    '$250+',
 };
 
@@ -86,8 +93,8 @@ export const SORT_LABELS = {
   trending:     'Destacados',
   'price-asc':  'Menor precio',
   'price-desc': 'Mayor precio',
-  popular:      'MÃƒÂ¡s popular',
-  for_you:      'Para ti Ã¢Å“Â¦',
+  popular:      'Más popular',
+  for_you:      'Para ti ✦',
 };
 
 export const MOOD_LABELS = {
@@ -99,49 +106,48 @@ export const MOOD_LABELS = {
   lujo:     'Lujo',
 };
 
-/* Gender filter labels Ã¢â‚¬â€ values match _normalizeGender() output in catalog.js */
+/* Gender filter labels — values match _normalizeGender() output in catalog.js */
 export const GENDER_LABELS = {
   male:   'Hombre',
   female: 'Mujer',
   unisex: 'Unisex',
 };
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Main export Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* ── Main export ───────────────────────────────────────────────── */
 
 /**
- * @param {object[]} products  Ã¢â‚¬â€ full product array from CatalogProvider
- * @param {object}   state     Ã¢â‚¬â€ { query, mood, house, priceRange, sort }
+ * @param {object[]} products  — full product array from CatalogProvider
+ * @param {object}   state     — { query, mood, house, priceRange, sort }
  * @returns {object[]}  filtered + sorted subset
  */
 export function filterProducts(products, state) {
   let result = [...products];
-  const hasQuery = Boolean(state.query?.trim());
 
-  /* 1 - Commercial text search (name, brand/house, canonical/version, aliases) */
-  if (hasQuery) {
-    const q = _searchNorm(state.query);
-    result = _searchProducts(result, q);
+  /* 1 — Text search (name, house, notes, story, desc) */
+  if (state.query?.trim()) {
+    const q = _norm(state.query);
+    result = result.filter(p => _matchesSearch(p, q));
   }
 
-  /* 2 Ã¢â‚¬â€ Mood */
+  /* 2 — Mood */
   if (state.mood) {
     result = result.filter(p => _matchesMood(p, state.mood));
   }
 
-  /* 3 Ã¢â‚¬â€ House */
+  /* 3 — House */
   if (state.house) {
     result = result.filter(p => p.house === state.house);
   }
 
-    /* 4 Ã¢â‚¬â€ Gender preference
-     Rules: male/female Ã¢â€ â€™ include matching + unisex + untagged (null)
-            unisex      Ã¢â€ â€™ include only unisex (explicit category)
-            null/'all'  Ã¢â€ â€™ no filter                                    */
+    /* 4 — Gender preference
+     Rules: male/female → include matching + unisex + untagged (null)
+            unisex      → include only unisex (explicit category)
+            null/'all'  → no filter                                    */
   if (state.gender) {
     result = result.filter(p => _matchesGender(p.gender ?? null, state.gender));
   }
 
-  /* 5 Ã¢â‚¬â€ Price range (first valid product price) */
+  /* 5 — Price range (first valid product price) */
   if (state.priceRange && PRICE_RANGES[state.priceRange]) {
     const [min, max] = PRICE_RANGES[state.priceRange];
     result = result.filter(p => {
@@ -150,8 +156,8 @@ export function filterProducts(products, state) {
     });
   }
 
-  /* 5 Ã¢â‚¬â€ Sort */
-  return _sort(result, state.sort ?? 'trending', hasQuery);
+  /* 5 — Sort */
+  return _sort(result, state.sort ?? 'trending');
 }
 
 /**
@@ -161,12 +167,12 @@ export function getUniqueHouses(products) {
   return [...new Set(products.map(p => p.house).filter(Boolean))].sort();
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Internals Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* ── Internals ─────────────────────────────────────────────────── */
 
 /** Gender compatibility:
- *  - 'unisex' filter Ã¢â€ â€™ only explicit unisex products
- *  - 'male'/'female' Ã¢â€ â€™ matching gender + unisex wildcard + untagged (null)
- *  - null            Ã¢â€ â€™ no restriction (all products pass)              */
+ *  - 'unisex' filter → only explicit unisex products
+ *  - 'male'/'female' → matching gender + unisex wildcard + untagged (null)
+ *  - null            → no restriction (all products pass)              */
 function _matchesGender(productGender, filterGender) {
   if (!filterGender) return true;
   if (filterGender === 'unisex') return productGender === 'unisex';
@@ -180,7 +186,7 @@ function _norm(str) {
   return String(str ?? '')
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
+    .replace(/[̀-ͯ]/g, '');
 }
 
 function _matchesMood(product, mood) {
@@ -198,102 +204,114 @@ function _matchesMood(product, mood) {
   );
 }
 
-function _searchProducts(products, query) {
-  if (query.length < 2) return [];
-
-  return products
-    .map(product => ({ product, score: _searchScore(product, query) }))
-    .filter(entry => entry.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .map(entry => entry.product);
-}
-
-function _searchScore(product, query) {
-  const fields = _commercialSearchFields(product);
-  const aliasFields = _searchList([
-    ...(product.aliases ?? []),
-    ...(product.fragrance?.aliases ?? []),
-  ]);
-  const fuzzyFields = _searchList([
-    product.name,
-    product.house,
-    product.brand,
-    ...(product.aliases ?? []),
-    ...(product.fragrance?.aliases ?? []),
-  ]);
-  const allText = fields.join(' ');
-  const queryTokens = _tokens(query).filter(t => t.length > 1);
-
-  if (aliasFields.some(alias => alias === query)) return 1000;
-  if (aliasFields.some(alias => _strongAliasPartial(query, alias))) return 900;
-  if (fields.some(field => field === query)) return 800;
-  if (fields.some(field => _strongPartial(query, field))) return 700;
-
-  if (queryTokens.length > 1) {
-    const allTokensMatch = queryTokens.every(token =>
-      allText.includes(token) ||
-      fuzzyFields.some(field => _fuzzyTokenMatch(token, _tokens(field)))
-    );
-    return allTokensMatch ? 500 : 0;
+function _matchesSearch(product, query) {
+  /* Alias-strict path: when the query references a known fragrance alias
+     (ysl, bdc, jpg, "y edp", …), the result must belong to that alias
+     group. This prevents Spanish " y " inside descriptions/stories from
+     creating false positives for the YSL "y" alias. */
+  const aliasGroups = _matchingAliasGroups(query);
+  if (aliasGroups.length) {
+    return aliasGroups.some(group => _productInAliasGroup(product, group));
   }
 
-  if (allText.includes(query)) return 450;
-  return fuzzyFields.some(field => _fuzzyTokenMatch(query, _tokens(field))) ? 250 : 0;
+  /* Skip super-short queries from full-text fuzzy: a single letter (like
+     "y") would match almost everything via word boundaries. */
+  if (query.length < 2) return false;
+
+  const haystack = _searchText(product);
+  const identityText = _identityText(product);
+  const tokens = haystack.split(/\s+/).filter(Boolean);
+
+  /* Multi-token query: require every token to match identity or notes —
+     keeps "ysl tropical" honest while tolerating typos. */
+  const queryTokens = query.split(/\s+/).filter(t => t.length > 1);
+  if (queryTokens.length > 1) {
+    return queryTokens.every(part =>
+      identityText.includes(part) ||
+      _fuzzyTokenMatch(part, tokens)
+    );
+  }
+
+  return (
+    haystack.includes(query) ||
+    _fuzzyTokenMatch(query, tokens)
+  );
 }
 
-function _commercialSearchFields(product) {
+/** Alias groups whose terms appear in the query (whole-word for 1-char terms). */
+function _matchingAliasGroups(query) {
+  const queryTokens = new Set(query.split(/\s+/).filter(Boolean));
+  return SEARCH_ALIASES.filter(group => group.terms.some(term => {
+    const t = _norm(term);
+    if (!t) return false;
+    if (t.length === 1) return queryTokens.has(t);
+    return query === t || query.includes(t);
+  }));
+}
+
+/** A product belongs to an alias group iff its identity (name+house+brand+sku)
+    matches one of the group's identifying terms. */
+function _productInAliasGroup(product, group) {
+  const identity = _identityText(product);
+  return group.match.some(term => identity.includes(_norm(term)));
+}
+
+/** Identity-only text — used for alias group membership. Excludes story/desc
+    so Spanish connectives like " y " don't pollute alias matching. */
+function _identityText(product) {
   const f = product.fragrance ?? null;
-  return _searchList([
+  return _norm([
     product.name,
     product.house,
     product.brand,
-    product.canonical_name,
-    product.canonicalName,
-    product.version,
-    product.display_version,
-    product.concentration,
+    product.sku,
+    product.slug,
     f?.canonical_name,
-    ...(product.aliases ?? []),
     ...(f?.aliases ?? []),
-  ]);
+  ].filter(Boolean).join(' '));
 }
 
-function _searchList(values) {
-  return values.map(_searchNorm).filter(Boolean);
+function _searchText(product) {
+  const f = product.fragrance ?? null;
+  return _norm([
+    product.name,
+    product.house,
+    product.brand,
+    product.sku,
+    product.slug,
+    product.badge,
+    product.story,
+    product.desc,
+    product.category,
+    product.concentration,
+    ...(product.notes ?? []),
+    ..._productAliases(product),
+    f?.canonical_name,
+    f?.scent_family_normalized,
+    ...(f?.aliases ?? []),
+    ...(f?.mood_tags ?? []),
+    ...(f?.recommended_context_tags ?? []),
+    ...(f?.style_tags ?? []),
+    ...(f?.accords ?? []),
+  ].filter(Boolean).join(' '));
 }
 
-function _searchNorm(value) {
-  return String(value ?? '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[\u2019'`\u00b4]/g, '')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim()
-    .replace(/\s+/g, ' ');
-}
-
-function _tokens(value) {
-  return value.split(/\s+/).filter(Boolean);
-}
-
-function _strongPartial(query, field) {
-  if (!query || !field) return false;
-  return field.includes(query);
-}
-
-function _strongAliasPartial(query, alias) {
-  if (!query || !alias) return false;
-  if (alias.includes(query)) return true;
-  if (!query.includes(alias)) return false;
-  return alias.length >= 4 || alias.length / query.length >= 0.6;
+function _productAliases(product) {
+  const text = _norm(`${product.house ?? ''} ${product.name ?? ''}`);
+  const aliases = [];
+  SEARCH_ALIASES.forEach(group => {
+    if (group.match.some(term => text.includes(_norm(term)))) {
+      aliases.push(...group.terms, ...group.match);
+    }
+  });
+  return aliases;
 }
 
 function _fuzzyTokenMatch(queryToken, tokens) {
   if (queryToken.length <= 1) return tokens.includes(queryToken);
   return tokens.some(token =>
     token.includes(queryToken) ||
-    (token.length > 3 && queryToken.includes(token)) ||
+    queryToken.includes(token) ||
     _distanceWithin(queryToken, token, queryToken.length > 5 ? 2 : 1)
   );
 }
@@ -323,7 +341,7 @@ function _ref5ml(p) {
   return priceSortValue(p);
 }
 
-function _sort(products, sort, hasQuery = false) {
+function _sort(products, sort) {
   const arr = [...products];
   switch (sort) {
     case 'price-asc':
@@ -331,11 +349,10 @@ function _sort(products, sort, hasQuery = false) {
     case 'price-desc':
       return arr.sort((a, b) => priceSortValue(b, 'desc') - priceSortValue(a, 'desc'));
     case 'popular':
-      /* low stock Ã¢â€ â€™ high demand Ã¢â€ â€™ appears first */
+      /* low stock → high demand → appears first */
       return arr.sort((a, b) => (a.stock ?? 99) - (b.stock ?? 99));
     case 'trending':
     default:
-      if (hasQuery) return arr;
       return arr.sort((a, b) =>
         (BADGE_SCORE[b.badge] ?? 0) - (BADGE_SCORE[a.badge] ?? 0)
       );

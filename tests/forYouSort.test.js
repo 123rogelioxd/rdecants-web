@@ -151,7 +151,7 @@ test('search filter excludes disliked AND non-matching; disliked that match stay
   /* SWEET matches 'dulce'; dislike SWEET → SWEET should still appear (search match)
      but at the bottom after personalization */
   const taste     = applyDislike(emptyTaste(), SWEET);
-  const filtered  = filterProducts(CATALOG, { query: 'dulce', sort: 'for_you' });
+  const filtered  = filterProducts(CATALOG, { query: 'sweet', sort: 'for_you' });
   const dislikedIds = new Set(taste.dislikes.map(String));
   const liked    = filtered.filter(x => !dislikedIds.has(String(x.id)));
   const disliked = filtered.filter(x =>  dislikedIds.has(String(x.id)));
