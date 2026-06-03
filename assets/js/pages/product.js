@@ -13,6 +13,7 @@ import { CatalogProvider } from '../providers/catalog.js?v=2026.06.01.1';
 import { setupHeader } from '../ui/header.js';
 import { setupImageStates } from '../ui/images.js';
 import { Tracker } from '../tracking/tracker.js';
+import { installBackendTracking } from '../tracking/backend.js?v=1.0.0';
 import { AppState } from '../core/state.js';
 import {
   buildProductPageHtml,
@@ -41,6 +42,8 @@ window.toggleCart   = toggleCart;
 window.openCart     = openCart;
 window.closeCart    = closeCart;
 window.sendWhatsApp = sendWhatsApp;
+
+installBackendTracking(Tracker);
 
 /* ── Bootstrap ──────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', async () => {
@@ -77,7 +80,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   document.title = `${product.name} — ${product.house ?? 'RDecants'}`;
-  Tracker.productViewed(product);
+  Tracker.productPdpView(product);
   hydrateProductPage(root, product);
   renderCollectionPairs(root, product, products);
   renderRelated(root, product, products);

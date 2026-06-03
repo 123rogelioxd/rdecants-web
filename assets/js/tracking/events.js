@@ -13,25 +13,35 @@
 import { API_BASE } from '../api/config.js';
 
 const SESSION_KEY = 'rd_sid';
-const _isDev = window.location.hostname === 'localhost' ||
-               window.location.hostname === '127.0.0.1';
+const _isDev = globalThis.window?.location?.hostname === 'localhost' ||
+               globalThis.window?.location?.hostname === '127.0.0.1';
 
 /* ── Session ID — persisted across browser restarts ─────────── */
 function _sessionId() {
-  let id = localStorage.getItem(SESSION_KEY);
+  const storage = globalThis.localStorage;
+  let id = storage?.getItem?.(SESSION_KEY);
   if (!id) {
     id = `w_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    localStorage.setItem(SESSION_KEY, id);
+    storage?.setItem?.(SESSION_KEY, id);
   }
   return id;
 }
 
 /* ── Public API ──────────────────────────────────────────────── */
 export function trackEvent(eventName, payload = {}) {
+  const timestamp = new Date().toISOString();
+  const pageUrl = globalThis.window?.location?.href ?? '';
+  const path = globalThis.window?.location?.pathname ?? '/';
+
   const body = JSON.stringify({
+    event: eventName,
     event_name: eventName,
     session_id: _sessionId(),
-    source:     'web',
+    source: payload.source ?? 'web',
+    surface: payload.surface ?? payload.source ?? 'web',
+    url: pageUrl,
+    path,
+    timestamp,
     ...payload,
   });
 
@@ -44,6 +54,10 @@ export function trackEvent(eventName, payload = {}) {
     headers:   { 'Content-Type': 'application/json' },
     body,
     keepalive: true,
+  }).then(async res => {
+    if (!_isDev || res.ok) return;
+    const details = await res.text().catch(() => '');
+    console.warn('[RDecants] trackEvent rejected:', eventName, res.status, details);
   }).catch(err => {
     if (_isDev) console.warn('[RDecants] trackEvent failed:', eventName, err);
   });
