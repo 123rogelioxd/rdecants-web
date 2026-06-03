@@ -21,9 +21,11 @@ const product = (id, house, name, options = {}) => ({
 
 const catalog = [
   product('bdc', 'Chanel', 'Bleu de Chanel EDP', {
-    aliases: ['bdc', 'bleu de chanel', 'blue channel'],
-    canonical_name: 'Bleu de Chanel',
     concentration: 'EDP',
+    fragrance: {
+      canonical_name: 'Bleu de Chanel',
+      aliases: ['bdc', 'bleu de chanel', 'blue channel'],
+    },
   }),
   product('allure', 'Chanel', 'Allure Homme Sport', {
     aliases: ['allure sport'],
@@ -52,8 +54,22 @@ const catalog = [
     },
   }),
   product('issey', 'Issey Miyake', "L'Eau d'Issey Pour Homme", {
-    aliases: ['issey miyake leau dissey', "l'eau d'issey", 'leau dissey'],
-    canonical_name: "L'Eau d'Issey",
+    fragrance: {
+      canonical_name: "L'Eau d'Issey",
+      aliases: ['issey miyake leau dissey', "l'eau d'issey", 'leau dissey'],
+    },
+  }),
+  product('torino', 'Xerjoff', 'Torino 21', {
+    fragrance: {
+      canonical_name: 'Xerjoff Torino 21',
+      aliases: ['torino 21'],
+    },
+  }),
+  product('naxos', 'Xerjoff', 'Naxos', {
+    fragrance: {
+      canonical_name: 'Xerjoff Naxos',
+      aliases: ['naxos'],
+    },
   }),
 ];
 
@@ -85,11 +101,26 @@ test('"sauvage" does not return non-Sauvage Dior products or metadata matches', 
   assert.deepEqual(ids('sauvage'), ['sauvage']);
   assert.deepEqual(ids('ambroxan'), [], 'accords and notes are not searchable');
   assert.deepEqual(ids('confident'), [], 'mood tags are not searchable');
+  assert.deepEqual(ids('oficina'), [], 'recommendation tags and descriptions are not searchable');
+  assert.deepEqual(ids('azul fresco'), [], 'descriptions are not searchable');
 });
 
 test('search tolerates lightweight typos on commercial identity only', () => {
   assert.ok(ids('chanle').includes('bdc'));
   assert.ok(ids('leau diseey').includes('issey'));
+});
+
+test('search ignores tokens shorter than three characters', () => {
+  assert.deepEqual(ids('a'), []);
+  assert.deepEqual(ids('e'), []);
+  assert.deepEqual(ids('de'), []);
+});
+
+test('search keeps commercial partial matches', () => {
+  assert.deepEqual(ids('sauv'), ['sauvage']);
+  assert.deepEqual(ids('bleu'), ['bdc']);
+  assert.deepEqual(ids('torino'), ['torino']);
+  assert.deepEqual(ids('naxos'), ['naxos']);
 });
 
 test('search is defensive when fragrance is null/missing', () => {

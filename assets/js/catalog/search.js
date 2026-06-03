@@ -205,70 +205,64 @@ function _matchesMood(product, mood) {
 }
 
 function _matchesSearch(product, query) {
-  /* Alias-strict path: when the query references a known fragrance alias
-     (ysl, bdc, jpg, "y edp", …), the result must belong to that alias
-     group. This prevents Spanish " y " inside descriptions/stories from
-     creating false positives for the YSL "y" alias. */
+  /* Alias-strict path: when the query references a known commercial alias
+     (ysl, bdc, jpg, "y edp", ...), the result must belong to that alias
+     group. */
   const aliasGroups = _matchingAliasGroups(query);
   if (aliasGroups.length) {
     return aliasGroups.some(group => _productInAliasGroup(product, group));
   }
 
-  /* Skip super-short queries from full-text fuzzy: a single letter (like
-     "y") would match almost everything via word boundaries. */
-  if (query.length < 2) return false;
+  const queryTokens = _searchTokens(query);
+  if (!queryTokens.length) return false;
 
   const haystack = _searchText(product);
-  const identityText = _identityText(product);
-  const tokens = haystack.split(/\s+/).filter(Boolean);
+  const tokens = _searchTokens(haystack);
 
-  /* Multi-token query: require every token to match identity or notes —
-     keeps "ysl tropical" honest while tolerating typos. */
-  const queryTokens = query.split(/\s+/).filter(t => t.length > 1);
+  /* Multi-token query: require every meaningful token to match commercial
+     identity. Short glue words like "de" are ignored. */
   if (queryTokens.length > 1) {
     return queryTokens.every(part =>
-      identityText.includes(part) ||
+      haystack.includes(part) ||
       _fuzzyTokenMatch(part, tokens)
     );
   }
 
+  const [singleToken] = queryTokens;
   return (
-    haystack.includes(query) ||
-    _fuzzyTokenMatch(query, tokens)
+    haystack.includes(singleToken) ||
+    _fuzzyTokenMatch(singleToken, tokens)
   );
 }
 
-/** Alias groups whose terms appear in the query (whole-word for 1-char terms). */
+/** Alias groups whose meaningful terms appear in the query. */
 function _matchingAliasGroups(query) {
   const queryTokens = new Set(query.split(/\s+/).filter(Boolean));
-  return SEARCH_ALIASES.filter(group => group.terms.some(term => {
-    const t = _norm(term);
-    if (!t) return false;
-    if (t.length === 1) return queryTokens.has(t);
-    return query === t || query.includes(t);
-  }));
+  return SEARCH_ALIASES.map(group => ({
+    group,
+    matchedTerms: group.terms.filter(term => {
+      const t = _norm(term);
+      if (!t || t.length < 3) return false;
+      if (t.length === 1) return queryTokens.has(t);
+      return query === t || query.includes(t);
+    }),
+  })).filter(match => match.matchedTerms.length);
 }
 
-/** A product belongs to an alias group iff its identity (name+house+brand+sku)
-    matches one of the group's identifying terms. */
-function _productInAliasGroup(product, group) {
-  const identity = _identityText(product);
-  return group.match.some(term => identity.includes(_norm(term)));
+/** A product belongs to an alias group iff its commercial identity matches it. */
+function _productInAliasGroup(product, aliasMatch) {
+  const identity = _searchText(product);
+  return aliasMatch.matchedTerms.some(term => _aliasTermMatchesProduct(identity, _norm(term)));
 }
 
-/** Identity-only text — used for alias group membership. Excludes story/desc
-    so Spanish connectives like " y " don't pollute alias matching. */
-function _identityText(product) {
-  const f = product.fragrance ?? null;
-  return _norm([
-    product.name,
-    product.house,
-    product.brand,
-    product.sku,
-    product.slug,
-    f?.canonical_name,
-    ...(f?.aliases ?? []),
-  ].filter(Boolean).join(' '));
+function _aliasTermMatchesProduct(identity, term) {
+  if (!term || term.length < 3) return false;
+  if (identity.includes(term)) return true;
+  if (term === 'bdc') return identity.includes('bleu de chanel');
+  if (term === 'jpg') return identity.includes('jean paul gaultier');
+  if (term === 'ysl') return identity.includes('yves saint laurent');
+  if (term === 'adg') return identity.includes('acqua di gio');
+  return false;
 }
 
 function _searchText(product) {
@@ -277,41 +271,21 @@ function _searchText(product) {
     product.name,
     product.house,
     product.brand,
-    product.sku,
     product.slug,
-    product.badge,
-    product.story,
-    product.desc,
-    product.category,
     product.concentration,
-    ...(product.notes ?? []),
-    ..._productAliases(product),
     f?.canonical_name,
-    f?.scent_family_normalized,
     ...(f?.aliases ?? []),
-    ...(f?.mood_tags ?? []),
-    ...(f?.recommended_context_tags ?? []),
-    ...(f?.style_tags ?? []),
-    ...(f?.accords ?? []),
   ].filter(Boolean).join(' '));
 }
 
-function _productAliases(product) {
-  const text = _norm(`${product.house ?? ''} ${product.name ?? ''}`);
-  const aliases = [];
-  SEARCH_ALIASES.forEach(group => {
-    if (group.match.some(term => text.includes(_norm(term)))) {
-      aliases.push(...group.terms, ...group.match);
-    }
-  });
-  return aliases;
+function _searchTokens(text) {
+  return _norm(text).split(/\s+/).filter(token => token.length >= 3);
 }
 
 function _fuzzyTokenMatch(queryToken, tokens) {
-  if (queryToken.length <= 1) return tokens.includes(queryToken);
+  if (queryToken.length < 3) return false;
   return tokens.some(token =>
     token.includes(queryToken) ||
-    queryToken.includes(token) ||
     _distanceWithin(queryToken, token, queryToken.length > 5 ? 2 : 1)
   );
 }
