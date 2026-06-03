@@ -276,50 +276,23 @@ async function _buildOrderItem(item) {
 
 export function buildWhatsAppMessage(items, total, data, folio = '') {
   const lines = [
-    'Bienvenido a RDECANTS, tu pedido es:',
+    'Hola 👋',
     '',
+    items.length === 1 ? 'Me interesa este decant:' : 'Me interesan estos decants:',
   ];
 
-  if (folio) {
-    lines.push(`Folio: ${folio}`);
-  } else {
-    lines.push('Folio: Por confirmar');
-  }
+  items.forEach(item => {
+    lines.push(`• ${_whatsAppItemLine(item)}`);
+  });
 
-  lines.push(`Nombre: ${data.name}`);
-
-  const isSingleUnit = items.length === 1 && (Number(items[0]?.qty) || 1) === 1;
-
-  if (isSingleUnit) {
-    const item = items[0];
-    lines.push(
-      `Producto: ${item.name}`,
-      `Casa: ${item.house || 'Por confirmar'}`,
-      `Presentación: ${_presentationText(item)}`,
-      `Solo a: ${formatPrice(item.price, 'Por confirmar')}`,
-    );
-  } else {
-    lines.push('');
-    items.forEach((item, index) => {
-      lines.push(
-        `${index + 1}. ${item.name}`,
-        `Casa: ${item.house || 'Por confirmar'}`,
-        `Presentación: ${_presentationText(item)}`,
-        `Solo a: ${formatPrice(item.price, 'Por confirmar')}`,
-        `Cantidad: ${Number(item.qty) || 1}`,
-      );
-
-      if (index < items.length - 1) lines.push('');
-    });
-
-    lines.push('', `Total: ${formatPrice(total, 'Por confirmar')}`);
-  }
+  lines.push('', `Total: ${formatPrice(total, 'Por confirmar')}`);
+  lines.push('', `Mi nombre es ${data.name}.`);
 
   if (data.notes) {
     lines.push('', 'Notas:', data.notes);
   }
 
-  lines.push('', 'Hola, quiero finalizar mi pedido.');
+  lines.push('', 'Quedo pendiente de disponibilidad y detalles de compra.');
 
   return lines.join('\n');
 }
@@ -508,6 +481,38 @@ function _validVariantId(value) {
 function _selectedVariantStock(variant) {
   const stock = Number(variant?.stock);
   return Number.isFinite(stock) && stock > 0 ? stock : 0;
+}
+
+function _whatsAppItemLine(item) {
+  const qty = Number(item.qty) || 1;
+  const quantityText = qty > 1 ? ` — x${qty}` : '';
+  return `${_whatsAppProductName(item)} — ${_presentationText(item)} — ${_lineItemPrice(item.price)}${quantityText}`;
+}
+
+function _whatsAppProductName(item) {
+  const name = _humanizeProductText(item.name);
+  const house = _humanizeProductText(item.house);
+
+  if (!house || house === 'Pack') return name || 'Producto por confirmar';
+  if (!name) return house;
+  if (name.toLowerCase().includes(house.toLowerCase())) return name;
+  if (name.trim().split(/\s+/).length === 1) return `${house} ${name}`;
+
+  return name;
+}
+
+function _lineItemPrice(value) {
+  return formatPrice(value, 'Por confirmar').replace(/\s*MXN$/, '');
+}
+
+function _humanizeProductText(value) {
+  const text = String(value ?? '').trim().replace(/\s+/g, ' ');
+  if (!text) return '';
+  if (text !== text.toUpperCase()) return text;
+
+  return text
+    .toLowerCase()
+    .replace(/(^|\s)(\S)/g, (_, prefix, letter) => `${prefix}${letter.toUpperCase()}`);
 }
 
 function _presentationText(item) {
