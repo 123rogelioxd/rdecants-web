@@ -17,8 +17,13 @@ import {
   PRICE_LABELS,
   SORT_LABELS,
   MOOD_LABELS,
+  GENDER_LABELS,
 } from '../catalog/search.js?v=1.0.3';
-import { Tracker } from '../tracking/tracker.js';
+import { Tracker }   from '../tracking/tracker.js';
+import {
+  Personalization,
+  personalizeProducts,
+} from '../recommendations/personalization.js?v=1.0.13';
 
 /* ── State ──────────────────────────────────────────────────── */
 const _DEFAULT = {
@@ -27,14 +32,21 @@ const _DEFAULT = {
   house:      '',
   priceRange: null,
   sort:       'trending',
+  gender:     null,
 };
 
-let _state           = { ..._DEFAULT };
-let _allProducts     = [];
-let _onFilter        = null;
-let _debounceTimer   = null;
-let _lastResultCount = 0;
+let _state            = { ..._DEFAULT };
+let _allProducts      = [];
+let _onFilter         = null;
+let _debounceTimer    = null;
+let _lastResultCount  = 0;
 let _lastTrackedQuery = '';
+/* Query typed in the header before the catalog finishes loading.
+   Applied on the next SearchBar.init() call.                     */
+let _pendingQuery        = null;
+/* Prevent firing personalized_catalog_viewed more than once per
+   activation of the "for_you" sort mode.                        */
+let _personalizationTracked = false;
 
 /* ── DOM refs ────────────────────────────────────────────────── */
 let _bar           = null;
@@ -54,14 +66,28 @@ export const SearchBar = {
 
     _allProducts = allProducts;
     _onFilter    = onFilter;
-    _state       = { ..._DEFAULT };
+
+    /* Carry over any query the user typed before the catalog loaded */
+    const queued  = _pendingQuery;
+    _pendingQuery = null;
+    _state        = { ..._DEFAULT };
+    if (queued) _state.query = queued;
 
     _buildBar();
     _buildDrawer();
     _injectBar();
     _bindBarEvents();
     _bindDrawerEvents();
-    _run();          /* initial render: apply trending sort */
+
+    /* Sync the bar input so the buffered query is visible */
+    if (queued) {
+      const input = _bar?.querySelector('#sf-input');
+      const xBtn  = _bar?.querySelector('#sf-x');
+      if (input) input.value = queued;
+      if (xBtn)  xBtn.hidden = false;
+    }
+
+    _run();          /* initial render; uses _state.query if set */
   },
 
   clearAll() {
@@ -78,7 +104,11 @@ export const SearchBar = {
   },
 
   applyQuery(query) {
-    if (!_onFilter) return;
+    if (!_onFilter) {
+      /* SearchBar not ready yet — buffer query for init() */
+      _pendingQuery = query || null;
+      return;
+    }
     _state.query = query || '';
     const input = _bar?.querySelector('#sf-input');
     const xBtn  = _bar?.querySelector('#sf-x');
@@ -89,6 +119,13 @@ export const SearchBar = {
 
   getState() {
     return { ..._state };
+  },
+
+  applySort(sort) {
+    if (!_onFilter) return;
+    _state.sort = sort || 'trending';
+    _syncBarFromState();
+    _run();
   },
 };
 
@@ -131,6 +168,9 @@ function _buildBar() {
   _bar.innerHTML = `
     <!-- Active mood explorer banner (visible only when a mood is set) -->
     <div class="sf-exploring" id="sf-exploring" hidden aria-live="polite"></div>
+
+    <!-- "Para ti" personalization banner (visible when for_you sort is active) -->
+    <div class="sf-for-you" id="sf-for-you" hidden aria-live="polite"></div>
 
     <!-- Row 1: search input + controls -->
     <div class="sf-row sf-row-top">
@@ -199,6 +239,19 @@ function _buildBar() {
       </div>
     </div>
 
+    <!-- Row 1b: gender preference pills (desktop only — mobile uses drawer) -->
+    <div class="sf-row sf-row-gender">
+      <span class="sf-gender-label" aria-hidden="true">Para:</span>
+      <div class="sf-genders" role="group" aria-label="Filtrar por género">
+        <button class="sf-gender-btn ${!_state.gender ? 'sf-gender-btn--on' : ''}"
+          data-gender="" aria-pressed="${!_state.gender}">Todos</button>
+        ${Object.entries(GENDER_LABELS).map(([key, label]) =>
+          `<button class="sf-gender-btn ${_state.gender === key ? 'sf-gender-btn--on' : ''}"
+            data-gender="${key}" aria-pressed="${_state.gender === key}">${label}</button>`
+        ).join('')}
+      </div>
+    </div>
+
     <!-- Row 2: mood pills (desktop) + mobile filter button -->
     <div class="sf-row sf-row-moods">
 
@@ -243,6 +296,16 @@ function _bindBarEvents() {
     _run();
   });
 
+  _bar.querySelectorAll('.sf-gender-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const g = btn.dataset.gender;
+      _state.gender = (g === '' || _state.gender === g) ? null : g;
+      _syncGender(_bar);
+      _run();
+      if (_state.gender) Tracker.genderFilterApplied(_state.gender, 'catalog');
+    });
+  });
+
   _bar.querySelectorAll('.sf-mood').forEach(btn => {
     btn.addEventListener('click', () => {
       const m = btn.dataset.mood;
@@ -268,7 +331,8 @@ function _bindBarEvents() {
   _bar.querySelector('#sf-sort')?.addEventListener('change', e => {
     _state.sort = e.target.value;
     _run();
-    Tracker.filterApplied('sort', _state.sort, _lastResultCount);
+    if (_state.sort === 'for_you') Tracker.forYouSortApplied('user');
+    else Tracker.filterApplied('sort', _state.sort, _lastResultCount);
   });
 
   _bar.querySelector('#sf-clear')?.addEventListener('click', _clearAll);
@@ -306,6 +370,13 @@ function _buildDrawer() {
   const pricePills = Object.entries(PRICE_LABELS).map(([k, v])  => _dp('price', k, v)).join('');
   const sortPills  = Object.entries(SORT_LABELS).map(([k, v])   => _dp('sort',  k, v)).join('');
 
+  const genderPills = [
+    `<button class="sf-dp" data-t="gender" data-v="" aria-label="Filtrar todos">Todos</button>`,
+    ...Object.entries(GENDER_LABELS).map(([k, v]) =>
+      `<button class="sf-dp" data-t="gender" data-v="${k}" aria-label="Filtrar ${v}">${v}</button>`
+    ),
+  ].join('');
+
   _drawer.innerHTML = `
     <div class="sf-drawer-handle" aria-hidden="true"></div>
 
@@ -315,6 +386,11 @@ function _buildDrawer() {
     </div>
 
     <div class="sf-drawer-body">
+
+      <section class="sf-drawer-sec">
+        <p class="sf-drawer-label">Para quién</p>
+        <div class="sf-dp-group">${genderPills}</div>
+      </section>
 
       <section class="sf-drawer-sec">
         <p class="sf-drawer-label">Mood</p>
@@ -364,10 +440,14 @@ function _bindDrawerEvents() {
     btn.addEventListener('click', () => {
       const { t, v } = btn.dataset;
 
+      if (t === 'gender') _state.gender    = (v === '' || _state.gender === v) ? null : v;
       if (t === 'mood')  _state.mood       = _state.mood === v        ? null : v;
       if (t === 'house') _state.house      = _state.house === v       ? ''   : v;
       if (t === 'price') _state.priceRange = _state.priceRange === v  ? null : v;
-      if (t === 'sort')  _state.sort       = v;   /* sort: no toggle */
+      if (t === 'sort') {
+        _state.sort = v;
+        if (v === 'for_you') Tracker.forYouSortApplied('user');
+      }
 
       _syncDrawer();
       _syncBarFromState();
@@ -431,14 +511,89 @@ function _handleDrawerKey(e) {
    ══════════════════════════════════════════════════════════════ */
 
 function _run() {
-  const result = filterProducts(_allProducts, _state);
+  /* 1. Pure filter: query, mood, house, price, gender, sort base */
+  const filtered = filterProducts(_allProducts, _state);
+
+  /* 2. Personalization pass — only when "Para ti" sort is active.
+     Disliked products sink to the bottom; non-disliked are re-ranked
+     by taste affinity. Falls back to filtered order when no taste signal. */
+  const result = _state.sort === 'for_you'
+    ? _applyPersonalization(filtered)
+    : filtered;
+
   _lastResultCount = result.length;
   _onFilter?.(result);
   _updateCount(result.length);
   _updateClear();
   _updateBadge();
   _updateExploring(result.length);
+  _updateForYouBanner(result.length);
   _trackSearchQuery(result.length);
+}
+
+/* Post-process a filtered list through the taste signal.
+   Returns the same list in original order when no signal exists. */
+function _applyPersonalization(products) {
+  if (!Personalization.hasSignal()) return products;   /* fallback: trending order */
+
+  const taste      = Personalization.getTaste();
+  const dislikedIds = new Set((taste.dislikes ?? []).map(String));
+
+  const liked    = products.filter(p => !dislikedIds.has(String(p.id)));
+  const disliked = products.filter(p =>  dislikedIds.has(String(p.id)));
+
+  /* personalizeProducts re-ranks liked pool by affinity;
+     disliked are appended at the bottom — not hidden. */
+  return [...personalizeProducts(liked, taste), ...disliked];
+}
+
+/* Render "Para ti" banner and track first personalized view */
+function _updateForYouBanner(count = 0) {
+  const banner = _bar?.querySelector('#sf-for-you');
+  if (!banner) return;
+
+  if (_state.sort !== 'for_you') {
+    banner.hidden      = true;
+    banner.innerHTML   = '';
+    _personalizationTracked = false;  /* reset for next activation */
+    return;
+  }
+
+  const taste    = Personalization.getTaste();
+  const hasSignal = Personalization.hasSignal();
+  const likeCount = (taste.likes ?? []).length;
+
+  /* Emit personalized_catalog_viewed once per "Para ti" session */
+  if (!_personalizationTracked) {
+    _personalizationTracked = true;
+    Tracker.personalizedCatalogViewed(
+      likeCount,
+      (taste.dislikes ?? []).length,
+    );
+  }
+
+  banner.hidden = false;
+
+  if (!hasSignal) {
+    banner.innerHTML = `
+      <span class="sf-fy-kicker">✦ Para ti</span>
+      <span class="sf-fy-label">Completa el Taste Builder para personalizar el catálogo</span>
+      <button type="button" class="sf-fy-clear" aria-label="Ver destacados">Ver destacados ×</button>`;
+  } else {
+    const noun = likeCount === 1 ? '1 fragancia evaluada' : `${likeCount} fragancias evaluadas`;
+    banner.innerHTML = `
+      <span class="sf-fy-kicker">✦ Para ti</span>
+      <span class="sf-fy-label">Ordenado por tus preferencias</span>
+      <span class="sf-fy-count">${noun}</span>
+      <button type="button" class="sf-fy-clear" aria-label="Volver a destacados">Ver destacados ×</button>`;
+  }
+
+  banner.querySelector('.sf-fy-clear')
+    ?.addEventListener('click', () => {
+      _state.sort = 'trending';
+      _syncBarFromState();
+      _run();
+    });
 }
 
 function _trackSearchQuery(count) {
@@ -503,17 +658,28 @@ function _syncDrawer() {
   _drawer.querySelectorAll('.sf-dp').forEach(btn => {
     const { t, v } = btn.dataset;
     let on = false;
-    if (t === 'mood')  on = _state.mood       === v;
-    if (t === 'house') on = _state.house      === v;
-    if (t === 'price') on = _state.priceRange === v;
-    if (t === 'sort')  on = _state.sort       === v;
+    if (t === 'gender') on = v === '' ? !_state.gender : _state.gender === v;
+    if (t === 'mood')   on = _state.mood       === v;
+    if (t === 'house')  on = _state.house      === v;
+    if (t === 'price')  on = _state.priceRange === v;
+    if (t === 'sort')   on = _state.sort       === v;
     btn.classList.toggle('sf-dp--on', on);
   });
 }
 
-/** Push _state into bar's select elements + mood pills */
+/** Toggle .sf-gender-btn--on on all gender buttons in a container */
+function _syncGender(container) {
+  container.querySelectorAll('.sf-gender-btn').forEach(btn => {
+    const on = btn.dataset.gender === '' ? !_state.gender : btn.dataset.gender === _state.gender;
+    btn.classList.toggle('sf-gender-btn--on', on);
+    btn.setAttribute('aria-pressed', String(on));
+  });
+}
+
+/** Push _state into bar's select elements + mood + gender pills */
 function _syncBarFromState() {
   if (!_bar) return;
+  _syncGender(_bar);
   _syncMoods(_bar);
   const h = _bar.querySelector('#sf-house');
   const p = _bar.querySelector('#sf-price');
@@ -553,7 +719,8 @@ function _hasActiveFilters() {
     _state.query ||
     _state.mood  ||
     _state.house ||
-    _state.priceRange
+    _state.priceRange ||
+    _state.gender
   );
 }
 
@@ -562,13 +729,15 @@ function _activeFilterCount() {
     (_state.query      ? 1 : 0) +
     (_state.mood       ? 1 : 0) +
     (_state.house      ? 1 : 0) +
-    (_state.priceRange ? 1 : 0)
+    (_state.priceRange ? 1 : 0) +
+    (_state.gender     ? 1 : 0)
   );
 }
 
 function _clearAll() {
   const hadFilters = _hasActiveFilters();
-  _state = { ..._DEFAULT };
+  _state        = { ..._DEFAULT };
+  _pendingQuery = null;
   _lastTrackedQuery = '';
   if (!_bar) return;
   const input = _bar.querySelector('#sf-input');

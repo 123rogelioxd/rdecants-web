@@ -94,6 +94,7 @@ export const SORT_LABELS = {
   'price-asc':  'Menor precio',
   'price-desc': 'Mayor precio',
   popular:      'Más popular',
+  for_you:      'Para ti ✦',
 };
 
 export const MOOD_LABELS = {
@@ -103,6 +104,13 @@ export const MOOD_LABELS = {
   fiesta:   'Fiesta',
   diario:   'Diario',
   lujo:     'Lujo',
+};
+
+/* Gender filter labels — values match _normalizeGender() output in catalog.js */
+export const GENDER_LABELS = {
+  male:   'Hombre',
+  female: 'Mujer',
+  unisex: 'Unisex',
 };
 
 /* ── Main export ───────────────────────────────────────────────── */
@@ -131,7 +139,15 @@ export function filterProducts(products, state) {
     result = result.filter(p => p.house === state.house);
   }
 
-    /* 4 — Price range (first valid product price) */
+    /* 4 — Gender preference
+     Rules: male/female → include matching + unisex + untagged (null)
+            unisex      → include only unisex (explicit category)
+            null/'all'  → no filter                                    */
+  if (state.gender) {
+    result = result.filter(p => _matchesGender(p.gender ?? null, state.gender));
+  }
+
+  /* 5 — Price range (first valid product price) */
   if (state.priceRange && PRICE_RANGES[state.priceRange]) {
     const [min, max] = PRICE_RANGES[state.priceRange];
     result = result.filter(p => {
@@ -152,6 +168,18 @@ export function getUniqueHouses(products) {
 }
 
 /* ── Internals ─────────────────────────────────────────────────── */
+
+/** Gender compatibility:
+ *  - 'unisex' filter → only explicit unisex products
+ *  - 'male'/'female' → matching gender + unisex wildcard + untagged (null)
+ *  - null            → no restriction (all products pass)              */
+function _matchesGender(productGender, filterGender) {
+  if (!filterGender) return true;
+  if (filterGender === 'unisex') return productGender === 'unisex';
+  if (productGender === null)    return true;           /* untagged: permissive */
+  if (productGender === 'unisex') return true;          /* unisex: wildcard */
+  return productGender === filterGender;
+}
 
 /** Lowercase + strip diacritics for fuzzy matching */
 function _norm(str) {

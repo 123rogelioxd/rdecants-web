@@ -4399,6 +4399,68 @@
   .sf-exploring-clear { order: 2; margin-left: auto; }
 }
 
+/* ── "Para ti" personalization banner ───────────────────────── */
+.sf-for-you {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 14px;
+  border: 1px solid rgba(201, 169, 110, 0.3);
+  background: rgba(201, 169, 110, 0.06);
+  border-radius: var(--radius-sm, 8px);
+  font-size: 12px;
+  color: var(--accent);
+  flex-wrap: wrap;
+}
+
+.sf-fy-kicker {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.sf-fy-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--white);
+  letter-spacing: 0.01em;
+}
+
+.sf-fy-count {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.04em;
+}
+
+.sf-fy-clear {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  color: rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.sf-fy-clear:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: var(--white);
+}
+
+@media (max-width: 480px) {
+  .sf-for-you { flex-wrap: wrap; }
+  .sf-fy-count { flex-basis: 100%; order: 3; }
+  .sf-fy-clear { order: 2; margin-left: auto; }
+}
+
 /* ── Row layouts ─────────────────────────────────────────────── */
 .sf-row {
   display: flex;
@@ -4413,6 +4475,57 @@
 
 .sf-row-moods {
   justify-content: space-between;
+}
+
+/* ── Gender preference pills ─────────────────────────────────── */
+.sf-row-gender {
+  padding-bottom: 2px;
+  gap: 8px;
+}
+
+.sf-gender-label {
+  font-family: var(--font-sans);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.sf-genders {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.sf-gender-btn {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.5);
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 999px;
+  padding: 4px 13px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  white-space: nowrap;
+}
+
+.sf-gender-btn:hover {
+  color: var(--white);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.sf-gender-btn--on {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(201, 169, 110, 0.08);
+}
+
+@media (max-width: 768px) {
+  .sf-row-gender { display: none; }  /* drawer handles mobile */
 }
 
 /* ── Search input ────────────────────────────────────────────── */

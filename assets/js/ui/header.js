@@ -5,7 +5,6 @@
    ============================================================= */
 
 import { SearchBar } from './searchbar.js';
-import { Tracker }   from '../tracking/tracker.js';
 
 export function setupHeader() {
   const header = document.querySelector('.header');
@@ -30,22 +29,16 @@ function _setupHeaderSearch() {
 
   if (!wrap || !input) return;
 
-  /* Live search — debounced via SearchBar.applyQuery */
+  /* Live search — debounced via SearchBar.applyQuery.
+     Tracking is handled inside SearchBar._run() to avoid double-counting. */
   let _timer = null;
   input.addEventListener('input', () => {
     const q = input.value;
     xBtn.hidden = !q;
     clearTimeout(_timer);
     _timer = setTimeout(() => {
-      SearchBar.applyQuery(q);
+      SearchBar.applyQuery(q);   /* buffers query if catalog not ready yet */
       if (q.length >= 1) _scrollToCatalog();
-      /* Track header-sourced searches (SearchBar tracks catalog-sourced ones) */
-      if (q.length >= 2) {
-        const count = SearchBar.getState().query === q
-          ? document.querySelectorAll('#products-grid .product-card').length
-          : 0;
-        Tracker.searchPerformed(q, count, 'header');
-      }
     }, 280);
   });
 
@@ -99,7 +92,10 @@ function _scrollToCatalog() {
   const catalog = document.getElementById('catalog');
   if (!catalog) return;
   const rect = catalog.getBoundingClientRect();
-  if (rect.top > window.innerHeight * 0.5 || rect.bottom < 0) {
+  /* Scroll only when the catalog grid is entirely out of the visible viewport.
+     If any part is already on-screen, don't disrupt the user's scroll position. */
+  const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+  if (!isVisible) {
     catalog.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }

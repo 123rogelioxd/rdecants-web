@@ -20,9 +20,11 @@ import { getReasons, getMatchTier } from './reasoning.js?v=1.0.13';
 import { isSellable, getOperationalScore, getAovSignal } from './scoring.js?v=1.0.13';
 import { getDefaultVariant, getOrderableVariants } from '../utils/prices.js?v=1.0.13';
 
-const MIN_RESULTS = 2;
-const MAX_RESULTS = 4;
-const LEVEL_BOOST = 2;
+const MIN_RESULTS    = 2;
+const MAX_RESULTS    = 4;
+const LEVEL_BOOST    = 2;
+const GENDER_BOOST   = 3;   /* exact match or unisex wildcard */
+const GENDER_PENALTY = -2;  /* explicit mismatch — soft discourage, not hard block */
 
 /* Question config consumed by the UI. */
 export const ASSISTANT_QUESTIONS = [
@@ -53,6 +55,16 @@ export const ASSISTANT_QUESTIONS = [
       { value: 'mid', label: '$150–$250' },
       { value: 'high', label: '$250+' },
       { value: 'any', label: 'Sin límite' },
+    ],
+  },
+  {
+    id: 'gender',
+    label: '¿Para quién es?',
+    options: [
+      { value: 'any',    label: 'Me da igual' },  /* first = default */
+      { value: 'male',   label: 'Hombre' },
+      { value: 'female', label: 'Mujer' },
+      { value: 'unisex', label: 'Unisex' },
     ],
   },
 ];
@@ -133,8 +145,21 @@ function _matchScore(product, signals, answers) {
   score += occasionScore;
 
   score += _levelAdjust(product, signals, answers.level);
+  score += _genderScore(product, answers.gender);
 
   return score;
+}
+
+/* Gender preference — soft signal (boost + mild penalty, no hard exclusion).
+   Unisex products are always compatible with any explicit preference.
+   Products without gender metadata (null) are treated as neutral.           */
+function _genderScore(product, genderPref) {
+  if (!genderPref || genderPref === 'any') return 0;
+  const g = product.gender ?? null;
+  if (g === null)      return 0;             /* untagged: no signal either way */
+  if (g === 'unisex')  return GENDER_BOOST;  /* unisex: wildcard — always compatible */
+  if (g === genderPref) return GENDER_BOOST; /* exact match */
+  return GENDER_PENALTY;                     /* explicit mismatch: gently discourage */
 }
 
 /* Beginners lean toward versatile / featured picks; enthusiasts

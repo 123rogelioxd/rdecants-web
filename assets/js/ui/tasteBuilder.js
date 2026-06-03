@@ -208,7 +208,11 @@ function _showDone(stage) {
     </div>`;
 
   stage.querySelector('.tb-done-cta')?.addEventListener('click', () => {
-    document.getElementById('recommendation-rails')?.scrollIntoView({ behavior: 'smooth' });
+    /* Track the click, activate "Para ti" sort, then scroll to catalog. */
+    const taste = Personalization.getTaste();
+    Tracker.tasteBuilderRecommendationsClicked((taste.likes ?? []).length);
+    window.__rd?.ui?.applyForYouSort?.('taste_builder');
+    window.__rd?.ui?.scrollToCatalog?.();
   });
 
   stage.querySelector('.tb-reset-link')?.addEventListener('click', () => {

@@ -144,6 +144,9 @@ function _mapProduct(p) {
     desc: p.desc ?? p.description ?? p.descripcion ?? '',
     story: p.story ?? p.tagline ?? p.desc ?? p.description ?? p.descripcion ?? 'Fragancia original en decant premium.',
     concentration: _displayConcentration(p.concentration ?? p.concentracion ?? p.display_concentration),
+    gender: _normalizeGender(
+      p.gender_profile ?? p.perfil_genero ?? p.genero_orientado ?? p.gender ?? p.genero ?? null
+    ),
     notes,
     image: _productImage(p),
     stock: variants.length ? Math.max(...variants.map(v => v.availability)) : _safeStock(p.stock),
@@ -237,6 +240,16 @@ function _displayConcentration(value) {
   };
 
   return labels[normalized.toUpperCase()] ?? normalized;
+}
+
+/* Normalize gender from any API field name to 'male' | 'female' | 'unisex' | null */
+function _normalizeGender(raw) {
+  const v = String(raw ?? '').toLowerCase().trim();
+  if (!v) return null;
+  if (['male', 'masculino', 'hombre', 'm', 'men', 'man'].includes(v)) return 'male';
+  if (['female', 'femenino', 'mujer', 'f', 'women', 'woman'].includes(v)) return 'female';
+  if (['unisex', 'mixto', 'neutro', 'unisex/mixed', 'both'].includes(v)) return 'unisex';
+  return null;
 }
 
 function _variantId(raw = {}) {

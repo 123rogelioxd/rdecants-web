@@ -21,11 +21,15 @@ const catalog = [freshOffice, sweetNight, intenseOud, soldOut];
 
 const ids = (list) => list.map(r => r.product.id);
 
-test('exposes three guided questions', () => {
-  assert.equal(ASSISTANT_QUESTIONS.length, 3);
+test('exposes four guided questions including gender', () => {
+  assert.equal(ASSISTANT_QUESTIONS.length, 4);
   for (const q of ASSISTANT_QUESTIONS) {
     assert.ok(q.id && q.label && Array.isArray(q.options) && q.options.length >= 2);
   }
+  const genderQ = ASSISTANT_QUESTIONS.find(q => q.id === 'gender');
+  assert.ok(genderQ, 'has a gender question');
+  assert.equal(genderQ.options.length, 4, 'gender question has 4 options');
+  assert.equal(genderQ.options[0].value, 'any', 'defaults to "Me da igual"');
 });
 
 test('returns nothing for an empty catalog', () => {

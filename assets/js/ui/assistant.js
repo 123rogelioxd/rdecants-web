@@ -83,6 +83,10 @@ function _bindForm() {
       btn.classList.toggle('asst-chip--active', active);
       btn.setAttribute('aria-pressed', String(active));
     });
+    /* Track explicit gender preference selection (not "me da igual") */
+    if (q === 'gender' && value !== 'any') {
+      Tracker.recommendationGenderSelected(value, 'assistant');
+    }
   });
 
   form.addEventListener('submit', async (event) => {

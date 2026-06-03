@@ -51,6 +51,10 @@ window.__rd = {
     openProductModal,
     closeProductModal,
     clearSearch:  () => SearchBar.clearAll(),
+    applyForYouSort: (source = 'user') => {
+      Tracker.forYouSortApplied(source);
+      SearchBar.applySort('for_you');
+    },
     applyMoodFilter: (mood) => {
       SearchBar.applyMood(mood);
       /* Scroll the search bar into view so the user can see the active
@@ -127,7 +131,12 @@ const _API_EVENT_MAP = {
   section_viewed:              'section_viewed',
   filter_applied:              'filter_applied',
   filter_cleared:              'filter_cleared',
-  scroll_depth_reached:        'scroll_depth_reached',
+  scroll_depth_reached:            'scroll_depth_reached',
+  gender_filter_applied:           'gender_filter_applied',
+  recommendation_gender_selected:  'recommendation_gender_selected',
+  personalized_catalog_viewed:           'personalized_catalog_viewed',
+  for_you_sort_applied:                  'for_you_sort_applied',
+  taste_builder_recommendations_clicked: 'taste_builder_recommendations_clicked',
 };
 
 Tracker.use((event, payload) => {
@@ -313,6 +322,20 @@ function _toApiPayload(event, payload) {
       return {};
     case 'scroll_depth_reached':
       return { metadata: { pct: payload.pct } };
+    case 'gender_filter_applied':
+    case 'recommendation_gender_selected':
+      return {
+        metadata: {
+          gender_preference: payload.gender_preference,
+          source:            payload.source,
+        },
+      };
+    case 'personalized_catalog_viewed':
+      return { metadata: { likes: payload.likes, dislikes: payload.dislikes } };
+    case 'for_you_sort_applied':
+      return { metadata: { source: payload.source } };
+    case 'taste_builder_recommendations_clicked':
+      return { metadata: { likes_count: payload.likes_count } };
     default:
       return {};
   }

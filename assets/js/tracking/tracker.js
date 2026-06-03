@@ -59,6 +59,13 @@ export const EVENTS = {
   FILTER_APPLIED:        'filter_applied',
   FILTER_CLEARED:        'filter_cleared',
   SCROLL_DEPTH_REACHED:  'scroll_depth_reached',
+
+  GENDER_FILTER_APPLIED:          'gender_filter_applied',
+  RECOMMENDATION_GENDER_SELECTED: 'recommendation_gender_selected',
+
+  PERSONALIZED_CATALOG_VIEWED:           'personalized_catalog_viewed',
+  FOR_YOU_SORT_APPLIED:                  'for_you_sort_applied',
+  TASTE_BUILDER_RECOMMENDATIONS_CLICKED: 'taste_builder_recommendations_clicked',
 };
 
 const _providers = [];
@@ -401,6 +408,30 @@ export const Tracker = {
   scrollDepthReached(pct) {
     this.emit(EVENTS.SCROLL_DEPTH_REACHED, { pct });
   },
+
+  genderFilterApplied(genderPreference, source = 'catalog') {
+    this.emit(EVENTS.GENDER_FILTER_APPLIED,
+      { gender_preference: genderPreference, source },
+      { allowDuplicate: true });
+  },
+
+  recommendationGenderSelected(genderPreference, source = 'assistant') {
+    this.emit(EVENTS.RECOMMENDATION_GENDER_SELECTED,
+      { gender_preference: genderPreference, source },
+      { allowDuplicate: true });
+  },
+
+  personalizedCatalogViewed(likes = 0, dislikes = 0) {
+    this.emit(EVENTS.PERSONALIZED_CATALOG_VIEWED, { likes, dislikes });
+  },
+
+  forYouSortApplied(source = 'user') {
+    this.emit(EVENTS.FOR_YOU_SORT_APPLIED, { source }, { allowDuplicate: true });
+  },
+
+  tasteBuilderRecommendationsClicked(likesCount = 0) {
+    this.emit(EVENTS.TASTE_BUILDER_RECOMMENDATIONS_CLICKED, { likes_count: likesCount });
+  },
 };
 
 function _productPayload(product = {}) {
@@ -476,5 +507,6 @@ function _viewLike(event) {
     event === EVENTS.DISCOVERY_SET_VIEWED ||
     event === EVENTS.CART_MINIMUM_PROMPT_SHOWN ||
     event === EVENTS.CATALOG_REACHED ||
-    event === EVENTS.SECTION_VIEWED;
+    event === EVENTS.SECTION_VIEWED ||
+    event === EVENTS.PERSONALIZED_CATALOG_VIEWED;
 }
