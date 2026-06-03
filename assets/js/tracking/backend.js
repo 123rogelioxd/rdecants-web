@@ -19,8 +19,6 @@ export const API_EVENT_MAP = {
   recommendation_viewed:     'recommendation_viewed',
   recommendation_clicked:    'recommendation_clicked',
   recommendation_added:      'recommendation_added',
-  bundle_viewed:             'bundle_viewed',
-  bundle_added:              'bundle_added',
   assistant_started:         'assistant_started',
   assistant_completed:       'assistant_completed',
   discovery_anchor_selected: 'discovery_anchor_selected',

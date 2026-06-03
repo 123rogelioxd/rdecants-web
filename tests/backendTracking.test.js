@@ -12,6 +12,24 @@ test('backend event map uses Laravel-accepted names for critical storefront even
   assert.equal(API_EVENT_MAP.checkout_whatsapp_clicked, 'whatsapp_checkout_clicked');
 });
 
+test('bundle events stay local until Laravel accepts a bundle event_name', () => {
+  assert.equal(API_EVENT_MAP.bundle_viewed, undefined);
+  assert.equal(API_EVENT_MAP.bundle_added, undefined);
+  assert.deepEqual(toApiPayload('bundle_viewed', {
+    bundleId: 'calor-tropical',
+    title: 'Calor tropical',
+    ids: ['a', 'b'],
+    total: 399,
+  }), {
+    metadata: {
+      bundle_id: 'calor-tropical',
+      title: 'Calor tropical',
+      ids: ['a', 'b'],
+      total: 399,
+    },
+  });
+});
+
 test('catalog_impression payload keeps catalog timing metadata', () => {
   assert.deepEqual(toApiPayload('catalog_reached', { ms_since_load: 321 }), {
     metadata: { ms_since_load: 321 },
