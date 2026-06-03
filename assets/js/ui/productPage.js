@@ -29,8 +29,10 @@ import {
   getDisplayVariant,
   getVariantForSize,
   getValidVariants,
+  getEntryVariant,
   formatPrice,
   getSizeLabel,
+  PRIMARY_SIZES,
 } from '../utils/prices.js?v=2026.06.03.2';
 import { getScarcityDisplay } from '../utils/scarcity.js?v=2026.06.03.2';
 import { getGuidanceBadges } from '../utils/guidance.js?v=2026.06.03.2';
@@ -63,9 +65,11 @@ export function buildProductPageHtml(product) {
   const defaultVariant = getDefaultVariant(product) || getDisplayVariant(product);
   const defaultSize = defaultVariant?.size ?? null;
   const defaultPrice = defaultVariant?.price ?? null;
-  const lowestPrice = variants.length
-    ? Math.min(...variants.map(v => v.price).filter(Number.isFinite))
-    : null;
+  /* Entry presentation for "Desde {size}ml" — always a selectable size
+     (3/5/10ml), never the 2ml cart-completer, so the price shown is one
+     the customer can actually buy. */
+  const entryVariant = getEntryVariant(product);
+  const lowestPrice = entryVariant?.price ?? null;
   const hasImage = product.image && product.image.trim() !== '';
 
   const scarcity = getScarcityDisplay(product);
@@ -123,11 +127,11 @@ export function buildProductPageHtml(product) {
         ${guidanceHtml ? `<div class="pdp-guidance" aria-label="Recomendado para">${guidanceHtml}</div>` : ''}
 
         <div class="pdp-hero-actions">
-          ${lowestPrice !== null
-            ? `<span class="pdp-hero-price">Desde <strong>${formatPrice(lowestPrice)}</strong></span>`
+          ${entryVariant
+            ? `<span class="pdp-hero-price">Desde ${entryVariant.size}ml · <strong>${formatPrice(entryVariant.price)}</strong></span>`
             : ''}
           <button class="pdp-jump-buy" type="button" data-jump="#pdp-buy">
-            Comprar
+            Elige presentación
           </button>
         </div>
       </div>
@@ -479,7 +483,7 @@ function _setupStickyCta(root) {
 /* ── Pure rendering helpers ─────────────────────────────────── */
 
 function _sizesHtml(variants, defaultSize) {
-  return [3, 5, 10]
+  return PRIMARY_SIZES
     .map(ml => {
       const variant = variants.find(v => v.size === ml);
       if (!variant) return '';

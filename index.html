@@ -35,12 +35,12 @@
     HTML itself is served no-cache so browsers always get
     the latest version string.
 
-  Current version: 2026.06.03.2 - update all ?v= values on deploy.
+  Current version: 2026.06.03.3 - update all ?v= values on deploy.
 -->
-<link rel="stylesheet" href="assets/css/tokens.css?v=2026.06.03.2">
-<link rel="stylesheet" href="assets/css/animations.css?v=2026.06.03.2">
-<link rel="stylesheet" href="assets/css/components.css?v=2026.06.03.2">
-<link rel="stylesheet" href="assets/css/styles.css?v=2026.06.03.2">
+<link rel="stylesheet" href="assets/css/tokens.css?v=2026.06.03.3">
+<link rel="stylesheet" href="assets/css/animations.css?v=2026.06.03.3">
+<link rel="stylesheet" href="assets/css/components.css?v=2026.06.03.3">
+<link rel="stylesheet" href="assets/css/styles.css?v=2026.06.03.3">
 </head>
 
 <body>
@@ -247,7 +247,10 @@
 <aside id="cart-drawer" class="cart-drawer" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Carrito de compras">
 
   <div class="cart-header">
-    <h2 class="cart-title">Tu Colección</h2>
+    <div class="cart-header-text">
+      <h2 class="cart-title">Tu carrito</h2>
+      <p class="cart-subtitle">Revisa tu pedido antes de enviarlo por WhatsApp.</p>
+    </div>
     <button class="cart-close" onclick="closeCart()" aria-label="Cerrar carrito">×</button>
   </div>
 
@@ -265,14 +268,14 @@
       <p class="checkout-momentum" id="checkout-momentum" aria-live="polite" hidden></p>
 
       <div class="checkout-grid">
-        <label class="checkout-control" for="checkout-name">
+        <label class="checkout-control checkout-control--primary" for="checkout-name">
           <span>Nombre para tu pedido *</span>
           <input class="checkout-field" id="checkout-name" type="text" autocomplete="name" placeholder="Ej. Roger Díaz" aria-required="true">
           <small class="checkout-helper">Usaremos este nombre para identificar tu pedido.</small>
         </label>
 
         <label class="checkout-control" for="checkout-phone">
-          <span>Telefono</span>
+          <span>Teléfono</span>
           <input class="checkout-field" id="checkout-phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="951...">
         </label>
       </div>
@@ -325,7 +328,7 @@
   ?v= must match the version in CSS links above.
   Update on every deploy: increment VERSION file + all ?v= strings.
 -->
-<script type="module" src="assets/js/app.js?v=2026.06.03.2"></script>
+<script type="module" src="assets/js/app.js?v=2026.06.03.3"></script>
 
 </body>
 </html>

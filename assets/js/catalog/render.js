@@ -70,7 +70,7 @@ export async function renderFeatured() {
         <button class="btn-primary"
           ${canAddFeatured ? `onclick="window.__rd.cart.add('${featured.id}', ${featuredVariant.size})"` : 'disabled aria-disabled="true"'}
           aria-label="${canAddFeatured ? `Agregar ${featured.name} ${featuredVariant.size}ml al carrito` : 'Precio por consultar'}">
-          ${canAddFeatured ? 'Agregar a mi colección' : 'Consultar precio'}
+          ${canAddFeatured ? 'Agregar a mi colecciÃ³n' : 'Consultar precio'}
         </button>
         <button class="btn-ghost" onclick="window.__rd.ui.scrollToCatalog()">
           Ver coleccion
@@ -102,8 +102,8 @@ export async function renderProducts() {
 
   if (!products?.length) {
     _productsContainer.innerHTML = _emptyState(
-      'Aún no hay perfumes publicados.',
-      'Cuando el catálogo tenga fragancias activas aparecerán aquí.',
+      'AÃºn no hay perfumes publicados.',
+      'Cuando el catÃ¡logo tenga fragancias activas aparecerÃ¡n aquÃ­.',
     );
     return;
   }
@@ -117,7 +117,7 @@ export async function renderProducts() {
     observeFadeUp();
   });
 
-  /* Measure time-to-catalog — fires once when catalog enters viewport */
+  /* Measure time-to-catalog â€” fires once when catalog enters viewport */
   const _catalogLoadTime = Date.now();
   const _catalogSection  = document.getElementById('catalog');
   if (_catalogSection && 'IntersectionObserver' in window) {

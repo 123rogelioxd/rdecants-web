@@ -86,7 +86,7 @@ async function _performCheckout(phoneNumber) {
 
   const minimum = getCartMomentum({ count: Cart.count(), total: Cart.total(), hasValidName: true }).minimum;
   if (!minimum.isComplete) {
-    const message = `Te faltan ${formatPrice(minimum.remaining)} para completar el pedido minimo.`;
+    const message = `Te faltan ${formatPrice(minimum.remaining)} para completar el pedido mínimo.`;
     _showMessage(message, 'error');
     showToast(message);
     _syncAvailability();

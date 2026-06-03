@@ -5,6 +5,13 @@
 
 const SIZE_ORDER = [3, 5, 10];
 
+/* Presentations offered as the primary, directly-buyable choice in the
+   storefront. Smaller sizes (e.g. 2ml) are intentionally excluded here:
+   they exist only as a cart "completer" to reach the order minimum, never
+   as the headline "Desde $X" entry price (which would be misleading since
+   they are not selectable in the size grid). */
+export const PRIMARY_SIZES = [3, 5, 10];
+
 export function isValidPrice(value) {
   const n = Number(value);
   return Number.isFinite(n) && n > 0;
@@ -38,6 +45,19 @@ export function getValidVariants(product) {
 
 export function hasValidPrice(product) {
   return getValidVariants(product).length > 0;
+}
+
+/* Valid variants limited to the primary, directly-buyable presentations
+   (see PRIMARY_SIZES). Kept sorted ascending by size. */
+export function getPrimaryVariants(product) {
+  return getValidVariants(product).filter(variant => PRIMARY_SIZES.includes(variant.size));
+}
+
+/* Smallest primary presentation with a valid price — the honest entry point
+   for "Desde {size}ml" display copy. Returns null when no primary variant
+   has a price. */
+export function getEntryVariant(product) {
+  return getPrimaryVariants(product)[0] ?? null;
 }
 
 export function getOrderableVariants(product) {

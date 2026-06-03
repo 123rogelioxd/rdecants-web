@@ -21,8 +21,10 @@ import { getDefaultVariant,
          getDisplayVariant,
          getVariantForSize,
          getValidVariants,
+         getEntryVariant,
          formatPrice,
-         getSizeLabel } from '../utils/prices.js?v=2026.06.03.2';
+         getSizeLabel,
+         PRIMARY_SIZES } from '../utils/prices.js?v=2026.06.03.2';
 import { getScarcityDisplay } from '../utils/scarcity.js?v=2026.06.03.2';
 import { getGuidanceBadges } from '../utils/guidance.js?v=2026.06.03.2';
 import { buildWhyHtml } from './why.js?v=2026.06.03.2';
@@ -111,9 +113,10 @@ function _render() {
   const activeVariant = variants.find(v => v.size === _selectedSize) || getDefaultVariant(p) || getDisplayVariant(p);
   _selectedSize = activeVariant?.size ?? null;
   const price = activeVariant?.price ?? null;
-  const lowestPrice = variants.length
-    ? Math.min(...variants.map(v => v.price).filter(Number.isFinite))
-    : null;
+  /* "Desde" copy must reference a presentation the customer can actually
+     select (3/5/10ml), never the 2ml cart-completer. */
+  const entryVariant = getEntryVariant(p);
+  const lowestPrice = entryVariant?.price ?? null;
   const hasImage = p.image && p.image.trim() !== '';
 
   const scarcity = getScarcityDisplay(p);
@@ -136,7 +139,7 @@ function _render() {
   const whyHtml = buildWhyHtml(p);
   const detailsHref = productPageUrl(p);
 
-  const sizesHtml = [3, 5, 10]
+  const sizesHtml = PRIMARY_SIZES
     .map(ml => {
       const variant = variants.find(v => v.size === ml);
       if (!variant) return '';
@@ -149,7 +152,7 @@ function _render() {
         aria-pressed="${ml === _selectedSize}"
         aria-label="${ml}ml - $${variant.price} MXN${disabled ? ' agotado' : ''}"
       >
-        <span class="pdm-size-ml">${ml}ml${ml === 5 ? '<span class="pdm-size-recommended"> · recomendado</span>' : ''}</span>
+        <span class="pdm-size-ml">${ml}ml${ml === 5 ? '<span class="pdm-size-recommended"> Â· recomendado</span>' : ''}</span>
         <span class="pdm-size-price">$${variant.price}</span>
         <span class="pdm-size-label">${disabled ? 'Agotado' : getSizeLabel(ml)}</span>
       </button>
@@ -193,12 +196,12 @@ function _render() {
           <h2 class="pdm-name" id="pdm-name">${p.name}</h2>
           ${concentrationHtml}
         </div>
-        <p class="pdm-decant-hint">Decant auténtico · prueba antes de comprar el frasco</p>
+        <p class="pdm-decant-hint">Decant autÃ©ntico Â· prueba antes de comprar el frasco</p>
 
         <a class="pdm-details-cta" href="${detailsHref}"
            aria-label="Ver detalles completos de ${p.name}">
           Ver detalles
-          <span aria-hidden="true">?</span>
+          <span aria-hidden="true">â†’</span>
         </a>
 
         ${p.story
@@ -224,9 +227,9 @@ function _render() {
 
       <div class="pdm-buybar" aria-label="Compra rapida">
         ${variants.length
-          ? '<div class="pdm-sizes-label">Elige presentación</div>'
+          ? '<div class="pdm-sizes-label">Elige presentaciÃ³n</div>'
           : '<div class="pdm-price-consult">Precio disponible por consulta personalizada.</div>'}
-        <div class="pdm-sizes" role="group" aria-label="Seleccionar presentación" ${variants.length ? '' : 'hidden'}>
+        <div class="pdm-sizes" role="group" aria-label="Seleccionar presentaciÃ³n" ${variants.length ? '' : 'hidden'}>
           ${sizesHtml}
         </div>
 
@@ -234,7 +237,7 @@ function _render() {
           <div class="pdm-price-row">
             <span class="pdm-price" id="pdm-price">${formatPrice(price, 'Consultar precio')}</span>
             <span class="pdm-price-unit">${_selectedSize ? `${_selectedSize}ml` : 'WhatsApp'}</span>
-            ${lowestPrice !== null ? `<p class="pdm-value-prop">Una botella completa cuesta miles — pruébalo desde ${formatPrice(lowestPrice)}.</p>` : ''}
+            ${lowestPrice !== null ? `<p class="pdm-value-prop">Una botella completa cuesta miles â€” pruÃ©balo desde ${formatPrice(lowestPrice)}.</p>` : ''}
           </div>
 
           <div class="pdm-actions">

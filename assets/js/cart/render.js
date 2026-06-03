@@ -32,7 +32,7 @@ export function renderCart() {
     container.innerHTML = `
       <div class="cart-empty">
         <div class="cart-empty-icon">R</div>
-        <h3 class="cart-empty-title">Tu colecci&oacute;n est&aacute; vac&iacute;a</h3>
+        <h3 class="cart-empty-title">Tu carrito est&aacute; vac&iacute;o</h3>
         <p class="cart-empty-desc">Agrega tus decants favoritos para armar tu pedido.</p>
         <button class="btn-continue cart-empty-cta" onclick="window.__rd.ui.scrollToCatalog()">
           Explorar cat&aacute;logo
@@ -151,7 +151,7 @@ async function _renderUpsells() {
 
   const sectionLabel = isCollection
     ? 'Completa tu colección'
-    : minimum.isComplete ? 'Tambien te puede gustar' : 'Decants faciles de sumar';
+    : minimum.isComplete ? 'También te puede gustar' : 'Completa tu pedido';
 
   slot.innerHTML = `
     ${!minimum.isComplete ? _minimumPrompt(minimum) : ''}
@@ -204,15 +204,15 @@ async function _renderUpsells() {
 
 function _minimumPrompt(minimum) {
   return `
-    <div class="cart-minimum" aria-label="Progreso del pedido minimo">
+    <div class="cart-minimum" aria-label="Progreso del pedido mínimo">
       <div class="cart-minimum-head">
-        <span>Tu pedido casi esta listo.</span>
+        <span>Tu pedido casi está listo.</span>
         <strong>${minimum.progress}%</strong>
       </div>
       <div class="cart-minimum-bar" aria-hidden="true">
         <span style="width:${minimum.progress}%"></span>
       </div>
-      <p>Te faltan ${formatPrice(minimum.remaining)} para completar el pedido minimo.</p>
+      <p class="cart-minimum-remaining">Te faltan <strong>${formatPrice(minimum.remaining)}</strong> para completar el pedido mínimo.</p>
     </div>`;
 }
 

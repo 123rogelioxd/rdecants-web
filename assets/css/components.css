@@ -2457,14 +2457,28 @@
 .cart-header {
   padding: 24px 24px 18px;
   border-bottom: 1px solid var(--border);
-  display: flex; justify-content: space-between; align-items: center;
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 14px;
   flex: 0 0 auto;
+}
+
+.cart-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
 
 .cart-title {
   font-family: var(--font-serif);
   font-size: 22px;
   font-weight: 300;
+}
+
+.cart-subtitle {
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .cart-close {
@@ -2745,6 +2759,20 @@
   gap: 10px;
 }
 
+/* Name is the only required field — give it its own full-width row and a
+   subtle accent so customers immediately see where to type their name. */
+.checkout-grid .checkout-control--primary {
+  grid-column: 1 / -1;
+  border: 1px solid rgba(201, 169, 110, 0.28);
+  background: rgba(201, 169, 110, 0.05);
+  border-radius: 12px;
+  padding: 11px 12px 0;
+}
+
+.checkout-control--primary > span {
+  color: var(--accent);
+}
+
 .checkout-control .checkout-field {
   margin-bottom: 12px;
 }
@@ -2945,6 +2973,31 @@
 .btn-continue:hover {
   border-color: var(--border-hl);
   color: var(--white);
+}
+
+/* Secondary checkout CTA — compact link-style so "Seguir comprando" never
+   competes with the primary WhatsApp button for vertical space. Scoped to
+   the action panel so the empty-state "Explorar catálogo" button keeps its
+   full pill treatment. */
+.cart-action-panel .btn-continue {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  width: auto;
+  margin: 2px auto 0;
+  padding: 8px 14px;
+  color: rgba(255, 255, 255, 0.5);
+  letter-spacing: 0.12em;
+  border: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(255, 255, 255, 0.2);
+}
+
+.cart-action-panel .btn-continue:hover {
+  color: var(--white);
+  text-decoration-color: var(--white);
 }
 
 /* ── WhatsApp float ──────────────────────────────────────────── */
@@ -3395,10 +3448,15 @@
   .cart-total-amount {
     font-size: 32px;
   }
-  .btn-whatsapp,
-  .btn-continue {
+  .btn-whatsapp {
     flex: 0 0 auto;
     min-height: 52px;
+  }
+  .cart-action-panel .btn-continue {
+    flex: 0 0 auto;
+    min-height: 0;
+    margin-top: 0;
+    padding: 6px 14px;
   }
   .checkout-grid { grid-template-columns: 1fr; }
   .checkout-field {

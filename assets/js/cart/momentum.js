@@ -34,9 +34,9 @@ export function getCartMomentum({ count = 0, total = 0, threshold = MIN_ORDER_TH
   if (!minimum.isComplete) {
     return {
       key: 'minimum',
-      message: `Te faltan $${minimum.remaining} para completar el pedido minimo.`,
-      title: 'Tu pedido casi esta listo.',
-      helper: 'Agrega un decant mas para completar el pedido.',
+      message: `Te faltan $${minimum.remaining} para completar el pedido mínimo.`,
+      title: 'Tu pedido casi está listo.',
+      helper: 'Agrega un decant más para completar el pedido.',
       minimum,
     };
   }
@@ -44,7 +44,7 @@ export function getCartMomentum({ count = 0, total = 0, threshold = MIN_ORDER_TH
   if (!hasValidName) {
     return {
       key: 'needs_name',
-      message: 'Tu pedido casi esta listo. Agrega tu nombre para confirmarlo.',
+      message: 'Tu pedido casi está listo. Agrega tu nombre para confirmarlo.',
       minimum,
     };
   }
