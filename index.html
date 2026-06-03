@@ -35,12 +35,12 @@
     HTML itself is served no-cache so browsers always get
     the latest version string.
 
-  Current version: 2026.06.01.1 - update all ?v= values on deploy.
+  Current version: 2026.06.03.1 - update all ?v= values on deploy.
 -->
-<link rel="stylesheet" href="assets/css/tokens.css?v=2026.06.01.1">
-<link rel="stylesheet" href="assets/css/animations.css?v=2026.06.01.1">
-<link rel="stylesheet" href="assets/css/components.css?v=2026.06.01.1">
-<link rel="stylesheet" href="assets/css/styles.css?v=2026.06.01.1">
+<link rel="stylesheet" href="assets/css/tokens.css?v=2026.06.03.1">
+<link rel="stylesheet" href="assets/css/animations.css?v=2026.06.03.1">
+<link rel="stylesheet" href="assets/css/components.css?v=2026.06.03.1">
+<link rel="stylesheet" href="assets/css/styles.css?v=2026.06.03.1">
 </head>
 
 <body>
@@ -58,7 +58,36 @@
     <span class="logo-text">R<span>D</span>ECANTS</span>
   </a>
 
+  <!-- Global search — desktop inline / mobile overlay -->
+  <div class="hs-wrap" id="hs-wrap" role="search" aria-label="Buscar fragancias">
+    <svg class="hs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+      <circle cx="11" cy="11" r="8"/>
+      <path d="m21 21-4.35-4.35"/>
+    </svg>
+    <input
+      id="hs-input"
+      class="hs-input"
+      type="search"
+      placeholder="Buscar fragancia, marca o nota…"
+      autocomplete="off"
+      spellcheck="false"
+      aria-label="Buscar fragancias"
+    >
+    <button class="hs-x" id="hs-x" aria-label="Limpiar búsqueda" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10" aria-hidden="true">
+        <path d="M18 6 6 18M6 6l12 12"/>
+      </svg>
+    </button>
+    <button class="hs-cancel" id="hs-cancel" aria-label="Cancelar búsqueda">Cancelar</button>
+  </div>
+
   <nav class="header-actions">
+    <button class="btn-hs-mobile" id="btn-hs-mobile" aria-label="Buscar fragancias">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="17" height="17" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"/>
+        <path d="m21 21-4.35-4.35"/>
+      </svg>
+    </button>
     <button class="btn-cart" onclick="toggleCart()" aria-label="Abrir carrito">
       <span class="cart-dot" id="cart-dot"></span>
       CARRITO (<span id="cart-count">0</span>)
@@ -88,11 +117,8 @@
     </p>
 
     <div class="hero-actions">
-      <button class="btn-primary" onclick="scrollToCatalog()" aria-label="Ver catalogo">
+      <button class="btn-primary" onclick="scrollToCatalog()" aria-label="Ver catálogo">
         Ver Catálogo
-      </button>
-      <button class="btn-ghost" onclick="document.getElementById('recommendation-rails').scrollIntoView({behavior:'smooth'})" aria-label="Descubrir por mood">
-        Descubrir mood
       </button>
     </div>
   </div>
@@ -128,6 +154,29 @@
       </div>
 
     </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- CATALOG — first commercial surface after hero -->
+<section class="section" id="catalog">
+  <div class="container">
+
+    <div class="section-header fade-up">
+      <div>
+        <p class="section-label">Colección 2026</p>
+        <h2 class="section-title">Firma<br>Colección</h2>
+      </div>
+      <p style="font-size:12px;color:var(--muted);max-width:220px;line-height:1.7;">
+        Cada fragancia, cuidadosamente seleccionada para hombres que entienden el poder de oler bien.
+      </p>
+    </div>
+
+    <div class="products-grid" id="products-grid">
+      <!-- Rendered by catalog/render.js -->
+    </div>
+
   </div>
 </section>
 
@@ -171,29 +220,6 @@
 <!-- SMART BUNDLES (dynamic kits from real metadata) -->
 <section class="section" id="smart-bundles" aria-label="Kits inteligentes" hidden>
   <!-- Rendered by ui/bundles.js -->
-</section>
-
-<div class="divider"></div>
-
-<!-- CATALOG -->
-<section class="section" id="catalog">
-  <div class="container">
-
-    <div class="section-header fade-up">
-      <div>
-        <p class="section-label">Colección 2026</p>
-        <h2 class="section-title">Firma<br>Colección</h2>
-      </div>
-      <p style="font-size:12px;color:var(--muted);max-width:220px;line-height:1.7;">
-        Cada fragancia, cuidadosamente seleccionada para hombres que entienden el poder de oler bien.
-      </p>
-    </div>
-
-    <div class="products-grid" id="products-grid">
-      <!-- Rendered by catalog/render.js -->
-    </div>
-
-  </div>
 </section>
 
 <!-- FOOTER -->
@@ -299,7 +325,7 @@
   ?v= must match the version in CSS links above.
   Update on every deploy: increment VERSION file + all ?v= strings.
 -->
-<script type="module" src="assets/js/app.js?v=2026.06.01.1"></script>
+<script type="module" src="assets/js/app.js?v=2026.06.03.1"></script>
 
 </body>
 </html>

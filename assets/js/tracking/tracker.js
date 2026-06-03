@@ -50,6 +50,15 @@ export const EVENTS = {
   PRODUCT_VIEW: 'product_view',
   PRODUCT_VIEWED: 'product_viewed',
   RECOMMENDATION_VIEW: 'recommendation_view',
+
+  SEARCH_PERFORMED:      'search_performed',
+  SEARCH_RESULT_CLICKED: 'search_result_clicked',
+  SEARCH_NO_RESULTS:     'search_no_results',
+  CATALOG_REACHED:       'catalog_reached',
+  SECTION_VIEWED:        'section_viewed',
+  FILTER_APPLIED:        'filter_applied',
+  FILTER_CLEARED:        'filter_cleared',
+  SCROLL_DEPTH_REACHED:  'scroll_depth_reached',
 };
 
 const _providers = [];
@@ -360,6 +369,38 @@ export const Tracker = {
       reason,
     });
   },
+
+  searchPerformed(query, resultsCount, source = 'catalog') {
+    this.emit(EVENTS.SEARCH_PERFORMED, { query, results_count: resultsCount, source }, { allowDuplicate: true });
+  },
+
+  searchNoResults(query, source = 'catalog') {
+    this.emit(EVENTS.SEARCH_NO_RESULTS, { query, source }, { allowDuplicate: true });
+  },
+
+  searchResultClicked(product, query, position) {
+    this.emit(EVENTS.SEARCH_RESULT_CLICKED, { ..._productPayload(product), query, position });
+  },
+
+  catalogReached(msSinceLoad) {
+    this.emit(EVENTS.CATALOG_REACHED, { ms_since_load: msSinceLoad }, { allowDuplicate: false });
+  },
+
+  sectionViewed(sectionId, positionIndex) {
+    this.emit(EVENTS.SECTION_VIEWED, { section_id: sectionId, position_index: positionIndex });
+  },
+
+  filterApplied(type, value, resultsCount) {
+    this.emit(EVENTS.FILTER_APPLIED, { type, value, results_count: resultsCount }, { allowDuplicate: true });
+  },
+
+  filterCleared() {
+    this.emit(EVENTS.FILTER_CLEARED, {}, { allowDuplicate: true });
+  },
+
+  scrollDepthReached(pct) {
+    this.emit(EVENTS.SCROLL_DEPTH_REACHED, { pct });
+  },
 };
 
 function _productPayload(product = {}) {
@@ -433,5 +474,7 @@ function _viewLike(event) {
     event === EVENTS.RECOMMENDATION_VIEWED ||
     event === EVENTS.BUNDLE_VIEWED ||
     event === EVENTS.DISCOVERY_SET_VIEWED ||
-    event === EVENTS.CART_MINIMUM_PROMPT_SHOWN;
+    event === EVENTS.CART_MINIMUM_PROMPT_SHOWN ||
+    event === EVENTS.CATALOG_REACHED ||
+    event === EVENTS.SECTION_VIEWED;
 }

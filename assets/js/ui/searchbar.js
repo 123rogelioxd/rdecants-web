@@ -18,6 +18,7 @@ import {
   SORT_LABELS,
   MOOD_LABELS,
 } from '../catalog/search.js?v=1.0.3';
+import { Tracker } from '../tracking/tracker.js';
 
 /* ── State ──────────────────────────────────────────────────── */
 const _DEFAULT = {
@@ -28,10 +29,12 @@ const _DEFAULT = {
   sort:       'trending',
 };
 
-let _state         = { ..._DEFAULT };
-let _allProducts   = [];
-let _onFilter      = null;
-let _debounceTimer = null;
+let _state           = { ..._DEFAULT };
+let _allProducts     = [];
+let _onFilter        = null;
+let _debounceTimer   = null;
+let _lastResultCount = 0;
+let _lastTrackedQuery = '';
 
 /* ── DOM refs ────────────────────────────────────────────────── */
 let _bar           = null;
@@ -72,6 +75,20 @@ export const SearchBar = {
     _syncBarFromState();
     _syncDrawer();
     _run();
+  },
+
+  applyQuery(query) {
+    if (!_onFilter) return;
+    _state.query = query || '';
+    const input = _bar?.querySelector('#sf-input');
+    const xBtn  = _bar?.querySelector('#sf-x');
+    if (input) input.value = _state.query;
+    if (xBtn)  xBtn.hidden = !_state.query;
+    _run();
+  },
+
+  getState() {
+    return { ..._state };
   },
 };
 
@@ -229,25 +246,29 @@ function _bindBarEvents() {
   _bar.querySelectorAll('.sf-mood').forEach(btn => {
     btn.addEventListener('click', () => {
       const m = btn.dataset.mood;
-      _state.mood = _state.mood === m ? null : m;   /* toggle */
+      _state.mood = _state.mood === m ? null : m;
       _syncMoods(_bar);
       _run();
+      if (_state.mood) Tracker.filterApplied('mood', _state.mood, _lastResultCount);
     });
   });
 
   _bar.querySelector('#sf-house')?.addEventListener('change', e => {
     _state.house = e.target.value;
     _run();
+    if (_state.house) Tracker.filterApplied('house', _state.house, _lastResultCount);
   });
 
   _bar.querySelector('#sf-price')?.addEventListener('change', e => {
     _state.priceRange = e.target.value || null;
     _run();
+    if (_state.priceRange) Tracker.filterApplied('price', _state.priceRange, _lastResultCount);
   });
 
   _bar.querySelector('#sf-sort')?.addEventListener('change', e => {
     _state.sort = e.target.value;
     _run();
+    Tracker.filterApplied('sort', _state.sort, _lastResultCount);
   });
 
   _bar.querySelector('#sf-clear')?.addEventListener('click', _clearAll);
@@ -411,11 +432,24 @@ function _handleDrawerKey(e) {
 
 function _run() {
   const result = filterProducts(_allProducts, _state);
+  _lastResultCount = result.length;
   _onFilter?.(result);
   _updateCount(result.length);
   _updateClear();
   _updateBadge();
   _updateExploring(result.length);
+  _trackSearchQuery(result.length);
+}
+
+function _trackSearchQuery(count) {
+  const q = (_state.query ?? '').trim();
+  if (q.length >= 2 && q !== _lastTrackedQuery) {
+    _lastTrackedQuery = q;
+    Tracker.searchPerformed(q, count, 'catalog');
+    if (count === 0) Tracker.searchNoResults(q, 'catalog');
+  } else if (!q) {
+    _lastTrackedQuery = '';
+  }
 }
 
 /** Visible "Mood activo" badge. The catalog NEVER filters silently —
@@ -533,7 +567,9 @@ function _activeFilterCount() {
 }
 
 function _clearAll() {
+  const hadFilters = _hasActiveFilters();
   _state = { ..._DEFAULT };
+  _lastTrackedQuery = '';
   if (!_bar) return;
   const input = _bar.querySelector('#sf-input');
   const xBtn  = _bar.querySelector('#sf-x');
@@ -541,4 +577,5 @@ function _clearAll() {
   if (xBtn)  xBtn.hidden  = true;
   _syncBarFromState();
   _run();
+  if (hadFilters) Tracker.filterCleared();
 }

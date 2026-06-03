@@ -120,6 +120,14 @@ const _API_EVENT_MAP = {
   taste_like:                  'taste_like',
   taste_dislike:               'taste_dislike',
   taste_skip:                  'taste_skip',
+  search_performed:            'search_performed',
+  search_result_clicked:       'search_result_clicked',
+  search_no_results:           'search_no_results',
+  catalog_reached:             'catalog_reached',
+  section_viewed:              'section_viewed',
+  filter_applied:              'filter_applied',
+  filter_cleared:              'filter_cleared',
+  scroll_depth_reached:        'scroll_depth_reached',
 };
 
 Tracker.use((event, payload) => {
@@ -276,6 +284,35 @@ function _toApiPayload(event, payload) {
           source_component: 'taste_builder',
         },
       };
+    case 'search_performed':
+    case 'search_no_results':
+      return {
+        metadata: {
+          query:         payload.query,
+          results_count: payload.results_count,
+          source:        payload.source,
+        },
+      };
+    case 'search_result_clicked':
+      return {
+        product_id: pid,
+        metadata: {
+          name:     payload.productName,
+          house:    payload.house,
+          query:    payload.query,
+          position: payload.position,
+        },
+      };
+    case 'catalog_reached':
+      return { metadata: { ms_since_load: payload.ms_since_load } };
+    case 'section_viewed':
+      return { metadata: { section_id: payload.section_id, position_index: payload.position_index } };
+    case 'filter_applied':
+      return { metadata: { type: payload.type, value: payload.value, results_count: payload.results_count } };
+    case 'filter_cleared':
+      return {};
+    case 'scroll_depth_reached':
+      return { metadata: { pct: payload.pct } };
     default:
       return {};
   }
@@ -283,13 +320,61 @@ function _toApiPayload(event, payload) {
 
 /* ── Intro ──────────────────────────────────────────────────── */
 function removeIntro() {
+  const intro = document.getElementById('intro');
+  if (!intro) return;
+
+  /* Skip animation on repeat visits within the same session */
+  const seen = sessionStorage.getItem('rd_intro');
+  if (seen) {
+    intro.remove();
+    return;
+  }
+  sessionStorage.setItem('rd_intro', '1');
+
+  /* First visit: short branded moment then clear */
   setTimeout(() => {
-    const intro = document.getElementById('intro');
-    if (!intro) return;
-    intro.style.transition = 'opacity 0.6s ease';
+    intro.style.transition = 'opacity 0.5s ease';
     intro.style.opacity    = '0';
-    setTimeout(() => intro.remove(), 600);
-  }, 2400);
+    setTimeout(() => intro.remove(), 500);
+  }, 700);
+}
+
+/* ── Behavioral observability ───────────────────────────────── */
+function _setupScrollTracking() {
+  /* Scroll depth — fires at 25/50/75/100% */
+  const depths  = [25, 50, 75, 100];
+  const reached = new Set();
+  const onScroll = () => {
+    const scrollable = document.body.scrollHeight - window.innerHeight;
+    if (scrollable <= 0) return;
+    const pct = Math.round((window.scrollY / scrollable) * 100);
+    depths.forEach(d => {
+      if (pct >= d && !reached.has(d)) {
+        reached.add(d);
+        Tracker.scrollDepthReached(d);
+      }
+    });
+    if (reached.size === depths.length) window.removeEventListener('scroll', onScroll);
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+
+  /* Section viewed — fires once per section when 15% enters viewport */
+  const SECTIONS = [
+    'assistant', 'discovery', 'recommendation-rails',
+    'discovery-sets', 'taste-builder', 'smart-bundles',
+  ];
+  if (!('IntersectionObserver' in window)) return;
+  SECTIONS.forEach((id, positionIndex) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        obs.disconnect();
+        Tracker.sectionViewed(id, positionIndex);
+      }
+    }, { threshold: 0.15 });
+    obs.observe(el);
+  });
 }
 
 /* ── Bootstrap ──────────────────────────────────────────────── */
@@ -331,6 +416,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   /* UI setup */
   setupHeader();
   setupHeroParallax();
+  _setupScrollTracking();
 
   AppState.set('initialized', true);
   Tracker.emit('page_view', { path: window.location.pathname });

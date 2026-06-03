@@ -116,6 +116,19 @@ export async function renderProducts() {
     _renderGrid(filtered);
     observeFadeUp();
   });
+
+  /* Measure time-to-catalog — fires once when catalog enters viewport */
+  const _catalogLoadTime = Date.now();
+  const _catalogSection  = document.getElementById('catalog');
+  if (_catalogSection && 'IntersectionObserver' in window) {
+    const _obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        _obs.disconnect();
+        Tracker.catalogReached(Date.now() - _catalogLoadTime);
+      }
+    }, { threshold: 0.1 });
+    _obs.observe(_catalogSection);
+  }
 }
 
 /* â”€â”€ Packs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -206,7 +219,8 @@ function _renderGrid(products) {
       : '';
 
     const badgeClass = stockState.badgeClass;
-    const guidanceHtml = getGuidanceBadges(p)
+    const guidanceBadges = getGuidanceBadges(p);
+    const guidanceHtml = guidanceBadges.slice(0, 1)
       .map(g => `<span class="guidance-chip guidance-chip--${g.key}">${g.label}</span>`)
       .join('');
 
@@ -229,7 +243,6 @@ function _renderGrid(products) {
           ${concentrationChip}
         </div>
         ${guidanceHtml ? `<div class="card-guidance" aria-label="Recomendado para">${guidanceHtml}</div>` : ''}
-        <p class="card-story">${p.story}</p>
         <div class="card-purchase">
           <div>
             <p class="card-price">${priceHtml}</p>
@@ -262,6 +275,8 @@ function _renderGrid(products) {
     card.addEventListener('click', e => {
       if (e.target.closest('.card-action')) return;
       openProductModal(p);
+      const activeQuery = SearchBar.getState().query;
+      if (activeQuery) Tracker.searchResultClicked(p, activeQuery, idx);
       Tracker.productClicked(p, 'grid');
     });
 
