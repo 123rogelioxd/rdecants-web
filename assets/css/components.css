@@ -1416,6 +1416,30 @@
   font-size: 11px;
 }
 
+/* Merged "Kits para empezar": mobile shows 3 kits, the rest behind "Ver más kits" */
+.ds-more {
+  display: none;
+  margin: 22px auto 0;
+  width: max-content;
+  max-width: 100%;
+  padding: 12px 26px;
+  background: transparent;
+  border: 1px solid var(--border-hl);
+  border-radius: var(--radius-sm);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+.ds-more:hover { border-color: var(--accent); color: #fff; }
+
+@media (max-width: 768px) {
+  .ds-grid:not(.is-expanded) .ds-card:nth-child(n + 4) { display: none; }
+  .ds-more { display: block; }
+}
+
 /* PDP fallback: compact 2-col layout */
 .ds-pdp-fallback .ds-grid {
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

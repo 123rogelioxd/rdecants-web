@@ -31,6 +31,8 @@ import { Tracker } from '../tracking/tracker.js';
 import { primeImageStates } from './images.js';
 
 const MIN_PRODUCTS = 2;
+/* Kits visible on mobile before "Ver más kits" reveals the rest. */
+const MOBILE_VISIBLE_SETS = 3;
 const _profileByKey = new Map(USE_CASE_PROFILES.map(p => [p.key, p]));
 
 /* ── Set config — maintained by hand ───────────────────────────── */
@@ -203,20 +205,28 @@ export async function setupDiscoverySets(containerId) {
   const sets = resolveDiscoverySets(eligible);
   if (!sets.length) { root.hidden = true; return; }
 
+  /* Mobile shows the first MOBILE_VISIBLE_SETS kits; the rest stay behind
+     "Ver más kits" (CSS-driven via .ds-more / .ds-grid.is-expanded). */
+  const moreHtml = sets.length > MOBILE_VISIBLE_SETS
+    ? `<button type="button" class="ds-more" id="ds-more">Ver más kits</button>`
+    : '';
+
   root.hidden = false;
   root.innerHTML = `
     <div class="container">
       <div class="ds-head fade-up">
-        <p class="section-label">Sets de descubrimiento</p>
+        <p class="section-label">Kits para empezar</p>
         <h2 class="section-title">¿No sabes<br><em>cuál elegir?</em></h2>
-        <p class="ds-head-copy">Elige un set de 3 fragancias en 3ml y prueba antes de invertir en el frasco.</p>
+        <p class="ds-head-copy">Combina 3 decants de 3ml y pruébalos antes de invertir en el frasco completo.</p>
       </div>
       ${buildDiscoverySetsHtml(sets)}
+      ${moreHtml}
     </div>`;
 
   primeImageStates(root);
   sets.forEach(s => Tracker.discoverySetViewed(s));
   _bindSetActions(root, sets);
+  _bindShowMore(root);
 }
 
 /* ── UI — PDP fallback when no related products exist ───────────── */
@@ -269,6 +279,16 @@ function _bindSetActions(root, sets) {
         Tracker.discoverySetClicked(set, 'card');
       }
     });
+  });
+}
+
+/* "Ver más kits" — reveal the kits hidden on mobile beyond MOBILE_VISIBLE_SETS. */
+function _bindShowMore(root) {
+  const btn = root.querySelector('#ds-more');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    root.querySelector('.ds-grid')?.classList.add('is-expanded');
+    btn.remove();
   });
 }
 

@@ -35,12 +35,12 @@
     HTML itself is served no-cache so browsers always get
     the latest version string.
 
-  Current version: 2026.06.03.3 - update all ?v= values on deploy.
+  Current version: 2026.06.03.4 - update all ?v= values on deploy.
 -->
-<link rel="stylesheet" href="assets/css/tokens.css?v=2026.06.03.3">
-<link rel="stylesheet" href="assets/css/animations.css?v=2026.06.03.3">
-<link rel="stylesheet" href="assets/css/components.css?v=2026.06.03.3">
-<link rel="stylesheet" href="assets/css/styles.css?v=2026.06.03.3">
+<link rel="stylesheet" href="assets/css/tokens.css?v=2026.06.03.4">
+<link rel="stylesheet" href="assets/css/animations.css?v=2026.06.03.4">
+<link rel="stylesheet" href="assets/css/components.css?v=2026.06.03.4">
+<link rel="stylesheet" href="assets/css/styles.css?v=2026.06.03.4">
 </head>
 
 <body>
@@ -189,13 +189,6 @@
 
 <div class="divider"></div>
 
-<!-- ANCHOR-BASED DISCOVERY (¿Conoces alguno de estos?) -->
-<section class="section" id="discovery" aria-label="Empieza por lo que ya conoces">
-  <!-- Rendered by ui/discovery.js -->
-</section>
-
-<div class="divider"></div>
-
 <!-- RECOMMENDATION RAILS (mood-based discovery, dynamic from catalog) -->
 <section class="section" id="recommendation-rails" aria-label="Recomendaciones por mood">
   <!-- Rendered by recommendations/index.js -->
@@ -203,23 +196,9 @@
 
 <div class="divider"></div>
 
-<!-- DISCOVERY SETS (¿No sabes cuál elegir? — novice conversion layer) -->
-<section class="section" id="discovery-sets" aria-label="Sets de descubrimiento" hidden>
+<!-- KITS PARA EMPEZAR (single merged kit section — Discovery Sets engine, honest pricing, no fake discount) -->
+<section class="section" id="discovery-sets" aria-label="Kits para empezar" hidden>
   <!-- Rendered by ui/discoverySets.js -->
-</section>
-
-<div class="divider"></div>
-
-<!-- TASTE BUILDER (Descubre tu estilo — fast explicit preference capture) -->
-<section class="section" id="taste-builder" aria-label="Descubre tu estilo" hidden>
-  <!-- Rendered by ui/tasteBuilder.js -->
-</section>
-
-<div class="divider"></div>
-
-<!-- SMART BUNDLES (dynamic kits from real metadata) -->
-<section class="section" id="smart-bundles" aria-label="Kits inteligentes" hidden>
-  <!-- Rendered by ui/bundles.js -->
 </section>
 
 <!-- FOOTER -->
@@ -231,7 +210,7 @@
     <nav class="footer-links">
       <a href="https://wa.me/5219516513018" target="_blank">WhatsApp</a>
       <a href="#catalog">Catálogo</a>
-      <a href="#smart-bundles">Kits</a>
+      <a href="#discovery-sets">Kits</a>
     </nav>
 
     <p class="footer-copy">
@@ -329,7 +308,7 @@
   ?v= must match the version in CSS links above.
   Update on every deploy: increment VERSION file + all ?v= strings.
 -->
-<script type="module" src="assets/js/app.js?v=2026.06.03.3"></script>
+<script type="module" src="assets/js/app.js?v=2026.06.03.4"></script>
 
 </body>
 </html>

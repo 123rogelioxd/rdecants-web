@@ -14,10 +14,7 @@ import { renderCart, updateCartCount,
 import { renderProducts }                   from './catalog/render.js?v=2026.06.03.2';
 import { Recommendations }                 from './recommendations/index.js?v=2026.06.03.2';
 import { setupAssistant }                   from './ui/assistant.js?v=2026.06.03.2';
-import { setupDiscovery }                   from './ui/discovery.js?v=2026.06.03.2';
 import { setupDiscoverySets }               from './ui/discoverySets.js?v=2026.06.03.2';
-import { setupTasteBuilder }               from './ui/tasteBuilder.js?v=2026.06.03.2';
-import { setupBundles }                      from './ui/bundles.js?v=2026.06.03.2';
 import { Personalization }                  from './recommendations/personalization.js?v=2026.06.03.2';
 import { CatalogProvider }                  from './providers/catalog.js?v=2026.06.03.2';
 import { setupScrollAnimations,
@@ -141,8 +138,7 @@ function _setupScrollTracking() {
 
   /* Section viewed — fires once per section when 15% enters viewport */
   const SECTIONS = [
-    'assistant', 'discovery', 'recommendation-rails',
-    'discovery-sets', 'taste-builder', 'smart-bundles',
+    'assistant', 'recommendation-rails', 'discovery-sets',
   ];
   if (!('IntersectionObserver' in window)) return;
   SECTIONS.forEach((id, positionIndex) => {
@@ -175,20 +171,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   /* Guided shopping assistant (inline, metadata-driven) */
   setupAssistant('assistant');
 
-  /* Anchor-based discovery — "¿Conoces alguno de estos?" */
-  setupDiscovery('discovery');
-
-  /* Activate mood-based discovery rails (lazy-hydrates on scroll) */
+  /* Mood-based discovery rails (lazy-hydrates on scroll) — capped at 3 moods */
   Recommendations.render('recommendation-rails');
 
-  /* Discovery Sets — novice conversion layer ("¿No sabes cuál elegir?") */
+  /* Kits para empezar — single merged kit section (honest pricing, no fake discount).
+     Anchor Discovery, Taste Builder and Smart Bundles are intentionally NOT mounted
+     on the home page anymore; their modules are kept for reuse elsewhere. */
   setupDiscoverySets('discovery-sets');
-
-  /* Taste Builder — fast explicit preference capture */
-  setupTasteBuilder('taste-builder');
-
-  /* Dynamic smart bundles (kits from real metadata) */
-  setupBundles('smart-bundles');
 
   /* After dynamic content is in DOM, observe scroll animations */
   observeFadeUp();
