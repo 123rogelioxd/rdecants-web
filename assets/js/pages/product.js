@@ -22,7 +22,7 @@ import {
   renderCollectionPairs,
   readSlugFromLocation,
   findProductBySlug,
-} from '../ui/productPage.js?v=1.0.1';
+} from '../ui/productPage.js?v=1.0.2';
 
 /* ── Global bridge (shared with rest of the app) ─────────────── */
 window.__rd = window.__rd || {};

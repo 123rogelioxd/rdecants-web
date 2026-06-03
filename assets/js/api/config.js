@@ -4,8 +4,8 @@
    Change this one line to point to staging or production.
    ============================================================= */
 export const API_BASE =
-  window.__RDECANTS_API_BASE__ ||
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  globalThis.window?.__RDECANTS_API_BASE__ ||
+  (globalThis.window?.location?.hostname === 'localhost' || globalThis.window?.location?.hostname === '127.0.0.1'
     ? 'http://127.0.0.1:8000'
     : 'https://api.rdecants.com');
 

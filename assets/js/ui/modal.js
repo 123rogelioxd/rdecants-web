@@ -22,11 +22,11 @@ import { getDefaultVariant,
          getVariantForSize,
          getValidVariants,
          formatPrice,
-         getSizeLabel } from '../utils/prices.js?v=1.0.13';
+         getSizeLabel } from '../utils/prices.js?v=1.0.16';
 import { getScarcityDisplay } from '../utils/scarcity.js?v=1.0.13';
 import { getGuidanceBadges } from '../utils/guidance.js?v=1.0.13';
 import { buildWhyHtml } from './why.js?v=1.0.13';
-import { productPageUrl } from './productPage.js?v=1.0.1';
+import { productPageUrl } from './productPage.js?v=1.0.2';
 
 /* â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 let _activeProduct  = null;

@@ -24,7 +24,7 @@ import {
   moodPageUrl,
   readMoodSlugFromLocation,
 } from '../moods/catalog.js?v=1.0.0';
-import { productPageUrl } from './productPage.js?v=1.0.1';
+import { productPageUrl } from './productPage.js?v=1.0.2';
 
 /* Re-export for callers (page bootstrap, tests, modal). */
 export { findMoodBySlug, moodPageUrl, readMoodSlugFromLocation, MOODS };

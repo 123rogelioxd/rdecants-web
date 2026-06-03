@@ -110,6 +110,15 @@ test('modal "Ver detalles" CTA targets /perfume/{slug}', () => {
   assert.equal(productPageUrl(sample), '/perfume/dior-sauvage');
 });
 
+test('PDP module imports getSizeLabel from versioned prices module', async () => {
+  const prices = await import('../assets/js/utils/prices.js?v=1.0.16');
+  assert.equal(typeof prices.getSizeLabel, 'function');
+  assert.equal(prices.getSizeLabel(5), 'Uso frecuente');
+
+  const productPage = await import('../assets/js/ui/productPage.js?v=1.0.2');
+  assert.equal(typeof productPage.buildProductPageHtml, 'function');
+});
+
 /* ── Editorial UX redesign ──────────────────────────────────── */
 
 test('PDP order: fused sell/guide section comes BEFORE buy controls', () => {

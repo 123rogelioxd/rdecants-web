@@ -49,6 +49,7 @@ export const EVENTS = {
 
   PRODUCT_VIEW: 'product_view',
   PRODUCT_VIEWED: 'product_viewed',
+  PRODUCT_PDP_VIEW: 'product_pdp_view',
   RECOMMENDATION_VIEW: 'recommendation_view',
 
   SEARCH_PERFORMED:      'search_performed',
@@ -156,6 +157,10 @@ export const Tracker = {
   productViewed(product) {
     this.emit(EVENTS.OPENED_PRODUCT_MODAL, _productPayload(product));
     this.emit(EVENTS.VIEWED_PRODUCT, { ..._productPayload(product), source: 'modal' });
+  },
+
+  productPdpView(product) {
+    this.emit(EVENTS.PRODUCT_PDP_VIEW, _productPayload(product));
   },
 
   productClicked(product, source = 'grid') {
@@ -502,6 +507,7 @@ function _isDebug() {
 function _viewLike(event) {
   return event === EVENTS.VIEWED_PRODUCT ||
     event === EVENTS.OPENED_PRODUCT_MODAL ||
+    event === EVENTS.PRODUCT_PDP_VIEW ||
     event === EVENTS.RECOMMENDATION_VIEWED ||
     event === EVENTS.BUNDLE_VIEWED ||
     event === EVENTS.DISCOVERY_SET_VIEWED ||

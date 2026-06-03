@@ -31,7 +31,7 @@ import {
   getValidVariants,
   formatPrice,
   getSizeLabel,
-} from '../utils/prices.js?v=1.0.13';
+} from '../utils/prices.js?v=1.0.16';
 import { getScarcityDisplay } from '../utils/scarcity.js?v=1.0.13';
 import { getGuidanceBadges } from '../utils/guidance.js?v=1.0.13';
 import { getRelatedProducts } from '../recommendations/upsells.js?v=1.0.14';
