@@ -4,7 +4,7 @@
    Delegates all filtering to the existing SearchBar engine.
    ============================================================= */
 
-import { SearchBar } from './searchbar.js';
+import { SearchBar } from './searchbar.js?v=1.0.2';
 
 export function setupHeader() {
   const header = document.querySelector('.header');
