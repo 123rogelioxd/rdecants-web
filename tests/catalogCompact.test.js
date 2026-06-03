@@ -16,6 +16,10 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { filterProducts } from '../assets/js/catalog/search.js';
+import {
+  getCatalogCapShown,
+  getCatalogCapVisibility,
+} from '../assets/js/catalog/render.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = path => readFileSync(join(root, path), 'utf8');
@@ -23,11 +27,13 @@ const read = path => readFileSync(join(root, path), 'utf8');
 /* Minimal sellable product for sort assertions */
 const P = (id, o = {}) => ({
   id,
-  name: id,
-  house: 'House',
+  name: o.name ?? id,
+  house: o.house ?? 'House',
   notes: [],
   badge: o.badge ?? 'Disponible',
   featured: !!o.featured,
+  hero: !!o.hero,
+  commercial_role: o.commercial_role ?? null,
   gender: o.gender ?? null,
   stock: o.stock ?? 10,
   variants: [{
@@ -55,6 +61,36 @@ test('featured products surface above non-featured', () => {
 test('trending badge beats a plain product', () => {
   const list = [P('plain'), P('hot', { badge: 'TRENDING' })];
   assert.deepEqual(order(list), ['hot', 'plain']);
+});
+
+test('default order prioritizes accessible designer/mainstream over available niche', () => {
+  const list = [
+    P('xerjoff-naxos', { house: 'Xerjoff', name: 'Naxos' }),
+    P('creed-aventus', { house: 'Creed', name: 'Aventus' }),
+    P('dior-sauvage', { house: 'Dior', name: 'Sauvage' }),
+    P('bleu-de-chanel', { house: 'Chanel', name: 'Bleu de Chanel' }),
+    P('ysl-y', { house: 'Yves Saint Laurent', name: 'Y EDP' }),
+  ];
+
+  assert.deepEqual(order(list).slice(0, 3), ['dior-sauvage', 'bleu-de-chanel', 'ysl-y']);
+});
+
+test('niche featured alone does not beat accessible mainstream launch products', () => {
+  const list = [
+    P('xerjoff-star', { house: 'Xerjoff', name: 'Naxos', featured: true }),
+    P('montblanc-explorer', { house: 'Montblanc', name: 'Explorer' }),
+  ];
+
+  assert.deepEqual(order(list), ['montblanc-explorer', 'xerjoff-star']);
+});
+
+test('niche can rise when it has a real hero or bestseller signal', () => {
+  const list = [
+    P('dior-plain', { house: 'Dior', name: 'Homme' }),
+    P('xerjoff-hero', { house: 'Xerjoff', name: 'Naxos', badge: 'BEST SELLER' }),
+  ];
+
+  assert.deepEqual(order(list), ['xerjoff-hero', 'dior-plain']);
 });
 
 test('men/unisex rank before women as a tiebreaker only', () => {
@@ -100,6 +136,49 @@ test('render.js caps the mobile browse view and offers show more/less', () => {
   assert.match(r, /Mostrando \$\{shown\} de \$\{total\} perfumes/, 'counter present');
 });
 
+test('mobile collapsed catalog exposes only 8 visible cards', () => {
+  const visible = getCatalogCapVisibility(36, { isMobile: true, expanded: false });
+  assert.equal(visible.filter(Boolean).length, 8);
+  assert.deepEqual(visible.slice(0, 10), [true, true, true, true, true, true, true, true, false, false]);
+});
+
+test('mobile collapsed counter matches visible cards', () => {
+  const total = 36;
+  const shown = getCatalogCapShown(total, { isMobile: true, expanded: false });
+  const visibleCount = getCatalogCapVisibility(total, { isMobile: true, expanded: false }).filter(Boolean).length;
+  assert.equal(shown, visibleCount);
+  assert.equal(shown, 8);
+});
+
+test('expanding the mobile catalog shows every card', () => {
+  const visible = getCatalogCapVisibility(36, { isMobile: true, expanded: true });
+  assert.equal(visible.filter(Boolean).length, 36);
+  assert.equal(getCatalogCapShown(36, { isMobile: true, expanded: true }), 36);
+});
+
+test('collapsing the mobile catalog returns to 8 cards', () => {
+  const expanded = getCatalogCapVisibility(36, { isMobile: true, expanded: true });
+  const collapsed = getCatalogCapVisibility(expanded.length, { isMobile: true, expanded: false });
+  assert.equal(collapsed.filter(Boolean).length, 8);
+});
+
+test('search disables the mobile cap', () => {
+  const visible = getCatalogCapVisibility(20, { isMobile: true, filtersActive: true });
+  assert.equal(visible.filter(Boolean).length, 20);
+  assert.equal(getCatalogCapShown(20, { isMobile: true, filtersActive: true }), 20);
+});
+
+test('filter disables the mobile cap', () => {
+  const visible = getCatalogCapVisibility(14, { isMobile: true, filtersActive: true });
+  assert.equal(visible.filter(Boolean).length, 14);
+});
+
+test('desktop catalog always shows every card', () => {
+  const visible = getCatalogCapVisibility(36, { isMobile: false, expanded: false });
+  assert.equal(visible.filter(Boolean).length, 36);
+  assert.equal(getCatalogCapShown(36, { isMobile: false, expanded: false }), 36);
+});
+
 test('render.js disables the cap whenever a filter/search is active', () => {
   const r = read('assets/js/catalog/render.js');
   assert.ok(r.includes('SearchBar.hasActiveFilters'), 'cap is gated on active filters');
@@ -129,8 +208,9 @@ test('SearchBar exposes hasActiveFilters() reusing its private check', () => {
 
 test('CSS hides cards beyond the 8th on mobile and hides the control on desktop', () => {
   const css = read('assets/css/components.css');
-  assert.ok(/\.products-grid--capped \.product-card:nth-child\(n \+ 9\)/.test(css),
+  assert.ok(/\.products-grid\.products-grid--capped > \.product-card:nth-of-type\(n \+ 9\)/.test(css),
     'cards past the 8th hidden on mobile when capped');
+  assert.ok(css.includes('.products-grid > .product-card[hidden]'), 'JS-hidden capped cards are also hidden');
   assert.ok(/\.catalog-more\s*\{\s*display:\s*none;/.test(css),
     '"Ver más" control hidden by default (desktop)');
   assert.ok(css.includes('.catalog-more-btn'), 'show-more button styled');

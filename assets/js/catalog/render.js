@@ -31,6 +31,9 @@ let _productsContainer = null;
    search/filter is active — those views always show every result. */
 const MOBILE_CATALOG_CAP = 8;
 let _catalogExpanded = false;
+let _lastCatalogCapTotal = 0;
+let _lastCatalogCapFiltersActive = false;
+let _catalogResizeBound = false;
 
 /* ── Featured ────────────────────────────────────────────────── */
 export async function renderFeatured() {
@@ -318,18 +321,27 @@ function _renderGrid(products) {
    more items than the cap. Search/filtered views show everything. */
 function _applyCatalogCap(total) {
   const filtersActive = SearchBar.hasActiveFilters?.() ?? false;
+  _lastCatalogCapTotal = total;
+  _lastCatalogCapFiltersActive = filtersActive;
 
   if (filtersActive || total <= MOBILE_CATALOG_CAP) {
     _catalogExpanded = false;
+    _syncCatalogCardVisibility(total, filtersActive);
     return;
   }
 
   if (!_catalogExpanded) _productsContainer.classList.add('products-grid--capped');
+  _syncCatalogCardVisibility(total, filtersActive);
+  _ensureCatalogCapResizeSync();
   _renderShowMore(total);
 }
 
 function _renderShowMore(total) {
-  const shown = _catalogExpanded ? total : Math.min(MOBILE_CATALOG_CAP, total);
+  const shown = getCatalogCapShown(total, {
+    expanded: _catalogExpanded,
+    filtersActive: _lastCatalogCapFiltersActive,
+    isMobile: _isMobileCatalog(),
+  });
 
   const wrap = document.createElement('div');
   wrap.className = 'catalog-more';
@@ -349,6 +361,7 @@ function _renderShowMore(total) {
 function _toggleCatalog(total) {
   _catalogExpanded = !_catalogExpanded;
   _productsContainer.classList.toggle('products-grid--capped', !_catalogExpanded);
+  _syncCatalogCardVisibility(total, _lastCatalogCapFiltersActive);
 
   if (_catalogExpanded) {
     Tracker.catalogExpanded(total, MOBILE_CATALOG_CAP);
@@ -363,6 +376,59 @@ function _toggleCatalog(total) {
 
 function _removeShowMore() {
   document.getElementById('catalog-more')?.remove();
+}
+
+function _syncCatalogCardVisibility(total, filtersActive = false) {
+  if (!_productsContainer) return;
+  const visibleMap = getCatalogCapVisibility(total, {
+    expanded: _catalogExpanded,
+    filtersActive,
+    isMobile: _isMobileCatalog(),
+  });
+
+  _productsContainer.querySelectorAll('.product-card').forEach((card, idx) => {
+    card.hidden = visibleMap[idx] === false;
+  });
+}
+
+function _ensureCatalogCapResizeSync() {
+  if (_catalogResizeBound || typeof window === 'undefined') return;
+  _catalogResizeBound = true;
+  window.addEventListener('resize', () => {
+    _syncCatalogCardVisibility(_lastCatalogCapTotal, _lastCatalogCapFiltersActive);
+    document.getElementById('catalog-more-count')?.replaceChildren(
+      document.createTextNode(`Mostrando ${getCatalogCapShown(_lastCatalogCapTotal, {
+        expanded: _catalogExpanded,
+        filtersActive: _lastCatalogCapFiltersActive,
+        isMobile: _isMobileCatalog(),
+      })} de ${_lastCatalogCapTotal} perfumes`)
+    );
+  });
+}
+
+function _isMobileCatalog() {
+  return Boolean(globalThis.matchMedia?.('(max-width: 768px)').matches);
+}
+
+export function getCatalogCapVisibility(total, {
+  expanded = false,
+  filtersActive = false,
+  isMobile = false,
+  cap = MOBILE_CATALOG_CAP,
+} = {}) {
+  return Array.from({ length: Math.max(0, total) }, (_, idx) =>
+    !isMobile || filtersActive || expanded || idx < cap
+  );
+}
+
+export function getCatalogCapShown(total, {
+  expanded = false,
+  filtersActive = false,
+  isMobile = false,
+  cap = MOBILE_CATALOG_CAP,
+} = {}) {
+  if (!isMobile || filtersActive || expanded) return total;
+  return Math.min(cap, total);
 }
 
 /* ── Helpers ─────────────────────────────────────────────────── */

@@ -152,6 +152,8 @@ function _mapProduct(p) {
     stock: variants.length ? Math.max(...variants.map(v => v.availability)) : _safeStock(p.stock),
     badge: p.badge ?? p.label ?? 'Disponible',
     featured: Boolean(p.featured),
+    hero: Boolean(p.hero),
+    commercial_role: p.commercial_role ?? p.commercialRole ?? p.launch_role ?? null,
     fragrance: _mapFragrance(p.fragrance),
     prices,
     variants,

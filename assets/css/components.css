@@ -463,7 +463,8 @@
 
 @media (max-width: 768px) {
   /* 9 = MOBILE_CATALOG_CAP (8) + 1 */
-  .products-grid--capped .product-card:nth-child(n + 9) { display: none; }
+  .products-grid.products-grid--capped > .product-card:nth-of-type(n + 9),
+  .products-grid > .product-card[hidden] { display: none !important; }
   .catalog-more {
     display: flex;
     flex-direction: column;

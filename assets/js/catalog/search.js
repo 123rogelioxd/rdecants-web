@@ -67,6 +67,62 @@ const BADGE_SCORE = {
   'DAILY':             3,
   'VALUE':             2,
 };
+BADGE_SCORE['MAS PEDIDO'] = 10;
+BADGE_SCORE.BESTSELLER = 9;
+BADGE_SCORE.CLASICO = 6;
+BADGE_SCORE.ULTIMAS = 4;
+BADGE_SCORE['ULTIMAS UNIDADES'] = 4;
+
+const MAINSTREAM_HOUSES = [
+  'dior',
+  'chanel',
+  'yves saint laurent',
+  'ysl',
+  'jean paul gaultier',
+  'versace',
+  'paco rabanne',
+  'rabanne',
+  'montblanc',
+  'giorgio armani',
+  'armani',
+  'rasasi',
+  'afnan',
+];
+
+const NICHE_HOUSES = [
+  'xerjoff',
+  'creed',
+  'louis vuitton',
+  'lv',
+  'parfums de marly',
+  'initio',
+  'amouage',
+  'bond no 9',
+  'bond no. 9',
+  'maison francis kurkdjian',
+  'mfk',
+  'kilian',
+  'by kilian',
+  'tom ford private blend',
+];
+
+const COMMERCIAL_HERO_PATTERNS = [
+  /dior.*sauvage|sauvage.*dior/,
+  /chanel.*bleu de chanel|bleu de chanel.*chanel/,
+  /yves saint laurent.*\by\b|ysl.*\by\b|\by\b.*yves saint laurent|\by\b.*ysl/,
+  /yves saint laurent.*myslf|ysl.*myslf|myslf.*yves saint laurent|myslf.*ysl/,
+  /jean paul gaultier.*le beau|le beau.*jean paul gaultier/,
+  /jean paul gaultier.*le male|le male.*jean paul gaultier/,
+  /versace.*dylan blue|dylan blue.*versace/,
+  /versace.*eros|eros.*versace/,
+  /paco rabanne.*one million|rabanne.*one million|one million.*rabanne/,
+  /paco rabanne.*invictus|rabanne.*invictus|invictus.*rabanne/,
+  /montblanc.*explorer|explorer.*montblanc/,
+  /armani.*acqua di gio|acqua di gio.*armani/,
+  /armani.*code|code.*armani/,
+  /rasasi.*hawas|hawas.*rasasi/,
+  /afnan.*9pm|9pm.*afnan|afnan.*9 pm|9 pm.*afnan/,
+];
 
 const SEARCH_ALIASES = [
   { terms: ['yves saint laurent', 'ysl', 'y edp', 'y'], match: ['yves saint laurent', 'ysl', ' y ', 'y edp'] },
@@ -315,6 +371,84 @@ function _ref5ml(p) {
   return priceSortValue(p);
 }
 
+function _badgeScore(product) {
+  const badge = _norm(product?.badge ?? '').toUpperCase();
+  return BADGE_SCORE[badge] ?? 0;
+}
+
+function _commercialIdentity(product) {
+  const f = product?.fragrance ?? null;
+  return _norm([
+    product?.house,
+    product?.brand,
+    product?.name,
+    product?.slug,
+    f?.canonical_name,
+    ...(f?.aliases ?? []),
+  ].filter(Boolean).join(' '));
+}
+
+function _commercialRole(product) {
+  return _norm(
+    product?.commercial_role ??
+    product?.commercialRole ??
+    product?.commercialRoleNormalized ??
+    product?.launch_role ??
+    product?.role ??
+    ''
+  );
+}
+
+function _houseMatches(product, houses) {
+  const house = _norm(`${product?.house ?? ''} ${product?.brand ?? ''}`);
+  return houses.some(name => house.includes(name));
+}
+
+function _isNicheHouse(product) {
+  return _houseMatches(product, NICHE_HOUSES);
+}
+
+function _isMainstreamHouse(product) {
+  return _houseMatches(product, MAINSTREAM_HOUSES);
+}
+
+function _isCommercialHeroName(product) {
+  const identity = _commercialIdentity(product);
+  return COMMERCIAL_HERO_PATTERNS.some(pattern => pattern.test(identity));
+}
+
+function _hasRealHeroSignal(product) {
+  const role = _commercialRole(product);
+  return (
+    product?.hero === true ||
+    role.includes('hero') ||
+    role.includes('best') ||
+    role.includes('bestseller') ||
+    _badgeScore(product) >= 9
+  );
+}
+
+function _launchHeroRank(product) {
+  const role = _commercialRole(product);
+  if (product?.hero === true || role.includes('hero') || role.includes('best') || role.includes('bestseller')) return 3;
+  if (product?.featured && !_isNicheHouse(product)) return 2;
+  if (_badgeScore(product) >= 9) return 1;
+  return 0;
+}
+
+function _commercialPriority(product) {
+  const role = _commercialRole(product);
+  const realHero = _hasRealHeroSignal(product);
+  const niche = _isNicheHouse(product);
+
+  if (role.includes('commercial') || role.includes('mainstream') || role.includes('designer')) return 6;
+  if (_isCommercialHeroName(product)) return 6;
+  if (_isMainstreamHouse(product)) return 5;
+  if (niche) return realHero ? 6 : 1;
+  if (role.includes('niche') || role.includes('premium') || role.includes('luxury')) return realHero ? 6 : 2;
+  return 3;
+}
+
 /* Audience-weighted gender priority for the default commercial sort.
    Most current buyers shop men's/unisex, so those surface first; women's
    fragrances drop only as a *tiebreaker* — featured/trending women still
@@ -356,8 +490,9 @@ function _sort(products, sort) {
          Stable: equal products keep their incoming order. */
       return arr.sort((a, b) =>
         _availabilityRank(b) - _availabilityRank(a) ||
-        (b.featured ? 1 : 0) - (a.featured ? 1 : 0) ||
-        (BADGE_SCORE[b.badge] ?? 0) - (BADGE_SCORE[a.badge] ?? 0) ||
+        _commercialPriority(b) - _commercialPriority(a) ||
+        _launchHeroRank(b) - _launchHeroRank(a) ||
+        _badgeScore(b) - _badgeScore(a) ||
         _genderPriority(b.gender) - _genderPriority(a.gender) ||
         (b.stock ?? 0) - (a.stock ?? 0)
       );
