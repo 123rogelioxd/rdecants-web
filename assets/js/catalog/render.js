@@ -217,6 +217,7 @@ function _renderGrid(products) {
     const concentrationChip = p.concentration
       ? `<span class="card-concentration">${p.concentration}</span>`
       : '';
+    const genderChip = genderBadgeHtml(p.gender, 'card-gender');
 
     const badgeClass = stockState.badgeClass;
     const guidanceBadges = getGuidanceBadges(p);
@@ -240,7 +241,10 @@ function _renderGrid(products) {
         <p class="card-house">${p.house}</p>
         <div class="card-title-row">
           <h3 class="card-name">${p.name}</h3>
-          ${concentrationChip}
+          <div class="card-meta-chips">
+            ${genderChip}
+            ${concentrationChip}
+          </div>
         </div>
         ${guidanceHtml ? `<div class="card-guidance" aria-label="Recomendado para">${guidanceHtml}</div>` : ''}
         <div class="card-purchase">
@@ -303,6 +307,19 @@ function _stockText(stock) {
   return 'Disponible';
 }
 
+export function genderLabel(gender) {
+  const labels = {
+    male: 'Hombre',
+    female: 'Mujer',
+    unisex: 'Unisex',
+  };
+  return labels[String(gender ?? '').toLowerCase()] ?? '';
+}
+
+export function genderBadgeHtml(gender, className = 'gender-badge') {
+  const label = genderLabel(gender);
+  return label ? `<span class="${className}">${label}</span>` : '';
+}
 
 function _isOrderableVariant(variant) {
   return Boolean(variant && !variant.soldOut && variant.availability > 0 && _validVariantId(variant.variant_id));

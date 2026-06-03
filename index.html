@@ -261,8 +261,8 @@
   <div class="cart-footer">
     <div class="checkout-panel" id="checkout-form" aria-label="Datos de checkout">
       <div class="checkout-head">
-        <span class="checkout-kicker">Datos rápidos del pedido</span>
-        <span class="checkout-note">Al finalizar, apartamos tu pedido y te llevamos a WhatsApp para confirmar pago y entrega.</span>
+        <span class="checkout-kicker">👤 ¿A nombre de quién apartamos tu pedido?</span>
+        <span class="checkout-note">Lo usamos para confirmar tu pedido por WhatsApp.</span>
       </div>
 
       <p class="checkout-momentum" id="checkout-momentum" aria-live="polite" hidden></p>
@@ -271,7 +271,8 @@
         <label class="checkout-control checkout-control--primary" for="checkout-name">
           <span>Nombre para tu pedido *</span>
           <input class="checkout-field" id="checkout-name" type="text" autocomplete="name" placeholder="Ej. Roger Díaz" aria-required="true">
-          <small class="checkout-helper">Usaremos este nombre para identificar tu pedido.</small>
+          <small class="checkout-helper">Lo usamos para confirmar tu pedido por WhatsApp.</small>
+          <small class="checkout-name-error" id="checkout-name-error" aria-live="polite"></small>
         </label>
 
         <label class="checkout-control" for="checkout-phone">

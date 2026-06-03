@@ -143,15 +143,18 @@ async function _renderUpsells() {
     .filter(entry => entry.variant);
 
   if (!suggestions.length) {
-    slot.hidden = true;
-    slot.innerHTML = '';
+    if (!minimum.isComplete) {
+      slot.innerHTML = _minimumPrompt(minimum);
+      slot.hidden = false;
+    } else {
+      slot.hidden = true;
+      slot.innerHTML = '';
+    }
     _lastUpsellSig = '';
     return;
   }
 
-  const sectionLabel = isCollection
-    ? 'Completa tu colección'
-    : minimum.isComplete ? 'También te puede gustar' : 'Completa tu pedido';
+  const sectionLabel = minimum.isComplete ? 'También te puede gustar' : 'Completa tu pedido';
 
   slot.innerHTML = `
     ${!minimum.isComplete ? _minimumPrompt(minimum) : ''}
@@ -168,7 +171,7 @@ async function _renderUpsells() {
   }
 
   const railId = isCollection ? 'collection_builder_cart' : 'cart_upsell';
-  const railTitle = isCollection ? 'Completa tu colección' : 'Completa tu pedido';
+  const railTitle = 'Completa tu pedido';
   const sig = `${railId}:${suggestions.map(s => s.product.id).join('|')}`;
   if (sig !== _lastUpsellSig) {
     _lastUpsellSig = sig;
@@ -206,13 +209,13 @@ function _minimumPrompt(minimum) {
   return `
     <div class="cart-minimum" aria-label="Progreso del pedido mínimo">
       <div class="cart-minimum-head">
-        <span>Tu pedido casi está listo.</span>
+        <span>🎁 Te faltan <strong>${formatPrice(minimum.remaining)}</strong> para completar el pedido mínimo</span>
         <strong>${minimum.progress}%</strong>
       </div>
       <div class="cart-minimum-bar" aria-hidden="true">
         <span style="width:${minimum.progress}%"></span>
       </div>
-      <p class="cart-minimum-remaining">Te faltan <strong>${formatPrice(minimum.remaining)}</strong> para completar el pedido mínimo.</p>
+      <p class="cart-minimum-remaining">Agrega una muestra o decant pequeño para finalizar.</p>
     </div>`;
 }
 

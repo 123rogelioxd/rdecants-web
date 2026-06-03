@@ -50,6 +50,23 @@ test('cart drawer title says "Tu carrito" (not "Tu Colección") with a subtitle'
   }
 });
 
+test('cart upsell copy says "Completa tu pedido", not "Completa tu colección"', () => {
+  const src = read('assets/js/cart/render.js');
+  assert.ok(src.includes('Completa tu pedido'), 'new cart recommendation title present');
+  assert.ok(!src.includes('Completa tu colección'), 'old collection title removed from cart recommendations');
+});
+
+test('customer name block is visible, required and explains WhatsApp confirmation', () => {
+  for (const file of ['index.html', 'product.html', 'mood.html']) {
+    const html = read(file);
+    assert.ok(html.includes('¿A nombre de quién apartamos tu pedido?'), `${file} name prompt`);
+    assert.ok(html.includes('id="checkout-name"'), `${file} name input`);
+    assert.ok(html.includes('aria-required="true"'), `${file} name required`);
+    assert.ok(html.includes('id="checkout-name-error"'), `${file} name-local error`);
+    assert.ok(html.includes('Lo usamos para confirmar tu pedido por WhatsApp.'), `${file} helper`);
+  }
+});
+
 /* ── B. Honest PDP entry price (no misleading 2ml "Desde") ───── */
 
 const sample2ml = {
@@ -110,6 +127,32 @@ test('below-minimum cart surfaces the remaining amount with "mínimo"', async ()
   assert.equal(m.minimum.remaining, 50);
   assert.match(m.message, /Te faltan \$50/);
   assert.match(m.message, /mínimo/, 'accent rendered correctly');
+  assert.match(m.message, /muestra o decant pequeño/, 'suggests a small add-on');
+});
+
+test('checkout CTA copy changes for missing name, missing minimum and ready', async () => {
+  const { getCheckoutButtonLabel, getCheckoutButtonState } =
+    await import('../assets/js/cart/checkout.js');
+
+  const belowMinimum = { isComplete: false };
+  const complete = { isComplete: true };
+
+  assert.equal(
+    getCheckoutButtonLabel({ isEmpty: false, minimum: complete, hasValidName: false }),
+    'Agrega tu nombre para finalizar',
+  );
+  assert.equal(
+    getCheckoutButtonState({ isEmpty: false, minimum: complete, hasValidName: false }),
+    'needs_name',
+  );
+  assert.equal(
+    getCheckoutButtonLabel({ isEmpty: false, minimum: belowMinimum, hasValidName: true }),
+    'Completa el mínimo para finalizar',
+  );
+  assert.equal(
+    getCheckoutButtonLabel({ isEmpty: false, minimum: complete, hasValidName: true }),
+    'Enviar pedido por WhatsApp',
+  );
 });
 
 /* ── E. Required customer name still enforced ───────────────── */

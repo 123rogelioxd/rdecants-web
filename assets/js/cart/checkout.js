@@ -342,6 +342,8 @@ function _syncAvailability() {
     const isDisabled = isEmpty || !minimum.isComplete || !hasValidName || _isSubmitting;
     button.disabled = isDisabled;
     button.setAttribute('aria-disabled', String(isDisabled));
+    if (!_isSubmitting) button.textContent = getCheckoutButtonLabel({ isEmpty, minimum, hasValidName });
+    button.dataset.state = getCheckoutButtonState({ isEmpty, minimum, hasValidName });
   }
 
   form?.classList.toggle('checkout-form--disabled', isEmpty);
@@ -371,6 +373,9 @@ function _showError(error) {
   _clearError();
   error.field?.classList.add('checkout-field--error');
   error.field?.setAttribute('aria-invalid', 'true');
+  if (error.key === 'name') {
+    _showNameMessage(error.message, 'error');
+  }
   _showMessage(error.message, 'error');
 }
 
@@ -394,6 +399,8 @@ function _clearError() {
     errorEl.textContent = '';
     errorEl.dataset.tone = 'neutral';
   }
+
+  _showNameMessage('', 'neutral');
 }
 
 function _field(key) {
@@ -417,6 +424,27 @@ function _setButtonLoading(button, isLoading, label = '') {
     delete button.dataset.label;
     _syncAvailability();
   }
+}
+
+export function getCheckoutButtonLabel({ isEmpty = false, minimum, hasValidName = false } = {}) {
+  if (isEmpty) return 'Agrega una fragancia para finalizar';
+  if (!hasValidName) return 'Agrega tu nombre para finalizar';
+  if (!minimum?.isComplete) return 'Completa el mínimo para finalizar';
+  return 'Enviar pedido por WhatsApp';
+}
+
+export function getCheckoutButtonState({ isEmpty = false, minimum, hasValidName = false } = {}) {
+  if (isEmpty) return 'empty';
+  if (!hasValidName) return 'needs_name';
+  if (!minimum?.isComplete) return 'minimum';
+  return 'ready';
+}
+
+function _showNameMessage(message, tone = 'neutral') {
+  const el = document.getElementById('checkout-name-error');
+  if (!el) return;
+  el.textContent = message;
+  el.dataset.tone = tone;
 }
 
 function _isValidCustomerName(value) {

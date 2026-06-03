@@ -34,9 +34,9 @@ export function getCartMomentum({ count = 0, total = 0, threshold = MIN_ORDER_TH
   if (!minimum.isComplete) {
     return {
       key: 'minimum',
-      message: `Te faltan $${minimum.remaining} para completar el pedido mínimo.`,
-      title: 'Tu pedido casi está listo.',
-      helper: 'Agrega un decant más para completar el pedido.',
+      message: `🎁 Te faltan $${minimum.remaining} para completar el pedido mínimo. Agrega una muestra o decant pequeño para finalizar.`,
+      title: 'Completa el pedido mínimo.',
+      helper: 'Agrega una muestra o decant pequeño para finalizar.',
       minimum,
     };
   }
@@ -51,7 +51,7 @@ export function getCartMomentum({ count = 0, total = 0, threshold = MIN_ORDER_TH
 
   return {
     key: 'ready',
-    message: 'Todo listo. Finaliza por WhatsApp cuando quieras.',
+    message: '✅ Todo listo. Puedes enviar tu pedido por WhatsApp.',
     minimum,
   };
 }

@@ -81,6 +81,7 @@ export function buildProductPageHtml(product) {
   const concentrationHtml = product.concentration
     ? `<span class="pdp-concentration">${_escape(product.concentration)}</span>`
     : '';
+  const genderHtml = _genderBadgeHtml(product.gender, 'pdp-gender');
 
   const notesHtml = (product.notes ?? [])
     .map(n => `<span class="note-tag">${_escape(n)}</span>`)
@@ -118,7 +119,10 @@ export function buildProductPageHtml(product) {
         ${confBadgeHtml}
         <div class="pdp-title-row">
           <h1 class="pdp-name" id="pdp-name">${_escape(product.name)}</h1>
-          ${concentrationHtml}
+          <div class="pdp-meta-chips">
+            ${genderHtml}
+            ${concentrationHtml}
+          </div>
         </div>
 
         ${product.story ? `<p class="pdp-story">${_escape(product.story)}</p>` : ''}
@@ -569,6 +573,20 @@ function _stockHtml(scarcity) {
   return `<p class="card-stock pdp-stock card-stock--${scarcity.key}">
     <span class="stock-dot"></span>${_escape(scarcity.label)}
   </p>`;
+}
+
+function _genderLabel(gender) {
+  const labels = {
+    male: 'Hombre',
+    female: 'Mujer',
+    unisex: 'Unisex',
+  };
+  return labels[String(gender ?? '').toLowerCase()] ?? '';
+}
+
+function _genderBadgeHtml(gender, className = 'gender-badge') {
+  const label = _genderLabel(gender);
+  return label ? `<span class="${className}">${_escape(label)}</span>` : '';
 }
 
 function _isOrderableVariant(variant) {

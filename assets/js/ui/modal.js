@@ -124,6 +124,7 @@ function _render() {
   const concentrationHtml = p.concentration
     ? `<span class="pdm-concentration">${p.concentration}</span>`
     : '';
+  const genderHtml = _genderBadgeHtml(p.gender, 'pdm-gender');
   const badgeHtml = scarcity.key === 'ok'
     ? ''
     : `<span class="pdm-badge ${scarcity.badgeClass}">${scarcity.label}</span>`;
@@ -194,7 +195,10 @@ function _render() {
         <p class="pdm-house">${p.house ?? ''}</p>
         <div class="pdm-title-row">
           <h2 class="pdm-name" id="pdm-name">${p.name}</h2>
-          ${concentrationHtml}
+          <div class="pdm-meta-chips">
+            ${genderHtml}
+            ${concentrationHtml}
+          </div>
         </div>
         <p class="pdm-decant-hint">Decant auténtico · prueba antes de comprar el frasco</p>
 
@@ -424,6 +428,20 @@ function _setButtonLoading(btn, isLoading, label = '') {
     if (btn.dataset.label) btn.innerHTML = btn.dataset.label;
     delete btn.dataset.label;
   }
+}
+
+function _genderLabel(gender) {
+  const labels = {
+    male: 'Hombre',
+    female: 'Mujer',
+    unisex: 'Unisex',
+  };
+  return labels[String(gender ?? '').toLowerCase()] ?? '';
+}
+
+function _genderBadgeHtml(gender, className = 'gender-badge') {
+  const label = _genderLabel(gender);
+  return label ? `<span class="${className}">${label}</span>` : '';
 }
 
 function _isOrderableVariant(variant) {

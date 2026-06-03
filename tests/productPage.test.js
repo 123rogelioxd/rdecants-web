@@ -23,6 +23,7 @@ const sample = {
   name: 'Sauvage',
   house: 'Dior',
   concentration: 'EDP',
+  gender: 'male',
   story: 'Composición aromática moderna.',
   desc: 'Fresco y especiado.',
   notes: ['bergamota', 'pimienta', 'ambroxan'],
@@ -77,6 +78,7 @@ test('buildProductPageHtml renders full intelligence sections from fragrance', (
   const html = buildProductPageHtml(sample);
   assert.ok(html.includes('Sauvage'), 'name');
   assert.ok(html.includes('Dior'), 'house');
+  assert.ok(html.includes('Hombre'), 'gender');
   assert.ok(html.includes('EDP'), 'concentration');
   assert.ok(html.includes('pdp-btn-add'), 'add-to-cart button');
   assert.ok(html.includes('pdp-btn-wa'), 'WhatsApp button');
@@ -108,6 +110,24 @@ test('buildProductPageHtml shows not-found state for missing product', () => {
 test('modal "Ver detalles" CTA targets /perfume/{slug}', () => {
   /* The modal builds the href via productPageUrl — verify the contract. */
   assert.equal(productPageUrl(sample), '/perfume/dior-sauvage');
+});
+
+test('PDP renders gender only when product metadata includes it', () => {
+  const withGender = buildProductPageHtml({ ...sample, gender: 'unisex' });
+  assert.ok(withGender.includes('pdp-gender'), 'gender badge class');
+  assert.ok(withGender.includes('Unisex'), 'gender label');
+
+  const withoutGender = buildProductPageHtml({ ...sample, gender: null });
+  assert.ok(!withoutGender.includes('pdp-gender'), 'gender badge hidden');
+  assert.ok(!withoutGender.includes('Unisex'), 'does not invent gender');
+});
+
+test('catalog gender badge helper renders known labels and hides missing metadata', async () => {
+  const { genderBadgeHtml } = await import('../assets/js/catalog/render.js');
+  assert.equal(genderBadgeHtml('female', 'card-gender'), '<span class="card-gender">Mujer</span>');
+  assert.equal(genderBadgeHtml('male', 'card-gender'), '<span class="card-gender">Hombre</span>');
+  assert.equal(genderBadgeHtml('unisex', 'card-gender'), '<span class="card-gender">Unisex</span>');
+  assert.equal(genderBadgeHtml(null, 'card-gender'), '');
 });
 
 test('PDP module imports getSizeLabel from versioned prices module', async () => {

@@ -565,7 +565,22 @@
   overflow-wrap: anywhere;
 }
 
+.card-meta-chips,
+.pdp-meta-chips,
+.pdm-meta-chips {
+  align-items: flex-start;
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+  max-width: 44%;
+}
+
 .card-concentration,
+.card-gender,
+.pdp-gender,
+.pdm-gender,
 .pdm-concentration {
   border: 1px solid rgba(201, 169, 110, 0.28);
   border-radius: 999px;
@@ -577,6 +592,13 @@
   padding: 7px 9px;
   text-transform: uppercase;
   max-width: 100%;
+}
+
+.card-gender,
+.pdp-gender,
+.pdm-gender {
+  border-color: rgba(255, 255, 255, 0.13);
+  color: rgba(255, 255, 255, 0.62);
 }
 
 .card-story {
@@ -898,7 +920,8 @@
   font-weight: 400;
 }
 
-.pdp-concentration {
+.pdp-concentration,
+.pdp-gender {
   border: 1px solid rgba(201, 169, 110, 0.28);
   border-radius: 999px;
   color: var(--accent);
@@ -907,6 +930,11 @@
   line-height: 1;
   padding: 7px 9px;
   text-transform: uppercase;
+}
+
+.pdp-gender {
+  border-color: rgba(255, 255, 255, 0.13);
+  color: rgba(255, 255, 255, 0.62);
 }
 
 .pdp-story {
@@ -1934,11 +1962,12 @@
 
 .cart-minimum {
   margin-bottom: 16px;
-  padding: 13px;
-  border: 1px solid rgba(201, 169, 110, 0.18);
+  padding: 14px;
+  border: 1px solid rgba(201, 169, 110, 0.3);
   border-radius: 12px;
   background:
-    linear-gradient(180deg, rgba(201, 169, 110, 0.07), rgba(255, 255, 255, 0.022));
+    linear-gradient(180deg, rgba(201, 169, 110, 0.13), rgba(201, 169, 110, 0.045));
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.24);
 }
 
 .cart-minimum-head {
@@ -1955,7 +1984,7 @@
 .cart-minimum-head strong {
   color: var(--accent);
   font-family: var(--font-serif);
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 400;
 }
 
@@ -1979,7 +2008,7 @@
 
 .cart-minimum p {
   margin-top: 9px;
-  color: rgba(255, 255, 255, 0.58);
+  color: rgba(255, 255, 255, 0.72);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -2513,6 +2542,12 @@
   padding: 14px;
 }
 
+.cart-products-section {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018));
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
 .cart-section-label,
 .cart-summary-title {
   display: block;
@@ -2681,9 +2716,11 @@
 .checkout-panel {
   margin-bottom: 12px;
   padding: 14px;
-  background: rgba(255, 255, 255, 0.026);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background:
+    linear-gradient(180deg, rgba(201, 169, 110, 0.075), rgba(255, 255, 255, 0.026));
+  border: 1px solid rgba(201, 169, 110, 0.24);
   border-radius: 14px;
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.26);
 }
 
 .checkout-head {
@@ -2693,10 +2730,11 @@
 }
 
 .checkout-kicker {
-  font-size: 10px;
-  letter-spacing: 0.22em;
-  color: var(--accent);
-  text-transform: uppercase;
+  font-size: 13px;
+  letter-spacing: 0;
+  color: rgba(255, 255, 255, 0.92);
+  text-transform: none;
+  line-height: 1.35;
 }
 
 .checkout-note {
@@ -2763,14 +2801,27 @@
    subtle accent so customers immediately see where to type their name. */
 .checkout-grid .checkout-control--primary {
   grid-column: 1 / -1;
-  border: 1px solid rgba(201, 169, 110, 0.28);
-  background: rgba(201, 169, 110, 0.05);
+  border: 1px solid rgba(201, 169, 110, 0.42);
+  background: rgba(201, 169, 110, 0.075);
   border-radius: 12px;
-  padding: 11px 12px 0;
+  padding: 12px 12px 0;
 }
 
 .checkout-control--primary > span {
   color: var(--accent);
+}
+
+.checkout-name-error {
+  display: block;
+  min-height: 15px;
+  color: var(--danger);
+  font-size: 11px;
+  line-height: 1.35;
+  margin: -4px 0 10px;
+}
+
+.checkout-name-error[data-tone="neutral"] {
+  color: rgba(255, 255, 255, 0.36);
 }
 
 .checkout-control .checkout-field {
@@ -2836,6 +2887,12 @@
   border-color: rgba(37, 211, 102, 0.25);
   background: rgba(37, 211, 102, 0.06);
   color: rgba(255, 255, 255, 0.82);
+}
+
+.checkout-form--ready {
+  border-color: rgba(37, 211, 102, 0.26);
+  background:
+    linear-gradient(180deg, rgba(37, 211, 102, 0.07), rgba(255, 255, 255, 0.026));
 }
 
 .checkout-momentum[data-key="ready"]::before {
@@ -2944,11 +3001,24 @@
 }
 
 .btn-whatsapp:disabled {
-  opacity: 0.45;
+  opacity: 0.72;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
   filter: grayscale(0.2);
+}
+
+.btn-whatsapp[data-state="needs_name"],
+.btn-whatsapp[data-state="minimum"],
+.btn-whatsapp[data-state="empty"] {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(201, 169, 110, 0.22);
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.btn-whatsapp[data-state="ready"] {
+  background: #25D366;
+  box-shadow: 0 14px 34px rgba(37, 211, 102, 0.26);
 }
 
 .btn-whatsapp:hover:not(:disabled) {
