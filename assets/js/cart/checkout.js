@@ -3,13 +3,13 @@
    Customer data, validation, persistence and premium WA message.
    ============================================================= */
 
-import { Cart }      from './cart.js?v=1.0.15';
-import { ApiClient } from '../api/client.js?v=1.0.15';
-import { CatalogProvider } from '../providers/catalog.js?v=2026.06.01.1';
+import { Cart }      from './cart.js?v=2026.06.03.2';
+import { ApiClient } from '../api/client.js?v=2026.06.03.2';
+import { CatalogProvider } from '../providers/catalog.js?v=2026.06.03.2';
 import { Tracker }   from '../tracking/tracker.js';
 import { showToast } from '../ui/toast.js';
-import { formatPrice, getVariantForSize } from '../utils/prices.js?v=1.0.15';
-import { getCartMomentum } from './momentum.js?v=1.0.15';
+import { formatPrice, getVariantForSize } from '../utils/prices.js?v=2026.06.03.2';
+import { getCartMomentum } from './momentum.js?v=2026.06.03.2';
 
 const STORAGE_KEY = 'rdecants_checkout_customer';
 const LAST_ORDER_KEY = 'rdecants_last_web_order_folio';

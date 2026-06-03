@@ -1,13 +1,13 @@
-console.log('CATALOG PROVIDER BUILD 2026.06.01.1 LOADED');
+console.log('CATALOG PROVIDER BUILD 2026.06.03.2 LOADED');
 
 /* =============================================================
    RDECANTS — CATALOG PROVIDER
    Abstraction layer between rendering and data source.
    ============================================================= */
 
-import { ApiClient } from '../api/client.js?v=2026.06.01.1';
-import { API_BASE, normalizeApiImageUrl } from '../api/config.js?v=2026.06.01.1';
-import { PACKS } from '../../../data/products.js?v=1.0.2';
+import { ApiClient } from '../api/client.js?v=2026.06.03.2';
+import { API_BASE, normalizeApiImageUrl } from '../api/config.js?v=2026.06.03.2';
+import { PACKS } from '../../../data/products.js?v=2026.06.03.2';
 
 let _productsCache = null;
 let _packsCache = null;

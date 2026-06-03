@@ -12,13 +12,13 @@
    Pattern mirrors ui/assistant.js: setup*(containerId) → render → bind.
    ============================================================= */
 
-import { getAnchorProducts, getDiscoveryRecommendations } from '../recommendations/discovery.js?v=1.0.0';
-import { Personalization, filterDisliked } from '../recommendations/personalization.js?v=1.0.13';
-import { CatalogProvider }  from '../providers/catalog.js?v=2026.06.01.1';
+import { getAnchorProducts, getDiscoveryRecommendations } from '../recommendations/discovery.js?v=2026.06.03.2';
+import { Personalization, filterDisliked } from '../recommendations/personalization.js?v=2026.06.03.2';
+import { CatalogProvider }  from '../providers/catalog.js?v=2026.06.03.2';
 import { Tracker }          from '../tracking/tracker.js';
-import { openProductModal } from './modal.js?v=1.0.17';
+import { openProductModal } from './modal.js?v=2026.06.03.2';
 import { primeImageStates } from './images.js';
-import { getDefaultVariant, formatPrice } from '../utils/prices.js?v=1.0.13';
+import { getDefaultVariant, formatPrice } from '../utils/prices.js?v=2026.06.03.2';
 
 const RAIL_CONTEXT = { railId: 'discovery', railTitle: 'Empieza por lo que ya conoces' };
 const MIN_ANCHORS  = 2;

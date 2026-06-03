@@ -1,31 +1,31 @@
-﻿/* =============================================================
-   RDECANTS â€” CATALOG RENDERER
+/* =============================================================
+   RDECANTS — CATALOG RENDERER
    Renders featured product, product grid, and packs.
    Data comes exclusively from CatalogProvider.
 
    States handled:
-     â€¢ loading   â€” placeholder text while fetching
-     â€¢ empty     â€” section hidden / empty message when no items
-     â€¢ filtered  â€” SearchBar callback re-renders with subset
-     â€¢ no-match  â€” elegant empty state when filters return 0
+     • loading   — placeholder text while fetching
+     • empty     — section hidden / empty message when no items
+     • filtered  — SearchBar callback re-renders with subset
+     • no-match  — elegant empty state when filters return 0
    ============================================================= */
 
-import { CatalogProvider }  from '../providers/catalog.js?v=2026.06.01.1';
+import { CatalogProvider }  from '../providers/catalog.js?v=2026.06.03.2';
 import { Tracker }          from '../tracking/tracker.js';
-import { openProductModal } from '../ui/modal.js?v=1.0.17';
-import { SearchBar }        from '../ui/searchbar.js?v=1.0.2';
+import { openProductModal } from '../ui/modal.js?v=2026.06.03.2';
+import { SearchBar }        from '../ui/searchbar.js?v=2026.06.03.2';
 import { observeFadeUp }    from '../ui/animations.js';
 import { primeImageStates } from '../ui/images.js';
 import { getDefaultVariant,
          getDisplayVariant,
-         formatPrice }      from '../utils/prices.js?v=1.0.13';
-import { getScarcityDisplay } from '../utils/scarcity.js?v=1.0.13';
-import { getGuidanceBadges }  from '../utils/guidance.js?v=1.0.13';
+         formatPrice }      from '../utils/prices.js?v=2026.06.03.2';
+import { getScarcityDisplay } from '../utils/scarcity.js?v=2026.06.03.2';
+import { getGuidanceBadges }  from '../utils/guidance.js?v=2026.06.03.2';
 
 /* module-level ref kept for SearchBar callback */
 let _productsContainer = null;
 
-/* â”€â”€ Featured â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Featured ────────────────────────────────────────────────── */
 export async function renderFeatured() {
   const el = document.getElementById('featured-product');
   if (!el) return;
@@ -70,7 +70,7 @@ export async function renderFeatured() {
         <button class="btn-primary"
           ${canAddFeatured ? `onclick="window.__rd.cart.add('${featured.id}', ${featuredVariant.size})"` : 'disabled aria-disabled="true"'}
           aria-label="${canAddFeatured ? `Agregar ${featured.name} ${featuredVariant.size}ml al carrito` : 'Precio por consultar'}">
-          ${canAddFeatured ? 'Agregar a mi colección' : 'Consultar precio'}
+          ${canAddFeatured ? 'Agregar a mi colecci�n' : 'Consultar precio'}
         </button>
         <button class="btn-ghost" onclick="window.__rd.ui.scrollToCatalog()">
           Ver coleccion
@@ -91,7 +91,7 @@ function _emptyState(title, desc) {
   `;
 }
 
-/* â”€â”€ Product grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Product grid ────────────────────────────────────────────── */
 export async function renderProducts() {
   _productsContainer = document.getElementById('products-grid');
   if (!_productsContainer) return;
@@ -102,8 +102,8 @@ export async function renderProducts() {
 
   if (!products?.length) {
     _productsContainer.innerHTML = _emptyState(
-      'Aún no hay perfumes publicados.',
-      'Cuando el catálogo tenga fragancias activas aparecerán aquí.',
+      'A�n no hay perfumes publicados.',
+      'Cuando el cat�logo tenga fragancias activas aparecer�n aqu�.',
     );
     return;
   }
@@ -117,7 +117,7 @@ export async function renderProducts() {
     observeFadeUp();
   });
 
-  /* Measure time-to-catalog — fires once when catalog enters viewport */
+  /* Measure time-to-catalog � fires once when catalog enters viewport */
   const _catalogLoadTime = Date.now();
   const _catalogSection  = document.getElementById('catalog');
   if (_catalogSection && 'IntersectionObserver' in window) {
@@ -131,7 +131,7 @@ export async function renderProducts() {
   }
 }
 
-/* â”€â”€ Packs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Packs ───────────────────────────────────────────────────── */
 export async function renderPacks() {
   const container = document.getElementById('packs-grid');
   if (!container) return;
@@ -179,7 +179,7 @@ export async function renderPacks() {
   });
 }
 
-/* â”€â”€ Grid renderer (used by SearchBar callback) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Grid renderer (used by SearchBar callback) ──────────────── */
 function _renderGrid(products) {
   if (!_productsContainer) return;
 
@@ -259,7 +259,7 @@ function _renderGrid(products) {
       </div>
     `;
 
-    /* Click â†’ modal */
+    /* Click → modal */
     card.querySelector('.card-action')?.addEventListener('click', e => {
       e.stopPropagation();
       if (isSoldOut) return;
@@ -280,7 +280,7 @@ function _renderGrid(products) {
       Tracker.productClicked(p, 'grid');
     });
 
-    /* Keyboard â†’ modal */
+    /* Keyboard → modal */
     card.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
@@ -295,7 +295,7 @@ function _renderGrid(products) {
   primeImageStates(_productsContainer);
 }
 
-/* â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Helpers ─────────────────────────────────────────────────── */
 function _stockText(stock) {
   if (stock <= 1) return 'Ultima unidad disponible';
   if (stock <= 3) return `Solo ${stock} unidades disponibles`;

@@ -4,7 +4,7 @@
    contract accepted by R Supply OS.
    ============================================================= */
 
-import { trackEvent } from './events.js?v=1.0.14';
+import { trackEvent } from './events.js?v=2026.06.03.2';
 
 export const API_EVENT_MAP = {
   viewed_product:            'product_viewed',

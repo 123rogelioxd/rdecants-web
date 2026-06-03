@@ -12,7 +12,7 @@ import {
   productSignals,
   scoreProfileMatch,
   normalizeText,
-} from '../recommendations/taxonomy.js?v=1.0.13';
+} from '../recommendations/taxonomy.js?v=2026.06.03.2';
 
 /* Per-signal weights. Fragrance metadata is canonical; legacy notes
    are kept as a tie-breaker so products without enriched data still

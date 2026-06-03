@@ -2,13 +2,13 @@
    RDECANTS — MOOD PAGE ENTRY (/mood/{slug})
    ============================================================= */
 
-import { Cart } from '../cart/cart.js?v=1.0.15';
-import { setupCheckout } from '../cart/checkout.js?v=1.0.15';
+import { Cart } from '../cart/cart.js?v=2026.06.03.2';
+import { setupCheckout } from '../cart/checkout.js?v=2026.06.03.2';
 import {
   renderCart, updateCartCount,
   openCart, closeCart, toggleCart, sendWhatsApp,
-} from '../cart/render.js?v=1.0.15';
-import { CatalogProvider } from '../providers/catalog.js?v=2026.06.01.1';
+} from '../cart/render.js?v=2026.06.03.2';
+import { CatalogProvider } from '../providers/catalog.js?v=2026.06.03.2';
 import { setupHeader } from '../ui/header.js';
 import { setupImageStates } from '../ui/images.js';
 import { Tracker } from '../tracking/tracker.js';
@@ -18,7 +18,7 @@ import {
   hydrateMoodPage,
   findMoodBySlug,
   readMoodSlugFromLocation,
-} from '../ui/moodPage.js?v=1.0.0';
+} from '../ui/moodPage.js?v=2026.06.03.2';
 
 /* ── Global bridge ──────────────────────────────────────────── */
 window.__rd = window.__rd || {};

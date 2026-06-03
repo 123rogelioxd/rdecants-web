@@ -13,8 +13,8 @@ test('header search imports the same SearchBar module instance as the catalog', 
   const header = read('assets/js/ui/header.js');
   const render = read('assets/js/catalog/render.js');
 
-  assert.match(header, /from '\.\/searchbar\.js\?v=1\.0\.2'/);
-  assert.match(render, /from '\.\.\/ui\/searchbar\.js\?v=1\.0\.2'/);
+  assert.match(header, /from '\.\/searchbar\.js\?v=2026\.06\.03\.2'/);
+  assert.match(render, /from '\.\.\/ui\/searchbar\.js\?v=2026\.06\.03\.2'/);
 });
 
 test('header has the only global search input and delegates to SearchBar.applyQuery', () => {

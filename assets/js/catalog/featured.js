@@ -7,8 +7,8 @@
    Card fields used: image · name · tag
    ============================================================= */
 
-import { ApiClient } from '../api/client.js?v=2026.06.01.1';
-import { normalizeApiImageUrl } from '../api/config.js?v=1.0.2';
+import { ApiClient } from '../api/client.js?v=2026.06.03.2';
+import { normalizeApiImageUrl } from '../api/config.js?v=2026.06.03.2';
 import { primeImageStates } from '../ui/images.js';
 
 let _cache = null;

@@ -31,28 +31,28 @@ import {
   getValidVariants,
   formatPrice,
   getSizeLabel,
-} from '../utils/prices.js?v=1.0.16';
-import { getScarcityDisplay } from '../utils/scarcity.js?v=1.0.13';
-import { getGuidanceBadges } from '../utils/guidance.js?v=1.0.13';
-import { getRelatedProducts } from '../recommendations/upsells.js?v=1.0.14';
-import { getReasons } from '../recommendations/reasoning.js?v=1.0.13';
-import { buildFragranceProfileHtml } from './fragranceProfile.js?v=1.0.1';
+} from '../utils/prices.js?v=2026.06.03.2';
+import { getScarcityDisplay } from '../utils/scarcity.js?v=2026.06.03.2';
+import { getGuidanceBadges } from '../utils/guidance.js?v=2026.06.03.2';
+import { getRelatedProducts } from '../recommendations/upsells.js?v=2026.06.03.2';
+import { getReasons } from '../recommendations/reasoning.js?v=2026.06.03.2';
+import { buildFragranceProfileHtml } from './fragranceProfile.js?v=2026.06.03.2';
 import {
   getNoviceLead,
   getBestForChips,
   getNegatives,
   getReturningUserLine,
-} from './pdpNovice.js?v=1.0.1';
+} from './pdpNovice.js?v=2026.06.03.2';
 import {
   resolveDiscoverySets,
   renderDiscoverySetsFallback,
-} from './discoverySets.js?v=1.0.0';
-import { Personalization, filterDisliked } from '../recommendations/personalization.js?v=1.0.13';
+} from './discoverySets.js?v=2026.06.03.2';
+import { Personalization, filterDisliked } from '../recommendations/personalization.js?v=2026.06.03.2';
 import {
   getCollectionPairs,
   getComplementReason,
-} from '../recommendations/crossSell.js?v=1.0.0';
-import { getConfidenceBadge } from './pdpConfidence.js?v=1.0.0';
+} from '../recommendations/crossSell.js?v=2026.06.03.2';
+import { getConfidenceBadge } from './pdpConfidence.js?v=2026.06.03.2';
 import { showToast } from './toast.js';
 
 /* ── Public: build the page HTML ─────────────────────────────── */

@@ -111,11 +111,11 @@ test('modal "Ver detalles" CTA targets /perfume/{slug}', () => {
 });
 
 test('PDP module imports getSizeLabel from versioned prices module', async () => {
-  const prices = await import('../assets/js/utils/prices.js?v=1.0.16');
+  const prices = await import('../assets/js/utils/prices.js?v=2026.06.03.2');
   assert.equal(typeof prices.getSizeLabel, 'function');
   assert.equal(prices.getSizeLabel(5), 'Uso frecuente');
 
-  const productPage = await import('../assets/js/ui/productPage.js?v=1.0.2');
+  const productPage = await import('../assets/js/ui/productPage.js?v=2026.06.03.2');
   assert.equal(typeof productPage.buildProductPageHtml, 'function');
 });
 

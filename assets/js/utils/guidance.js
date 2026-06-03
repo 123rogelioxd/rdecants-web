@@ -15,7 +15,7 @@ import {
   USE_CASE_PROFILES,
   productSignals,
   scoreProfileMatch,
-} from '../recommendations/taxonomy.js?v=1.0.13';
+} from '../recommendations/taxonomy.js?v=2026.06.03.2';
 
 const MAX_BADGES = 2;
 const MIN_SCORE = 3;

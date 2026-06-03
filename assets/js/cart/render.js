@@ -3,18 +3,18 @@
    Renders cart drawer from current Cart state.
    ============================================================= */
 
-import { Cart }      from './cart.js?v=1.0.15';
+import { Cart }      from './cart.js?v=2026.06.03.2';
 import { sendCheckoutWhatsApp,
          syncCheckoutAvailability,
-         trackCheckoutStarted } from './checkout.js?v=1.0.15';
+         trackCheckoutStarted } from './checkout.js?v=2026.06.03.2';
 import { EventBus }  from '../core/events.js';
 import { Tracker }   from '../tracking/tracker.js';
-import { formatPrice, isValidPrice, getDefaultVariant } from '../utils/prices.js?v=1.0.15';
-import { CatalogProvider } from '../providers/catalog.js?v=2026.06.01.1';
-import { getCartUpsells }  from '../recommendations/upsells.js?v=1.0.14';
-import { getCollectionPairs } from '../recommendations/crossSell.js?v=1.0.0';
-import { Personalization, filterDisliked } from '../recommendations/personalization.js?v=1.0.13';
-import { getCartMinimumState } from './momentum.js?v=1.0.15';
+import { formatPrice, isValidPrice, getDefaultVariant } from '../utils/prices.js?v=2026.06.03.2';
+import { CatalogProvider } from '../providers/catalog.js?v=2026.06.03.2';
+import { getCartUpsells }  from '../recommendations/upsells.js?v=2026.06.03.2';
+import { getCollectionPairs } from '../recommendations/crossSell.js?v=2026.06.03.2';
+import { Personalization, filterDisliked } from '../recommendations/personalization.js?v=2026.06.03.2';
+import { getCartMinimumState } from './momentum.js?v=2026.06.03.2';
 
 const WHATSAPP_NUMBER = '5219516513018';
 let _prevFocus = null;

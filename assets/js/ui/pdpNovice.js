@@ -18,8 +18,8 @@
 import {
   getProfileSummary,
   getScoreSummary,
-} from './fragranceProfile.js?v=1.0.1';
-import { deriveProductMoods } from '../recommendations/personalization.js?v=1.0.13';
+} from './fragranceProfile.js?v=2026.06.03.2';
+import { deriveProductMoods } from '../recommendations/personalization.js?v=2026.06.03.2';
 
 /* Score band thresholds (percent). Deliberately conservative so a
    chip / negative only appears when the metadata clearly supports it. */

@@ -1,16 +1,16 @@
-﻿/* =============================================================
-   RDECANTS â€” PRODUCT DETAIL MODAL
+/* =============================================================
+   RDECANTS — PRODUCT DETAIL MODAL
    Opens a luxury detail sheet for any catalog product.
 
    Public API (also exposed on window.__rd.ui):
-     openProductModal(product)   â€” receives a mapped product obj
+     openProductModal(product)   — receives a mapped product obj
      closeProductModal()
 
    Design rules:
-     â€¢ Tokens only â€” no hardcoded colors or sizes
-     â€¢ Vanilla JS â€” no frameworks
-     â€¢ Accessible: focus-trap, ESC, aria-modal
-     â€¢ Safe: image fallback if src missing/broken
+     • Tokens only — no hardcoded colors or sizes
+     • Vanilla JS — no frameworks
+     • Accessible: focus-trap, ESC, aria-modal
+     • Safe: image fallback if src missing/broken
    ============================================================= */
 
 import { showToast } from './toast.js';
@@ -22,21 +22,21 @@ import { getDefaultVariant,
          getVariantForSize,
          getValidVariants,
          formatPrice,
-         getSizeLabel } from '../utils/prices.js?v=1.0.16';
-import { getScarcityDisplay } from '../utils/scarcity.js?v=1.0.13';
-import { getGuidanceBadges } from '../utils/guidance.js?v=1.0.13';
-import { buildWhyHtml } from './why.js?v=1.0.13';
-import { productPageUrl } from './productPage.js?v=1.0.2';
+         getSizeLabel } from '../utils/prices.js?v=2026.06.03.2';
+import { getScarcityDisplay } from '../utils/scarcity.js?v=2026.06.03.2';
+import { getGuidanceBadges } from '../utils/guidance.js?v=2026.06.03.2';
+import { buildWhyHtml } from './why.js?v=2026.06.03.2';
+import { productPageUrl } from './productPage.js?v=2026.06.03.2';
 
-/* â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── State ──────────────────────────────────────────────────── */
 let _activeProduct  = null;
 let _selectedSize   = 5;          /* default size */
 let _prevFocus      = null;       /* restore focus on close */
 
-/* â”€â”€ DOM refs (created once, reused) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── DOM refs (created once, reused) ────────────────────────── */
 let _overlay, _modal;
 
-/* â”€â”€ Build DOM (once) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Build DOM (once) ───────────────────────────────────────── */
 function _ensureDOM() {
   if (_overlay) return;
 
@@ -62,7 +62,7 @@ function _ensureDOM() {
   document.addEventListener('keydown', _handleKey);
 }
 
-/* â”€â”€ Open â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Open ────────────────────────────────────────────────────── */
 export function openProductModal(product) {
   if (!product) return;
 
@@ -88,7 +88,7 @@ export function openProductModal(product) {
   }, 320);
 }
 
-/* â”€â”€ Close â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Close ───────────────────────────────────────────────────── */
 export function closeProductModal() {
   if (!_overlay) return;
 
@@ -102,7 +102,7 @@ export function closeProductModal() {
   _activeProduct = null;
 }
 
-/* â”€â”€ Render modal content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Render modal content ────────────────────────────────────── */
 function _render() {
   const p = _activeProduct;
   if (!p || !_modal) return;
@@ -149,7 +149,7 @@ function _render() {
         aria-pressed="${ml === _selectedSize}"
         aria-label="${ml}ml - $${variant.price} MXN${disabled ? ' agotado' : ''}"
       >
-        <span class="pdm-size-ml">${ml}ml${ml === 5 ? '<span class="pdm-size-recommended"> · recomendado</span>' : ''}</span>
+        <span class="pdm-size-ml">${ml}ml${ml === 5 ? '<span class="pdm-size-recommended"> � recomendado</span>' : ''}</span>
         <span class="pdm-size-price">$${variant.price}</span>
         <span class="pdm-size-label">${disabled ? 'Agotado' : getSizeLabel(ml)}</span>
       </button>
@@ -193,12 +193,12 @@ function _render() {
           <h2 class="pdm-name" id="pdm-name">${p.name}</h2>
           ${concentrationHtml}
         </div>
-        <p class="pdm-decant-hint">Decant auténtico · prueba antes de comprar el frasco</p>
+        <p class="pdm-decant-hint">Decant aut�ntico � prueba antes de comprar el frasco</p>
 
         <a class="pdm-details-cta" href="${detailsHref}"
            aria-label="Ver detalles completos de ${p.name}">
           Ver detalles
-          <span aria-hidden="true">→</span>
+          <span aria-hidden="true">?</span>
         </a>
 
         ${p.story
@@ -224,9 +224,9 @@ function _render() {
 
       <div class="pdm-buybar" aria-label="Compra rapida">
         ${variants.length
-          ? '<div class="pdm-sizes-label">Elige presentación</div>'
+          ? '<div class="pdm-sizes-label">Elige presentaci�n</div>'
           : '<div class="pdm-price-consult">Precio disponible por consulta personalizada.</div>'}
-        <div class="pdm-sizes" role="group" aria-label="Seleccionar presentación" ${variants.length ? '' : 'hidden'}>
+        <div class="pdm-sizes" role="group" aria-label="Seleccionar presentaci�n" ${variants.length ? '' : 'hidden'}>
           ${sizesHtml}
         </div>
 
@@ -234,7 +234,7 @@ function _render() {
           <div class="pdm-price-row">
             <span class="pdm-price" id="pdm-price">${formatPrice(price, 'Consultar precio')}</span>
             <span class="pdm-price-unit">${_selectedSize ? `${_selectedSize}ml` : 'WhatsApp'}</span>
-            ${lowestPrice !== null ? `<p class="pdm-value-prop">Una botella completa cuesta miles — pruébalo desde ${formatPrice(lowestPrice)}.</p>` : ''}
+            ${lowestPrice !== null ? `<p class="pdm-value-prop">Una botella completa cuesta miles � pru�balo desde ${formatPrice(lowestPrice)}.</p>` : ''}
           </div>
 
           <div class="pdm-actions">
@@ -258,7 +258,7 @@ function _render() {
   _bindEvents();
 }
 
-/* â”€â”€ Event binding â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Event binding ───────────────────────────────────────────── */
 function _bindEvents() {
   /* Close button */
   _modal.querySelector('.pdm-close')
@@ -284,7 +284,7 @@ function _bindEvents() {
   _modal.addEventListener('keydown', _trapFocus);
 }
 
-/* â”€â”€ Update price & size selection without full re-render â”€â”€â”€â”€â”€â”€ */
+/* ── Update price & size selection without full re-render ────── */
 function _updateSizeUI() {
   const p     = _activeProduct;
   const price = getPriceForSize(p, _selectedSize);
@@ -315,7 +315,7 @@ function _updateSizeUI() {
   });
 }
 
-/* â”€â”€ Cart action â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Cart action ─────────────────────────────────────────────── */
 async function _handleAddToCart() {
   if (!_activeProduct) return;
   const variant = getVariantForSize(_activeProduct, _selectedSize);
@@ -335,7 +335,7 @@ async function _handleAddToCart() {
   }
 }
 
-/* â”€â”€ WhatsApp action â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── WhatsApp action ─────────────────────────────────────────── */
 async function _handleWhatsApp() {
   const p     = _activeProduct;
   if (!p) return;
@@ -359,12 +359,12 @@ async function _handleWhatsApp() {
   }
 }
 
-/* â”€â”€ Overlay click â€” close only if clicking backdrop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Overlay click — close only if clicking backdrop ─────────── */
 function _handleOverlayClick(e) {
   if (e.target === _overlay) closeProductModal();
 }
 
-/* â”€â”€ Keyboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Keyboard ────────────────────────────────────────────────── */
 function _handleKey(e) {
   if (!_overlay?.classList.contains('pdm-overlay--open')) return;
   if (e.key === 'Escape') closeProductModal();
@@ -391,7 +391,7 @@ function _trapFocus(e) {
   }
 }
 
-/* â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Helpers ─────────────────────────────────────────────────── */
 function _defaultSize(product) {
   return getDefaultVariant(product)?.size ?? null;
 }

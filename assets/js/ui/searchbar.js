@@ -18,12 +18,12 @@ import {
   SORT_LABELS,
   MOOD_LABELS,
   GENDER_LABELS,
-} from '../catalog/search.js?v=1.0.3';
+} from '../catalog/search.js?v=2026.06.03.2';
 import { Tracker }   from '../tracking/tracker.js';
 import {
   Personalization,
   personalizeProducts,
-} from '../recommendations/personalization.js?v=1.0.13';
+} from '../recommendations/personalization.js?v=2026.06.03.2';
 
 /* ── State ──────────────────────────────────────────────────── */
 const _DEFAULT = {

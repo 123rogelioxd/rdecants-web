@@ -9,8 +9,8 @@
    anchor discovery — one truth, no duplication.
    ============================================================= */
 
-import { isSellable, getOperationalScore, getAovSignal } from './scoring.js?v=1.0.13';
-import { getRelatedProducts } from './upsells.js?v=1.0.14';
+import { isSellable, getOperationalScore, getAovSignal } from './scoring.js?v=2026.06.03.2';
+import { getRelatedProducts } from './upsells.js?v=2026.06.03.2';
 
 const DEFAULT_ANCHOR_LIMIT = 5;
 const DEFAULT_REC_LIMIT    = 4;
