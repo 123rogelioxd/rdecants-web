@@ -31,9 +31,9 @@ let _productsContainer = null;
    search/filter is active — those views always show every result. */
 const MOBILE_CATALOG_CAP = 8;
 let _catalogExpanded = false;
-let _lastCatalogCapTotal = 0;
-let _lastCatalogCapFiltersActive = false;
+let _lastCatalogProducts = [];
 let _catalogResizeBound = false;
+let _lastMobileCatalogState = null;
 
 /* ── Featured ────────────────────────────────────────────────── */
 export async function renderFeatured() {
@@ -198,6 +198,7 @@ function _renderGrid(products) {
   _productsContainer.classList.remove('products-grid--capped');
 
   _productsContainer.innerHTML = '';
+  _lastCatalogProducts = Array.isArray(products) ? products : [];
 
   /* Empty state */
   if (!products.length) {
@@ -219,8 +220,14 @@ function _renderGrid(products) {
   }
 
   const frag = document.createDocumentFragment();
+  const total = products.length;
+  const productsToRender = getCatalogRenderProducts(products, {
+    expanded: _catalogExpanded,
+    filtersActive: _catalogFiltersActive(),
+    isMobile: _isMobileCatalog(),
+  });
 
-  products.forEach((p, idx) => {
+  productsToRender.forEach((p, idx) => {
     const displayVariant = getDisplayVariant(p);
     const priceHtml = displayVariant
       ? `${formatPrice(displayVariant.price)} <small>${displayVariant.size}ml</small>`
@@ -311,7 +318,7 @@ function _renderGrid(products) {
 
   _productsContainer.appendChild(frag);
   primeImageStates(_productsContainer);
-  _applyCatalogCap(products.length);
+  _applyCatalogCap(total);
 }
 
 /* ── Compact mobile catalog ──────────────────────────────────── */
@@ -320,26 +327,24 @@ function _renderGrid(products) {
    Capping only happens in the default browse view: no active filters and
    more items than the cap. Search/filtered views show everything. */
 function _applyCatalogCap(total) {
-  const filtersActive = SearchBar.hasActiveFilters?.() ?? false;
-  _lastCatalogCapTotal = total;
-  _lastCatalogCapFiltersActive = filtersActive;
+  const filtersActive = _catalogFiltersActive();
+  const isMobile = _isMobileCatalog();
+  _lastMobileCatalogState = isMobile;
+  _ensureCatalogCapResizeSync();
 
-  if (filtersActive || total <= MOBILE_CATALOG_CAP) {
+  if (filtersActive || !isMobile || total <= MOBILE_CATALOG_CAP) {
     _catalogExpanded = false;
-    _syncCatalogCardVisibility(total, filtersActive);
     return;
   }
 
   if (!_catalogExpanded) _productsContainer.classList.add('products-grid--capped');
-  _syncCatalogCardVisibility(total, filtersActive);
-  _ensureCatalogCapResizeSync();
   _renderShowMore(total);
 }
 
 function _renderShowMore(total) {
   const shown = getCatalogCapShown(total, {
     expanded: _catalogExpanded,
-    filtersActive: _lastCatalogCapFiltersActive,
+    filtersActive: _catalogFiltersActive(),
     isMobile: _isMobileCatalog(),
   });
 
@@ -360,8 +365,6 @@ function _renderShowMore(total) {
 
 function _toggleCatalog(total) {
   _catalogExpanded = !_catalogExpanded;
-  _productsContainer.classList.toggle('products-grid--capped', !_catalogExpanded);
-  _syncCatalogCardVisibility(total, _lastCatalogCapFiltersActive);
 
   if (_catalogExpanded) {
     Tracker.catalogExpanded(total, MOBILE_CATALOG_CAP);
@@ -370,44 +373,41 @@ function _toggleCatalog(total) {
     _productsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  _removeShowMore();
-  _renderShowMore(total);
+  _renderGrid(_lastCatalogProducts);
 }
 
 function _removeShowMore() {
   document.getElementById('catalog-more')?.remove();
 }
 
-function _syncCatalogCardVisibility(total, filtersActive = false) {
-  if (!_productsContainer) return;
-  const visibleMap = getCatalogCapVisibility(total, {
-    expanded: _catalogExpanded,
-    filtersActive,
-    isMobile: _isMobileCatalog(),
-  });
-
-  _productsContainer.querySelectorAll('.product-card').forEach((card, idx) => {
-    card.hidden = visibleMap[idx] === false;
-  });
-}
-
 function _ensureCatalogCapResizeSync() {
   if (_catalogResizeBound || typeof window === 'undefined') return;
   _catalogResizeBound = true;
   window.addEventListener('resize', () => {
-    _syncCatalogCardVisibility(_lastCatalogCapTotal, _lastCatalogCapFiltersActive);
-    document.getElementById('catalog-more-count')?.replaceChildren(
-      document.createTextNode(`Mostrando ${getCatalogCapShown(_lastCatalogCapTotal, {
-        expanded: _catalogExpanded,
-        filtersActive: _lastCatalogCapFiltersActive,
-        isMobile: _isMobileCatalog(),
-      })} de ${_lastCatalogCapTotal} perfumes`)
-    );
+    const isMobile = _isMobileCatalog();
+    if (isMobile === _lastMobileCatalogState) return;
+    _lastMobileCatalogState = isMobile;
+    if (_lastCatalogProducts.length) _renderGrid(_lastCatalogProducts);
   });
 }
 
 function _isMobileCatalog() {
   return Boolean(globalThis.matchMedia?.('(max-width: 768px)').matches);
+}
+
+function _catalogFiltersActive() {
+  return SearchBar.hasActiveFilters?.() ?? false;
+}
+
+export function getCatalogRenderProducts(products, {
+  expanded = false,
+  filtersActive = false,
+  isMobile = false,
+  cap = MOBILE_CATALOG_CAP,
+} = {}) {
+  const list = Array.isArray(products) ? products : [];
+  if (!isMobile || filtersActive || expanded || list.length <= cap) return list;
+  return list.slice(0, cap);
 }
 
 export function getCatalogCapVisibility(total, {
@@ -416,9 +416,12 @@ export function getCatalogCapVisibility(total, {
   isMobile = false,
   cap = MOBILE_CATALOG_CAP,
 } = {}) {
-  return Array.from({ length: Math.max(0, total) }, (_, idx) =>
-    !isMobile || filtersActive || expanded || idx < cap
-  );
+  return getCatalogRenderProducts(Array.from({ length: Math.max(0, total) }), {
+    expanded,
+    filtersActive,
+    isMobile,
+    cap,
+  }).map(() => true);
 }
 
 export function getCatalogCapShown(total, {

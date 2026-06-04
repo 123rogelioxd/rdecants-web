@@ -19,6 +19,7 @@ import { filterProducts } from '../assets/js/catalog/search.js';
 import {
   getCatalogCapShown,
   getCatalogCapVisibility,
+  getCatalogRenderProducts,
 } from '../assets/js/catalog/render.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -138,8 +139,15 @@ test('render.js caps the mobile browse view and offers show more/less', () => {
 
 test('mobile collapsed catalog exposes only 8 visible cards', () => {
   const visible = getCatalogCapVisibility(36, { isMobile: true, expanded: false });
-  assert.equal(visible.filter(Boolean).length, 8);
-  assert.deepEqual(visible.slice(0, 10), [true, true, true, true, true, true, true, true, false, false]);
+  assert.equal(visible.length, 8);
+  assert.deepEqual(visible, [true, true, true, true, true, true, true, true]);
+});
+
+test('_renderGrid mobile browse mode renders only the first 8 cards', () => {
+  const list = Array.from({ length: 36 }, (_, idx) => P(`p${idx + 1}`));
+  const rendered = getCatalogRenderProducts(list, { isMobile: true, expanded: false });
+  assert.equal(rendered.length, 8);
+  assert.deepEqual(rendered.map(p => p.id), ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']);
 });
 
 test('mobile collapsed counter matches visible cards', () => {
@@ -164,18 +172,18 @@ test('collapsing the mobile catalog returns to 8 cards', () => {
 
 test('search disables the mobile cap', () => {
   const visible = getCatalogCapVisibility(20, { isMobile: true, filtersActive: true });
-  assert.equal(visible.filter(Boolean).length, 20);
+  assert.equal(visible.length, 20);
   assert.equal(getCatalogCapShown(20, { isMobile: true, filtersActive: true }), 20);
 });
 
 test('filter disables the mobile cap', () => {
   const visible = getCatalogCapVisibility(14, { isMobile: true, filtersActive: true });
-  assert.equal(visible.filter(Boolean).length, 14);
+  assert.equal(visible.length, 14);
 });
 
 test('desktop catalog always shows every card', () => {
   const visible = getCatalogCapVisibility(36, { isMobile: false, expanded: false });
-  assert.equal(visible.filter(Boolean).length, 36);
+  assert.equal(visible.length, 36);
   assert.equal(getCatalogCapShown(36, { isMobile: false, expanded: false }), 36);
 });
 
