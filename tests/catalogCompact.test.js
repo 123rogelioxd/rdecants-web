@@ -225,6 +225,32 @@ test('CSS hides cards beyond the 8th on mobile and hides the control on desktop'
   assert.ok(css.includes('.catalog-more-count'), 'counter styled');
 });
 
+test('catalog show-more control uses premium panel/count/button classes', () => {
+  const r = read('assets/js/catalog/render.js');
+  assert.ok(r.includes('catalog-more catalog-more-panel'), 'panel class emitted');
+  assert.ok(r.includes('catalog-more-count catalog-count'), 'count class emitted');
+  assert.match(r, /<button type="button" class="catalog-more-btn" id="catalog-more-btn"/,
+    'show-more text is rendered inside the styled button');
+
+  const css = read('assets/css/components.css');
+  assert.ok(css.includes('.catalog-more-panel'), 'panel styled');
+  assert.ok(css.includes('.catalog-more .catalog-count'), 'mobile count styled');
+  assert.ok(css.includes('border-radius: 999px'), 'premium pill button radius');
+  assert.ok(css.includes('-webkit-appearance: none'), 'native button appearance removed');
+});
+
+test('search input hides native clear control and keeps custom clear button', () => {
+  const css = read('assets/css/components.css');
+  const s = read('assets/js/ui/searchbar.js');
+
+  assert.ok(css.includes('input[type="search"]::-webkit-search-cancel-button'),
+    'native WebKit search cancel hidden');
+  assert.ok(css.includes('appearance: none'), 'native search/button appearance removed');
+  assert.ok(s.includes('type="search"'), 'main search input remains type=search');
+  assert.ok(s.includes('class="sf-x" id="sf-x"'), 'custom clear button remains');
+  assert.ok(s.includes('aria-label="Limpiar'), 'custom clear button remains accessible');
+});
+
 test('gender quick-chips stay visible (scrollable) on mobile instead of display:none', () => {
   const css = read('assets/css/components.css');
   const start = css.indexOf('.sf-row-gender {');

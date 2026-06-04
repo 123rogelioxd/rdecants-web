@@ -349,10 +349,10 @@ function _renderShowMore(total) {
   });
 
   const wrap = document.createElement('div');
-  wrap.className = 'catalog-more';
+  wrap.className = 'catalog-more catalog-more-panel';
   wrap.id        = 'catalog-more';
   wrap.innerHTML = `
-    <p class="catalog-more-count" id="catalog-more-count">Mostrando ${shown} de ${total} perfumes</p>
+    <p class="catalog-more-count catalog-count" id="catalog-more-count">Mostrando ${shown} de ${total} perfumes</p>
     <button type="button" class="catalog-more-btn" id="catalog-more-btn"
       aria-expanded="${_catalogExpanded}">
       ${_catalogExpanded ? 'Mostrar menos' : 'Ver más perfumes'}
