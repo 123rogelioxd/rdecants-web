@@ -242,15 +242,21 @@ test('SearchBar exposes hasActiveFilters() reusing its private check', () => {
 
 /* ── C. CSS: cap is mobile-only, desktop unaffected ──────────── */
 
-test('CSS hides cards beyond the 8th on mobile and hides the control on desktop', () => {
+test('compact catalog does not rely on nth-child CSS hiding', () => {
   const css = read('assets/css/components.css');
-  assert.ok(/\.products-grid\.products-grid--capped > \.product-card:nth-of-type\(n \+ 9\)/.test(css),
-    'cards past the 8th hidden on mobile when capped');
-  assert.ok(css.includes('.products-grid > .product-card[hidden]'), 'JS-hidden capped cards are also hidden');
+  assert.ok(!/\.products-grid\.products-grid--capped > \.product-card:nth-of-type\(n \+ 9\)/.test(css),
+    'rendered catalog cards are not hidden by old mobile nth-child rules');
+  assert.ok(css.includes('.products-grid > .product-card[hidden]'), 'explicit hidden attributes are still respected');
   assert.ok(/\.catalog-more\s*\{\s*display:\s*none;/.test(css),
     '"Ver más" control hidden by default (desktop)');
   assert.ok(css.includes('.catalog-more-btn'), 'show-more button styled');
   assert.ok(css.includes('.catalog-more-count'), 'counter styled');
+});
+
+test('catalog cards render visible by default instead of waiting on IntersectionObserver', () => {
+  const r = read('assets/js/catalog/render.js');
+  assert.match(r, /card\.className\s*=\s*'product-card product-card--clickable fade-up visible'/,
+    'product cards include visible at creation time');
 });
 
 test('catalog show-more control uses premium panel/count/button classes', () => {

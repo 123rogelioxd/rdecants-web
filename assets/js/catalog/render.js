@@ -248,7 +248,7 @@ function _renderGrid(products, { rememberProducts = true } = {}) {
       .join('');
 
     const card = document.createElement('div');
-    card.className             = 'product-card product-card--clickable fade-up';
+    card.className             = 'product-card product-card--clickable fade-up visible';
     card.style.transitionDelay = `${idx * 0.05}s`;
     card.setAttribute('role',       'button');
     card.setAttribute('tabindex',   '0');
