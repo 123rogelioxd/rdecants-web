@@ -141,16 +141,17 @@ test('PDP module imports getSizeLabel from versioned prices module', async () =>
 
 /* ── Editorial UX redesign ──────────────────────────────────── */
 
-test('PDP order: fused sell/guide section comes BEFORE buy controls', () => {
+test('PDP order: user buys first — buy sits right after the sell/guide section', () => {
   const html = buildProductPageHtml(sample);
-  /* Simplified spec: hero → ¿Por qué te puede gustar? → pairs →
-     intelligence → buy → related. Buy is never the first thing repeated. */
+  /* Buy-first spec: hero → ¿Por qué te puede gustar? → buy →
+     recomendaciones (pairs + related) → perfil técnico (colapsado, al final). */
   const i = needle => html.indexOf(needle);
   assert.ok(i('id="pdp-hero"') >= 0);
   assert.ok(i('id="pdp-novice"') > i('id="pdp-hero"'));
-  assert.ok(i('id="pdp-tech"') > i('id="pdp-novice"'));
-  assert.ok(i('id="pdp-buy"') > i('id="pdp-tech"'));
-  assert.ok(i('id="pdp-related"') > i('id="pdp-buy"'));
+  assert.ok(i('id="pdp-buy"') > i('id="pdp-novice"'));
+  assert.ok(i('id="pdp-pairs"') > i('id="pdp-buy"'));
+  assert.ok(i('id="pdp-related"') > i('id="pdp-pairs"'));
+  assert.ok(i('id="pdp-tech"') > i('id="pdp-related"'));
 });
 
 test('PDP hero does NOT contain the variant selector (moved to buy section)', () => {
@@ -183,7 +184,7 @@ test('PDP fused section carries up to 2 why bullets next to the lead', () => {
   const html = buildProductPageHtml(sample);
   const novice = html.slice(
     html.indexOf('id="pdp-novice"'),
-    html.indexOf('id="pdp-pairs"')
+    html.indexOf('id="pdp-buy"')
   );
   assert.ok(novice.includes('pdp-novice-lead'), 'lead present');
   assert.ok(novice.includes('pdp-why-list'), 'why bullets folded into the section');
@@ -336,7 +337,7 @@ test('technical profile is rendered lower as an opt-in collapsible', () => {
   assert.ok(html.includes('Perfil Olfativo'), 'keeps olfactory profile inside');
   const i = needle => html.indexOf(needle);
   assert.ok(i('id="pdp-tech"') > i('id="pdp-novice"'), 'tech below the sell/guide section');
-  assert.ok(i('id="pdp-tech"') < i('id="pdp-buy"'), 'tech above the buy section');
+  assert.ok(i('id="pdp-tech"') > i('id="pdp-buy"'), 'tech below the buy section — user buys first');
 });
 
 test('size guidance flags the recommended (5ml) presentation', () => {
