@@ -7,6 +7,7 @@ console.log('CATALOG PROVIDER BUILD 2026.06.03.2 LOADED');
 
 import { ApiClient } from '../api/client.js?v=2026.06.03.2';
 import { API_BASE, normalizeApiImageUrl } from '../api/config.js?v=2026.06.03.2';
+import { normalizeGender } from '../utils/gender.js?v=2026.06.03.2';
 import { PACKS } from '../../../data/products.js?v=2026.06.03.2';
 
 let _productsCache = null;
@@ -144,8 +145,18 @@ function _mapProduct(p) {
     desc: p.desc ?? p.description ?? p.descripcion ?? '',
     story: p.story ?? p.tagline ?? p.desc ?? p.description ?? p.descripcion ?? 'Fragancia original en decant premium.',
     concentration: _displayConcentration(p.concentration ?? p.concentracion ?? p.display_concentration),
-    gender: _normalizeGender(
-      p.gender_profile ?? p.perfil_genero ?? p.genero_orientado ?? p.gender ?? p.genero ?? null
+    gender: normalizeGender(
+      p.gender ??
+      p.gender_positioning ??
+      p.gender_profile ??
+      p.perfil_genero ??
+      p.genero_orientado ??
+      p.genero ??
+      p.fragrance?.gender_positioning ??
+      p.fragrance?.gender_profile ??
+      p.fragrance?.gender ??
+      p.fragrance?.perfil_genero ??
+      null
     ),
     notes,
     image: _productImage(p),
@@ -242,16 +253,6 @@ function _displayConcentration(value) {
   };
 
   return labels[normalized.toUpperCase()] ?? normalized;
-}
-
-/* Normalize gender from any API field name to 'male' | 'female' | 'unisex' | null */
-function _normalizeGender(raw) {
-  const v = String(raw ?? '').toLowerCase().trim();
-  if (!v) return null;
-  if (['male', 'masculino', 'hombre', 'm', 'men', 'man'].includes(v)) return 'male';
-  if (['female', 'femenino', 'mujer', 'f', 'women', 'woman'].includes(v)) return 'female';
-  if (['unisex', 'mixto', 'neutro', 'unisex/mixed', 'both'].includes(v)) return 'unisex';
-  return null;
 }
 
 function _variantId(raw = {}) {

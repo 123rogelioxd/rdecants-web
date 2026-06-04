@@ -9,6 +9,7 @@
    ============================================================= */
 
 import { getSafePrice, priceSortValue } from '../utils/prices.js';
+import { matchesGender, normalizeGender } from '../utils/gender.js';
 
 /* ── Mood rules ─────────────────────────────────────────────────
    All keywords are lowercase, diacritics stripped (see _norm).
@@ -162,10 +163,10 @@ export const MOOD_LABELS = {
   lujo:     'Lujo',
 };
 
-/* Gender filter labels — values match _normalizeGender() output in catalog.js */
+/* Gender filter labels — values match normalizeGender() output. */
 export const GENDER_LABELS = {
-  male:   'Hombre',
-  female: 'Mujer',
+  hombre: 'Hombre',
+  mujer:  'Mujer',
   unisex: 'Unisex',
 };
 
@@ -195,12 +196,12 @@ export function filterProducts(products, state) {
     result = result.filter(p => p.house === state.house);
   }
 
-    /* 4 — Gender preference
-     Rules: male/female → include matching + unisex + untagged (null)
-            unisex      → include only unisex (explicit category)
-            null/'all'  → no filter                                    */
+  /* 4 — Gender preference
+     Rules: hombre/mujer → include matching + unisex only
+            unisex       → include only unisex
+            null/'all'   → no filter                                    */
   if (state.gender) {
-    result = result.filter(p => _matchesGender(p.gender ?? null, state.gender));
+    result = result.filter(p => matchesGender(p, state.gender));
   }
 
   /* 5 — Price range (first valid product price) */
@@ -224,18 +225,6 @@ export function getUniqueHouses(products) {
 }
 
 /* ── Internals ─────────────────────────────────────────────────── */
-
-/** Gender compatibility:
- *  - 'unisex' filter → only explicit unisex products
- *  - 'male'/'female' → matching gender + unisex wildcard + untagged (null)
- *  - null            → no restriction (all products pass)              */
-function _matchesGender(productGender, filterGender) {
-  if (!filterGender) return true;
-  if (filterGender === 'unisex') return productGender === 'unisex';
-  if (productGender === null)    return true;           /* untagged: permissive */
-  if (productGender === 'unisex') return true;          /* unisex: wildcard */
-  return productGender === filterGender;
-}
 
 /** Lowercase + strip diacritics for fuzzy matching */
 function _norm(str) {
@@ -454,9 +443,10 @@ function _commercialPriority(product) {
    fragrances drop only as a *tiebreaker* — featured/trending women still
    rank by those higher-priority keys above and are never hidden.
    Untagged (null) is treated as broad so it isn't penalised. */
-const GENDER_PRIORITY = { male: 2, unisex: 2, female: 1 };
+const GENDER_PRIORITY = { hombre: 2, unisex: 2, mujer: 1 };
 function _genderPriority(gender) {
-  return GENDER_PRIORITY[String(gender ?? '').toLowerCase()] ?? 2;
+  const normalized = normalizeGender(gender);
+  return GENDER_PRIORITY[normalized] ?? 2;
 }
 
 /* In-stock = 1, sold-out = 0. Prefers top-level stock, falls back to

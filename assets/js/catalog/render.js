@@ -462,7 +462,9 @@ function _stockText(stock) {
 
 export function genderLabel(gender) {
   const labels = {
+    hombre: 'Hombre',
     male: 'Hombre',
+    mujer: 'Mujer',
     female: 'Mujer',
     unisex: 'Unisex',
   };

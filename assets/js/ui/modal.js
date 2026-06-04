@@ -432,7 +432,9 @@ function _setButtonLoading(btn, isLoading, label = '') {
 
 function _genderLabel(gender) {
   const labels = {
+    hombre: 'Hombre',
     male: 'Hombre',
+    mujer: 'Mujer',
     female: 'Mujer',
     unisex: 'Unisex',
   };

@@ -577,7 +577,9 @@ function _stockHtml(scarcity) {
 
 function _genderLabel(gender) {
   const labels = {
+    hombre: 'Hombre',
     male: 'Hombre',
+    mujer: 'Mujer',
     female: 'Mujer',
     unisex: 'Unisex',
   };

@@ -19,12 +19,12 @@ import {
 import { getReasons, getMatchTier } from './reasoning.js?v=2026.06.03.2';
 import { isSellable, getOperationalScore, getAovSignal } from './scoring.js?v=2026.06.03.2';
 import { getDefaultVariant, getOrderableVariants } from '../utils/prices.js?v=2026.06.03.2';
+import { matchesGender, normalizeGender } from '../utils/gender.js?v=2026.06.03.2';
 
 const MIN_RESULTS    = 2;
 const MAX_RESULTS    = 4;
 const LEVEL_BOOST    = 2;
 const GENDER_BOOST   = 3;   /* exact match or unisex wildcard */
-const GENDER_PENALTY = -2;  /* explicit mismatch — soft discourage, not hard block */
 
 /* Question config consumed by the UI. */
 export const ASSISTANT_QUESTIONS = [
@@ -62,8 +62,8 @@ export const ASSISTANT_QUESTIONS = [
     label: '¿Para quién es?',
     options: [
       { value: 'any',    label: 'Me da igual' },  /* first = default */
-      { value: 'male',   label: 'Hombre' },
-      { value: 'female', label: 'Mujer' },
+      { value: 'hombre', label: 'Hombre' },
+      { value: 'mujer',  label: 'Mujer' },
       { value: 'unisex', label: 'Unisex' },
     ],
   },
@@ -97,6 +97,7 @@ export function getAssistantRecommendations(answers = {}, products = [], { limit
 
   const candidates = products
     .filter(isSellable)
+    .filter(product => matchesGender(product, answers.gender))
     .map(product => ({ product, variant: _variantForBudget(product, answers.budget) }))
     .filter(entry => entry.variant)
     .map(entry => {
@@ -150,16 +151,15 @@ function _matchScore(product, signals, answers) {
   return score;
 }
 
-/* Gender preference — soft signal (boost + mild penalty, no hard exclusion).
-   Unisex products are always compatible with any explicit preference.
-   Products without gender metadata (null) are treated as neutral.           */
+/* Gender preference — after strict compatibility filtering, this only helps
+   compatible gender metadata break ties. */
 function _genderScore(product, genderPref) {
   if (!genderPref || genderPref === 'any') return 0;
-  const g = product.gender ?? null;
-  if (g === null)      return 0;             /* untagged: no signal either way */
-  if (g === 'unisex')  return GENDER_BOOST;  /* unisex: wildcard — always compatible */
-  if (g === genderPref) return GENDER_BOOST; /* exact match */
-  return GENDER_PENALTY;                     /* explicit mismatch: gently discourage */
+  const selected = normalizeGender(genderPref);
+  const productGender = normalizeGender(product.gender);
+  if (productGender === 'unisex') return GENDER_BOOST;
+  if (productGender === selected) return GENDER_BOOST;
+  return 0;
 }
 
 /* Beginners lean toward versatile / featured picks; enthusiasts

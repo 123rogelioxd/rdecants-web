@@ -1,227 +1,114 @@
-/* =============================================================
-   GENDER FILTER & PREFERENCE — unit tests
-   Covers:
-     · catalog filter (male / female / unisex / all / combined)
-     · unisex-as-wildcard behaviour
-     · assistant gender scoring (boost / penalty / neutral)
-     · gender field normalisation helpers (via catalog.js internals
-       tested through filterProducts behaviour)
-   ============================================================= */
-
 import { test } from 'node:test';
-import assert  from 'node:assert/strict';
+import assert from 'node:assert/strict';
 import { filterProducts } from '../assets/js/catalog/search.js';
 import { getAssistantRecommendations } from '../assets/js/recommendations/assistant.js';
+import { matchesGender, normalizeGender } from '../assets/js/utils/gender.js';
 
-/* ── Shared product factory ──────────────────────────────────── */
+const variant = (size = 5, price = 180, stock = 10) => ({
+  size,
+  price,
+  stock,
+  availability: stock,
+  available: stock > 0,
+  soldOut: stock <= 0,
+  variant_id: `v-${size}-${price}`,
+});
 
-/** Build a minimal catalog product with an explicit gender field. */
-const catProduct = (id, gender, notes = [], desc = '') => ({
+const product = (id, gender, notes = ['bergamota'], desc = 'fresco diario') => ({
   id,
   name: id,
   house: 'House',
-  gender,                               /* 'male' | 'female' | 'unisex' | null */
+  gender,
   notes,
   desc,
   story: desc,
   badge: 'Disponible',
-  variants: [{
-    size: 5, price: 180, stock: 10,
-    availability: 10, available: true, soldOut: false,
-    variant_id: `v-${id}`,
-  }],
+  variants: [variant()],
 });
 
-const MALE_P   = catProduct('masc',   'male',   ['cuero', 'ambar'],  'masculino intenso seductor');
-const FEMALE_P = catProduct('fem',    'female', ['rosa',  'jazmin'], 'floral femenino elegante');
-const UNISEX_P = catProduct('uni',    'unisex', ['cedro', 'menta'],  'fresco limpio diario');
-const NULL_P   = catProduct('nogend', null,     ['citrico'],         'fresco verano ligero');
-const CATALOG  = [MALE_P, FEMALE_P, UNISEX_P, NULL_P];
+const SAUVAGE = product('Sauvage', 'hombre', ['ambroxan', 'bergamota'], 'fresco masculino');
+const BLEU = product('Bleu', 'masculine', ['cedro', 'citricos'], 'azul masculino');
+const YARA = product('Yara', 'mujer', ['vainilla', 'frutas'], 'dulce femenino');
+const COCO = product('Coco Mademoiselle', 'female', ['rosa', 'jazmin'], 'floral femenino');
+const NAXOS = product('Naxos', 'unisex', ['miel', 'tabaco'], 'elegante unisex');
+const UNKNOWN = product('Unknown', null, ['citricos'], 'sin genero');
+const CATALOG = [SAUVAGE, BLEU, YARA, COCO, NAXOS, UNKNOWN];
 
-/* ── Catalog filter — gender ─────────────────────────────────── */
-
-test('gender filter null (Todos) returns all products', () => {
-  const ids = filterProducts(CATALOG, { gender: null }).map(p => p.id);
-  assert.equal(ids.length, CATALOG.length);
-  for (const p of CATALOG) assert.ok(ids.includes(p.id));
+test('normalizes gender values in English and Spanish', () => {
+  for (const value of ['masculine', 'male', 'hombre', 'masculino']) {
+    assert.equal(normalizeGender(value), 'hombre');
+  }
+  for (const value of ['feminine', 'female', 'mujer', 'femenino']) {
+    assert.equal(normalizeGender(value), 'mujer');
+  }
+  assert.equal(normalizeGender('unisex'), 'unisex');
+  assert.equal(normalizeGender(null), 'unknown');
 });
 
-test('gender filter "male" includes male + unisex + untagged, excludes female', () => {
-  const ids = filterProducts(CATALOG, { gender: 'male' }).map(p => p.id);
-  assert.ok(ids.includes('masc'),   'male product included');
-  assert.ok(ids.includes('uni'),    'unisex included (wildcard)');
-  assert.ok(ids.includes('nogend'), 'untagged product included (permissive)');
-  assert.ok(!ids.includes('fem'),   'female product excluded');
+test('gender filter null returns all products', () => {
+  assert.equal(filterProducts(CATALOG, { gender: null }).length, CATALOG.length);
 });
 
-test('gender filter "female" includes female + unisex + untagged, excludes male', () => {
-  const ids = filterProducts(CATALOG, { gender: 'female' }).map(p => p.id);
-  assert.ok(ids.includes('fem'),    'female product included');
-  assert.ok(ids.includes('uni'),    'unisex included (wildcard)');
-  assert.ok(ids.includes('nogend'), 'untagged product included');
-  assert.ok(!ids.includes('masc'),  'male product excluded');
+test('gender filter Mujer returns mujer + unisex, not hombre or unknown', () => {
+  const ids = filterProducts(CATALOG, { gender: 'mujer' }).map(p => p.id).sort();
+  assert.deepEqual(ids, ['Coco Mademoiselle', 'Naxos', 'Yara']);
 });
 
-test('gender filter "unisex" returns ONLY explicitly-unisex products', () => {
+test('gender filter Hombre returns hombre + unisex, not mujer or unknown', () => {
+  const ids = filterProducts(CATALOG, { gender: 'hombre' }).map(p => p.id).sort();
+  assert.deepEqual(ids, ['Bleu', 'Naxos', 'Sauvage']);
+});
+
+test('gender filter Unisex returns only unisex', () => {
   const ids = filterProducts(CATALOG, { gender: 'unisex' }).map(p => p.id);
-  assert.deepEqual(ids, ['uni']);
+  assert.deepEqual(ids, ['Naxos']);
 });
 
-test('unisex products always pass male and female filters', () => {
-  const uni = catProduct('u', 'unisex', ['bergamota'], 'fresco');
-  for (const g of ['male', 'female']) {
-    const ids = filterProducts([uni], { gender: g }).map(p => p.id);
-    assert.ok(ids.includes('u'), `unisex passes ${g} filter`);
+test('legacy selected values male/female still follow strict compatibility', () => {
+  assert.equal(matchesGender(SAUVAGE, 'male'), true);
+  assert.equal(matchesGender(YARA, 'male'), false);
+  assert.equal(matchesGender(YARA, 'female'), true);
+  assert.equal(matchesGender(SAUVAGE, 'female'), false);
+});
+
+test('products unknown do not appear when a strict gender filter is selected', () => {
+  for (const gender of ['hombre', 'mujer', 'unisex']) {
+    assert.equal(matchesGender(UNKNOWN, gender), false);
+    assert.ok(!filterProducts([UNKNOWN], { gender }).length);
   }
 });
 
-test('products without gender data pass male and female filters', () => {
-  const none = catProduct('n', null, ['citrico'], 'fresco');
-  for (const g of ['male', 'female']) {
-    const ids = filterProducts([none], { gender: g }).map(p => p.id);
-    assert.ok(ids.includes('n'), `untagged passes ${g} filter`);
-  }
+test('gender filter combines with text search without letting unknown through', () => {
+  const ids = filterProducts(CATALOG, { query: 'Unknown', gender: 'mujer' }).map(p => p.id);
+  assert.deepEqual(ids, []);
 });
 
-test('products without gender data do NOT pass unisex filter', () => {
-  const none = catProduct('n', null, ['citrico'], 'fresco');
-  const ids = filterProducts([none], { gender: 'unisex' }).map(p => p.id);
-  assert.ok(!ids.includes('n'), 'untagged product excluded from unisex filter');
+test('gender filter combines with mood without inferring gender from mood text', () => {
+  const masculineMoodText = product('Floral Homme Text', 'mujer', ['rosa'], 'femenino elegante masculino');
+  const ids = filterProducts([SAUVAGE, masculineMoodText], { gender: 'mujer', mood: 'elegante' }).map(p => p.id);
+  assert.deepEqual(ids, ['Floral Homme Text']);
 });
 
-test('gender filter combines correctly with text search', () => {
-  /* Search "citrico": matches male (citrico note) and untagged (citrico note).
-     Unisex has cedro/menta — no citrico → excluded by search.
-     Female has rosa/jazmin — no citrico → excluded by search.
-     Gender filter 'female' additionally excludes male.
-     Net result: only untagged (citrico note, permissive gender) survives. */
-  const res = filterProducts(CATALOG, { query: 'nogend', gender: 'female' }).map(p => p.id);
-  assert.ok(!res.includes('masc'),  'male excluded by gender filter');
-  assert.ok(!res.includes('fem'),   'female has no citrico note — excluded by search');
-  assert.ok(!res.includes('uni'),   'unisex has no citrico note — excluded by search');
-  assert.ok(res.includes('nogend'), 'untagged has citrico note and passes female gender filter');
-});
-
-test('gender filter combines correctly with mood filter', () => {
-  /* Mood "elegante" should match feminine floral; but female filter excludes male. */
-  const res = filterProducts(
-    [MALE_P, FEMALE_P, UNISEX_P],
-    { gender: 'female', mood: 'elegante' },
-  ).map(p => p.id);
-  assert.ok(!res.includes('masc'), 'male excluded by gender');
-});
-
-/* ── Assistant gender scoring ────────────────────────────────── */
-
-const variant = (size, price, stock) => ({
-  size, price, stock, availability: stock,
-  available: stock > 0, soldOut: stock <= 0, variant_id: 900 + size,
-});
-
-const asstProduct = (id, gender, notes, desc) => ({
-  id, name: id, house: 'House', gender, notes, desc, story: desc,
-  badge: 'Disponible', featured: false,
-  variants: [variant(5, 180, 20)],
-});
-
-const M = asstProduct('M', 'male',   ['marino', 'citrico', 'cedro'], 'fresco diario masculino');
-const F = asstProduct('F', 'female', ['rosa', 'jazmin', 'bergamota'], 'floral diario femenino');
-const U = asstProduct('U', 'unisex', ['cedro', 'bergamota', 'menta'], 'fresco diario unisex');
-const N = asstProduct('N', null,     ['citrico', 'vetiver'], 'fresco diario versatil');
-const G_CATALOG = [M, F, U, N];
-
-test('assistant gender "any" does not alter existing ranking', () => {
-  const withAny = getAssistantRecommendations(
-    { family: 'fresco', occasion: 'dia', budget: 'any', gender: 'any' },
-    G_CATALOG,
-  );
-  const withoutGender = getAssistantRecommendations(
-    { family: 'fresco', occasion: 'dia', budget: 'any' },
-    G_CATALOG,
-  );
-  /* Both should return the same set of products (order may vary by ε) */
-  const idsAny     = withAny.map(r => r.product.id).sort();
-  const idsNoGender = withoutGender.map(r => r.product.id).sort();
-  assert.deepEqual(idsAny, idsNoGender);
-});
-
-test('assistant "male" preference ranks male and unisex above female', () => {
+test('assistant with selectedGender = mujer does not recommend hombre products', () => {
   const res = getAssistantRecommendations(
-    { family: 'fresco', occasion: 'dia', budget: 'any', gender: 'male' },
-    [M, F, U],
+    { family: 'fresco', occasion: 'dia', budget: 'any', gender: 'mujer' },
+    [SAUVAGE, BLEU, YARA, COCO, NAXOS, UNKNOWN],
   );
   const ids = res.map(r => r.product.id);
-  /* M and U both get GENDER_BOOST; F gets GENDER_PENALTY.
-     M and U must appear before F if all are in results. */
-  if (ids.includes('M') && ids.includes('F')) {
-    assert.ok(ids.indexOf('M') < ids.indexOf('F'), 'male ranks before female with male preference');
-  }
-  if (ids.includes('U') && ids.includes('F')) {
-    assert.ok(ids.indexOf('U') < ids.indexOf('F'), 'unisex ranks before female with male preference');
-  }
+  assert.ok(!ids.includes('Sauvage'));
+  assert.ok(!ids.includes('Bleu'));
+  assert.ok(!ids.includes('Unknown'));
+  assert.ok(ids.every(id => ['Yara', 'Coco Mademoiselle', 'Naxos'].includes(id)));
 });
 
-test('assistant "female" preference ranks female and unisex above male when content is equal', () => {
-  /* Use identical content so gender preference is the ONLY tiebreaker. */
-  const sameNotes = ['marino', 'citrico', 'cedro', 'bergamota', 'menta'];
-  const sameDesc  = 'fresco limpio diario versatil';
-  const EM = asstProduct('EM', 'male',   sameNotes, sameDesc);
-  const EF = asstProduct('EF', 'female', sameNotes, sameDesc);
-  const EU = asstProduct('EU', 'unisex', sameNotes, sameDesc);
-
+test('assistant with selectedGender = hombre does not recommend mujer products', () => {
   const res = getAssistantRecommendations(
-    { family: 'fresco', occasion: 'dia', budget: 'any', gender: 'female' },
-    [EM, EF, EU],
+    { family: 'fresco', occasion: 'dia', budget: 'any', gender: 'hombre' },
+    [SAUVAGE, BLEU, YARA, COCO, NAXOS, UNKNOWN],
   );
   const ids = res.map(r => r.product.id);
-
-  if (ids.includes('EF') && ids.includes('EM')) {
-    assert.ok(ids.indexOf('EF') <= ids.indexOf('EM'),
-      'female ranks at or before male when content is equal and female preference is set');
-  }
-  if (ids.includes('EU') && ids.includes('EM')) {
-    assert.ok(ids.indexOf('EU') <= ids.indexOf('EM'),
-      'unisex ranks at or before male when content is equal and female preference is set');
-  }
-});
-
-test('unisex products appear regardless of gender preference', () => {
-  for (const gender of ['male', 'female', 'any', 'unisex']) {
-    const res = getAssistantRecommendations(
-      { family: 'fresco', occasion: 'dia', budget: 'any', gender },
-      [U, ...G_CATALOG],
-    );
-    const ids = res.map(r => r.product.id);
-    assert.ok(ids.includes('U'), `unisex appears with gender='${gender}'`);
-  }
-});
-
-test('assistant gender preference does not hard-exclude mismatched products', () => {
-  /* Even with male preference, female product can still appear if score > 0
-     (other signals may keep it in the top-N). Not a hard wall. */
-  const femaleDominant = asstProduct('FD', 'female', ['marino', 'citrico', 'bergamota', 'vetiver', 'cedro'],
-    'fresco limpio diario versatil oficina elegante');
-  const res = getAssistantRecommendations(
-    { family: 'fresco', occasion: 'dia', budget: 'any', gender: 'male' },
-    [femaleDominant], /* only candidate */
-  );
-  /* Should still return a result — not hard-excluded */
-  assert.ok(res.length >= 1, 'mismatched gender product still returned when no better alternative');
-});
-
-test('products without gender metadata are neutral (no boost, no penalty)', () => {
-  /* N has no gender. With male preference, N should score same as if gender="any". */
-  const resWithGender = getAssistantRecommendations(
-    { family: 'fresco', occasion: 'dia', budget: 'any', gender: 'male' },
-    [N],
-  );
-  const resAny = getAssistantRecommendations(
-    { family: 'fresco', occasion: 'dia', budget: 'any', gender: 'any' },
-    [N],
-  );
-  assert.equal(resWithGender.length, resAny.length, 'untagged product: same result count');
-  if (resWithGender.length) {
-    assert.equal(resWithGender[0].matchScore, resAny[0].matchScore,
-      'untagged product: identical match score regardless of gender preference');
-  }
+  assert.ok(!ids.includes('Yara'));
+  assert.ok(!ids.includes('Coco Mademoiselle'));
+  assert.ok(!ids.includes('Unknown'));
+  assert.ok(ids.every(id => ['Sauvage', 'Bleu', 'Naxos'].includes(id)));
 });
