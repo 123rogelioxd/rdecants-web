@@ -20,7 +20,7 @@ import { getDefaultVariant,
          getDisplayVariant,
          formatPrice }      from '../utils/prices.js?v=2026.06.03.2';
 import { getScarcityDisplay } from '../utils/scarcity.js?v=2026.06.03.2';
-import { getGuidanceBadges }  from '../utils/guidance.js?v=2026.06.03.2';
+import { getDisplayBadges }  from '../utils/guidance.js?v=2026.06.03.2';
 
 /* module-level ref kept for SearchBar callback */
 let _productsContainer = null;
@@ -242,8 +242,7 @@ function _renderGrid(products, { rememberProducts = true } = {}) {
     const genderChip = genderBadgeHtml(p.gender, 'card-gender');
 
     const badgeClass = stockState.badgeClass;
-    const guidanceBadges = getGuidanceBadges(p);
-    const guidanceHtml = guidanceBadges.slice(0, 1)
+    const guidanceHtml = getDisplayBadges(p, { limit: 1 })
       .map(g => `<span class="guidance-chip guidance-chip--${g.key}">${g.label}</span>`)
       .join('');
 

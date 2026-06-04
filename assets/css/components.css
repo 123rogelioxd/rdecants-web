@@ -1022,10 +1022,12 @@
 
 .pdp-buybar {
   margin-top: 18px;
-  padding: 18px;
-  border: 1px solid var(--border);
+  padding: 20px;
+  border: 1px solid var(--border-hl);
   border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.02);
+  background:
+    linear-gradient(180deg, rgba(201, 169, 110, 0.07), rgba(255, 255, 255, 0.02));
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.38);
 }
 
 .pdp-sizes-label,

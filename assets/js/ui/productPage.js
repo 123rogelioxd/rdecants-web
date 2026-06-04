@@ -35,7 +35,6 @@ import {
   PRIMARY_SIZES,
 } from '../utils/prices.js?v=2026.06.03.2';
 import { getScarcityDisplay } from '../utils/scarcity.js?v=2026.06.03.2';
-import { getGuidanceBadges } from '../utils/guidance.js?v=2026.06.03.2';
 import { getRelatedProducts } from '../recommendations/upsells.js?v=2026.06.03.2';
 import { getReasons } from '../recommendations/reasoning.js?v=2026.06.03.2';
 import { buildFragranceProfileHtml } from './fragranceProfile.js?v=2026.06.03.2';
@@ -83,14 +82,6 @@ export function buildProductPageHtml(product) {
     : '';
   const genderHtml = _genderBadgeHtml(product.gender, 'pdp-gender');
 
-  const notesHtml = (product.notes ?? [])
-    .map(n => `<span class="note-tag">${_escape(n)}</span>`)
-    .join('');
-
-  const guidanceHtml = getGuidanceBadges(product)
-    .map(g => `<span class="guidance-chip guidance-chip--${g.key}">${_escape(g.label)}</span>`)
-    .join('');
-
   const confBadge = getConfidenceBadge(product);
   const confBadgeHtml = confBadge
     ? `<span class="pdp-conf-badge pdp-conf-badge--${confBadge.key}">${_escape(confBadge.label)}</span>`
@@ -127,9 +118,6 @@ export function buildProductPageHtml(product) {
 
         ${product.story ? `<p class="pdp-story">${_escape(product.story)}</p>` : ''}
 
-        ${notesHtml ? `<div class="pdp-notes card-notes">${notesHtml}</div>` : ''}
-        ${guidanceHtml ? `<div class="pdp-guidance" aria-label="Recomendado para">${guidanceHtml}</div>` : ''}
-
         <div class="pdp-hero-actions">
           ${entryVariant
             ? `<span class="pdp-hero-price">Desde ${entryVariant.size}ml · <strong>${formatPrice(entryVariant.price)}</strong></span>`
@@ -144,13 +132,7 @@ export function buildProductPageHtml(product) {
     <!-- B. ¿Por qué te puede gustar? — fused sell/guide section -->
     ${_whyYouMightLikeBlock(product)}
 
-    <!-- CB. Combina bien con (hydrated async by renderCollectionPairs) -->
-    <section class="pdp-pairs" id="pdp-pairs" hidden aria-labelledby="pdp-pairs-h"></section>
-
-    <!-- C. ¿Cuándo usarlo? + Perfil (score bars) — secondary, opt-in -->
-    ${_technicalBlock(product)}
-
-    <!-- D. Buy section -->
+    <!-- C. Buy section — el usuario compra primero, justo tras el "por qué" -->
     <section class="pdp-buy" id="pdp-buy" aria-labelledby="pdp-buy-h">
       <h2 class="pdp-section-h" id="pdp-buy-h">Lo quiero</h2>
       <div class="pdp-buybar" aria-label="Compra rápida">
@@ -164,7 +146,6 @@ export function buildProductPageHtml(product) {
 
         ${lowestPrice !== null ? `
           <p class="pdp-value-prop">Una botella completa cuesta miles — pruébalo desde ${formatPrice(lowestPrice)}.</p>
-          <p class="pdp-decant-reassurance">¿Aún dudas? El decant es la forma más inteligente de probar antes de comprometerte.</p>
         ` : ''}
 
         <div class="pdp-price-row">
@@ -188,11 +169,16 @@ export function buildProductPageHtml(product) {
       </div>
     </section>
 
-    <!-- E. Related -->
+    <!-- D. Recomendaciones — una sola zona: "Combina bien con" + "Si te gusta esto" -->
+    <section class="pdp-pairs" id="pdp-pairs" hidden aria-labelledby="pdp-pairs-h"></section>
+
     <section class="pdp-related" id="pdp-related" hidden aria-labelledby="pdp-related-h">
       <h2 class="pdp-section-h" id="pdp-related-h">Si te gusta esto...</h2>
       <div class="pdp-related-row" id="pdp-related-row"></div>
     </section>
+
+    <!-- E. Perfil olfativo completo — colapsado, opt-in, al final -->
+    ${_technicalBlock(product)}
 
     <!-- Sticky mini-buy CTA — appears after hero scrolls out -->
     <div class="pdp-sticky-cta" id="pdp-sticky-cta" aria-hidden="true">

@@ -26,7 +26,7 @@ import { getDefaultVariant,
          getSizeLabel,
          PRIMARY_SIZES } from '../utils/prices.js?v=2026.06.03.2';
 import { getScarcityDisplay } from '../utils/scarcity.js?v=2026.06.03.2';
-import { getGuidanceBadges } from '../utils/guidance.js?v=2026.06.03.2';
+import { getDisplayBadges } from '../utils/guidance.js?v=2026.06.03.2';
 import { buildWhyHtml } from './why.js?v=2026.06.03.2';
 import { productPageUrl } from './productPage.js?v=2026.06.03.2';
 
@@ -133,7 +133,7 @@ function _render() {
     .map(n => `<span class="note-tag">${n}</span>`)
     .join('');
 
-  const guidanceHtml = getGuidanceBadges(p)
+  const guidanceHtml = getDisplayBadges(p, { limit: 2 })
     .map(g => `<span class="guidance-chip guidance-chip--${g.key}">${g.label}</span>`)
     .join('');
 

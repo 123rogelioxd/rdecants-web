@@ -179,6 +179,7 @@ function _mapFragrance(f) {
     aliases: arr(f.aliases),
     scent_family_normalized: f.scent_family_normalized ?? null,
     mood_tags: arr(f.mood_tags),
+    recommendation_tags: arr(f.recommendation_tags),
     recommended_context_tags: arr(f.recommended_context_tags),
     style_tags: arr(f.style_tags),
     accords: arr(f.accords),
