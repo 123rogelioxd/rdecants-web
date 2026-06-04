@@ -20,6 +20,7 @@ import {
   getCatalogCapShown,
   getCatalogCapVisibility,
   getCatalogRenderProducts,
+  normalizeCatalogProducts,
 } from '../assets/js/catalog/render.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -179,6 +180,33 @@ test('search disables the mobile cap', () => {
 test('filter disables the mobile cap', () => {
   const visible = getCatalogCapVisibility(14, { isMobile: true, filtersActive: true });
   assert.equal(visible.length, 14);
+});
+
+test('catalog fallback normalizes empty or invalid product lists safely', () => {
+  assert.deepEqual(normalizeCatalogProducts(undefined), []);
+  assert.deepEqual(normalizeCatalogProducts(null), []);
+  assert.deepEqual(normalizeCatalogProducts([P('p1'), null, undefined, P('p2')]).map(p => p.id), ['p1', 'p2']);
+  assert.deepEqual(getCatalogRenderProducts(undefined, { isMobile: true, expanded: true }), []);
+});
+
+test('search results render without the compact limit', () => {
+  const list = Array.from({ length: 20 }, (_, idx) => P(`search-${idx + 1}`));
+  const rendered = getCatalogRenderProducts(list, {
+    isMobile: true,
+    filtersActive: true,
+    expanded: false,
+  });
+  assert.equal(rendered.length, 20);
+});
+
+test('filtered results render without the compact limit', () => {
+  const list = Array.from({ length: 14 }, (_, idx) => P(`filter-${idx + 1}`));
+  const rendered = getCatalogRenderProducts(list, {
+    isMobile: true,
+    filtersActive: true,
+    expanded: false,
+  });
+  assert.equal(rendered.length, 14);
 });
 
 test('desktop catalog always shows every card', () => {

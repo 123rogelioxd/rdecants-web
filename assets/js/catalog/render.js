@@ -190,7 +190,7 @@ export async function renderPacks() {
 }
 
 /* ── Grid renderer (used by SearchBar callback) ──────────────── */
-function _renderGrid(products) {
+function _renderGrid(products, { rememberProducts = true } = {}) {
   if (!_productsContainer) return;
 
   /* Reset any compact-cap UI from a previous render before re-painting */
@@ -198,10 +198,11 @@ function _renderGrid(products) {
   _productsContainer.classList.remove('products-grid--capped');
 
   _productsContainer.innerHTML = '';
-  _lastCatalogProducts = Array.isArray(products) ? products : [];
+  const catalogProducts = normalizeCatalogProducts(products);
+  if (rememberProducts) _lastCatalogProducts = catalogProducts;
 
   /* Empty state */
-  if (!products.length) {
+  if (!catalogProducts.length) {
     const empty = document.createElement('div');
     empty.className = 'sf-empty premium-empty';
     empty.innerHTML = `
@@ -220,8 +221,8 @@ function _renderGrid(products) {
   }
 
   const frag = document.createDocumentFragment();
-  const total = products.length;
-  const productsToRender = getCatalogRenderProducts(products, {
+  const total = catalogProducts.length;
+  const productsToRender = getCatalogRenderProducts(catalogProducts, {
     expanded: _catalogExpanded,
     filtersActive: _catalogFiltersActive(),
     isMobile: _isMobileCatalog(),
@@ -360,20 +361,33 @@ function _renderShowMore(total) {
 
   _productsContainer.insertAdjacentElement('afterend', wrap);
   wrap.querySelector('#catalog-more-btn')
-    ?.addEventListener('click', () => _toggleCatalog(total));
+    ?.addEventListener('click', _toggleCatalog);
 }
 
-function _toggleCatalog(total) {
-  _catalogExpanded = !_catalogExpanded;
-
-  if (_catalogExpanded) {
-    Tracker.catalogExpanded(total, MOBILE_CATALOG_CAP);
-  } else {
-    Tracker.catalogCollapsed(total);
-    _productsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+function _toggleCatalog() {
+  const products = normalizeCatalogProducts(_lastCatalogProducts);
+  if (!products.length) {
+    _removeShowMore();
+    _productsContainer?.classList.remove('products-grid--capped');
+    return;
   }
 
-  _renderGrid(_lastCatalogProducts);
+  _catalogExpanded = !_catalogExpanded;
+  const nextTotal = products.length;
+
+  if (_catalogExpanded) {
+    Tracker.catalogExpanded(nextTotal, Math.min(MOBILE_CATALOG_CAP, nextTotal));
+  } else {
+    Tracker.catalogCollapsed(nextTotal);
+  }
+
+  _renderGrid(products, { rememberProducts: false });
+
+  if (!_catalogExpanded) {
+    requestAnimationFrame(() => {
+      _productsContainer?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
 }
 
 function _removeShowMore() {
@@ -405,7 +419,7 @@ export function getCatalogRenderProducts(products, {
   isMobile = false,
   cap = MOBILE_CATALOG_CAP,
 } = {}) {
-  const list = Array.isArray(products) ? products : [];
+  const list = normalizeCatalogProducts(products);
   if (!isMobile || filtersActive || expanded || list.length <= cap) return list;
   return list.slice(0, cap);
 }
@@ -416,7 +430,7 @@ export function getCatalogCapVisibility(total, {
   isMobile = false,
   cap = MOBILE_CATALOG_CAP,
 } = {}) {
-  return getCatalogRenderProducts(Array.from({ length: Math.max(0, total) }), {
+  return getCatalogRenderProducts(Array.from({ length: Math.max(0, total) }, () => ({})), {
     expanded,
     filtersActive,
     isMobile,
@@ -432,6 +446,10 @@ export function getCatalogCapShown(total, {
 } = {}) {
   if (!isMobile || filtersActive || expanded) return total;
   return Math.min(cap, total);
+}
+
+export function normalizeCatalogProducts(products) {
+  return Array.isArray(products) ? products.filter(Boolean) : [];
 }
 
 /* ── Helpers ─────────────────────────────────────────────────── */
