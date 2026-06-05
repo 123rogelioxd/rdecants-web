@@ -1,9 +1,9 @@
 /* =============================================================
-   RDECANTS — GENDER NORMALIZATION
+   RDECANTS - GENDER NORMALIZATION
    Central compatibility rules for catalog filters and recommendations.
    ============================================================= */
 
-const MALE_VALUES = new Set([
+const MASCULINE_VALUES = new Set([
   'hombre',
   'masculino',
   'male',
@@ -13,13 +13,14 @@ const MALE_VALUES = new Set([
   'm',
 ]);
 
-const FEMALE_VALUES = new Set([
+const FEMININE_VALUES = new Set([
   'mujer',
   'femenino',
   'female',
   'feminine',
   'women',
   'woman',
+  'dama',
   'f',
 ]);
 
@@ -33,11 +34,43 @@ const UNISEX_VALUES = new Set([
   'both',
 ]);
 
+const UNISEX_MASCULINE_VALUES = new Set([
+  'unisex inclinado masculino',
+  'unisex masculino',
+  'unisex masculine',
+  'unisex male',
+  'unisex men',
+  'masculine leaning unisex',
+  'male leaning unisex',
+]);
+
+const UNISEX_FEMININE_VALUES = new Set([
+  'unisex inclinado femenino',
+  'unisex femenino',
+  'unisex feminine',
+  'unisex female',
+  'unisex women',
+  'feminine leaning unisex',
+  'female leaning unisex',
+]);
+
+const UNKNOWN_VALUES = new Set([
+  'sin asignar',
+  'no asignado',
+  'unassigned',
+  'unknown',
+  'n/a',
+  'na',
+]);
+
 export function normalizeGender(value) {
   const normalized = String(value ?? '').toLowerCase().trim();
   if (!normalized || normalized === 'any' || normalized === 'todos' || normalized === 'all') return 'unknown';
-  if (MALE_VALUES.has(normalized)) return 'hombre';
-  if (FEMALE_VALUES.has(normalized)) return 'mujer';
+  if (UNKNOWN_VALUES.has(normalized)) return 'unknown';
+  if (UNISEX_MASCULINE_VALUES.has(normalized)) return 'unisex_masculine';
+  if (UNISEX_FEMININE_VALUES.has(normalized)) return 'unisex_feminine';
+  if (MASCULINE_VALUES.has(normalized)) return 'masculine';
+  if (FEMININE_VALUES.has(normalized)) return 'feminine';
   if (UNISEX_VALUES.has(normalized)) return 'unisex';
   return 'unknown';
 }
@@ -60,14 +93,70 @@ export function getProductGender(product) {
   );
 }
 
+export function getGenderEligibility(product, selectedGender) {
+  if (!selectedGender || selectedGender === 'any') {
+    return { eligible: true, priority: 'primary', penalty: 0 };
+  }
+
+  const selected = normalizeGender(selectedGender);
+  if (selected === 'unknown') {
+    return { eligible: true, priority: 'primary', penalty: 0 };
+  }
+
+  const productGender = getProductGender(product);
+  if (productGender === 'unknown') {
+    return { eligible: true, priority: 'fallback', penalty: 30 };
+  }
+
+  const priority = _priorityFor(selected, productGender);
+  if (priority === 'rejected') {
+    return { eligible: false, priority, penalty: Infinity };
+  }
+
+  return {
+    eligible: true,
+    priority,
+    penalty: priority === 'primary' ? 0 : 15,
+  };
+}
+
 export function matchesGender(product, selectedGender) {
   if (!selectedGender || selectedGender === 'any') return true;
 
-  const selected = normalizeGender(selectedGender);
-  if (selected === 'unknown') return true;
+  const eligibility = getGenderEligibility(product, selectedGender);
+  return eligibility.eligible && eligibility.priority !== 'fallback';
+}
 
-  const productGender = getProductGender(product);
-  if (productGender === 'unknown') return false;
-  if (selected === 'unisex') return productGender === 'unisex';
-  return productGender === selected || productGender === 'unisex';
+function _priorityFor(selected, productGender) {
+  if (selected === 'feminine') {
+    if (['feminine', 'unisex', 'unisex_feminine'].includes(productGender)) return 'primary';
+    if (productGender === 'unisex_masculine') return 'secondary';
+    return 'rejected';
+  }
+
+  if (selected === 'masculine') {
+    if (['masculine', 'unisex', 'unisex_masculine'].includes(productGender)) return 'primary';
+    if (productGender === 'unisex_feminine') return 'secondary';
+    return 'rejected';
+  }
+
+  if (selected === 'unisex') {
+    if (['unisex', 'unisex_masculine', 'unisex_feminine'].includes(productGender)) return 'primary';
+    if (['masculine', 'feminine'].includes(productGender)) return 'secondary';
+    return 'rejected';
+  }
+
+  if (selected === 'unisex_masculine') {
+    if (['masculine', 'unisex', 'unisex_masculine'].includes(productGender)) return 'primary';
+    if (productGender === 'unisex_feminine') return 'secondary';
+    return 'rejected';
+  }
+
+  if (selected === 'unisex_feminine') {
+    if (['feminine', 'unisex', 'unisex_feminine'].includes(productGender)) return 'primary';
+    if (productGender === 'unisex_masculine') return 'secondary';
+    return 'rejected';
+  }
+
+  return 'primary';
 }

@@ -559,11 +559,15 @@ function _stockHtml(scarcity) {
 
 function _genderLabel(gender) {
   const labels = {
+    masculine: 'Hombre',
     hombre: 'Hombre',
     male: 'Hombre',
+    feminine: 'Mujer',
     mujer: 'Mujer',
     female: 'Mujer',
     unisex: 'Unisex',
+    unisex_masculine: 'Unisex masc.',
+    unisex_feminine: 'Unisex fem.',
   };
   return labels[String(gender ?? '').toLowerCase()] ?? '';
 }

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { filterProducts } from '../assets/js/catalog/search.js';
 import { getAssistantRecommendations } from '../assets/js/recommendations/assistant.js';
-import { matchesGender, normalizeGender } from '../assets/js/utils/gender.js';
+import { getGenderEligibility, matchesGender, normalizeGender } from '../assets/js/utils/gender.js';
 
 const variant = (size = 5, price = 180, stock = 10) => ({
   size,
@@ -36,12 +36,15 @@ const CATALOG = [SAUVAGE, BLEU, YARA, COCO, NAXOS, UNKNOWN];
 
 test('normalizes gender values in English and Spanish', () => {
   for (const value of ['masculine', 'male', 'hombre', 'masculino']) {
-    assert.equal(normalizeGender(value), 'hombre');
+    assert.equal(normalizeGender(value), 'masculine');
   }
-  for (const value of ['feminine', 'female', 'mujer', 'femenino']) {
-    assert.equal(normalizeGender(value), 'mujer');
+  for (const value of ['feminine', 'female', 'mujer', 'femenino', 'dama']) {
+    assert.equal(normalizeGender(value), 'feminine');
   }
   assert.equal(normalizeGender('unisex'), 'unisex');
+  assert.equal(normalizeGender('unisex inclinado masculino'), 'unisex_masculine');
+  assert.equal(normalizeGender('unisex inclinado femenino'), 'unisex_feminine');
+  assert.equal(normalizeGender('sin asignar'), 'unknown');
   assert.equal(normalizeGender(null), 'unknown');
 });
 
@@ -60,8 +63,8 @@ test('gender filter Hombre returns hombre + unisex, not mujer or unknown', () =>
 });
 
 test('gender filter Unisex returns only unisex', () => {
-  const ids = filterProducts(CATALOG, { gender: 'unisex' }).map(p => p.id);
-  assert.deepEqual(ids, ['Naxos']);
+  const ids = filterProducts(CATALOG, { gender: 'unisex' }).map(p => p.id).sort();
+  assert.deepEqual(ids, ['Bleu', 'Coco Mademoiselle', 'Naxos', 'Sauvage', 'Yara']);
 });
 
 test('legacy selected values male/female still follow strict compatibility', () => {
@@ -97,8 +100,10 @@ test('assistant with selectedGender = mujer does not recommend hombre products',
   const ids = res.map(r => r.product.id);
   assert.ok(!ids.includes('Sauvage'));
   assert.ok(!ids.includes('Bleu'));
-  assert.ok(!ids.includes('Unknown'));
-  assert.ok(ids.every(id => ['Yara', 'Coco Mademoiselle', 'Naxos'].includes(id)));
+  assert.ok(ids.every(id => ['Yara', 'Coco Mademoiselle', 'Naxos', 'Unknown'].includes(id)));
+  if (ids.includes('Unknown')) {
+    assert.ok(ids.indexOf('Unknown') > ids.indexOf('Naxos'));
+  }
 });
 
 test('assistant with selectedGender = hombre does not recommend mujer products', () => {
@@ -109,6 +114,101 @@ test('assistant with selectedGender = hombre does not recommend mujer products',
   const ids = res.map(r => r.product.id);
   assert.ok(!ids.includes('Yara'));
   assert.ok(!ids.includes('Coco Mademoiselle'));
-  assert.ok(!ids.includes('Unknown'));
-  assert.ok(ids.every(id => ['Sauvage', 'Bleu', 'Naxos'].includes(id)));
+  assert.ok(ids.every(id => ['Sauvage', 'Bleu', 'Naxos', 'Unknown'].includes(id)));
+  if (ids.includes('Unknown')) {
+    assert.ok(ids.indexOf('Unknown') > ids.indexOf('Naxos'));
+  }
+});
+
+test('Mujer eligibility excludes Masculino and allows female/unisex primary variants', () => {
+  assert.deepEqual(getGenderEligibility(product('M', 'Masculino'), 'Mujer'), {
+    eligible: false,
+    priority: 'rejected',
+    penalty: Infinity,
+  });
+  for (const gender of ['Femenino', 'Unisex', 'Unisex inclinado femenino']) {
+    const eligibility = getGenderEligibility(product(gender, gender), 'Mujer');
+    assert.equal(eligibility.eligible, true);
+    assert.equal(eligibility.priority, 'primary');
+    assert.equal(eligibility.penalty, 0);
+  }
+});
+
+test('Mujer allows Unisex inclinado masculino only as lower-priority secondary', () => {
+  const eligibility = getGenderEligibility(product('leanM', 'Unisex inclinado masculino'), 'Mujer');
+  assert.equal(eligibility.eligible, true);
+  assert.equal(eligibility.priority, 'secondary');
+  assert.equal(eligibility.penalty, 15);
+});
+
+test('Hombre eligibility excludes Femenino and allows male/unisex primary variants', () => {
+  assert.deepEqual(getGenderEligibility(product('F', 'Femenino'), 'Hombre'), {
+    eligible: false,
+    priority: 'rejected',
+    penalty: Infinity,
+  });
+  for (const gender of ['Masculino', 'Unisex', 'Unisex inclinado masculino']) {
+    const eligibility = getGenderEligibility(product(gender, gender), 'Hombre');
+    assert.equal(eligibility.eligible, true);
+    assert.equal(eligibility.priority, 'primary');
+    assert.equal(eligibility.penalty, 0);
+  }
+});
+
+test('Hombre allows Unisex inclinado femenino only as lower-priority secondary', () => {
+  const eligibility = getGenderEligibility(product('leanF', 'Unisex inclinado femenino'), 'Hombre');
+  assert.equal(eligibility.eligible, true);
+  assert.equal(eligibility.priority, 'secondary');
+  assert.equal(eligibility.penalty, 15);
+});
+
+test('Unisex prioritizes all unisex variants and keeps binary genders secondary', () => {
+  for (const gender of ['Unisex', 'Unisex inclinado masculino', 'Unisex inclinado femenino']) {
+    assert.equal(getGenderEligibility(product(gender, gender), 'Unisex').priority, 'primary');
+  }
+  assert.equal(getGenderEligibility(product('M', 'Masculino'), 'Unisex').priority, 'secondary');
+  assert.equal(getGenderEligibility(product('F', 'Femenino'), 'Unisex').priority, 'secondary');
+});
+
+test('Me da igual applies no gender filter', () => {
+  for (const gender of ['Masculino', 'Femenino', 'Unisex', 'Unisex inclinado masculino', null]) {
+    assert.equal(getGenderEligibility(product(String(gender), gender), 'any').eligible, true);
+  }
+});
+
+test('assistant ranks unknown gender last as fallback behind known eligible products', () => {
+  const known = product('Known Feminine', 'Femenino', ['bergamota', 'citrico'], 'fresco diario limpio');
+  const unknown = product('Unknown Strong', null, ['bergamota', 'citrico', 'manzana'], 'fresco diario limpio azul versatil');
+  const res = getAssistantRecommendations(
+    { family: 'fresco', occasion: 'dia', budget: 'any', gender: 'mujer' },
+    [unknown, known],
+    { limit: 2 },
+  );
+  assert.deepEqual(res.map(r => r.product.id), ['Known Feminine', 'Unknown Strong']);
+});
+
+test('assistant ranks secondary unisex lean after primary Mujer matches', () => {
+  const primary = product('Primary Feminine', 'Femenino', ['bergamota'], 'fresco diario');
+  const secondary = product('Secondary Lean Masculine', 'Unisex inclinado masculino', ['bergamota', 'citrico', 'manzana'], 'fresco diario limpio azul versatil');
+  const res = getAssistantRecommendations(
+    { family: 'fresco', occasion: 'dia', budget: 'any', gender: 'mujer' },
+    [secondary, primary],
+    { limit: 2 },
+  );
+  assert.deepEqual(res.map(r => r.product.id), ['Primary Feminine', 'Secondary Lean Masculine']);
+});
+
+test('high score Masculino cannot leak into Mujer recommendations', () => {
+  const torino = product('Xerjoff Torino 21', 'Masculino', ['bergamota', 'citrico', 'menta', 'lavanda', 'manzana'], 'fresco diario limpio azul versatil oficina');
+  const creed = product('Creed Millesime Imperial', 'Masculino', ['bergamota', 'citrico', 'marino'], 'fresco acuatico diario limpio');
+  const feminine = product('Allowed Feminine', 'Femenino', ['bergamota'], 'fresco diario');
+  const res = getAssistantRecommendations(
+    { family: 'fresco', occasion: 'dia', budget: 'any', gender: 'mujer' },
+    [torino, creed, feminine],
+    { limit: 4 },
+  );
+  const ids = res.map(r => r.product.id);
+  assert.ok(!ids.includes('Xerjoff Torino 21'));
+  assert.ok(!ids.includes('Creed Millesime Imperial'));
+  assert.deepEqual(ids, ['Allowed Feminine']);
 });

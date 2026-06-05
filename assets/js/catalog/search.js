@@ -443,7 +443,13 @@ function _commercialPriority(product) {
    fragrances drop only as a *tiebreaker* — featured/trending women still
    rank by those higher-priority keys above and are never hidden.
    Untagged (null) is treated as broad so it isn't penalised. */
-const GENDER_PRIORITY = { hombre: 2, unisex: 2, mujer: 1 };
+const GENDER_PRIORITY = {
+  masculine: 2,
+  unisex: 2,
+  unisex_masculine: 2,
+  unisex_feminine: 2,
+  feminine: 1,
+};
 function _genderPriority(gender) {
   const normalized = normalizeGender(gender);
   return GENDER_PRIORITY[normalized] ?? 2;

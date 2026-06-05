@@ -19,12 +19,12 @@ import {
 import { getReasons, getMatchTier } from './reasoning.js?v=2026.06.04.2';
 import { isSellable, getOperationalScore, getAovSignal } from './scoring.js?v=2026.06.04.2';
 import { getDefaultVariant, getOrderableVariants } from '../utils/prices.js?v=2026.06.04.2';
-import { matchesGender, normalizeGender } from '../utils/gender.js?v=2026.06.04.2';
+import { getGenderEligibility } from '../utils/gender.js?v=2026.06.04.2';
 
 const MIN_RESULTS    = 2;
 const MAX_RESULTS    = 4;
 const LEVEL_BOOST    = 2;
-const GENDER_BOOST   = 3;   /* exact match or unisex wildcard */
+const GENDER_BOOST   = 3;   /* primary gender eligibility tiebreaker */
 
 /* Question config consumed by the UI. */
 export const ASSISTANT_QUESTIONS = [
@@ -97,13 +97,21 @@ export function getAssistantRecommendations(answers = {}, products = [], { limit
 
   const candidates = products
     .filter(isSellable)
-    .filter(product => matchesGender(product, answers.gender))
-    .map(product => ({ product, variant: _variantForBudget(product, answers.budget) }))
+    .map(product => ({ product, genderEligibility: getGenderEligibility(product, answers.gender) }))
+    .filter(entry => entry.genderEligibility.eligible)
+    .map(entry => ({
+      ...entry,
+      variant: _variantForBudget(entry.product, answers.budget),
+    }))
     .filter(entry => entry.variant)
     .map(entry => {
       const signals = productSignals(entry.product);
       const matchScore = _matchScore(entry.product, signals, answers);
-      return { ...entry, matchScore };
+      return {
+        ...entry,
+        matchScore,
+        rankScore: matchScore - entry.genderEligibility.penalty,
+      };
     })
     .filter(entry => entry.matchScore > 0);
 
@@ -112,6 +120,8 @@ export function getAssistantRecommendations(answers = {}, products = [], { limit
   const maxScore = Math.max(...candidates.map(c => c.matchScore));
 
   const ranked = candidates.sort((a, b) =>
+    _priorityRank(a.genderEligibility.priority) - _priorityRank(b.genderEligibility.priority) ||
+    b.rankScore - a.rankScore ||
     b.matchScore - a.matchScore ||
     getOperationalScore(b.product) - getOperationalScore(a.product) ||
     getAovSignal(b.product) - getAovSignal(a.product));
@@ -155,11 +165,12 @@ function _matchScore(product, signals, answers) {
    compatible gender metadata break ties. */
 function _genderScore(product, genderPref) {
   if (!genderPref || genderPref === 'any') return 0;
-  const selected = normalizeGender(genderPref);
-  const productGender = normalizeGender(product.gender);
-  if (productGender === 'unisex') return GENDER_BOOST;
-  if (productGender === selected) return GENDER_BOOST;
-  return 0;
+  const eligibility = getGenderEligibility(product, genderPref);
+  return eligibility.priority === 'primary' ? GENDER_BOOST : 0;
+}
+
+function _priorityRank(priority) {
+  return { primary: 0, secondary: 1, fallback: 2 }[priority] ?? 3;
 }
 
 /* Beginners lean toward versatile / featured picks; enthusiasts
