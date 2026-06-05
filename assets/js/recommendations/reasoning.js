@@ -14,7 +14,7 @@ import {
   SCENT_FAMILIES,
   productSignals,
   scoreProfileMatch,
-} from './taxonomy.js?v=2026.06.03.2';
+} from './taxonomy.js?v=2026.06.04.2';
 
 const USE_CASE_THRESHOLD = 4;
 const FAMILY_THRESHOLD = 4;

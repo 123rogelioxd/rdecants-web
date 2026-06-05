@@ -10,17 +10,17 @@
      • no-match  — elegant empty state when filters return 0
    ============================================================= */
 
-import { CatalogProvider }  from '../providers/catalog.js?v=2026.06.03.2';
+import { CatalogProvider }  from '../providers/catalog.js?v=2026.06.04.2';
 import { Tracker }          from '../tracking/tracker.js';
-import { openProductModal } from '../ui/modal.js?v=2026.06.03.2';
-import { SearchBar }        from '../ui/searchbar.js?v=2026.06.03.2';
+import { openProductModal } from '../ui/modal.js?v=2026.06.04.2';
+import { SearchBar }        from '../ui/searchbar.js?v=2026.06.04.2';
 import { observeFadeUp }    from '../ui/animations.js';
 import { primeImageStates } from '../ui/images.js';
 import { getDefaultVariant,
          getDisplayVariant,
-         formatPrice }      from '../utils/prices.js?v=2026.06.03.2';
-import { getScarcityDisplay } from '../utils/scarcity.js?v=2026.06.03.2';
-import { getDisplayBadges }  from '../utils/guidance.js?v=2026.06.03.2';
+         formatPrice }      from '../utils/prices.js?v=2026.06.04.2';
+import { getScarcityDisplay } from '../utils/scarcity.js?v=2026.06.04.2';
+import { getDisplayBadges }  from '../utils/guidance.js?v=2026.06.04.2';
 
 /* module-level ref kept for SearchBar callback */
 let _productsContainer = null;

@@ -33,27 +33,28 @@ import {
   formatPrice,
   getSizeLabel,
   PRIMARY_SIZES,
-} from '../utils/prices.js?v=2026.06.03.2';
-import { getScarcityDisplay } from '../utils/scarcity.js?v=2026.06.03.2';
-import { getRelatedProducts } from '../recommendations/upsells.js?v=2026.06.03.2';
-import { getReasons } from '../recommendations/reasoning.js?v=2026.06.03.2';
-import { buildFragranceProfileHtml } from './fragranceProfile.js?v=2026.06.03.2';
+} from '../utils/prices.js?v=2026.06.04.2';
+import { getScarcityDisplay } from '../utils/scarcity.js?v=2026.06.04.2';
+import { getDisplayBadges } from '../utils/guidance.js?v=2026.06.04.2';
+import { getRelatedProducts } from '../recommendations/upsells.js?v=2026.06.04.2';
+import { getReasons } from '../recommendations/reasoning.js?v=2026.06.04.2';
+import { buildFragranceProfileHtml } from './fragranceProfile.js?v=2026.06.04.2';
 import {
   getNoviceLead,
   getBestForChips,
   getNegatives,
   getReturningUserLine,
-} from './pdpNovice.js?v=2026.06.03.2';
+} from './pdpNovice.js?v=2026.06.04.2';
 import {
   resolveDiscoverySets,
   renderDiscoverySetsFallback,
-} from './discoverySets.js?v=2026.06.03.2';
-import { Personalization, filterDisliked } from '../recommendations/personalization.js?v=2026.06.03.2';
+} from './discoverySets.js?v=2026.06.04.2';
+import { Personalization, filterDisliked } from '../recommendations/personalization.js?v=2026.06.04.2';
 import {
   getCollectionPairs,
   getComplementReason,
-} from '../recommendations/crossSell.js?v=2026.06.03.2';
-import { getConfidenceBadge } from './pdpConfidence.js?v=2026.06.03.2';
+} from '../recommendations/crossSell.js?v=2026.06.04.2';
+import { getConfidenceBadge } from './pdpConfidence.js?v=2026.06.04.2';
 import { showToast } from './toast.js';
 
 /* ── Public: build the page HTML ─────────────────────────────── */
@@ -81,6 +82,14 @@ export function buildProductPageHtml(product) {
     ? `<span class="pdp-concentration">${_escape(product.concentration)}</span>`
     : '';
   const genderHtml = _genderBadgeHtml(product.gender, 'pdp-gender');
+
+  const notesHtml = (product.notes ?? [])
+    .map(n => `<span class="note-tag">${_escape(n)}</span>`)
+    .join('');
+
+  const guidanceHtml = getDisplayBadges(product, { limit: 2 })
+    .map(g => `<span class="guidance-chip guidance-chip--${_escape(g.key)}">${_escape(g.label)}</span>`)
+    .join('');
 
   const confBadge = getConfidenceBadge(product);
   const confBadgeHtml = confBadge
@@ -117,6 +126,8 @@ export function buildProductPageHtml(product) {
         </div>
 
         ${product.story ? `<p class="pdp-story">${_escape(product.story)}</p>` : ''}
+        ${notesHtml ? `<div class="pdp-notes card-notes">${notesHtml}</div>` : ''}
+        ${guidanceHtml ? `<div class="pdp-guidance" aria-label="Recomendado para">${guidanceHtml}</div>` : ''}
 
         <div class="pdp-hero-actions">
           ${entryVariant

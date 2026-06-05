@@ -4,12 +4,12 @@
    recommendations/bundles.js; this file only renders + wires.
    ============================================================= */
 
-import { generateBundles } from '../recommendations/bundles.js?v=2026.06.03.2';
-import { CatalogProvider } from '../providers/catalog.js?v=2026.06.03.2';
+import { generateBundles } from '../recommendations/bundles.js?v=2026.06.04.2';
+import { CatalogProvider } from '../providers/catalog.js?v=2026.06.04.2';
 import { Tracker } from '../tracking/tracker.js';
-import { openProductModal } from './modal.js?v=2026.06.03.2';
+import { openProductModal } from './modal.js?v=2026.06.04.2';
 import { primeImageStates } from './images.js';
-import { getDefaultVariant, formatPrice } from '../utils/prices.js?v=2026.06.03.2';
+import { getDefaultVariant, formatPrice } from '../utils/prices.js?v=2026.06.04.2';
 
 let _root = null;
 let _bundles = [];

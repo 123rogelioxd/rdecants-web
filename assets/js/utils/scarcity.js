@@ -1,4 +1,4 @@
-import { getValidVariants } from './prices.js?v=2026.06.03.2';
+import { getValidVariants } from './prices.js?v=2026.06.04.2';
 
 /* =============================================================
    RDECANTS — OPERATIONAL SCARCITY

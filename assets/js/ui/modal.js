@@ -24,11 +24,11 @@ import { getDefaultVariant,
          getEntryVariant,
          formatPrice,
          getSizeLabel,
-         PRIMARY_SIZES } from '../utils/prices.js?v=2026.06.03.2';
-import { getScarcityDisplay } from '../utils/scarcity.js?v=2026.06.03.2';
-import { getDisplayBadges } from '../utils/guidance.js?v=2026.06.03.2';
-import { buildWhyHtml } from './why.js?v=2026.06.03.2';
-import { productPageUrl } from './productPage.js?v=2026.06.03.2';
+         PRIMARY_SIZES } from '../utils/prices.js?v=2026.06.04.2';
+import { getScarcityDisplay } from '../utils/scarcity.js?v=2026.06.04.2';
+import { getDisplayBadges } from '../utils/guidance.js?v=2026.06.04.2';
+import { buildWhyHtml } from './why.js?v=2026.06.04.2';
+import { productPageUrl } from './productPage.js?v=2026.06.04.2';
 
 /* ── State ──────────────────────────────────────────────────── */
 let _activeProduct  = null;

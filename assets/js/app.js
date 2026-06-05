@@ -6,28 +6,28 @@
    handlers use window.__rd.* instead of loose globals.
    ============================================================= */
 
-import { Cart }                           from './cart/cart.js?v=2026.06.03.2';
-import { setupCheckout }                  from './cart/checkout.js?v=2026.06.03.2';
+import { Cart }                           from './cart/cart.js?v=2026.06.04.2';
+import { setupCheckout }                  from './cart/checkout.js?v=2026.06.04.2';
 import { renderCart, updateCartCount,
          openCart, closeCart,
-         toggleCart, sendWhatsApp }       from './cart/render.js?v=2026.06.03.2';
-import { renderProducts }                   from './catalog/render.js?v=2026.06.03.2';
-import { Recommendations }                 from './recommendations/index.js?v=2026.06.03.2';
-import { setupAssistant }                   from './ui/assistant.js?v=2026.06.03.2';
-import { setupDiscoverySets }               from './ui/discoverySets.js?v=2026.06.03.2';
-import { Personalization }                  from './recommendations/personalization.js?v=2026.06.03.2';
-import { CatalogProvider }                  from './providers/catalog.js?v=2026.06.03.2';
+         toggleCart, sendWhatsApp }       from './cart/render.js?v=2026.06.04.2';
+import { renderProducts }                   from './catalog/render.js?v=2026.06.04.2';
+import { Recommendations }                 from './recommendations/index.js?v=2026.06.04.2';
+import { setupAssistant }                   from './ui/assistant.js?v=2026.06.04.2';
+import { setupDiscoverySets }               from './ui/discoverySets.js?v=2026.06.04.2';
+import { Personalization }                  from './recommendations/personalization.js?v=2026.06.04.2';
+import { CatalogProvider }                  from './providers/catalog.js?v=2026.06.04.2';
 import { setupScrollAnimations,
          observeFadeUp,
-         setupHeroParallax }             from './ui/animations.js?v=2026.06.03.2';
+         setupHeroParallax }             from './ui/animations.js?v=2026.06.04.2';
 import { setupHeader }                    from './ui/header.js';
 import { showToast }                      from './ui/toast.js';
 import { openProductModal,
-         closeProductModal }             from './ui/modal.js?v=2026.06.03.2';
-import { SearchBar }                     from './ui/searchbar.js?v=2026.06.03.2';
+         closeProductModal }             from './ui/modal.js?v=2026.06.04.2';
+import { SearchBar }                     from './ui/searchbar.js?v=2026.06.04.2';
 import { setupImageStates }              from './ui/images.js';
 import { Tracker }                        from './tracking/tracker.js';
-import { installBackendTracking }          from './tracking/backend.js?v=2026.06.03.2';
+import { installBackendTracking }          from './tracking/backend.js?v=2026.06.04.2';
 import { EventBus }                       from './core/events.js';
 import { AppState }                       from './core/state.js';
 

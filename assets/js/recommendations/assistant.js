@@ -15,11 +15,11 @@ import {
   CLIMATES,
   productSignals,
   scoreProfileMatch,
-} from './taxonomy.js?v=2026.06.03.2';
-import { getReasons, getMatchTier } from './reasoning.js?v=2026.06.03.2';
-import { isSellable, getOperationalScore, getAovSignal } from './scoring.js?v=2026.06.03.2';
-import { getDefaultVariant, getOrderableVariants } from '../utils/prices.js?v=2026.06.03.2';
-import { matchesGender, normalizeGender } from '../utils/gender.js?v=2026.06.03.2';
+} from './taxonomy.js?v=2026.06.04.2';
+import { getReasons, getMatchTier } from './reasoning.js?v=2026.06.04.2';
+import { isSellable, getOperationalScore, getAovSignal } from './scoring.js?v=2026.06.04.2';
+import { getDefaultVariant, getOrderableVariants } from '../utils/prices.js?v=2026.06.04.2';
+import { matchesGender, normalizeGender } from '../utils/gender.js?v=2026.06.04.2';
 
 const MIN_RESULTS    = 2;
 const MAX_RESULTS    = 4;

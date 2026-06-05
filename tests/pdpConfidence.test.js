@@ -102,7 +102,7 @@ test('buildProductPageHtml surfaces the confidence badge in the hero', async () 
   assert.ok(!html.includes('pdp-conf-compare'), 'no choose/skip comparison block');
 });
 
-test('buildProductPageHtml includes pdp-decant-reassurance when price is available', async () => {
+test('buildProductPageHtml shows a single value-prop line (no duplicate reassurance) when price is available', async () => {
   const { buildProductPageHtml } = await import('../assets/js/ui/productPage.js');
   const sample = {
     id: 'test-conf', slug: 'test-conf', name: 'TestConf', house: 'House',
@@ -119,6 +119,7 @@ test('buildProductPageHtml includes pdp-decant-reassurance when price is availab
     },
   };
   const html = buildProductPageHtml(sample);
-  assert.ok(html.includes('pdp-decant-reassurance'), 'decant reassurance rendered');
-  assert.ok(html.includes('decant'), 'decant copy present');
+  assert.ok(html.includes('pdp-value-prop'), 'value-prop line rendered');
+  assert.ok(html.includes('pruébalo desde'), 'value-prop copy present');
+  assert.ok(!html.includes('pdp-decant-reassurance'), 'duplicate reassurance line removed');
 });

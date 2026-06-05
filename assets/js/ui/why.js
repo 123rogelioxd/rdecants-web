@@ -6,7 +6,7 @@
    drop in the same elegant explanation without duplicating logic.
    ============================================================= */
 
-import { getReasons } from '../recommendations/reasoning.js?v=2026.06.03.2';
+import { getReasons } from '../recommendations/reasoning.js?v=2026.06.04.2';
 
 export function buildWhyHtml(product, { heading = '¿Por qué esta fragancia?', limit = 2 } = {}) {
   const reasons = getReasons(product, { limit });

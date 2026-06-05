@@ -3,17 +3,17 @@
    Mirrors app.js's bootstrap but renders a single product page.
    ============================================================= */
 
-import { Cart } from '../cart/cart.js?v=2026.06.03.2';
-import { setupCheckout } from '../cart/checkout.js?v=2026.06.03.2';
+import { Cart } from '../cart/cart.js?v=2026.06.04.2';
+import { setupCheckout } from '../cart/checkout.js?v=2026.06.04.2';
 import {
   renderCart, updateCartCount,
   openCart, closeCart, toggleCart, sendWhatsApp,
-} from '../cart/render.js?v=2026.06.03.2';
-import { CatalogProvider } from '../providers/catalog.js?v=2026.06.03.2';
+} from '../cart/render.js?v=2026.06.04.2';
+import { CatalogProvider } from '../providers/catalog.js?v=2026.06.04.2';
 import { setupHeader } from '../ui/header.js';
 import { setupImageStates } from '../ui/images.js';
 import { Tracker } from '../tracking/tracker.js';
-import { installBackendTracking } from '../tracking/backend.js?v=2026.06.03.2';
+import { installBackendTracking } from '../tracking/backend.js?v=2026.06.04.2';
 import { AppState } from '../core/state.js';
 import {
   buildProductPageHtml,
@@ -22,7 +22,7 @@ import {
   renderCollectionPairs,
   readSlugFromLocation,
   findProductBySlug,
-} from '../ui/productPage.js?v=2026.06.03.2';
+} from '../ui/productPage.js?v=2026.06.04.2';
 
 /* ── Global bridge (shared with rest of the app) ─────────────── */
 window.__rd = window.__rd || {};

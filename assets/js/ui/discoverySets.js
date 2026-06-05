@@ -18,15 +18,15 @@
      renderDiscoverySetsFallback(root, sets)   — PDP fallback
    ============================================================= */
 
-import { isSellable, getOperationalScore } from '../recommendations/scoring.js?v=2026.06.03.2';
-import { Personalization, filterDisliked } from '../recommendations/personalization.js?v=2026.06.03.2';
+import { isSellable, getOperationalScore } from '../recommendations/scoring.js?v=2026.06.04.2';
+import { Personalization, filterDisliked } from '../recommendations/personalization.js?v=2026.06.04.2';
 import {
   USE_CASE_PROFILES,
   SCENT_FAMILIES,
   productSignals,
   scoreProfileMatch,
-} from '../recommendations/taxonomy.js?v=2026.06.03.2';
-import { getPriceForSize, formatPrice } from '../utils/prices.js?v=2026.06.03.2';
+} from '../recommendations/taxonomy.js?v=2026.06.04.2';
+import { getPriceForSize, formatPrice } from '../utils/prices.js?v=2026.06.04.2';
 import { Tracker } from '../tracking/tracker.js';
 import { primeImageStates } from './images.js';
 
@@ -194,7 +194,7 @@ export async function setupDiscoverySets(containerId) {
 
   let products = [];
   try {
-    const { CatalogProvider } = await import('../providers/catalog.js?v=2026.06.03.2');
+    const { CatalogProvider } = await import('../providers/catalog.js?v=2026.06.04.2');
     products = await CatalogProvider.getProducts();
   } catch {
     products = [];

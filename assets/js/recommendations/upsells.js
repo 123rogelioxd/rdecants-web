@@ -15,17 +15,17 @@
    description). No AI, no fabricated affinity.
    ============================================================= */
 
-import { getScarcityState, hasHighDemand } from '../utils/scarcity.js?v=2026.06.03.2';
+import { getScarcityState, hasHighDemand } from '../utils/scarcity.js?v=2026.06.04.2';
 import {
   getOrderableVariants,
   getDefaultVariant,
-} from '../utils/prices.js?v=2026.06.03.2';
+} from '../utils/prices.js?v=2026.06.04.2';
 import {
   USE_CASE_PROFILES,
   SCENT_FAMILIES,
   productSignals,
   scoreProfileMatch,
-} from './taxonomy.js?v=2026.06.03.2';
+} from './taxonomy.js?v=2026.06.04.2';
 
 const RELATED_LIMIT = 4;
 const CART_LIMIT = 3;

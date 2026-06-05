@@ -22,9 +22,9 @@ import {
   productSignals,
   scoreProfileMatch,
   normalizeText,
-} from './taxonomy.js?v=2026.06.03.2';
-import { isSellable, getOperationalScore } from './scoring.js?v=2026.06.03.2';
-import { scoreAffinity } from './personalization.js?v=2026.06.03.2';
+} from './taxonomy.js?v=2026.06.04.2';
+import { isSellable, getOperationalScore } from './scoring.js?v=2026.06.04.2';
+import { scoreAffinity } from './personalization.js?v=2026.06.04.2';
 
 /* ── Complement axes ────────────────────────────────────────────── */
 

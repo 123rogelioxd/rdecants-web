@@ -16,7 +16,7 @@ import {
   productSignals,
   scoreProfileMatch,
   normalizeText,
-} from './taxonomy.js?v=2026.06.03.2';
+} from './taxonomy.js?v=2026.06.04.2';
 
 const STORAGE_KEY = 'rd_taste';
 const MAX_VIEWED = 40;

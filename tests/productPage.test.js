@@ -90,6 +90,31 @@ test('buildProductPageHtml renders full intelligence sections from fragrance', (
   assert.ok(!html.includes('roger') && !html.includes('jhony'), 'aliases never displayed');
 });
 
+test('PDP hero chips use curated mood tags instead of legacy guidance', () => {
+  const tubees = {
+    ...sample,
+    id: 'TUBBEES-COOKIES-CREAM',
+    slug: 'cookies-cream-tubbees',
+    name: 'COOKIES & CREAM',
+    house: 'TUBBEES',
+    notes: ['azucar', 'vainilla'],
+    desc: 'perfil extremadamente dulce',
+    story: 'perfil extremadamente dulce',
+    fragrance: {
+      ...sample.fragrance,
+      mood_tags: ['dulce', 'juvenil', 'social'],
+      recommendation_tags: [],
+      style_tags: [],
+    },
+  };
+
+  const html = buildProductPageHtml(tubees);
+  assert.ok(html.includes('>Dulce<'));
+  assert.ok(html.includes('>Juvenil<'));
+  assert.ok(!html.includes('>Fiesta<'));
+  assert.ok(!html.includes('>Seductor<'));
+});
+
 test('buildProductPageHtml is defensive when fragrance is null/missing', () => {
   const lean = { ...sample, fragrance: null };
   const html = buildProductPageHtml(lean);
@@ -131,11 +156,11 @@ test('catalog gender badge helper renders known labels and hides missing metadat
 });
 
 test('PDP module imports getSizeLabel from versioned prices module', async () => {
-  const prices = await import('../assets/js/utils/prices.js?v=2026.06.03.2');
+  const prices = await import('../assets/js/utils/prices.js?v=2026.06.04.2');
   assert.equal(typeof prices.getSizeLabel, 'function');
   assert.equal(prices.getSizeLabel(5), 'Uso frecuente');
 
-  const productPage = await import('../assets/js/ui/productPage.js?v=2026.06.03.2');
+  const productPage = await import('../assets/js/ui/productPage.js?v=2026.06.04.2');
   assert.equal(typeof productPage.buildProductPageHtml, 'function');
 });
 

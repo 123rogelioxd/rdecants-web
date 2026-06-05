@@ -14,8 +14,8 @@
    so it was removed; only the badge remains.
    ============================================================= */
 
-import { getScoreSummary } from './fragranceProfile.js?v=2026.06.03.2';
-import { hasHighDemand } from '../utils/scarcity.js?v=2026.06.03.2';
+import { getScoreSummary } from './fragranceProfile.js?v=2026.06.04.2';
+import { hasHighDemand } from '../utils/scarcity.js?v=2026.06.04.2';
 
 /* ── Thresholds (conservative — only show when clearly supported) */
 const HIGH      = 67;

@@ -3,11 +3,11 @@
    State management: add, remove, qty, persist, stock limits.
    ============================================================= */
 
-import { CatalogProvider } from '../providers/catalog.js?v=2026.06.03.2';
+import { CatalogProvider } from '../providers/catalog.js?v=2026.06.04.2';
 import { Tracker }         from '../tracking/tracker.js';
 import { EventBus }        from '../core/events.js';
 import { showToast }       from '../ui/toast.js';
-import { getPriceForSize, getVariantForSize, isValidPrice } from '../utils/prices.js?v=2026.06.03.2';
+import { getPriceForSize, getVariantForSize, isValidPrice } from '../utils/prices.js?v=2026.06.04.2';
 
 const STORAGE_KEY = 'rdecants_cart';
 

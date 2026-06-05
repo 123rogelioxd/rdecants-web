@@ -8,7 +8,7 @@ import { Tracker }          from '../tracking/tracker.js';
 import { openProductModal } from '../ui/modal.js';
 import { observeFadeUp }    from '../ui/animations.js';
 import { primeImageStates } from '../ui/images.js';
-import { Personalization, personalizeRails, filterDisliked } from './personalization.js?v=2026.06.03.2';
+import { Personalization, personalizeRails, filterDisliked } from './personalization.js?v=2026.06.04.2';
 
 const MAX_PER_RAIL = 5;
 const MIN_PER_RAIL = 2;
