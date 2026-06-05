@@ -7,7 +7,7 @@
         chips + optional "Muy solicitado" badge + price-from + a
         single "Comprar" CTA — buy decision possible above the fold)
      B. ¿Por qué te puede gustar? (ONE fused sell/guide section:
-        plain-language lead + up to 2 why bullets + "best for" chips
+        plain-language lead + up to 4 why bullets + "best for" chips
         + a compact "no es para ti si…" line)
      CB. Combina bien con (collection pairs, hydrated async)
      C. Perfil olfativo completo — collapsed <details>, opt-in:
@@ -405,13 +405,13 @@ export function findProductBySlug(products, slug) {
    separate blocks (novice lead, "¿Por qué esta fragancia?" why bullets,
    and "no es para ti si…") into one, with no repeated information:
      · plain-language lead       (getNoviceLead)
-     · up to 2 why bullets       (getReasons — deterministic engine)
+     · up to 4 why bullets       (getReasons — deterministic engine)
      · "best for" chips          (getBestForChips)
      · one compact negative line (getNegatives — first, most confident) */
 function _whyYouMightLikeBlock(product) {
   const lead = getNoviceLead(product);
   const chips = getBestForChips(product);
-  const reasons = getReasons(product, { limit: 2 });
+  const reasons = getReasons(product, { limit: 4 });
   const negative = getNegatives(product)[0] ?? null;
 
   const reasonsHtml = reasons.length

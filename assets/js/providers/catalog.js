@@ -182,6 +182,7 @@ function _mapFragrance(f) {
     recommendation_tags: arr(f.recommendation_tags),
     recommended_context_tags: arr(f.recommended_context_tags),
     style_tags: arr(f.style_tags),
+    climates: arr(f.climates ?? f.climate_tags),
     accords: arr(f.accords),
     scores: f.scores && typeof f.scores === 'object' ? f.scores : {},
   };

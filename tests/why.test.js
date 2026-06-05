@@ -7,22 +7,28 @@ test('returns empty string when there is nothing meaningful to say', () => {
   assert.equal(buildWhyHtml(null), '');
 });
 
-test('renders a reasons list for a product with clear metadata', () => {
+test('renders a reasons list from curated fragrance metadata', () => {
   const html = buildWhyHtml({
-    notes: ['marino', 'citrico', 'vetiver', 'bergamota'],
-    desc: 'fresco limpio para la oficina y el calor de verano',
-    story: 'versatil para todos los dias',
+    fragrance: {
+      recommendation_tags: ['noche', 'fiesta'],
+      mood_tags: ['juvenil', 'seductor'],
+      style_tags: ['dulce'],
+      climates: ['frio'],
+    },
   });
   assert.match(html, /why-block/);
   assert.match(html, /¿Por qué esta fragancia\?/);
-  assert.match(html, /<li>/);
+  assert.match(html, /Ideal para la noche, fiestas y salidas/);
+  assert.doesNotMatch(html, /limpios y frescos/);
 });
 
 test('respects a custom heading and is deterministic', () => {
   const product = {
-    notes: ['vainilla', 'tonka', 'canela'],
-    desc: 'dulce nocturno para fiesta',
-    story: '',
+    fragrance: {
+      recommendation_tags: ['cita'],
+      mood_tags: ['juvenil'],
+      style_tags: ['dulce'],
+    },
   };
   const a = buildWhyHtml(product, { heading: 'Por qué te gustará' });
   const b = buildWhyHtml(product, { heading: 'Por qué te gustará' });

@@ -23,10 +23,7 @@ const MIN_SCORE = 3;
 export function getDisplayBadges(product, { limit = MAX_BADGES } = {}) {
   if (!product) return [];
 
-  const curated = _curatedBadges(product);
-  if (curated.length) return curated.slice(0, limit);
-
-  return getGuidanceBadges(product).slice(0, limit);
+  return _curatedBadges(product).slice(0, limit);
 }
 
 export function getGuidanceBadges(product) {
@@ -53,7 +50,7 @@ function _curatedBadges(product) {
   const seen = new Set();
   const badges = [];
 
-  for (const source of [f.mood_tags, f.recommendation_tags, f.style_tags]) {
+  for (const source of [f.recommendation_tags, f.mood_tags, f.style_tags, f.climates]) {
     for (const raw of _asArray(source)) {
       const key = _badgeKey(raw);
       if (!key || seen.has(key)) continue;

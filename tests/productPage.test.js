@@ -39,6 +39,7 @@ const sample = {
     aliases: ['roger', 'jhony deep'],
     scent_family_normalized: 'aromatic',
     mood_tags: ['clean', 'confident'],
+    recommendation_tags: ['oficina', 'diario'],
     recommended_context_tags: ['office', 'daily'],
     style_tags: ['masculine', 'modern'],
     accords: ['ambroxan', 'bergamot'],
@@ -205,7 +206,7 @@ test('PDP no longer renders the standalone profile summary card', () => {
   assert.ok(!html.includes('pdp-summary-rows'), 'summary grid removed');
 });
 
-test('PDP fused section carries up to 2 why bullets next to the lead', () => {
+test('PDP fused section carries up to 4 why bullets next to the lead', () => {
   const html = buildProductPageHtml(sample);
   const novice = html.slice(
     html.indexOf('id="pdp-novice"'),
@@ -215,7 +216,7 @@ test('PDP fused section carries up to 2 why bullets next to the lead', () => {
   assert.ok(novice.includes('pdp-why-list'), 'why bullets folded into the section');
   const bullets = (novice.match(/<li>/g) || []).length;
   /* Best-for chips use pdp-bestfor-chip; counting plain <li> isolates why bullets. */
-  assert.ok(bullets <= 2, `why bullets capped at 2, got ${bullets}`);
+  assert.ok(bullets <= 4, `why bullets capped at 4, got ${bullets}`);
 });
 
 test('PDP includes the sticky mini-buy CTA', () => {

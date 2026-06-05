@@ -2,41 +2,68 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { getReasons, getMatchTier } from '../assets/js/recommendations/reasoning.js';
 
-test('no reasons for an empty / null product', () => {
+test('no reasons for an empty / null product or missing curated metadata', () => {
   assert.deepEqual(getReasons(null), []);
   assert.deepEqual(getReasons({ notes: [], desc: '', story: '' }), []);
+  assert.deepEqual(getReasons({
+    notes: ['manzana', 'vainilla', 'canela'],
+    desc: 'dulce juvenil llamativo',
+    story: 'noche y salidas',
+  }), []);
 });
 
-test('combines the top two use-cases into one phrase', () => {
-  const p = {
-    notes: ['marino', 'citrico', 'vetiver', 'bergamota'],
-    desc: 'fresco limpio para la oficina y el calor de verano',
-    story: 'versatil para todos los dias',
+test('9PM guidance is driven by curated recommendation, mood, style and climate tags', () => {
+  const ninePm = {
+    notes: ['manzana', 'vainilla', 'canela'],
+    fragrance: {
+      mood_tags: ['juvenil', 'nocturno', 'seductor'],
+      style_tags: ['dulce', 'moderno', 'nocturno', 'frutal'],
+      recommendation_tags: ['noche', 'cita', 'fiesta', 'evento formal', 'fragancia firma', 'alto rendimiento', 'antro', 'social'],
+      climates: ['frio', 'templado'],
+    },
   };
-  const reasons = getReasons(p);
-  assert.ok(reasons.some(r => /Ideal para .+ y /.test(r)));
+
+  const reasons = getReasons(ninePm, { limit: 4 });
+  assert.deepEqual(reasons, [
+    'Ideal para la noche, fiestas y salidas',
+    'Vibra juvenil y seductora',
+    'Perfecto si te gustan aromas dulces, especiados y llamativos',
+    'Mejor en clima fresco o templado',
+  ]);
+  assert.ok(!reasons.some(r => /limpios|frescos|oficina/i.test(r)));
 });
 
-test('adds a scent-family phrase', () => {
+test('style and climate reasons appear after higher-priority tags when limit allows', () => {
   const p = {
-    notes: ['vainilla', 'tonka', 'canela', 'caramelo'],
-    desc: 'dulce goloso gourmand para la noche',
-    story: '',
+    fragrance: {
+      recommendation_tags: ['noche'],
+      mood_tags: ['juvenil', 'seductor'],
+      style_tags: ['dulce'],
+      climates: ['frio', 'templado'],
+    },
   };
-  const reasons = getReasons(p);
-  assert.ok(reasons.some(r => /dulces/.test(r)));
+
+  assert.deepEqual(getReasons(p, { limit: 4 }), [
+    'Ideal para la noche, fiestas y salidas',
+    'Vibra juvenil y seductora',
+    'Perfecto si te gustan aromas dulces, especiados y llamativos',
+    'Mejor en clima fresco o templado',
+  ]);
 });
 
 test('respects the limit and is deterministic', () => {
   const p = {
-    notes: ['oud', 'cuero', 'tabaco', 'ambar', 'incienso'],
-    desc: 'intenso oriental potente seductor para la noche y ocasiones especiales',
-    story: 'elegante sofisticado refinado',
+    fragrance: {
+      recommendation_tags: ['noche', 'cita', 'alto rendimiento'],
+      mood_tags: ['juvenil'],
+      style_tags: ['dulce'],
+      climates: ['frio'],
+    },
   };
   const a = getReasons(p, { limit: 2 });
   const b = getReasons(p, { limit: 2 });
-  assert.ok(a.length <= 2);
-  assert.deepEqual(a, b); // deterministic
+  assert.equal(a.length, 2);
+  assert.deepEqual(a, b);
 });
 
 test('match tier thresholds', () => {

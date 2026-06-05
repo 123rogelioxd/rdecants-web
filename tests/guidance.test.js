@@ -101,14 +101,14 @@ test('display badges use recommendation tags when mood tags are absent', () => {
   assert.deepEqual(getDisplayBadges(product).map(b => b.label), ['Cita casual', 'Oficina']);
 });
 
-test('display badges fall back to legacy guidance when curated metadata is absent', () => {
+test('display badges do not fall back to legacy guidance when curated metadata is absent', () => {
   const product = {
     notes: ['vainilla', 'tonka', 'canela'],
     story: 'Dulce y nocturno, pensado para salidas y dejar rastro en la noche',
     badge: 'Disponible',
   };
 
-  assert.ok(getDisplayBadges(product).map(b => b.key).includes('fiesta'));
+  assert.deepEqual(getDisplayBadges(product), []);
 });
 
 test('display badges dedupe across curated metadata sources', () => {
@@ -122,7 +122,7 @@ test('display badges dedupe across curated metadata sources', () => {
 
   assert.deepEqual(
     getDisplayBadges(product, { limit: 10 }).map(b => b.label),
-    ['Dulce', 'Juvenil', 'Cita casual', 'Gourmand'],
+    ['Dulce', 'Cita casual', 'Juvenil', 'Gourmand'],
   );
 });
 

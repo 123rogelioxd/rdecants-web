@@ -1,65 +1,67 @@
 /* =============================================================
-   RDECANTS — PRODUCT REASONING
-   Deterministic, reusable "¿por qué esta fragancia?" phrases built
-   purely from catalog metadata via the shared taxonomy. No LLM, no
-   fabrication — same input always yields the same human-sounding,
-   boutique explanation.
+   RDECANTS - PRODUCT REASONING
+   Deterministic "why this fragrance?" phrases built from curated
+   fragrance metadata. Public guidance intentionally avoids legacy
+   text inference so a sweet/night fragrance cannot be mislabeled as
+   fresh, clean, office-safe, or any other generic fallback.
 
-   getReasons(product)        -> short phrases ("Ideal para el calor y la oficina")
-   getMatchTier(score, max)   -> confidence indicator for the assistant
+   Priority: recommendation_tags -> mood_tags -> style_tags -> climates.
    ============================================================= */
 
-import {
-  USE_CASE_PROFILES,
-  SCENT_FAMILIES,
-  productSignals,
-  scoreProfileMatch,
-} from './taxonomy.js?v=2026.06.04.2';
+import { normalizeText } from './taxonomy.js?v=2026.06.04.2';
 
-const USE_CASE_THRESHOLD = 4;
-const FAMILY_THRESHOLD = 4;
-const DEFAULT_LIMIT = 2;
+const DEFAULT_LIMIT = 4;
 
-const FAMILY_PHRASE = {
-  fresco: 'Perfecto si te gustan aromas limpios y frescos',
-  dulce: 'Ideal si disfrutas perfumes dulces y envolventes',
-  intenso: 'Para quien busca aromas intensos y con presencia',
-};
-
-const SINGLE_USE_CASE_PHRASE = {
-  diario: 'Ideal para el día a día',
-  oficina: 'Perfecto para la oficina',
-  fiesta: 'Gran opción para fiesta nocturna',
-  tropical: 'Ideal para clima cálido y verano',
-  seductor: 'Una apuesta segura para la noche',
-  elegante: 'Elegante para ocasiones especiales',
+const TAG_PHRASES = {
+  recommendation: {
+    noche: 'Ideal para la noche, fiestas y salidas',
+    fiesta: 'Ideal para la noche, fiestas y salidas',
+    party: 'Ideal para la noche, fiestas y salidas',
+    antro: 'Ideal para la noche, fiestas y salidas',
+    social: 'Ideal para salidas y planes sociales',
+    cita: 'Muy buena opción para citas',
+    date: 'Muy buena opción para citas',
+    evento_formal: 'Funciona para eventos formales con presencia',
+    formal: 'Funciona para eventos formales con presencia',
+    fragancia_firma: 'Puede funcionar como fragancia firma si te gusta destacar',
+    alto_rendimiento: 'Pensada para quien busca alto rendimiento',
+    oficina: 'Adecuada para oficina cuando buscas algo pulido',
+    diario: 'Ideal para el día a día',
+  },
+  mood: {
+    juvenil: 'Vibra juvenil y seductora',
+    seductor: 'Vibra juvenil y seductora',
+    sensual: 'Vibra sensual y seductora',
+    nocturno: 'Hecha para planes de noche',
+    dulce: 'Vibra dulce y llamativa',
+    limpio: 'Vibra limpia y fácil de usar',
+    fresco: 'Vibra fresca y ligera',
+  },
+  style: {
+    dulce: 'Perfecto si te gustan aromas dulces, especiados y llamativos',
+    spicy: 'Perfecto si te gustan aromas dulces, especiados y llamativos',
+    especiado: 'Perfecto si te gustan aromas dulces, especiados y llamativos',
+    llamativo: 'Perfecto si te gustan aromas dulces, especiados y llamativos',
+    moderno: 'Estilo moderno y fácil de notar',
+    nocturno: 'Estilo nocturno, ideal para destacar',
+    frutal: 'Tiene un perfil frutal y juvenil',
+    gourmand: 'Perfecto si disfrutas aromas dulces y envolventes',
+    fresco: 'Perfecto si te gustan aromas frescos y ligeros',
+    limpio: 'Perfecto si te gustan aromas limpios y discretos',
+  },
+  climate: {
+    frio: 'Mejor en clima fresco o templado',
+    cold: 'Mejor en clima fresco o templado',
+    invierno: 'Mejor en clima fresco o templado',
+    templado: 'Mejor en clima fresco o templado',
+    calido: 'Mejor en clima cálido',
+    verano: 'Mejor en clima cálido',
+  },
 };
 
 export function getReasons(product, { limit = DEFAULT_LIMIT } = {}) {
   if (!product) return [];
-
-  const signals = productSignals(product);
-  const reasons = [];
-
-  const useCases = USE_CASE_PROFILES
-    .map(p => ({ key: p.key, short: p.short, score: scoreProfileMatch(p, signals) }))
-    .filter(p => p.score >= USE_CASE_THRESHOLD)
-    .sort((a, b) => b.score - a.score);
-
-  if (useCases.length >= 2) {
-    reasons.push(`Ideal para ${useCases[0].short} y ${useCases[1].short}`);
-  } else if (useCases.length === 1) {
-    reasons.push(SINGLE_USE_CASE_PHRASE[useCases[0].key]);
-  }
-
-  const family = Object.values(SCENT_FAMILIES)
-    .map(f => ({ key: f.key, score: scoreProfileMatch(f, signals) }))
-    .filter(f => f.score >= FAMILY_THRESHOLD)
-    .sort((a, b) => b.score - a.score)[0];
-
-  if (family) reasons.push(FAMILY_PHRASE[family.key]);
-
-  return _dedupe(reasons).slice(0, limit);
+  return _curatedReasons(product).slice(0, limit);
 }
 
 /* Confidence indicator from a normalized match ratio. */
@@ -72,6 +74,33 @@ export function getMatchTier(score, maxScore) {
   if (ratio >= 0.66) return { key: 'high', label: 'Match alto', ratio };
   if (ratio >= 0.33) return { key: 'good', label: 'Buen match', ratio };
   return { key: 'fair', label: 'Match suave', ratio };
+}
+
+function _curatedReasons(product) {
+  const f = product?.fragrance;
+  if (!f) return [];
+
+  const groups = [
+    _phrasesFor(f.recommendation_tags, TAG_PHRASES.recommendation),
+    _phrasesFor(f.mood_tags, TAG_PHRASES.mood),
+    _phrasesFor(f.style_tags, TAG_PHRASES.style),
+    _phrasesFor(f.climates, TAG_PHRASES.climate),
+  ];
+
+  const primary = groups.map(group => group[0]).filter(Boolean);
+  const extras = groups.flatMap(group => group.slice(1));
+  return _dedupe([...primary, ...extras]);
+}
+
+function _phrasesFor(tags, phraseMap) {
+  if (!Array.isArray(tags)) return [];
+  return tags.map(tag => phraseMap[_tagKey(tag)]).filter(Boolean);
+}
+
+function _tagKey(value) {
+  return normalizeText(value)
+    .replace(/[\s-]+/g, '_')
+    .replace(/[^\w]/g, '');
 }
 
 function _dedupe(list) {
