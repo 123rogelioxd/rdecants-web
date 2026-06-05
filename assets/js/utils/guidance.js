@@ -7,7 +7,7 @@
 
    The mood/use-case vocabulary lives in recommendations/taxonomy.js
    so the assistant, bundles and reasoning all share one definition.
-   Each product surfaces at most MAX_BADGES guidance chips, picked
+   Each product surfaces at most MAX_VISIBLE_BADGES guidance chips, picked
    by score so we never clutter the card.
    ============================================================= */
 
@@ -16,11 +16,11 @@ import {
   productSignals,
   scoreProfileMatch,
 } from '../recommendations/taxonomy.js?v=2026.06.04.2';
+import { MAX_VISIBLE_BADGES } from '../ui/displayLimits.js?v=2026.06.04.2';
 
-const MAX_BADGES = 2;
 const MIN_SCORE = 3;
 
-export function getDisplayBadges(product, { limit = MAX_BADGES } = {}) {
+export function getDisplayBadges(product, { limit = MAX_VISIBLE_BADGES } = {}) {
   if (!product) return [];
 
   return _curatedBadges(product).slice(0, limit);
@@ -39,7 +39,7 @@ export function getGuidanceBadges(product) {
     }))
     .filter(item => item.score >= MIN_SCORE)
     .sort((a, b) => b.score - a.score)
-    .slice(0, MAX_BADGES)
+    .slice(0, MAX_VISIBLE_BADGES)
     .map(({ key, label }) => ({ key, label }));
 }
 

@@ -206,7 +206,7 @@ test('PDP no longer renders the standalone profile summary card', () => {
   assert.ok(!html.includes('pdp-summary-rows'), 'summary grid removed');
 });
 
-test('PDP fused section carries up to 4 why bullets next to the lead', () => {
+test('PDP fused section carries up to 2 why bullets next to the lead', () => {
   const html = buildProductPageHtml(sample);
   const novice = html.slice(
     html.indexOf('id="pdp-novice"'),
@@ -215,8 +215,78 @@ test('PDP fused section carries up to 4 why bullets next to the lead', () => {
   assert.ok(novice.includes('pdp-novice-lead'), 'lead present');
   assert.ok(novice.includes('pdp-why-list'), 'why bullets folded into the section');
   const bullets = (novice.match(/<li>/g) || []).length;
-  /* Best-for chips use pdp-bestfor-chip; counting plain <li> isolates why bullets. */
-  assert.ok(bullets <= 4, `why bullets capped at 4, got ${bullets}`);
+  /* The public section no longer renders extra list-based guidance. */
+  assert.ok(bullets <= 2, `why bullets capped at 2, got ${bullets}`);
+});
+
+test('PDP hero keeps metadata out of the top visible area', () => {
+  const html = buildProductPageHtml(sample);
+  const heroSlice = html.slice(
+    html.indexOf('id="pdp-hero"'),
+    html.indexOf('id="pdp-novice"')
+  );
+  assert.ok(!heroSlice.includes('note-tag'), 'notes hidden from hero');
+  assert.ok(!heroSlice.includes('bergamota'), 'note text hidden from hero');
+  assert.ok(!heroSlice.includes('ambroxan'), 'accord text hidden from hero');
+
+  const detailsSlice = html.slice(html.indexOf('id="pdp-tech"'));
+  assert.ok(detailsSlice.includes('note-tag'), 'notes stay accessible in details');
+  assert.ok(detailsSlice.includes('bergamota'), 'notes remain in collapsed details');
+  assert.ok(detailsSlice.includes('Acordes'), 'accords remain in collapsed details');
+});
+
+test('PDP visible badges are limited to two strongest tags', () => {
+  const html = buildProductPageHtml({
+    ...sample,
+    fragrance: {
+      ...sample.fragrance,
+      recommendation_tags: ['noche', 'cita', 'fiesta', 'diario'],
+      mood_tags: ['juvenil', 'seductor'],
+    },
+  });
+  const heroSlice = html.slice(
+    html.indexOf('id="pdp-hero"'),
+    html.indexOf('id="pdp-novice"')
+  );
+  const badges = heroSlice.match(/<span class="guidance-chip /g) || [];
+  assert.equal(badges.length, 2);
+  assert.ok(heroSlice.includes('>Noche<'));
+  assert.ok(heroSlice.includes('>Cita<'));
+  assert.ok(!heroSlice.includes('>Fiesta<'));
+});
+
+test('Afnan 9PM shows concise public guidance', () => {
+  const afnan9pm = {
+    ...sample,
+    id: 'afnan-9pm',
+    slug: 'afnan-9pm',
+    name: 'Afnan 9PM',
+    house: 'AFNAN',
+    story: 'Dulce, especiado y llamativo para noches y salidas.',
+    notes: ['Manzana', 'Vainilla', 'Canela'],
+    fragrance: {
+      scent_family_normalized: 'gourmand',
+      recommendation_tags: ['noche', 'cita', 'fiesta'],
+      mood_tags: ['juvenil', 'seductor', 'nocturno'],
+      style_tags: ['dulce', 'especiado', 'llamativo'],
+      recommended_context_tags: ['night', 'date'],
+      accords: ['vanilla', 'apple', 'cinnamon'],
+      scores: { sweetness: 0.85, projection: 0.8, longevity: 0.78 },
+    },
+  };
+  const html = buildProductPageHtml(afnan9pm);
+  const heroSlice = html.slice(html.indexOf('id="pdp-hero"'), html.indexOf('id="pdp-novice"'));
+  const whySlice = html.slice(html.indexOf('id="pdp-novice"'), html.indexOf('id="pdp-buy"'));
+
+  assert.ok(heroSlice.includes('>Noche<'));
+  assert.ok(heroSlice.includes('>Cita<'));
+  assert.ok(!heroSlice.includes('>Fiesta<'));
+  assert.ok(!heroSlice.includes('Manzana'), 'notes are not dumped in hero');
+  assert.ok(whySlice.includes('pdp-novice-lead'), 'one summary line');
+  assert.ok(whySlice.includes('Vibra juvenil y seductora'));
+  assert.ok((whySlice.match(/<li>/g) || []).length <= 2);
+  assert.ok(!whySlice.includes('pdp-bestfor-chip'), 'no extra guidance chips in why section');
+  assert.ok(!whySlice.includes('pdp-notfor-line'), 'no extra negative guidance in public why section');
 });
 
 test('PDP includes the sticky mini-buy CTA', () => {

@@ -167,11 +167,13 @@ function _profileBlock(f) {
   const styles = _labelList(STYLE_LABELS, f.style_tags, 3);
   const moods = _labelList(MOOD_LABELS, f.mood_tags, 3);
   const contexts = _labelList(CONTEXT_LABELS, f.recommended_context_tags, 3);
+  const accords = _labelList({}, f.accords, 4);
 
-  if (!family && !styles.length && !moods.length && !contexts.length) return '';
+  if (!family && !styles.length && !moods.length && !contexts.length && !accords.length) return '';
 
   const rows = [
     family ? _row('Familia', family) : '',
+    accords.length ? _row('Acordes', accords.join(' · ')) : '',
     styles.length ? _row('Estilo', styles.join(' · ')) : '',
     moods.length ? _row('Vibra', moods.join(' · ')) : '',
     contexts.length ? _row('Ideal para', contexts.join(' · ')) : '',

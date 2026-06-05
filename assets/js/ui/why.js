@@ -6,8 +6,9 @@
    ============================================================= */
 
 import { getReasons } from '../recommendations/reasoning.js?v=2026.06.04.2';
+import { MAX_MODAL_WHY_REASONS } from './displayLimits.js?v=2026.06.04.2';
 
-export function buildWhyHtml(product, { heading = '¿Por qué esta fragancia?', limit = 4 } = {}) {
+export function buildWhyHtml(product, { heading = '¿Por qué esta fragancia?', limit = MAX_MODAL_WHY_REASONS } = {}) {
   const reasons = getReasons(product, { limit });
   if (!reasons.length) return '';
 

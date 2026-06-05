@@ -29,6 +29,7 @@ import { getScarcityDisplay } from '../utils/scarcity.js?v=2026.06.04.2';
 import { getDisplayBadges } from '../utils/guidance.js?v=2026.06.04.2';
 import { buildWhyHtml } from './why.js?v=2026.06.04.2';
 import { productPageUrl } from './productPage.js?v=2026.06.04.2';
+import { MAX_MODAL_WHY_REASONS, MAX_VISIBLE_BADGES } from './displayLimits.js?v=2026.06.04.2';
 
 /* ── State ──────────────────────────────────────────────────── */
 let _activeProduct  = null;
@@ -129,15 +130,7 @@ function _render() {
     ? ''
     : `<span class="pdm-badge ${scarcity.badgeClass}">${scarcity.label}</span>`;
 
-  const notesHtml = (p.notes ?? [])
-    .map(n => `<span class="note-tag">${n}</span>`)
-    .join('');
-
-  const guidanceHtml = getDisplayBadges(p, { limit: 2 })
-    .map(g => `<span class="guidance-chip guidance-chip--${g.key}">${g.label}</span>`)
-    .join('');
-
-  const whyHtml = buildWhyHtml(p);
+  const guidanceWhyHtml = buildProductModalGuidanceHtml(p);
   const detailsHref = productPageUrl(p);
 
   const sizesHtml = PRIMARY_SIZES
@@ -215,15 +208,7 @@ function _render() {
           ? `<p class="pdm-desc">${p.desc}</p>`
           : ''}
 
-        ${notesHtml
-          ? `<div class="pdm-notes card-notes">${notesHtml}</div>`
-          : ''}
-
-        ${guidanceHtml
-          ? `<div class="pdm-guidance" aria-label="Recomendado para">${guidanceHtml}</div>`
-          : ''}
-
-        ${whyHtml}
+        ${guidanceWhyHtml}
 
         ${stockHtml}
 
@@ -263,6 +248,19 @@ function _render() {
 
   /* Bind events after render */
   _bindEvents();
+}
+
+export function buildProductModalGuidanceHtml(product) {
+  const guidanceHtml = getDisplayBadges(product, { limit: MAX_VISIBLE_BADGES })
+    .map(g => `<span class="guidance-chip guidance-chip--${g.key}">${g.label}</span>`)
+    .join('');
+  const whyHtml = buildWhyHtml(product, { limit: MAX_MODAL_WHY_REASONS });
+
+  return `
+    ${guidanceHtml
+      ? `<div class="pdm-guidance" aria-label="Recomendado para">${guidanceHtml}</div>`
+      : ''}
+    ${whyHtml}`;
 }
 
 /* ── Event binding ───────────────────────────────────────────── */

@@ -39,12 +39,8 @@ import { getDisplayBadges } from '../utils/guidance.js?v=2026.06.04.2';
 import { getRelatedProducts } from '../recommendations/upsells.js?v=2026.06.04.2';
 import { getReasons } from '../recommendations/reasoning.js?v=2026.06.04.2';
 import { buildFragranceProfileHtml } from './fragranceProfile.js?v=2026.06.04.2';
-import {
-  getNoviceLead,
-  getBestForChips,
-  getNegatives,
-  getReturningUserLine,
-} from './pdpNovice.js?v=2026.06.04.2';
+import { getNoviceLead, getReturningUserLine } from './pdpNovice.js?v=2026.06.04.2';
+import { MAX_PDP_WHY_REASONS, MAX_VISIBLE_BADGES } from './displayLimits.js?v=2026.06.04.2';
 import {
   resolveDiscoverySets,
   renderDiscoverySetsFallback,
@@ -83,11 +79,7 @@ export function buildProductPageHtml(product) {
     : '';
   const genderHtml = _genderBadgeHtml(product.gender, 'pdp-gender');
 
-  const notesHtml = (product.notes ?? [])
-    .map(n => `<span class="note-tag">${_escape(n)}</span>`)
-    .join('');
-
-  const guidanceHtml = getDisplayBadges(product, { limit: 2 })
+  const guidanceHtml = getDisplayBadges(product, { limit: MAX_VISIBLE_BADGES })
     .map(g => `<span class="guidance-chip guidance-chip--${_escape(g.key)}">${_escape(g.label)}</span>`)
     .join('');
 
@@ -126,7 +118,6 @@ export function buildProductPageHtml(product) {
         </div>
 
         ${product.story ? `<p class="pdp-story">${_escape(product.story)}</p>` : ''}
-        ${notesHtml ? `<div class="pdp-notes card-notes">${notesHtml}</div>` : ''}
         ${guidanceHtml ? `<div class="pdp-guidance" aria-label="Recomendado para">${guidanceHtml}</div>` : ''}
 
         <div class="pdp-hero-actions">
@@ -405,29 +396,15 @@ export function findProductBySlug(products, slug) {
    separate blocks (novice lead, "¿Por qué esta fragancia?" why bullets,
    and "no es para ti si…") into one, with no repeated information:
      · plain-language lead       (getNoviceLead)
-     · up to 4 why bullets       (getReasons — deterministic engine)
-     · "best for" chips          (getBestForChips)
-     · one compact negative line (getNegatives — first, most confident) */
+     · up to 2 why bullets       (getReasons — deterministic engine) */
 function _whyYouMightLikeBlock(product) {
   const lead = getNoviceLead(product);
-  const chips = getBestForChips(product);
-  const reasons = getReasons(product, { limit: 4 });
-  const negative = getNegatives(product)[0] ?? null;
+  const reasons = getReasons(product, { limit: MAX_PDP_WHY_REASONS });
 
   const reasonsHtml = reasons.length
     ? `<ul class="why-list pdp-why-list">
         ${reasons.map(r => `<li>${r}</li>`).join('')}
       </ul>`
-    : '';
-
-  const chipsHtml = chips.length
-    ? `<ul class="pdp-bestfor" aria-label="Ideal para">
-        ${chips.map(c => `<li class="pdp-bestfor-chip pdp-bestfor-chip--${c.key}">${_escape(c.label)}</li>`).join('')}
-      </ul>`
-    : '';
-
-  const negativeHtml = negative
-    ? `<p class="pdp-notfor-line">${_escape(negative)}</p>`
     : '';
 
   return `
@@ -436,13 +413,11 @@ function _whyYouMightLikeBlock(product) {
       <p class="pdp-novice-lead">${_escape(lead)}</p>
       <p class="pdp-returning" id="pdp-returning" hidden></p>
       ${reasonsHtml}
-      ${chipsHtml}
-      ${negativeHtml}
     </section>`;
 }
 
 function _technicalBlock(product) {
-  const html = buildFragranceProfileHtml(product);
+  const html = [_notesDetailHtml(product), buildFragranceProfileHtml(product)].filter(Boolean).join('');
   if (!html) return '';
   return `
     <details class="pdp-intelligence pdp-tech" id="pdp-tech">
@@ -452,6 +427,16 @@ function _technicalBlock(product) {
       </summary>
       <div class="pdp-tech-body">${html}</div>
     </details>`;
+}
+
+function _notesDetailHtml(product) {
+  const notes = Array.isArray(product?.notes) ? product.notes.filter(Boolean) : [];
+  if (!notes.length) return '';
+  return `
+    <section class="fp-block fp-notes" aria-labelledby="fp-notes-h">
+      <h3 class="fp-heading" id="fp-notes-h">Notas</h3>
+      <div class="card-notes">${notes.map(n => `<span class="note-tag">${_escape(n)}</span>`).join('')}</div>
+    </section>`;
 }
 
 /* ── Interactivity helpers ──────────────────────────────────── */
