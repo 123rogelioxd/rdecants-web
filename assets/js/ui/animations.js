@@ -41,6 +41,11 @@ export function setupHeroParallax() {
       return;
     }
 
+    if (getComputedStyle(wrap).transform === 'none') {
+      wrap.style.top = '';
+      return;
+    }
+
     const offset = window.scrollY * 0.04;
     wrap.style.top = `calc(50% + ${-offset}px)`;
   };

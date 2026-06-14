@@ -19,7 +19,7 @@ import { Personalization }                  from './recommendations/personalizat
 import { CatalogProvider }                  from './providers/catalog.js?v=2026.06.04.2';
 import { setupScrollAnimations,
          observeFadeUp,
-         setupHeroParallax }             from './ui/animations.js?v=2026.06.04.2';
+         setupHeroParallax }             from './ui/animations.js?v=2026.06.14.1';
 import { setupHeader }                    from './ui/header.js';
 import { showToast }                      from './ui/toast.js';
 import { openProductModal,
