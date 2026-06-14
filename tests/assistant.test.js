@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ASSISTANT_QUESTIONS, getAssistantRecommendations } from '../assets/js/recommendations/assistant.js';
+import { PRODUCTS } from '../data/products.js';
 
 const variant = (size, price, stock) => ({
   size, price, stock,
@@ -11,6 +12,21 @@ const variant = (size, price, stock) => ({
 const product = (id, notes, desc, { stock = 20, price = 180, badge = 'Disponible', featured = false, variants = null } = {}) => ({
   id, name: id, house: 'House', notes, desc, story: desc, badge, featured,
   variants: variants ?? [variant(5, price, stock)],
+});
+
+const apiProduct = (id, fragrance, opts = {}) => ({
+  id,
+  name: id,
+  house: opts.house ?? 'House',
+  notes: opts.notes ?? [],
+  desc: opts.desc ?? '',
+  story: opts.story ?? opts.desc ?? '',
+  badge: opts.badge ?? 'Disponible',
+  featured: opts.featured ?? false,
+  active: opts.active,
+  status: opts.status,
+  variants: opts.variants ?? [variant(5, opts.price ?? 180, opts.stock ?? 20)],
+  fragrance,
 });
 
 const freshOffice = product('FreshOffice', ['marino', 'citrico', 'vetiver'], 'fresco limpio para oficina y verano', { price: 160 });
@@ -132,4 +148,176 @@ test('among equal matches, healthier/featured stock ranks higher', () => {
     [plain, featured],
   );
   assert.equal(res[0].product.id, 'Featured');
+});
+
+test('daytime sweet recommendations prioritize context over heavy night sweetness', () => {
+  const res = getAssistantRecommendations(
+    { family: 'dulce', occasion: 'dia', budget: 'any', gender: 'any' },
+    PRODUCTS,
+    { limit: 4 },
+  );
+  const resultIds = ids(res);
+
+  assert.ok(resultIds.includes('ysl-y-edp'), 'YSL Y EDP remains eligible for daytime sweet');
+  assert.ok(resultIds.includes('valentino-extradose'), 'Valentino stays above night-only sweet scents');
+  assert.ok(!resultIds.includes('lemale-elixir'), 'Le Male Elixir is too night-oriented for daytime sweet');
+  assert.ok(!resultIds.includes('afnan-9pm'), 'Afnan 9PM is too night-oriented for daytime sweet');
+  assert.ok(res.every(r => r.reasons.length > 0), 'every recommendation explains the fit');
+  assert.ok(res.every(r => r.scoreBreakdown.context >= r.scoreBreakdown.popularity), 'context dominates popularity');
+});
+
+test('Daytime + Sweet ranks wearable daytime sweetness over night-only sweetness', () => {
+  const daytimeSweet = apiProduct('DaySweet', {
+    occasions: ['diario', 'daytime'],
+    climate_tags: ['calido', 'templado'],
+    mood_tags: ['dulce', 'limpio'],
+    style_tags: ['dulce', 'versatil'],
+    recommendation_tags: ['diario', 'facil_de_usar'],
+    commercial_roles: ['signature'],
+    scores: { sweetness: 55, freshness: 70, versatility: 90, mass_appeal: 88 },
+  });
+  const nightSweet = apiProduct('NightSweet', {
+    occasions: ['noche', 'fiesta'],
+    climate_tags: ['frio'],
+    mood_tags: ['dulce', 'nocturno'],
+    style_tags: ['dulce', 'gourmand', 'heavy'],
+    recommendation_tags: ['noche', 'alto_rendimiento'],
+    scores: { sweetness: 95, freshness: 20, versatility: 35, mass_appeal: 80 },
+  }, { featured: true, badge: 'TRENDING' });
+
+  const res = getAssistantRecommendations({ family: 'dulce', occasion: 'dia', budget: 'any' }, [nightSweet, daytimeSweet], { limit: 2 });
+  assert.equal(res[0].product.id, 'DaySweet');
+  assert.ok(res[0].reasons.includes('Excelente para uso de día'));
+  assert.ok(res[0].reasons.includes('Toque dulce sin perder el contexto'));
+  assert.ok(!res[0].reasons.some(reason => /noche|fiesta/i.test(reason)), 'does not invent unrelated night reasons');
+});
+
+test('Hot Weather + Fresh prioritizes warm-weather freshness over cold heavy profiles', () => {
+  const hotFresh = apiProduct('HotFresh', {
+    occasions: ['diario'],
+    climate_tags: ['calido', 'verano'],
+    mood_tags: ['fresco', 'limpio'],
+    style_tags: ['fresco', 'acuatico', 'ligero'],
+    recommendation_tags: ['verano', 'diario'],
+    scores: { freshness: 92, sweetness: 15, versatility: 86, mass_appeal: 82, summer: 95 },
+  });
+  const coldFresh = apiProduct('ColdFreshButHeavy', {
+    occasions: ['noche'],
+    climate_tags: ['frio', 'invierno'],
+    mood_tags: ['fresco', 'intenso'],
+    style_tags: ['fresco', 'heavy'],
+    recommendation_tags: ['noche'],
+    scores: { freshness: 65, sweetness: 75, projection: 90, versatility: 40 },
+  });
+
+  const res = getAssistantRecommendations({ family: 'fresco', climate: 'calido', budget: 'any' }, [coldFresh, hotFresh], { limit: 2 });
+  assert.equal(res[0].product.id, 'HotFresh');
+  assert.ok(res[0].reasons.includes('Funciona bien en clima cálido'));
+  assert.ok(res[0].reasons.includes('Perfil fresco y fácil de usar'));
+});
+
+test('Office + Long Lasting prefers office-safe longevity and penalizes intrusive projection', () => {
+  const officeLong = apiProduct('OfficeLong', {
+    occasions: ['oficina', 'diario'],
+    climate_tags: ['templado'],
+    mood_tags: ['limpio', 'elegante'],
+    style_tags: ['limpio', 'discreto', 'long lasting'],
+    recommendation_tags: ['oficina'],
+    commercial_roles: ['office safe'],
+    scores: { longevity: 88, projection: 45, versatility: 84, office_safe: 92, mass_appeal: 75 },
+  });
+  const intrusiveLong = apiProduct('IntrusiveLong', {
+    occasions: ['fiesta', 'noche'],
+    climate_tags: ['frio'],
+    mood_tags: ['intenso'],
+    style_tags: ['llamativo', 'long lasting'],
+    recommendation_tags: ['alto_rendimiento', 'fiesta'],
+    scores: { longevity: 95, projection: 95, versatility: 35, office_safe: 10, mass_appeal: 70 },
+  }, { featured: true, badge: 'TRENDING' });
+
+  const res = getAssistantRecommendations(
+    { occasion: 'oficina', performance: 'long_lasting', budget: 'any' },
+    [intrusiveLong, officeLong],
+    { limit: 2 },
+  );
+  assert.equal(res[0].product.id, 'OfficeLong');
+  assert.ok(res[0].reasons.includes('Adecuada para oficina'));
+  assert.ok(res[0].reasons.includes('Buena duración'));
+  const intrusive = res.find(r => r.product.id === 'IntrusiveLong');
+  assert.ok(!intrusive || intrusive.scoreBreakdown.penalty > 0, 'intrusive long-lasting scents are penalized or excluded');
+});
+
+test('Night + Sweet rewards sweet night metadata', () => {
+  const nightSweet = apiProduct('NightSweetFit', {
+    occasions: ['noche', 'fiesta'],
+    climate_tags: ['frio'],
+    mood_tags: ['dulce', 'nocturno', 'seductor'],
+    style_tags: ['dulce', 'gourmand'],
+    recommendation_tags: ['noche', 'cita'],
+    commercial_roles: ['club scent'],
+    scores: { sweetness: 90, night_out: 92, date_night: 85, versatility: 55, mass_appeal: 82 },
+  });
+  const dailySweet = apiProduct('DailySweet', {
+    occasions: ['diario', 'oficina'],
+    climate_tags: ['calido'],
+    mood_tags: ['dulce', 'limpio'],
+    style_tags: ['dulce', 'limpio'],
+    recommendation_tags: ['diario'],
+    scores: { sweetness: 55, night_out: 20, versatility: 85, mass_appeal: 78 },
+  });
+
+  const res = getAssistantRecommendations({ family: 'dulce', occasion: 'noche', budget: 'any' }, [dailySweet, nightSweet], { limit: 2 });
+  assert.equal(res[0].product.id, 'NightSweetFit');
+  assert.ok(res[0].reasons.includes('Encaja con planes de noche'));
+  assert.ok(res[0].reasons.includes('Dulzor marcado'));
+});
+
+test('Date + Elegant rewards elegant date metadata', () => {
+  const dateElegant = apiProduct('DateElegant', {
+    occasions: ['cita', 'formal'],
+    climate_tags: ['templado'],
+    mood_tags: ['elegante', 'seductor'],
+    style_tags: ['elegante', 'premium', 'woody'],
+    recommendation_tags: ['cita', 'evento formal'],
+    commercial_roles: ['premium'],
+    scores: { date_night: 90, versatility: 70, mass_appeal: 74 },
+  });
+  const partySweet = apiProduct('PartySweet', {
+    occasions: ['fiesta', 'antro'],
+    climate_tags: ['frio'],
+    mood_tags: ['dulce', 'juvenil'],
+    style_tags: ['llamativo', 'gourmand'],
+    recommendation_tags: ['fiesta', 'alto_rendimiento'],
+    scores: { sweetness: 92, projection: 90, date_night: 50, versatility: 35 },
+  }, { featured: true });
+
+  const res = getAssistantRecommendations({ family: 'elegante', occasion: 'cita', budget: 'any' }, [partySweet, dateElegant], { limit: 2 });
+  assert.equal(res[0].product.id, 'DateElegant');
+  assert.ok(res[0].reasons.includes('Encaja para una cita'));
+  assert.ok(res[0].reasons.includes('Perfil elegante y pulido'));
+  assert.ok(!res[0].reasons.some(reason => /fiesta|antro/i.test(reason)), 'does not invent party reasons');
+});
+
+test('assistant excludes inactive and out-of-stock products through sellability rules', () => {
+  const active = apiProduct('ActiveOffice', {
+    occasions: ['oficina'],
+    style_tags: ['limpio'],
+    recommendation_tags: ['oficina'],
+    scores: { versatility: 80, mass_appeal: 70 },
+  });
+  const inactive = apiProduct('InactiveOffice', {
+    occasions: ['oficina'],
+    style_tags: ['limpio'],
+    recommendation_tags: ['oficina'],
+    scores: { versatility: 90, mass_appeal: 90 },
+  }, { active: false });
+  const outOfStock = apiProduct('OutOfStockOffice', {
+    occasions: ['oficina'],
+    style_tags: ['limpio'],
+    recommendation_tags: ['oficina'],
+    scores: { versatility: 90, mass_appeal: 90 },
+  }, { stock: 0, variants: [variant(5, 180, 0)] });
+
+  const res = getAssistantRecommendations({ occasion: 'oficina', budget: 'any' }, [inactive, outOfStock, active], { limit: 4 });
+  assert.deepEqual(ids(res), ['ActiveOffice']);
 });

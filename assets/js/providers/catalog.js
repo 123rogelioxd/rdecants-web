@@ -8,7 +8,7 @@ console.log('CATALOG PROVIDER BUILD 2026.06.04.2 LOADED');
 import { ApiClient } from '../api/client.js?v=2026.06.04.2';
 import { API_BASE, normalizeApiImageUrl } from '../api/config.js?v=2026.06.04.2';
 import { normalizeGender } from '../utils/gender.js?v=2026.06.04.2';
-import { PACKS } from '../../../data/products.js?v=2026.06.04.2';
+import { PRODUCTS, PACKS } from '../../../data/products.js?v=2026.06.04.2';
 
 let _productsCache = null;
 let _packsCache = null;
@@ -35,7 +35,7 @@ export const CatalogProvider = {
       console.warn('[RDecants] catalog API unavailable.', err.message);
     }
 
-    _productsCache = [];
+    _productsCache = PRODUCTS.map(_mapProduct).filter(Boolean);
     return _productsCache;
   },
 
@@ -162,6 +162,8 @@ function _mapProduct(p) {
     image: _productImage(p),
     stock: variants.length ? Math.max(...variants.map(v => v.availability)) : _safeStock(p.stock),
     badge: p.badge ?? p.label ?? 'Disponible',
+    active: p.active ?? p.is_active,
+    status: p.status ?? p.state ?? null,
     featured: Boolean(p.featured),
     hero: Boolean(p.hero),
     commercial_role: p.commercial_role ?? p.commercialRole ?? p.launch_role ?? null,
@@ -181,11 +183,23 @@ function _mapFragrance(f) {
     mood_tags: arr(f.mood_tags),
     recommendation_tags: arr(f.recommendation_tags),
     recommended_context_tags: arr(f.recommended_context_tags),
+    occasions: arr(f.occasions ?? f.occasion_tags),
     style_tags: arr(f.style_tags),
     climates: arr(f.climates ?? f.climate_tags),
+    seasons: arr(f.seasons ?? f.season_tags),
     accords: arr(f.accords),
-    scores: f.scores && typeof f.scores === 'object' ? f.scores : {},
+    commercial_roles: arr(f.commercial_roles ?? f.commercial_role_tags),
+    scores: _mapScores(f.scores),
   };
+}
+
+function _mapScores(scores) {
+  if (!scores || typeof scores !== 'object') return {};
+  return Object.fromEntries(Object.entries(scores).map(([key, value]) => {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return [key, value];
+    return [key, n > 1 ? n / 100 : n];
+  }));
 }
 
 function _mapVariant(v, fallbackProductId) {

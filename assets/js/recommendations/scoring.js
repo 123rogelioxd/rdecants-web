@@ -25,6 +25,7 @@ const DEMAND_BOOST = 2;
 
 /* Can we actually sell this right now? */
 export function isSellable(product) {
+  if (_isInactive(product)) return false;
   return getScarcityState(product) !== 'sold_out' && getOrderableVariants(product).length > 0;
 }
 
@@ -51,4 +52,13 @@ export function getOperationalScore(product) {
 export function getAovSignal(product) {
   const price = getDisplayVariant(product)?.price;
   return Number.isFinite(price) ? Number(price) : 0;
+}
+
+function _isInactive(product) {
+  const status = String(product?.status ?? product?.state ?? '').toLowerCase().trim();
+  return product?.active === false ||
+    product?.is_active === false ||
+    status === 'inactive' ||
+    status === 'archived' ||
+    status === 'draft';
 }
