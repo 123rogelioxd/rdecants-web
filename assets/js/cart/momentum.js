@@ -24,27 +24,19 @@ export function getCartMinimumState(total = 0, threshold = MIN_ORDER_THRESHOLD) 
   };
 }
 
-export function getCartMomentum({ count = 0, total = 0, threshold = MIN_ORDER_THRESHOLD, hasValidName = false } = {}) {
+export function getCartMomentum({ count = 0, total = 0, threshold = MIN_ORDER_THRESHOLD } = {}) {
   if (count <= 0) {
     return { key: 'empty', message: '', minimum: getCartMinimumState(0, threshold) };
   }
 
   const minimum = getCartMinimumState(total, threshold);
 
+  /* Below the recommended amount: a soft, optional nudge — never a block.
+     The WhatsApp CTA stays enabled regardless of this state. */
   if (!minimum.isComplete) {
     return {
-      key: 'minimum',
-      message: `🎁 Te faltan $${minimum.remaining} para completar el pedido mínimo. Agrega una muestra o decant pequeño para finalizar.`,
-      title: 'Completa el pedido mínimo.',
-      helper: 'Agrega una muestra o decant pequeño para finalizar.',
-      minimum,
-    };
-  }
-
-  if (!hasValidName) {
-    return {
-      key: 'needs_name',
-      message: 'Tu pedido casi está listo. Agrega tu nombre para confirmarlo.',
+      key: 'nudge',
+      message: `Pedido recomendado desde $${threshold} para aprovechar mejor el envío (opcional).`,
       minimum,
     };
   }

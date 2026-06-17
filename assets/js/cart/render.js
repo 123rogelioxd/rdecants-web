@@ -100,7 +100,6 @@ export function renderCart() {
 
 /* ── Add-on upsells (operational-first, low friction) ───────── */
 let _lastUpsellSig = '';
-let _lastMinimumSig = '';
 
 async function _renderUpsells() {
   const slot = document.getElementById('cart-upsells');
@@ -143,32 +142,19 @@ async function _renderUpsells() {
     .filter(entry => entry.variant);
 
   if (!suggestions.length) {
-    if (!minimum.isComplete) {
-      slot.innerHTML = _minimumPrompt(minimum);
-      slot.hidden = false;
-    } else {
-      slot.hidden = true;
-      slot.innerHTML = '';
-    }
+    slot.hidden = true;
+    slot.innerHTML = '';
     _lastUpsellSig = '';
     return;
   }
 
-  const sectionLabel = minimum.isComplete ? 'También te puede gustar' : 'Completa tu pedido';
-
+  /* Optional, non-blocking cross-sell — never framed as a required minimum. */
   slot.innerHTML = `
-    ${!minimum.isComplete ? _minimumPrompt(minimum) : ''}
-    <p class="cart-section-label">${sectionLabel}</p>
+    <p class="cart-section-label">Completa tu pedido</p>
     <div class="cart-upsell-list">
       ${suggestions.map(_upsellRow).join('')}
     </div>`;
   slot.hidden = false;
-
-  const minimumSig = `${Cart.total()}:${minimum.remaining}:${suggestions.map(s => s.product.id).join('|')}`;
-  if (!minimum.isComplete && minimumSig !== _lastMinimumSig) {
-    _lastMinimumSig = minimumSig;
-    Tracker.cartMinimumPromptShown(minimum, suggestions.map(s => s.product));
-  }
 
   const railId = isCollection ? 'collection_builder_cart' : 'cart_upsell';
   const railTitle = 'Completa tu pedido';
@@ -203,20 +189,6 @@ async function _renderUpsells() {
       window.__rd?.cart?.add(entry.product.id, entry.variant.size);
     });
   });
-}
-
-function _minimumPrompt(minimum) {
-  return `
-    <div class="cart-minimum" aria-label="Progreso del pedido mínimo">
-      <div class="cart-minimum-head">
-        <span>🎁 Te faltan <strong>${formatPrice(minimum.remaining)}</strong> para completar el pedido mínimo</span>
-        <strong>${minimum.progress}%</strong>
-      </div>
-      <div class="cart-minimum-bar" aria-hidden="true">
-        <span style="width:${minimum.progress}%"></span>
-      </div>
-      <p class="cart-minimum-remaining">Agrega una muestra o decant pequeño para finalizar.</p>
-    </div>`;
 }
 
 function _upsellRow({ product, variant }, idx) {

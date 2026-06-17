@@ -35,12 +35,12 @@
     HTML itself is served no-cache so browsers always get
     the latest version string.
 
-  Current version: 2026.06.04.2 - update all ?v= values on deploy.
+  Current version: 2026.06.17.1 - update all ?v= values on deploy.
 -->
-<link rel="stylesheet" href="assets/css/tokens.css?v=2026.06.04.2">
-<link rel="stylesheet" href="assets/css/animations.css?v=2026.06.04.2">
-<link rel="stylesheet" href="assets/css/components.css?v=2026.06.04.2">
-<link rel="stylesheet" href="assets/css/styles.css?v=2026.06.04.2">
+<link rel="stylesheet" href="assets/css/tokens.css?v=2026.06.17.1">
+<link rel="stylesheet" href="assets/css/animations.css?v=2026.06.17.1">
+<link rel="stylesheet" href="assets/css/components.css?v=2026.06.17.1">
+<link rel="stylesheet" href="assets/css/styles.css?v=2026.06.17.1">
 </head>
 
 <body>
@@ -239,29 +239,18 @@
 
   <div class="cart-footer">
     <div class="checkout-panel" id="checkout-form" aria-label="Datos de checkout">
-      <div class="checkout-head">
-        <span class="checkout-kicker">👤 ¿A nombre de quién apartamos tu pedido?</span>
-        <span class="checkout-note">Lo usamos para confirmar tu pedido por WhatsApp.</span>
-      </div>
-
       <p class="checkout-momentum" id="checkout-momentum" aria-live="polite" hidden></p>
 
-      <div class="checkout-grid">
-        <label class="checkout-control checkout-control--primary" for="checkout-name">
-          <span>Nombre para tu pedido *</span>
-          <input class="checkout-field" id="checkout-name" type="text" autocomplete="name" placeholder="Ej. Roger Díaz" aria-required="true">
-          <small class="checkout-helper">Lo usamos para confirmar tu pedido por WhatsApp.</small>
-          <small class="checkout-name-error" id="checkout-name-error" aria-live="polite"></small>
-        </label>
+      <label class="checkout-control checkout-control--primary" for="checkout-name">
+        <span>Tu nombre (opcional)</span>
+        <input class="checkout-field" id="checkout-name" type="text" autocomplete="name" placeholder="Ej. Roger Díaz">
+        <small class="checkout-name-error" id="checkout-name-error" aria-live="polite"></small>
+      </label>
 
-        <label class="checkout-control" for="checkout-phone">
-          <span>Teléfono</span>
-          <input class="checkout-field" id="checkout-phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="951...">
-        </label>
-      </div>
-
-      <label class="checkout-label" for="checkout-notes">Notas opcionales</label>
-      <textarea class="checkout-field checkout-textarea" id="checkout-notes" rows="3" placeholder="Horario, referencia o detalle especial"></textarea>
+      <button type="button" class="checkout-notes-toggle" id="checkout-notes-toggle" aria-expanded="false" aria-controls="checkout-notes">
+        Agregar comentario
+      </button>
+      <textarea class="checkout-field checkout-textarea" id="checkout-notes" rows="3" placeholder="Horario, referencia o detalle especial" hidden></textarea>
 
       <p class="checkout-error" id="checkout-error" aria-live="polite"></p>
     </div>
@@ -272,18 +261,22 @@
           <span class="cart-summary-title">Resumen</span>
           <span class="cart-summary-count" id="cart-summary-count">0 artículos</span>
         </div>
-        <div class="cart-summary-line">
-          <span>Subtotal</span>
-          <span id="cart-subtotal">$0 MXN</span>
-        </div>
         <div class="cart-total-row">
           <span class="cart-total-label">Total</span>
           <span class="cart-total-amount">$<span id="cart-total">0</span> <small>MXN</small></span>
         </div>
       </div>
 
-      <button class="btn-whatsapp" id="checkout-whatsapp" onclick="sendWhatsApp()" aria-label="Finalizar pedido por WhatsApp">
-        Finalizar por WhatsApp
+      <ul class="cart-trust" aria-label="Garantías del pedido">
+        <li>✓ Perfumes originales</li>
+        <li>✓ Decants preparados al momento</li>
+        <li>✓ Envíos a todo México</li>
+      </ul>
+
+      <p class="checkout-next">Te abriremos WhatsApp con tu pedido listo. Ahí confirmamos envío y forma de pago.</p>
+
+      <button class="btn-whatsapp" id="checkout-whatsapp" onclick="sendWhatsApp()" aria-label="Enviar pedido por WhatsApp">
+        📲 Enviar pedido por WhatsApp
       </button>
 
       <button class="btn-continue" onclick="closeCart()" aria-label="Cerrar carrito y seguir explorando">
@@ -308,7 +301,7 @@
   ?v= must match the version in CSS links above.
   Update on every deploy: increment VERSION file + all ?v= strings.
 -->
-<script type="module" src="assets/js/app.js?v=2026.06.04.2"></script>
+<script type="module" src="assets/js/app.js?v=2026.06.17.1"></script>
 
 </body>
 </html>

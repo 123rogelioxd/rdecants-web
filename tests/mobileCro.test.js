@@ -56,14 +56,17 @@ test('cart upsell copy says "Completa tu pedido", not "Completa tu colección"',
   assert.ok(!src.includes('Completa tu colección'), 'old collection title removed from cart recommendations');
 });
 
-test('customer name block is visible, required and explains WhatsApp confirmation', () => {
+test('customer name is optional and there are zero required fields before WhatsApp', () => {
   for (const file of ['index.html', 'product.html', 'mood.html']) {
     const html = read(file);
-    assert.ok(html.includes('¿A nombre de quién apartamos tu pedido?'), `${file} name prompt`);
-    assert.ok(html.includes('id="checkout-name"'), `${file} name input`);
-    assert.ok(html.includes('aria-required="true"'), `${file} name required`);
-    assert.ok(html.includes('id="checkout-name-error"'), `${file} name-local error`);
-    assert.ok(html.includes('Lo usamos para confirmar tu pedido por WhatsApp.'), `${file} helper`);
+    assert.ok(html.includes('id="checkout-name"'), `${file} name input present`);
+    assert.ok(html.includes('Tu nombre (opcional)'), `${file} name marked optional`);
+    assert.ok(html.includes('id="checkout-name-error"'), `${file} name-local error slot`);
+    assert.ok(!html.includes('aria-required="true"'), `${file} no required field`);
+    assert.ok(!html.includes('id="checkout-phone"'), `${file} phone field removed`);
+    assert.ok(html.includes('id="checkout-notes-toggle"'), `${file} notes collapsed behind a toggle`);
+    assert.ok(html.includes('Te abriremos WhatsApp con tu pedido listo'), `${file} explains the next step`);
+    assert.ok(html.includes('class="cart-trust"'), `${file} trust strip present`);
   }
 });
 
@@ -120,44 +123,42 @@ test('PDP size grid offers 3/5/10ml only — never a 2ml button', async () => {
 
 /* ── D. Minimum order messaging ─────────────────────────────── */
 
-test('below-minimum cart surfaces the remaining amount with "mínimo"', async () => {
+test('below-recommended cart shows a soft, accent-correct, non-blocking nudge', async () => {
   const { getCartMomentum } = await import('../assets/js/cart/momentum.js');
-  const m = getCartMomentum({ count: 1, total: 150, hasValidName: false });
-  assert.equal(m.key, 'minimum');
+  const m = getCartMomentum({ count: 1, total: 150 });
+  assert.equal(m.key, 'nudge');
   assert.equal(m.minimum.remaining, 50);
-  assert.match(m.message, /Te faltan \$50/);
-  assert.match(m.message, /mínimo/, 'accent rendered correctly');
-  assert.match(m.message, /muestra o decant pequeño/, 'suggests a small add-on');
+  assert.match(m.message, /envío/, 'accent rendered correctly');
+  assert.match(m.message, /opcional/, 'framed as optional');
+  assert.doesNotMatch(m.message, /mínimo|faltan/, 'no blocking language');
 });
 
-test('checkout CTA copy changes for missing name, missing minimum and ready', async () => {
+test('checkout CTA is one constant action — only the empty state differs', async () => {
   const { getCheckoutButtonLabel, getCheckoutButtonState } =
     await import('../assets/js/cart/checkout.js');
 
-  const belowMinimum = { isComplete: false };
-  const complete = { isComplete: true };
+  /* With items in the cart, the label and state never change — not for a
+     missing name, not for a below-recommended total. */
+  assert.equal(getCheckoutButtonLabel({ isEmpty: false }), '📲 Enviar pedido por WhatsApp');
+  assert.equal(getCheckoutButtonState({ isEmpty: false }), 'ready');
 
   assert.equal(
-    getCheckoutButtonLabel({ isEmpty: false, minimum: complete, hasValidName: false }),
-    'Agrega tu nombre para finalizar',
+    getCheckoutButtonLabel({ isEmpty: false, minimum: { isComplete: false }, hasValidName: false }),
+    '📲 Enviar pedido por WhatsApp',
   );
   assert.equal(
-    getCheckoutButtonState({ isEmpty: false, minimum: complete, hasValidName: false }),
-    'needs_name',
+    getCheckoutButtonState({ isEmpty: false, minimum: { isComplete: false }, hasValidName: false }),
+    'ready',
   );
-  assert.equal(
-    getCheckoutButtonLabel({ isEmpty: false, minimum: belowMinimum, hasValidName: true }),
-    'Completa el mínimo para finalizar',
-  );
-  assert.equal(
-    getCheckoutButtonLabel({ isEmpty: false, minimum: complete, hasValidName: true }),
-    'Enviar pedido por WhatsApp',
-  );
+
+  /* Empty is the only non-ready state. */
+  assert.equal(getCheckoutButtonLabel({ isEmpty: true }), 'Agrega una fragancia para finalizar');
+  assert.equal(getCheckoutButtonState({ isEmpty: true }), 'empty');
 });
 
-/* ── E. Required customer name still enforced ───────────────── */
+/* ── E. Zero required fields — name is optional ─────────────── */
 
-test('checkout still requires a customer name', async () => {
+test('checkout has no required fields — an empty name still passes', async () => {
   globalThis.window = globalThis.window || { location: { hostname: 'localhost', pathname: '/' } };
   globalThis.localStorage = globalThis.localStorage || {
     getItem() { return null; }, setItem() {}, removeItem() {},
@@ -166,13 +167,8 @@ test('checkout still requires a customer name', async () => {
 
   const { validateCheckout } = await import('../assets/js/cart/checkout.js');
 
-  const empty = validateCheckout({ name: '', phone: '', notes: '' });
-  assert.ok(empty, 'empty name is rejected');
-  assert.equal(empty.key, 'name');
-  assert.match(empty.message, /nombre/);
-
-  const ok = validateCheckout({ name: 'Roger', phone: '', notes: '' });
-  assert.equal(ok, null, 'valid name passes');
+  assert.equal(validateCheckout({ name: '', notes: '' }), null, 'empty name is allowed');
+  assert.equal(validateCheckout({ name: 'Roger', notes: '' }), null, 'named order is allowed');
 });
 
 /* ── F. WhatsApp checkout message still builds ──────────────── */

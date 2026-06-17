@@ -19,7 +19,8 @@
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\PC\\\\Desktop\\\\rdecants-web\" -Recurse -Directory)",
       "Bash(Select-Object -ExpandProperty FullName)",
       "Bash(Sort-Object)",
-      "Bash(git checkout *)"
+      "Bash(git checkout *)",
+      "Bash(node --test)"
     ]
   }
 }

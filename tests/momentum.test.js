@@ -7,7 +7,7 @@ import {
 } from '../assets/js/cart/momentum.js';
 
 test('empty cart shows no momentum message', () => {
-  const m = getCartMomentum({ count: 0, hasValidName: false });
+  const m = getCartMomentum({ count: 0 });
   assert.equal(m.key, 'empty');
   assert.equal(m.message, '');
 });
@@ -16,14 +16,8 @@ test('defaults to empty when called with no state', () => {
   assert.equal(getCartMomentum().key, 'empty');
 });
 
-test('items without a valid name nudge toward completion', () => {
-  const m = getCartMomentum({ count: 2, total: MIN_ORDER_THRESHOLD, hasValidName: false });
-  assert.equal(m.key, 'needs_name');
-  assert.match(m.message, /nombre/);
-});
-
-test('items with a valid name read as ready', () => {
-  const m = getCartMomentum({ count: 1, total: MIN_ORDER_THRESHOLD, hasValidName: true });
+test('a cart at or above the recommended amount reads as ready — name never required', () => {
+  const m = getCartMomentum({ count: 1, total: MIN_ORDER_THRESHOLD, hasValidName: false });
   assert.equal(m.key, 'ready');
   assert.match(m.message, /WhatsApp/);
 });
@@ -47,9 +41,11 @@ test('minimum state calculates remaining and capped progress', () => {
   assert.equal(getCartMinimumState(240).remaining, 0);
 });
 
-test('cart below minimum gets a minimum-order message before name validation', () => {
-  const m = getCartMomentum({ count: 1, total: 160, hasValidName: false });
-  assert.equal(m.key, 'minimum');
+test('cart below the recommended amount shows a soft, non-blocking nudge (no gate)', () => {
+  const m = getCartMomentum({ count: 1, total: 160 });
+  assert.equal(m.key, 'nudge');
   assert.equal(m.minimum.remaining, 40);
-  assert.match(m.message, /\$40/);
+  assert.match(m.message, /200/, 'mentions the recommended amount');
+  assert.match(m.message, /opcional/, 'framed as optional, never required');
+  assert.doesNotMatch(m.message, /mínimo|faltan|🎁/, 'no blocking / gift language');
 });

@@ -289,8 +289,8 @@ function _renderGrid(products, { rememberProducts = true } = {}) {
       e.stopPropagation();
       if (isSoldOut) return;
       if (canQuickAdd) {
+        /* No auto-open — the add toast ("Ver carrito") keeps browsing uninterrupted. */
         window.__rd?.cart?.add(p.id, displayVariant.size);
-        window.__rd?.ui?.openCart?.();
       } else {
         openProductModal(p);
       }

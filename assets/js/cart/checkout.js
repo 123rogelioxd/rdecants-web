@@ -22,11 +22,8 @@ const CHECKOUT_LOCK_MS = 4000;
 
 const FIELD_IDS = {
   name:  'checkout-name',
-  phone: 'checkout-phone',
   notes: 'checkout-notes',
 };
-
-const MIN_NAME_CHARS = 2;
 
 let _startedSignature = '';
 let _isSubmitting = false;
@@ -42,7 +39,22 @@ export function setupCheckout() {
   form.addEventListener('input', _handleFormInput);
   form.addEventListener('change', _handleFormInput);
   form.addEventListener('focusin', () => trackCheckoutStarted('form_focus'), { once: true });
-  _field('name')?.addEventListener('blur', () => _validateNameForDisplay({ force: true }));
+  _setupNotesToggle();
+}
+
+/* Notes are collapsed by default behind "Agregar comentario" so the
+   checkout shows zero required fields before the WhatsApp handoff. */
+function _setupNotesToggle() {
+  const toggle = document.getElementById('checkout-notes-toggle');
+  const field = _field('notes');
+  if (!toggle || !field) return;
+
+  toggle.addEventListener('click', () => {
+    const show = field.hidden;
+    field.hidden = !show;
+    toggle.setAttribute('aria-expanded', String(show));
+    if (show) field.focus();
+  });
 }
 
 export function trackCheckoutStarted(source = 'cart_drawer') {
@@ -84,15 +96,8 @@ async function _performCheckout(phoneNumber) {
     return;
   }
 
-  const minimum = getCartMomentum({ count: Cart.count(), total: Cart.total(), hasValidName: true }).minimum;
-  if (!minimum.isComplete) {
-    const message = `Te faltan ${formatPrice(minimum.remaining)} para completar el pedido mínimo.`;
-    _showMessage(message, 'error');
-    showToast(message);
-    _syncAvailability();
-    return;
-  }
-
+  /* No minimum-order gate and no required customer data — the customer can
+     always reach WhatsApp. Any remaining validation is soft and non-blocking. */
   const data = readCheckoutData();
   const error = validateCheckout(data);
 
@@ -193,7 +198,6 @@ function _markFired() {
 export function readCheckoutData() {
   return {
     name:  _field('name')?.value.trim() || '',
-    phone: _field('phone')?.value.trim() || '',
     notes: _field('notes')?.value.trim() || '',
   };
 }
@@ -202,23 +206,9 @@ export function saveCheckoutData(data = readCheckoutData()) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
-export function validateCheckout(data) {
-  if (!_isValidCustomerName(data.name)) {
-    return {
-      key: 'name',
-      field: _field('name'),
-      message: 'Ingresa tu nombre para continuar.',
-    };
-  }
-
-  if (data.phone && data.phone.replace(/\D/g, '').length < 8) {
-    return {
-      key: 'phone',
-      field: _field('phone'),
-      message: 'Revisa tu telefono para poder coordinar el pedido',
-    };
-  }
-
+export function validateCheckout() {
+  /* Zero required fields before WhatsApp. The customer identifies themselves
+     inside the chat, so nothing here blocks reaching the handoff. */
   return null;
 }
 
@@ -286,7 +276,10 @@ export function buildWhatsAppMessage(items, total, data, folio = '') {
   });
 
   lines.push('', `Total: ${formatPrice(total, 'Por confirmar')}`);
-  lines.push('', `Mi nombre es ${data.name}.`);
+
+  if (data.name) {
+    lines.push('', `Mi nombre es ${data.name}.`);
+  }
 
   if (data.notes) {
     lines.push('', 'Notas:', data.notes);
@@ -306,7 +299,6 @@ function _handleFormInput() {
   _showMessage('', 'neutral');
   saveCheckoutData();
   _syncAvailability();
-  _validateNameForDisplay();
 }
 
 function _hydrate() {
@@ -315,17 +307,20 @@ function _hydrate() {
     const field = document.getElementById(id);
     if (field && saved[key] !== undefined) field.value = saved[key];
   });
+
+  /* Reveal the collapsed notes field if the customer already wrote one. */
+  const notes = _field('notes');
+  if (notes && notes.value.trim()) {
+    notes.hidden = false;
+    document.getElementById('checkout-notes-toggle')?.setAttribute('aria-expanded', 'true');
+  }
 }
 
 function _load() {
   try {
-    return {
-      delivery: 'local',
-      payment:  'transfer',
-      ...JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'),
-    };
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
   } catch {
-    return { delivery: 'local', payment: 'transfer' };
+    return {};
   }
 }
 
@@ -333,38 +328,39 @@ function _syncAvailability() {
   const count = Cart.count();
   const total = Cart.total();
   const isEmpty = count === 0;
-  const hasValidName = _isValidCustomerName(readCheckoutData().name);
-  const minimum = getCartMomentum({ count, total, hasValidName }).minimum;
+  const minimum = getCartMomentum({ count, total }).minimum;
   const button = document.getElementById('checkout-whatsapp');
   const form = _form();
 
   if (button) {
-    const isDisabled = isEmpty || !minimum.isComplete || !hasValidName || _isSubmitting;
+    /* The primary CTA is never gated by a minimum or by customer data.
+       It is disabled only while empty or mid-submit (double-tap guard). */
+    const isDisabled = isEmpty || _isSubmitting;
     button.disabled = isDisabled;
     button.setAttribute('aria-disabled', String(isDisabled));
-    if (!_isSubmitting) button.textContent = getCheckoutButtonLabel({ isEmpty, minimum, hasValidName });
-    button.dataset.state = getCheckoutButtonState({ isEmpty, minimum, hasValidName });
+    if (!_isSubmitting) button.textContent = getCheckoutButtonLabel({ isEmpty });
+    button.dataset.state = getCheckoutButtonState({ isEmpty });
   }
 
   form?.classList.toggle('checkout-form--disabled', isEmpty);
-  form?.classList.toggle('checkout-form--ready', !isEmpty && minimum.isComplete && hasValidName);
+  form?.classList.toggle('checkout-form--ready', !isEmpty && minimum.isComplete);
 
+  /* Keep the "added a second decant" conversion signal for analytics — it no
+     longer gates anything, it just measures whether the nudge worked. */
   if (!isEmpty && _wasBelowMinimum && minimum.isComplete) {
     Tracker.cartMinimumPromptConverted(minimum);
   }
   _wasBelowMinimum = !isEmpty && !minimum.isComplete;
 
-  _syncMomentum(count, total, hasValidName);
+  _syncMomentum(count, total);
 }
 
-function _syncMomentum(count, total, hasValidName) {
+function _syncMomentum(count, total) {
   const el = document.getElementById('checkout-momentum');
   if (!el) return;
 
-  const momentum = getCartMomentum({ count, total, hasValidName });
-  el.innerHTML = momentum.key === 'minimum'
-    ? `${momentum.message}<span class="checkout-progress" aria-hidden="true"><span style="width:${momentum.minimum.progress}%"></span></span>`
-    : momentum.message;
+  const momentum = getCartMomentum({ count, total });
+  el.innerHTML = momentum.message;
   el.dataset.key = momentum.key;
   el.hidden = !momentum.message;
 }
@@ -426,18 +422,15 @@ function _setButtonLoading(button, isLoading, label = '') {
   }
 }
 
-export function getCheckoutButtonLabel({ isEmpty = false, minimum, hasValidName = false } = {}) {
+export function getCheckoutButtonLabel({ isEmpty = false } = {}) {
+  /* One single action, one single label — it never changes (except the
+     transient loading state) so the user always sees the same next step. */
   if (isEmpty) return 'Agrega una fragancia para finalizar';
-  if (!hasValidName) return 'Agrega tu nombre para finalizar';
-  if (!minimum?.isComplete) return 'Completa el mínimo para finalizar';
-  return 'Enviar pedido por WhatsApp';
+  return '📲 Enviar pedido por WhatsApp';
 }
 
-export function getCheckoutButtonState({ isEmpty = false, minimum, hasValidName = false } = {}) {
-  if (isEmpty) return 'empty';
-  if (!hasValidName) return 'needs_name';
-  if (!minimum?.isComplete) return 'minimum';
-  return 'ready';
+export function getCheckoutButtonState({ isEmpty = false } = {}) {
+  return isEmpty ? 'empty' : 'ready';
 }
 
 function _showNameMessage(message, tone = 'neutral') {
@@ -445,29 +438,6 @@ function _showNameMessage(message, tone = 'neutral') {
   if (!el) return;
   el.textContent = message;
   el.dataset.tone = tone;
-}
-
-function _isValidCustomerName(value) {
-  return String(value ?? '').trim().replace(/\s+/g, '').length >= MIN_NAME_CHARS;
-}
-
-function _validateNameForDisplay({ force = false } = {}) {
-  if (Cart.count() === 0) return;
-
-  const field = _field('name');
-  if (!field) return;
-
-  const value = field.value;
-  const hasAnyInput = value.length > 0;
-  if (_isValidCustomerName(value)) return;
-
-  if (force || hasAnyInput) {
-    _showError({
-      key: 'name',
-      field,
-      message: 'Ingresa tu nombre para continuar.',
-    });
-  }
 }
 
 function _readableApiError(error) {

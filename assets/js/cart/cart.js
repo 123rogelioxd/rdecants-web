@@ -74,7 +74,10 @@ export const Cart = {
     }
 
     Tracker.addToCart(product, size, price);
-    showToast(`${product.name} ${size}ml — Agregado ✓`);
+    showToast(`${product.name} ${size}ml — Agregado ✓`, {
+      actionLabel: 'Ver carrito',
+      onAction: () => window.__rd?.ui?.openCart?.(),
+    });
     _commit();
   },
 

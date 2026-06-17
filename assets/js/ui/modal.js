@@ -31,6 +31,9 @@ import { buildWhyHtml } from './why.js?v=2026.06.04.2';
 import { productPageUrl } from './productPage.js?v=2026.06.04.2';
 import { MAX_MODAL_WHY_REASONS, MAX_VISIBLE_BADGES } from './displayLimits.js?v=2026.06.04.2';
 
+/* ── Constants ──────────────────────────────────────────────── */
+const WHATSAPP_NUMBER = '5219516513018';
+
 /* ── State ──────────────────────────────────────────────────── */
 let _activeProduct  = null;
 let _selectedSize   = 5;          /* default size */
@@ -236,7 +239,7 @@ function _render() {
               ${_isOrderableVariant(activeVariant) ? 'Agregar' : 'Agotado'}
             </button>
             <button class="pdm-btn-wa"
-              aria-label="Preparar pedido de ${p.name} por WhatsApp">
+              aria-label="Consultar ${p.name} por WhatsApp">
               WhatsApp
             </button>
           </div>
@@ -332,36 +335,38 @@ async function _handleAddToCart() {
   _setButtonLoading(btn, true, 'Agregando...');
   try {
     await window.__rd?.cart?.add(_activeProduct.id, _selectedSize);
-    /* Close modal and open cart for a smooth flow */
+    /* No auto-open: the add toast ("Ver carrito") lets the customer keep
+       browsing or open the cart on their own terms. */
     closeProductModal();
-    setTimeout(() => window.__rd?.ui?.openCart?.(), 300);
   } finally {
     _setButtonLoading(btn, false);
   }
 }
 
-/* ── WhatsApp action ─────────────────────────────────────────── */
-async function _handleWhatsApp() {
-  const p     = _activeProduct;
+/* ── WhatsApp action — opens WhatsApp directly with a product inquiry.
+   This button always does what it says (no hidden add-to-cart). ───── */
+function _handleWhatsApp() {
+  const p = _activeProduct;
   if (!p) return;
-  const btn = _modal?.querySelector('.pdm-btn-wa');
-  const variant = getVariantForSize(p, _selectedSize);
-  if (!_isOrderableVariant(variant)) {
-    showToast('Apartamos tu pedido y te llevamos a WhatsApp para confirmar.');
-    closeProductModal();
-    setTimeout(() => window.__rd?.ui?.openCart?.(), 300);
-    return;
-  }
 
-  _setButtonLoading(btn, true, 'Preparando...');
-  try {
-    await window.__rd?.cart?.add(p.id, _selectedSize);
-    showToast('Apartamos tu pedido y te llevamos a WhatsApp para confirmar.');
-    closeProductModal();
-    setTimeout(() => window.__rd?.ui?.openCart?.(), 300);
-  } finally {
-    _setButtonLoading(btn, false);
-  }
+  const variant   = getVariantForSize(p, _selectedSize);
+  const house     = p.house ? `${p.house} ` : '';
+  const sizeText  = variant?.size ? ` — ${variant.size}ml` : '';
+  const priceText = (variant && variant.price) ? ` (${formatPrice(variant.price)})` : '';
+
+  const message = [
+    'Hola 👋',
+    '',
+    `Me interesa este decant: ${house}${p.name}${sizeText}${priceText}.`,
+    '',
+    '¿Me ayudas a confirmar disponibilidad, envío y forma de pago?',
+  ].join('\n');
+
+  const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+
+  Tracker.productClicked(p, 'modal_whatsapp_direct');
+  const opened = window.open(url, '_blank');
+  if (!opened) window.location.href = url;
 }
 
 /* ── Overlay click — close only if clicking backdrop ─────────── */
