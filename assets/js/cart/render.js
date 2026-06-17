@@ -11,10 +11,10 @@ import { EventBus }  from '../core/events.js';
 import { Tracker }   from '../tracking/tracker.js';
 import { formatPrice, isValidPrice, getDefaultVariant } from '../utils/prices.js?v=2026.06.04.2';
 import { CatalogProvider } from '../providers/catalog.js?v=2026.06.04.2';
-import { getCartUpsells }  from '../recommendations/upsells.js?v=2026.06.04.2';
+import { getCartUpsells, getShippingCompletionUpsell } from '../recommendations/upsells.js?v=2026.06.04.2';
 import { getCollectionPairs } from '../recommendations/crossSell.js?v=2026.06.04.2';
 import { Personalization, filterDisliked } from '../recommendations/personalization.js?v=2026.06.04.2';
-import { getCartMinimumState } from './momentum.js?v=2026.06.04.2';
+import { getShippingState } from './momentum.js?v=2026.06.04.2';
 
 const WHATSAPP_NUMBER = '5219516513018';
 let _prevFocus = null;
@@ -123,11 +123,22 @@ async function _renderUpsells() {
   /* Cart may have changed while awaiting the catalog */
   if (Cart.items.length !== items.length) return;
 
-  const minimum = getCartMinimumState(Cart.total());
+  const shipping = getShippingState(Cart.total());
   const taste = Personalization.getTaste();
   const eligible = filterDisliked(products, taste, { minCount: 3 });
 
-  /* Try complementary collection pairs first; fall back to similarity upsells. */
+  /* Below the shipping threshold → ONE cheapest-qualifying add-on, framed as
+     a shipping opportunity ("Te faltan $X para calificar para envío").
+     Never a block — if nothing qualifies we fall through to normal cross-sell. */
+  if (!shipping.isEligible) {
+    const rec = getShippingCompletionUpsell(Cart.items, eligible, shipping.remaining);
+    if (rec) {
+      _renderShippingCompletion(slot, rec, shipping);
+      return;
+    }
+  }
+
+  /* Eligible (or nothing qualifies) → optional complementary cross-sell. */
   const cartProducts = Cart.items
     .map(item => products.find(p => String(p.id) === String(item.sourceId ?? item.id)))
     .filter(Boolean);
@@ -136,7 +147,7 @@ async function _renderUpsells() {
   const isCollection = pairs.length > 0;
 
   const suggestions = (isCollection ? pairs : getCartUpsells(Cart.items, eligible, {
-    targetRemaining: minimum.remaining,
+    targetRemaining: shipping.remaining,
   }))
     .map(product => ({ product, variant: getDefaultVariant(product, 3) }))
     .filter(entry => entry.variant);
@@ -148,7 +159,7 @@ async function _renderUpsells() {
     return;
   }
 
-  /* Optional, non-blocking cross-sell — never framed as a required minimum. */
+  /* Optional, non-blocking cross-sell. */
   slot.innerHTML = `
     <p class="cart-section-label">Completa tu pedido</p>
     <div class="cart-upsell-list">
@@ -178,16 +189,36 @@ async function _renderUpsells() {
         Tracker.collectionBuilderAdded(entry.product, position, 'cart');
       } else {
         Tracker.recommendationClicked(entry.product, position, { railId, railTitle });
-        if (!minimum.isComplete) {
-          Tracker.recommendationAdded(entry.product, position, {
-            railId: 'cart_minimum_completion',
-            railTitle: 'Pedido minimo',
-            remaining: minimum.remaining,
-          });
-        }
       }
       window.__rd?.cart?.add(entry.product.id, entry.variant.size);
     });
+  });
+}
+
+/* Single cheapest-qualifying recommendation that reaches the shipping
+   threshold in one tap. Optional and non-blocking. */
+function _renderShippingCompletion(slot, { product, variant }, shipping) {
+  slot.innerHTML = `
+    <div class="cart-shipping-complete">
+      <p class="cart-shipping-complete-head">
+        Te faltan <strong>${formatPrice(shipping.remaining)}</strong> para calificar para envío.
+      </p>
+      <div class="cart-upsell-list">
+        ${_upsellRow({ product, variant }, 0)}
+      </div>
+    </div>`;
+  slot.hidden = false;
+
+  const sig = `ship_complete:${product.id}:${variant.size}`;
+  if (sig !== _lastUpsellSig) {
+    _lastUpsellSig = sig;
+    Tracker.recommendedProductShown(product, variant, shipping.remaining);
+    Tracker.amountMissingForShipping(shipping);
+  }
+
+  slot.querySelector('.cart-upsell-add')?.addEventListener('click', () => {
+    Tracker.recommendedProductAdded(product, variant, shipping.remaining);
+    window.__rd?.cart?.add(product.id, variant.size);
   });
 }
 

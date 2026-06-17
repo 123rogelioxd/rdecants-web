@@ -34,6 +34,14 @@ export const EVENTS = {
   DISCOVERY_SET_ADDED: 'discovery_set_added',
   CART_MINIMUM_PROMPT_SHOWN: 'cart_minimum_prompt_shown',
   CART_MINIMUM_PROMPT_CONVERTED: 'cart_minimum_prompt_converted',
+  SHIPPING_ELIGIBLE: 'shipping_eligible',
+  SHIPPING_NOT_ELIGIBLE: 'shipping_not_eligible',
+  AMOUNT_MISSING_FOR_SHIPPING: 'amount_missing_for_shipping',
+  CART_VALUE_BEFORE_WHATSAPP: 'cart_value_before_whatsapp',
+  RECOMMENDED_PRODUCT_SHOWN: 'recommended_product_shown',
+  RECOMMENDED_PRODUCT_ADDED: 'recommended_product_added',
+  BACKGROUND_ORDER_SUCCESS: 'background_order_success',
+  BACKGROUND_ORDER_FAILURE: 'background_order_failure',
   CHECKOUT_STARTED: 'checkout_started',
   CHECKOUT_COMPLETED: 'checkout_completed',
 
@@ -323,6 +331,64 @@ export const Tracker = {
       threshold: minimum.threshold,
       progress: minimum.progress,
     });
+  },
+
+  /* ── Shipping threshold (Sprint 2) ───────────────────────────── */
+  shippingEligible(shipping = {}) {
+    this.emit(EVENTS.SHIPPING_ELIGIBLE, {
+      total: shipping.total,
+      threshold: shipping.threshold,
+      remaining: shipping.remaining,
+    });
+  },
+
+  shippingNotEligible(shipping = {}) {
+    this.emit(EVENTS.SHIPPING_NOT_ELIGIBLE, {
+      total: shipping.total,
+      threshold: shipping.threshold,
+      remaining: shipping.remaining,
+    });
+  },
+
+  amountMissingForShipping(shipping = {}) {
+    this.emit(EVENTS.AMOUNT_MISSING_FOR_SHIPPING, {
+      total: shipping.total,
+      threshold: shipping.threshold,
+      remaining: shipping.remaining,
+    });
+  },
+
+  cartValueBeforeWhatsapp(total = 0, items = []) {
+    this.emit(EVENTS.CART_VALUE_BEFORE_WHATSAPP, {
+      total,
+      itemCount: items.length,
+    }, { allowDuplicate: true });
+  },
+
+  recommendedProductShown(product, variant = {}, remaining = 0) {
+    this.emit(EVENTS.RECOMMENDED_PRODUCT_SHOWN, {
+      ..._productPayload(product),
+      size: variant.size,
+      price: variant.price,
+      remaining,
+    });
+  },
+
+  recommendedProductAdded(product, variant = {}, remaining = 0) {
+    this.emit(EVENTS.RECOMMENDED_PRODUCT_ADDED, {
+      ..._productPayload(product),
+      size: variant.size,
+      price: variant.price,
+      remaining,
+    });
+  },
+
+  backgroundOrderSuccess(folio = '', total = 0) {
+    this.emit(EVENTS.BACKGROUND_ORDER_SUCCESS, { folio, total }, { allowDuplicate: true });
+  },
+
+  backgroundOrderFailure(reason = 'error', total = 0) {
+    this.emit(EVENTS.BACKGROUND_ORDER_FAILURE, { reason, total }, { allowDuplicate: true });
   },
 
   checkoutStarted(cart = [], total = 0) {

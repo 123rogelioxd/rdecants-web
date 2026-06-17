@@ -96,6 +96,33 @@ test('commerce events preserve backend-compatible event payloads', () => {
   });
 });
 
+test('shipping + background-order events map to backend names with metadata', () => {
+  assert.equal(API_EVENT_MAP.shipping_eligible, 'shipping_eligible');
+  assert.equal(API_EVENT_MAP.shipping_not_eligible, 'shipping_not_eligible');
+  assert.equal(API_EVENT_MAP.cart_value_before_whatsapp, 'cart_value_before_whatsapp');
+  assert.equal(API_EVENT_MAP.background_order_success, 'background_order_success');
+  assert.equal(API_EVENT_MAP.background_order_failure, 'background_order_failure');
+
+  assert.deepEqual(toApiPayload('shipping_not_eligible', { total: 120, threshold: 170, remaining: 50 }), {
+    metadata: { cart_total: 120, threshold: 170, remaining: 50 },
+  });
+
+  assert.deepEqual(toApiPayload('cart_value_before_whatsapp', { total: 120, itemCount: 2 }), {
+    metadata: { cart_total: 120, items_count: 2 },
+  });
+
+  assert.deepEqual(toApiPayload('recommended_product_added', {
+    product_id: 7, productName: 'Mandarin Sky', size: 3, price: 60, remaining: 50,
+  }), {
+    product_id: 7,
+    metadata: { name: 'Mandarin Sky', size: 3, price: 60, remaining: 50, rail: 'shipping_completion' },
+  });
+
+  assert.deepEqual(toApiPayload('background_order_failure', { reason: 'network', total: 230 }), {
+    metadata: { reason: 'network', cart_total: 230 },
+  });
+});
+
 test('trackEvent sends legacy and current event fields plus page context', async () => {
   const calls = [];
   const previousFetch = globalThis.fetch;

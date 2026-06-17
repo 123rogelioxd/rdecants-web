@@ -1,17 +1,21 @@
 /* =============================================================
-   RDECANTS — CART MOMENTUM
-   Honest, premium completion messaging for the cart drawer.
-   Driven only by real state (item count + whether the required
-   name is filled). No fabricated urgency, no countdowns.
+   RDECANTS — CART SHIPPING THRESHOLD
+   Operation-first messaging for the cart drawer.
 
-   Pure function so it can be unit-tested without the DOM.
+   Core rule (Sprint 2):
+     • Order minimum = $0. Checkout is NEVER blocked.
+     • $170 is a SHIPPING threshold, not a checkout gate. Below it, the
+       order is still valid — it simply qualifies for local pickup, and
+       shipping is the recommended (not required) path.
+
+   Pure functions so they can be unit-tested without the DOM.
    ============================================================= */
 
-export const MIN_ORDER_THRESHOLD = 200;
+export const SHIPPING_THRESHOLD = 170;
 
-export function getCartMinimumState(total = 0, threshold = MIN_ORDER_THRESHOLD) {
+export function getShippingState(total = 0, threshold = SHIPPING_THRESHOLD) {
   const safeTotal = _money(total);
-  const safeThreshold = _money(threshold) || MIN_ORDER_THRESHOLD;
+  const safeThreshold = _money(threshold) || SHIPPING_THRESHOLD;
   const remaining = Math.max(0, safeThreshold - safeTotal);
   const progress = safeThreshold > 0 ? Math.min(100, Math.round((safeTotal / safeThreshold) * 100)) : 100;
 
@@ -20,31 +24,29 @@ export function getCartMinimumState(total = 0, threshold = MIN_ORDER_THRESHOLD) 
     total: safeTotal,
     remaining,
     progress,
-    isComplete: remaining <= 0,
+    isEligible: remaining <= 0,
   };
 }
 
-export function getCartMomentum({ count = 0, total = 0, threshold = MIN_ORDER_THRESHOLD } = {}) {
+export function getCartMomentum({ count = 0, total = 0, threshold = SHIPPING_THRESHOLD } = {}) {
   if (count <= 0) {
-    return { key: 'empty', message: '', minimum: getCartMinimumState(0, threshold) };
+    return { key: 'empty', message: '', shipping: getShippingState(0, threshold) };
   }
 
-  const minimum = getCartMinimumState(total, threshold);
+  const shipping = getShippingState(total, threshold);
 
-  /* Below the recommended amount: a soft, optional nudge — never a block.
-     The WhatsApp CTA stays enabled regardless of this state. */
-  if (!minimum.isComplete) {
+  if (shipping.isEligible) {
     return {
-      key: 'nudge',
-      message: `Pedido recomendado desde $${threshold} para aprovechar mejor el envío (opcional).`,
-      minimum,
+      key: 'shipping',
+      message: '✓ Tu pedido ya califica para envío.',
+      shipping,
     };
   }
 
   return {
-    key: 'ready',
-    message: '✅ Todo listo. Puedes enviar tu pedido por WhatsApp.',
-    minimum,
+    key: 'local',
+    message: `Los pedidos menores a $${shipping.threshold} pueden recogerse localmente sin problema. Para envío, el pedido recomendado es de $${shipping.threshold}+.`,
+    shipping,
   };
 }
 

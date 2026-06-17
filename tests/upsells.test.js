@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { getRelatedProducts, getCartUpsells } from '../assets/js/recommendations/upsells.js';
+import { getRelatedProducts, getCartUpsells, getShippingCompletionUpsell } from '../assets/js/recommendations/upsells.js';
 
 const variant = (size, price, stock) => ({
   size,
@@ -133,6 +133,45 @@ test('cart upsells: prioritizes low-friction small add-ons near the minimum', ()
 
   const result = ids(getCartUpsells([{ sourceId: 'cartFresh' }], products, { targetRemaining: 40 }));
   assert.equal(result[0], 'smallFresh');
+});
+
+test('shipping completion: recommends the cheapest add-on that reaches the threshold', () => {
+  const products = [
+    productWithVariants('mandarin', 'Armaf', ['citrico'], [variant(3, 60, 20)]),
+    productWithVariants('bleu', 'Chanel', ['amaderado'], [variant(10, 360, 20)]),
+  ];
+  const rec = getShippingCompletionUpsell([{ sourceId: 'cart1' }], products, 55);
+  assert.equal(rec.product.id, 'mandarin');
+  assert.equal(rec.variant.price, 60);
+});
+
+test('shipping completion: returns null once the threshold is already met', () => {
+  const products = [productWithVariants('x', 'H', ['n'], [variant(3, 60, 20)])];
+  assert.equal(getShippingCompletionUpsell([], products, 0), null);
+});
+
+test('shipping completion: skips products that cannot reach the threshold in one add', () => {
+  const products = [productWithVariants('tooSmall', 'H', ['n'], [variant(3, 40, 20)])];
+  assert.equal(getShippingCompletionUpsell([], products, 55), null);
+});
+
+test('shipping completion: never recommends an item already in the cart', () => {
+  const products = [productWithVariants('inCart', 'H', ['n'], [variant(3, 60, 20)])];
+  assert.equal(getShippingCompletionUpsell([{ sourceId: 'inCart' }], products, 55), null);
+});
+
+test('shipping completion: excludes sold-out products', () => {
+  const products = [productWithVariants('out', 'H', ['n'], [variant(3, 60, 0)])];
+  assert.equal(getShippingCompletionUpsell([], products, 55), null);
+});
+
+test('shipping completion: prefers the smallest qualifying presentation within a product', () => {
+  const products = [
+    productWithVariants('multi', 'H', ['n'], [variant(3, 90, 20), variant(5, 130, 20)]),
+  ];
+  const rec = getShippingCompletionUpsell([], products, 80);
+  assert.equal(rec.variant.size, 3, 'the 3ml already reaches the threshold, so use it');
+  assert.equal(rec.variant.price, 90);
 });
 
 test('cart upsells: same family can connect related houses without random products', () => {

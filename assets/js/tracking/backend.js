@@ -16,6 +16,14 @@ export const API_EVENT_MAP = {
   checkout_whatsapp_clicked: 'whatsapp_checkout_clicked',
   cart_minimum_prompt_shown: 'cart_minimum_prompt_shown',
   cart_minimum_prompt_converted: 'cart_minimum_prompt_converted',
+  shipping_eligible:         'shipping_eligible',
+  shipping_not_eligible:     'shipping_not_eligible',
+  amount_missing_for_shipping: 'amount_missing_for_shipping',
+  cart_value_before_whatsapp: 'cart_value_before_whatsapp',
+  recommended_product_shown: 'recommended_product_shown',
+  recommended_product_added: 'recommended_product_added',
+  background_order_success:  'background_order_success',
+  background_order_failure:  'background_order_failure',
   recommendation_viewed:     'recommendation_viewed',
   recommendation_clicked:    'recommendation_clicked',
   recommendation_added:      'recommendation_added',
@@ -133,6 +141,34 @@ export function toApiPayload(event, payload = {}) {
           ids: payload.ids,
         },
       };
+    case 'shipping_eligible':
+    case 'shipping_not_eligible':
+    case 'amount_missing_for_shipping':
+      return {
+        metadata: {
+          cart_total: payload.total,
+          threshold: payload.threshold,
+          remaining: payload.remaining,
+        },
+      };
+    case 'cart_value_before_whatsapp':
+      return { metadata: { cart_total: payload.total, items_count: payload.itemCount } };
+    case 'recommended_product_shown':
+    case 'recommended_product_added':
+      return {
+        product_id: pid,
+        metadata: {
+          name: payload.productName,
+          size: payload.size,
+          price: payload.price,
+          remaining: payload.remaining,
+          rail: 'shipping_completion',
+        },
+      };
+    case 'background_order_success':
+      return { metadata: { folio: payload.folio, cart_total: payload.total } };
+    case 'background_order_failure':
+      return { metadata: { reason: payload.reason, cart_total: payload.total } };
     case 'bundle_viewed':
     case 'bundle_added':
       return { metadata: { bundle_id: payload.bundleId, title: payload.title, ids: payload.ids, total: payload.total } };

@@ -1,12 +1,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  MIN_ORDER_THRESHOLD,
-  getCartMinimumState,
+  SHIPPING_THRESHOLD,
+  getShippingState,
   getCartMomentum,
 } from '../assets/js/cart/momentum.js';
 
-test('empty cart shows no momentum message', () => {
+test('the threshold is a $170 SHIPPING threshold, not a checkout minimum', () => {
+  assert.equal(SHIPPING_THRESHOLD, 170);
+});
+
+test('empty cart shows no message', () => {
   const m = getCartMomentum({ count: 0 });
   assert.equal(m.key, 'empty');
   assert.equal(m.message, '');
@@ -16,36 +20,36 @@ test('defaults to empty when called with no state', () => {
   assert.equal(getCartMomentum().key, 'empty');
 });
 
-test('a cart at or above the recommended amount reads as ready — name never required', () => {
-  const m = getCartMomentum({ count: 1, total: MIN_ORDER_THRESHOLD, hasValidName: false });
-  assert.equal(m.key, 'ready');
-  assert.match(m.message, /WhatsApp/);
+test('cart at or above the threshold qualifies for shipping', () => {
+  const m = getCartMomentum({ count: 1, total: SHIPPING_THRESHOLD });
+  assert.equal(m.key, 'shipping');
+  assert.equal(m.shipping.isEligible, true);
+  assert.match(m.message, /califica para envío/);
 });
 
-test('a valid name with an empty cart is still empty (count wins)', () => {
-  const m = getCartMomentum({ count: 0, hasValidName: true });
-  assert.equal(m.key, 'empty');
-  assert.equal(m.message, '');
+test('cart below the threshold is local-pickup — valid order, never blocked', () => {
+  const m = getCartMomentum({ count: 1, total: 120 });
+  assert.equal(m.key, 'local');
+  assert.equal(m.shipping.isEligible, false);
+  assert.equal(m.shipping.remaining, 50);
+  assert.match(m.message, /local/);
+  assert.doesNotMatch(m.message, /mínimo|faltan|🎁/, 'no checkout-minimum / blocking language');
 });
 
-test('minimum state calculates remaining and capped progress', () => {
-  assert.deepEqual(getCartMinimumState(160), {
-    threshold: 200,
-    total: 160,
-    remaining: 40,
-    progress: 80,
-    isComplete: false,
+test('shipping state computes remaining, capped progress and eligibility', () => {
+  assert.deepEqual(getShippingState(120), {
+    threshold: 170,
+    total: 120,
+    remaining: 50,
+    progress: 71,
+    isEligible: false,
   });
 
-  assert.equal(getCartMinimumState(240).progress, 100);
-  assert.equal(getCartMinimumState(240).remaining, 0);
-});
+  assert.equal(getShippingState(200).remaining, 0);
+  assert.equal(getShippingState(200).isEligible, true);
+  assert.equal(getShippingState(200).progress, 100);
 
-test('cart below the recommended amount shows a soft, non-blocking nudge (no gate)', () => {
-  const m = getCartMomentum({ count: 1, total: 160 });
-  assert.equal(m.key, 'nudge');
-  assert.equal(m.minimum.remaining, 40);
-  assert.match(m.message, /200/, 'mentions the recommended amount');
-  assert.match(m.message, /opcional/, 'framed as optional, never required');
-  assert.doesNotMatch(m.message, /mínimo|faltan|🎁/, 'no blocking / gift language');
+  /* A $0 order is valid — there is no order minimum. */
+  assert.equal(getShippingState(0).isEligible, false);
+  assert.equal(getShippingState(0).remaining, 170);
 });

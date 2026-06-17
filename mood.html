@@ -19,10 +19,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="/assets/css/tokens.css?v=2026.06.17.1">
-<link rel="stylesheet" href="/assets/css/animations.css?v=2026.06.17.1">
-<link rel="stylesheet" href="/assets/css/components.css?v=2026.06.17.1">
-<link rel="stylesheet" href="/assets/css/styles.css?v=2026.06.17.1">
+<link rel="stylesheet" href="/assets/css/tokens.css?v=2026.06.17.2">
+<link rel="stylesheet" href="/assets/css/animations.css?v=2026.06.17.2">
+<link rel="stylesheet" href="/assets/css/components.css?v=2026.06.17.2">
+<link rel="stylesheet" href="/assets/css/styles.css?v=2026.06.17.2">
 </head>
 
 <body class="mood-body">
@@ -63,7 +63,6 @@
   <div class="cart-items" id="cart-items"></div>
   <div class="cart-footer">
     <div class="checkout-panel" id="checkout-form" aria-label="Datos de checkout">
-      <p class="checkout-momentum" id="checkout-momentum" aria-live="polite" hidden></p>
       <label class="checkout-control checkout-control--primary" for="checkout-name">
         <span>Tu nombre (opcional)</span>
         <input class="checkout-field" id="checkout-name" type="text" autocomplete="name" placeholder="Ej. Roger Díaz">
@@ -85,16 +84,21 @@
           <span class="cart-total-label">Total</span>
           <span class="cart-total-amount">$<span id="cart-total">0</span> <small>MXN</small></span>
         </div>
+        <div class="shipping-status" id="shipping-status" hidden>
+          <span class="shipping-badge" id="shipping-badge"></span>
+          <span class="shipping-note" id="shipping-note"></span>
+        </div>
       </div>
       <ul class="cart-trust" aria-label="Garantías del pedido">
         <li>✓ Perfumes originales</li>
         <li>✓ Decants preparados al momento</li>
         <li>✓ Envíos a todo México</li>
       </ul>
-      <p class="checkout-next">Te abriremos WhatsApp con tu pedido listo. Ahí confirmamos envío y forma de pago.</p>
       <button class="btn-whatsapp" id="checkout-whatsapp" onclick="sendWhatsApp()" aria-label="Enviar pedido por WhatsApp">
         📲 Enviar pedido por WhatsApp
       </button>
+      <p class="checkout-fallback" id="checkout-fallback" hidden></p>
+      <p class="checkout-next">En WhatsApp confirmamos envío, pago y disponibilidad.</p>
       <button class="btn-continue" onclick="closeCart()" aria-label="Cerrar carrito y seguir explorando">
         Seguir comprando
       </button>
@@ -110,6 +114,6 @@
 
 <div id="toast" class="toast" aria-live="polite"></div>
 
-<script type="module" src="/assets/js/pages/mood.js?v=2026.06.17.1"></script>
+<script type="module" src="/assets/js/pages/mood.js?v=2026.06.17.2"></script>
 </body>
 </html>

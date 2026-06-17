@@ -65,8 +65,11 @@ test('customer name is optional and there are zero required fields before WhatsA
     assert.ok(!html.includes('aria-required="true"'), `${file} no required field`);
     assert.ok(!html.includes('id="checkout-phone"'), `${file} phone field removed`);
     assert.ok(html.includes('id="checkout-notes-toggle"'), `${file} notes collapsed behind a toggle`);
-    assert.ok(html.includes('Te abriremos WhatsApp con tu pedido listo'), `${file} explains the next step`);
+    assert.ok(html.includes('En WhatsApp confirmamos envío, pago y disponibilidad'), `${file} explains the next step`);
     assert.ok(html.includes('class="cart-trust"'), `${file} trust strip present`);
+    assert.ok(html.includes('id="shipping-status"'), `${file} shipping eligibility status present`);
+    assert.ok(html.includes('id="checkout-fallback"'), `${file} popup-blocked fallback slot present`);
+    assert.ok(!html.includes('id="checkout-momentum"'), `${file} old momentum line removed`);
   }
 });
 
@@ -123,14 +126,14 @@ test('PDP size grid offers 3/5/10ml only — never a 2ml button', async () => {
 
 /* ── D. Minimum order messaging ─────────────────────────────── */
 
-test('below-recommended cart shows a soft, accent-correct, non-blocking nudge', async () => {
+test('below-threshold cart is local-pickup, accent-correct and non-blocking', async () => {
   const { getCartMomentum } = await import('../assets/js/cart/momentum.js');
   const m = getCartMomentum({ count: 1, total: 150 });
-  assert.equal(m.key, 'nudge');
-  assert.equal(m.minimum.remaining, 50);
+  assert.equal(m.key, 'local');
+  assert.equal(m.shipping.remaining, 20);
+  assert.match(m.message, /local/, 'explains local pickup');
   assert.match(m.message, /envío/, 'accent rendered correctly');
-  assert.match(m.message, /opcional/, 'framed as optional');
-  assert.doesNotMatch(m.message, /mínimo|faltan/, 'no blocking language');
+  assert.doesNotMatch(m.message, /mínimo|faltan/, 'no blocking / minimum language');
 });
 
 test('checkout CTA is one constant action — only the empty state differs', async () => {

@@ -83,6 +83,54 @@ export function getCartUpsells(cartItems, products, { limit = CART_LIMIT, target
   );
 }
 
+/* ── Shipping-completion recommendation ─────────────────────────
+   Returns the single CHEAPEST add-on whose price reaches the remaining
+   amount needed to cross the shipping threshold in one tap — so the
+   threshold always feels achievable. Prefers small, discovery-friendly
+   decants on price ties. Pure + testable (catalog passed in).
+   Returns { product, variant } or null. ───────────────────────── */
+export function getShippingCompletionUpsell(cartItems, products, remaining) {
+  if (!Array.isArray(products) || !products.length) return null;
+
+  const need = Number(remaining);
+  if (!Number.isFinite(need) || need <= 0) return null;
+
+  const inCart = new Set(
+    (cartItems ?? []).map(item => String(item.sourceId ?? item.product_id ?? item.id)),
+  );
+
+  const candidates = [];
+  for (const product of products) {
+    if (!product || inCart.has(String(product.id))) continue;
+    if (getScarcityState(product) === 'sold_out') continue;
+
+    /* Cheapest orderable variant that, on its own, reaches the threshold. */
+    const qualifying = getOrderableVariants(product)
+      .filter(v => Number.isFinite(Number(v.price)) && Number(v.price) >= need)
+      .sort((a, b) => a.price - b.price)[0];
+
+    if (qualifying) candidates.push({ product, variant: qualifying });
+  }
+
+  if (!candidates.length) return null;
+
+  candidates.sort((a, b) =>
+    a.variant.price - b.variant.price ||                       // cheapest qualifying
+    a.variant.size - b.variant.size ||                         // smaller presentation
+    _discoveryRank(b.product) - _discoveryRank(a.product) ||   // discovery-friendly
+    String(a.product.id).localeCompare(String(b.product.id))); // stable
+
+  return candidates[0];
+}
+
+function _discoveryRank(product) {
+  let rank = 0;
+  if (product.featured) rank += 2;
+  if (hasHighDemand(product)) rank += 1;
+  if (_isBeginnerFriendly(product)) rank += 1;
+  return rank;
+}
+
 /* ── Ranking ───────────────────────────────────────────────── */
 function _rank(candidates, profile, limit, options = {}) {
   return candidates

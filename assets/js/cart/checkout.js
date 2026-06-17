@@ -9,7 +9,7 @@ import { CatalogProvider } from '../providers/catalog.js?v=2026.06.04.2';
 import { Tracker }   from '../tracking/tracker.js';
 import { showToast } from '../ui/toast.js';
 import { formatPrice, getVariantForSize } from '../utils/prices.js?v=2026.06.04.2';
-import { getCartMomentum } from './momentum.js?v=2026.06.04.2';
+import { getShippingState } from './momentum.js?v=2026.06.04.2';
 
 const STORAGE_KEY = 'rdecants_checkout_customer';
 const LAST_ORDER_KEY = 'rdecants_last_web_order_folio';
@@ -27,7 +27,7 @@ const FIELD_IDS = {
 
 let _startedSignature = '';
 let _isSubmitting = false;
-let _wasBelowMinimum = false;
+let _prevEligible = null;
 
 export function setupCheckout() {
   const form = _form();
@@ -85,7 +85,10 @@ export async function sendCheckoutWhatsApp(phoneNumber) {
   }
 }
 
-async function _performCheckout(phoneNumber) {
+/* WhatsApp-first: the WhatsApp window is opened SYNCHRONOUSLY inside the click
+   gesture (no awaits before it) so the popup isn't blocked and a backend outage
+   can never block the sale. The system order is created afterwards, async. */
+function _performCheckout(phoneNumber) {
   const items = Cart.items;
 
   if (!items.length) {
@@ -96,87 +99,79 @@ async function _performCheckout(phoneNumber) {
     return;
   }
 
-  /* No minimum-order gate and no required customer data — the customer can
-     always reach WhatsApp. Any remaining validation is soft and non-blocking. */
   const data = readCheckoutData();
-  const error = validateCheckout(data);
+  saveCheckoutData(data);
+  _clearError();
 
-  if (error) {
-    _showError(error);
-    showToast(error.message);
-    error.field?.focus();
+  const total = Cart.total();
+  const shipping = getShippingState(total);
+
+  Tracker.checkoutWhatsappClicked(items, total, { phone: Boolean(data.phone) });
+  Tracker.cartValueBeforeWhatsapp(total, items);
+  if (!shipping.isEligible) Tracker.amountMissingForShipping(shipping);
+
+  /* Snapshot what we send — the background order is built from this and is
+     unaffected by the cart being cleared after a successful launch. */
+  const orderItems = items;
+  const messageText = buildWhatsAppMessage(orderItems, total, data);
+  const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(messageText)}`;
+
+  /* 1) WhatsApp first. */
+  _markFired();
+  const opened = window.open(whatsappUrl, '_blank');
+
+  if (!opened) {
+    /* Popup blocked — keep the cart intact, offer a manual link, still try
+       to record the order in the background. No lost carts. */
+    _showManualWhatsApp(whatsappUrl);
+    _createOrderInBackground(orderItems, data, total);
     return;
   }
 
-  saveCheckoutData(data);
+  /* 2) Launch succeeded → the customer's job is done. Clear the cart and
+     record the order in the background. */
+  _showMessage('Listo, te llevamos a WhatsApp para finalizar tu pedido.', 'success');
+  showToast('Listo, abrimos WhatsApp para finalizar tu pedido.');
+  Cart.clear();
+  _createOrderInBackground(orderItems, data, total);
+}
 
-  const total = Cart.total();
-  const button = document.getElementById('checkout-whatsapp');
-  _setButtonLoading(button, true, 'Creando pedido...');
-  Tracker.checkoutWhatsappClicked(items, total, {
-    phone: Boolean(data.phone),
-  });
-
-  _clearError();
-
+/* Records the system order WITHOUT ever blocking the customer or showing them
+   an error. On failure: log + emit background_order_failure (the admin-notify
+   path). The customer never sees a system error. */
+async function _createOrderInBackground(items, data, total) {
   try {
-    if (items.some(item => item.type === 'pack')) {
-      throw new Error('PACK_CHECKOUT_FALLBACK');
-    }
+    const orderable = items.filter(item => item.type !== 'pack');
+    if (!orderable.length) return; // pure-pack orders are coordinated in chat
 
-    const reconciliation = await Cart.reconcile({ silent: false });
-    if (reconciliation.removed.length) {
-      throw new Error('STALE_CART_VARIANT');
-    }
-
-    const checkoutItems = Cart.items;
-    const checkoutTotal = Cart.total();
-    const payload = await buildWebOrderPayload(checkoutItems, data);
-
-    if (!payload.items.length) {
-      throw new Error('PACK_CHECKOUT_FALLBACK');
-    }
+    const payload = await buildWebOrderPayload(items, data);
+    if (!payload.items.length) return;
 
     const response = await ApiClient.createWebOrder(payload);
     const order = response?.order;
-
-    if (!response?.ok || !order?.folio) {
-      throw new Error('No se pudo crear el pedido.');
-    }
+    if (!response?.ok || !order?.folio) throw new Error('No se pudo crear el pedido en sistema.');
 
     localStorage.setItem(LAST_ORDER_KEY, order.folio || '');
-    Tracker.checkoutCompleted(Cart.items, checkoutTotal, { folio: order.folio });
-    _showMessage('Listo, abriremos WhatsApp para finalizar tu pedido.', 'success');
-    showToast('Listo, abriremos WhatsApp para finalizar tu pedido.');
-
-    const messageText = buildWhatsAppMessage(checkoutItems, checkoutTotal, data, order.folio);
-    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(messageText)}`;
-    Cart.clear();
-
-    _markFired();
-    const opened = window.open(whatsappUrl, '_blank');
-    if (!opened) {
-      window.location.href = whatsappUrl;
-    }
+    Tracker.checkoutCompleted(items, total, { folio: order.folio });
+    Tracker.backgroundOrderSuccess(order.folio, total);
   } catch (error) {
     _logCheckoutError(error);
-    const message = _readableApiError(error);
-    const canFallback = _canFallbackToWhatsApp(error);
-    _showMessage(canFallback ? `${message} Puedes intentar de nuevo o continuar por WhatsApp sin folio.` : message, 'error');
-    showToast(message);
-
-    if (!canFallback) return;
-
-    const fallback = confirm(`${message}\n\nNo se creo el pedido en sistema. ¿Abrir WhatsApp sin folio?`);
-    if (fallback) {
-      _markFired();
-      const messageText = buildWhatsAppMessage(items, total, data);
-      window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(messageText)}`, '_blank');
-      Cart.clear();
-    }
-  } finally {
-    _setButtonLoading(button, false);
+    Tracker.backgroundOrderFailure(String(error?.message || 'error'), total);
   }
+}
+
+/* Popup-blocked fallback: a persistent manual link, cart kept intact. */
+function _showManualWhatsApp(url) {
+  const el = document.getElementById('checkout-fallback');
+  if (!el) {
+    showToast('Abre WhatsApp para finalizar tu pedido', {
+      actionLabel: 'Abrir WhatsApp',
+      onAction: () => { if (!window.open(url, '_blank')) window.location.href = url; },
+    });
+    return;
+  }
+  el.hidden = false;
+  el.innerHTML = `Si WhatsApp no se abrió, <a href="${url}" target="_blank" rel="noopener">ábrelo manualmente aquí</a>. Tu carrito sigue guardado.`;
 }
 
 function _recentlyFired() {
@@ -328,7 +323,7 @@ function _syncAvailability() {
   const count = Cart.count();
   const total = Cart.total();
   const isEmpty = count === 0;
-  const minimum = getCartMomentum({ count, total }).minimum;
+  const shipping = getShippingState(total);
   const button = document.getElementById('checkout-whatsapp');
   const form = _form();
 
@@ -343,26 +338,41 @@ function _syncAvailability() {
   }
 
   form?.classList.toggle('checkout-form--disabled', isEmpty);
-  form?.classList.toggle('checkout-form--ready', !isEmpty && minimum.isComplete);
+  form?.classList.toggle('checkout-form--ready', !isEmpty && shipping.isEligible);
 
-  /* Keep the "added a second decant" conversion signal for analytics — it no
-     longer gates anything, it just measures whether the nudge worked. */
-  if (!isEmpty && _wasBelowMinimum && minimum.isComplete) {
-    Tracker.cartMinimumPromptConverted(minimum);
-  }
-  _wasBelowMinimum = !isEmpty && !minimum.isComplete;
-
-  _syncMomentum(count, total);
+  _syncShipping(count, shipping);
 }
 
-function _syncMomentum(count, total) {
-  const el = document.getElementById('checkout-momentum');
-  if (!el) return;
+/* Shipping eligibility badge + explanation, shown near the total. This is an
+   operational status — it NEVER blocks or changes the CTA. */
+function _syncShipping(count, shipping) {
+  const status = document.getElementById('shipping-status');
+  const badge = document.getElementById('shipping-badge');
+  const note = document.getElementById('shipping-note');
 
-  const momentum = getCartMomentum({ count, total });
-  el.innerHTML = momentum.message;
-  el.dataset.key = momentum.key;
-  el.hidden = !momentum.message;
+  if (status) {
+    if (count <= 0) {
+      status.hidden = true;
+    } else {
+      status.hidden = false;
+      status.dataset.state = shipping.isEligible ? 'eligible' : 'local';
+      if (badge) badge.textContent = shipping.isEligible ? '✓ Califica para envío' : '📍 Disponible para entrega local';
+      if (note) {
+        note.textContent = shipping.isEligible
+          ? 'Tu pedido ya califica para envío.'
+          : `Los pedidos menores a $${shipping.threshold} pueden recogerse localmente sin problema.`;
+      }
+    }
+  }
+
+  /* Eligibility-transition analytics (deduped by the tracker). */
+  if (count <= 0) {
+    _prevEligible = null;
+  } else if (_prevEligible !== shipping.isEligible) {
+    if (shipping.isEligible) Tracker.shippingEligible(shipping);
+    else Tracker.shippingNotEligible(shipping);
+    _prevEligible = shipping.isEligible;
+  }
 }
 
 function _showError(error) {
@@ -396,6 +406,12 @@ function _clearError() {
     errorEl.dataset.tone = 'neutral';
   }
 
+  const fallbackEl = document.getElementById('checkout-fallback');
+  if (fallbackEl) {
+    fallbackEl.hidden = true;
+    fallbackEl.innerHTML = '';
+  }
+
   _showNameMessage('', 'neutral');
 }
 
@@ -405,21 +421,6 @@ function _field(key) {
 
 function _form() {
   return document.getElementById('checkout-form');
-}
-
-function _setButtonLoading(button, isLoading, label = '') {
-  if (!button) return;
-  if (isLoading) {
-    button.dataset.label = button.textContent.trim();
-    button.classList.add('is-loading');
-    button.disabled = true;
-    if (label) button.textContent = label;
-  } else {
-    button.classList.remove('is-loading');
-    if (button.dataset.label) button.textContent = button.dataset.label;
-    delete button.dataset.label;
-    _syncAvailability();
-  }
 }
 
 export function getCheckoutButtonLabel({ isEmpty = false } = {}) {
@@ -438,36 +439,6 @@ function _showNameMessage(message, tone = 'neutral') {
   if (!el) return;
   el.textContent = message;
   el.dataset.tone = tone;
-}
-
-function _readableApiError(error) {
-  const raw = `${error?.data?.message || ''} ${error?.message || ''} ${JSON.stringify(error?.data?.errors || {})}`.toLowerCase();
-
-  if (raw.includes('pack_checkout_fallback')) {
-    return 'Los packs todavia se coordinan directo por WhatsApp.';
-  }
-
-  if (raw.includes('stale_cart_variant')) {
-    return 'Actualizamos tu carrito porque una variante ya no esta disponible. Revisa tu seleccion e intenta de nuevo.';
-  }
-
-  if (raw.includes('stock')) {
-    return 'Este producto ya no tiene stock disponible. Actualiza el carrito e intenta de nuevo.';
-  }
-
-  if (raw.includes('inactive') || raw.includes('inactivo')) {
-    return 'Uno de los productos ya no esta disponible. Actualiza el carrito e intenta de nuevo.';
-  }
-
-  if (raw.includes('variant') || raw.includes('variante')) {
-    return 'No pudimos confirmar una variante del carrito. Actualiza el carrito e intenta de nuevo.';
-  }
-
-  if (raw.includes('cart is empty') || raw.includes('items')) {
-    return 'Agrega una fragancia antes de finalizar por WhatsApp.';
-  }
-
-  return 'No pudimos crear el pedido en sistema.';
 }
 
 function _validVariantId(value) {
@@ -520,11 +491,6 @@ function _presentationText(item) {
 
 function _logCheckoutError(error) {
   if (error?.status === 422 && error?.data) {
-    console.error('[RDecants] checkout validation failed:', error.data);
+    console.error('[RDecants] background order validation failed:', error.data);
   }
-}
-
-function _canFallbackToWhatsApp(error) {
-  const raw = String(error?.message || '').toLowerCase();
-  return !raw.includes('stale_cart_variant');
 }
