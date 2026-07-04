@@ -21,15 +21,11 @@ import { getDefaultVariant,
          getDisplayVariant,
          getVariantForSize,
          getValidVariants,
-         getEntryVariant,
          formatPrice,
-         getSizeLabel,
          PRIMARY_SIZES } from '../utils/prices.js?v=2026.06.04.2';
 import { getScarcityDisplay } from '../utils/scarcity.js?v=2026.06.04.2';
 import { getDisplayBadges } from '../utils/guidance.js?v=2026.06.04.2';
-import { buildWhyHtml } from './why.js?v=2026.06.04.2';
 import { productPageUrl } from './productPage.js?v=2026.06.04.2';
-import { MAX_MODAL_WHY_REASONS } from './displayLimits.js?v=2026.06.04.2';
 
 /* ── Constants ──────────────────────────────────────────────── */
 const WHATSAPP_NUMBER = '5219516513018';
@@ -117,10 +113,6 @@ function _render() {
   const activeVariant = variants.find(v => v.size === _selectedSize) || getDefaultVariant(p) || getDisplayVariant(p);
   _selectedSize = activeVariant?.size ?? null;
   const price = activeVariant?.price ?? null;
-  /* "Desde" copy must reference a presentation the customer can actually
-     select (3/5/10ml), never the 2ml cart-completer. */
-  const entryVariant = getEntryVariant(p);
-  const lowestPrice = entryVariant?.price ?? null;
   const hasImage = p.image && p.image.trim() !== '';
 
   const scarcity = getScarcityDisplay(p);
@@ -133,8 +125,9 @@ function _render() {
     ? ''
     : `<span class="pdm-badge ${scarcity.badgeClass}">${scarcity.label}</span>`;
 
-  const guidanceWhyHtml = buildProductModalGuidanceHtml(p);
+  const guidanceHtml = buildProductModalGuidanceHtml(p);
   const detailsHref = productPageUrl(p);
+  const description = _modalDescription(p);
 
   const sizesHtml = PRIMARY_SIZES
     .map(ml => {
@@ -149,9 +142,9 @@ function _render() {
         aria-pressed="${ml === _selectedSize}"
         aria-label="${ml}ml - $${variant.price} MXN${disabled ? ' agotado' : ''}"
       >
-        <span class="pdm-size-ml">${ml}ml${ml === 5 ? '<span class="pdm-size-recommended"> · recomendado</span>' : ''}</span>
+        <span class="pdm-size-ml">${ml}ml</span>
         <span class="pdm-size-price">$${variant.price}</span>
-        <span class="pdm-size-label">${disabled ? 'Agotado' : getSizeLabel(ml)}</span>
+        <span class="pdm-size-label">${disabled ? 'Agotado' : _modalSizeLabel(ml)}</span>
       </button>
     `;
     }).join('');
@@ -198,20 +191,9 @@ function _render() {
         </div>
         <p class="pdm-decant-hint">Decant auténtico · prueba antes de comprar el frasco</p>
 
-        <a class="pdm-details-cta" href="${detailsHref}"
-           aria-label="Ver detalles completos de ${p.name}">
-          Ver detalles
-          <span aria-hidden="true">→</span>
-        </a>
+        ${description ? `<p class="pdm-story">${description}</p>` : ''}
 
-        ${p.story
-          ? `<p class="pdm-story">${p.story}</p>`
-          : ''}
-        ${p.desc && p.desc !== p.story
-          ? `<p class="pdm-desc">${p.desc}</p>`
-          : ''}
-
-        ${guidanceWhyHtml}
+        ${guidanceHtml}
 
         ${stockHtml}
 
@@ -229,7 +211,6 @@ function _render() {
           <div class="pdm-price-row">
             <span class="pdm-price" id="pdm-price">${formatPrice(price, 'Consultar precio')}</span>
             <span class="pdm-price-unit">${_selectedSize ? `${_selectedSize}ml` : 'WhatsApp'}</span>
-            ${lowestPrice !== null ? `<p class="pdm-value-prop">Una botella completa cuesta miles — pruébalo desde ${formatPrice(lowestPrice)}.</p>` : ''}
           </div>
 
           <div class="pdm-actions">
@@ -238,10 +219,16 @@ function _render() {
               aria-label="${activeVariant ? `Agregar ${p.name} ${_selectedSize}ml al carrito` : 'Precio por consultar'}">
               ${_isOrderableVariant(activeVariant) ? 'Agregar' : 'Agotado'}
             </button>
-            <button class="pdm-btn-wa"
-              aria-label="Consultar ${p.name} por WhatsApp">
-              WhatsApp
-            </button>
+            <div class="pdm-secondary-actions">
+              <a class="pdm-details-link" href="${detailsHref}"
+                 aria-label="Ver perfil completo de ${p.name}">
+                Ver perfil completo
+              </a>
+              <button class="pdm-btn-wa" type="button"
+                aria-label="Consultar ${p.name} por WhatsApp">
+                WhatsApp
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -257,13 +244,10 @@ export function buildProductModalGuidanceHtml(product) {
   const guidanceHtml = getDisplayBadges(product, { context: 'quick_view' })
     .map(g => `<span class="guidance-chip guidance-chip--${g.key}">${g.label}</span>`)
     .join('');
-  const whyHtml = buildWhyHtml(product, { limit: MAX_MODAL_WHY_REASONS });
 
-  return `
-    ${guidanceHtml
-      ? `<div class="pdm-guidance" aria-label="Recomendado para">${guidanceHtml}</div>`
-      : ''}
-    ${whyHtml}`;
+  return guidanceHtml
+    ? `<div class="pdm-guidance" aria-label="Recomendado para">${guidanceHtml}</div>`
+    : '';
 }
 
 /* ── Event binding ───────────────────────────────────────────── */
@@ -404,6 +388,19 @@ function _trapFocus(e) {
 /* ── Helpers ─────────────────────────────────────────────────── */
 function _defaultSize(product) {
   return getDefaultVariant(product)?.size ?? null;
+}
+
+function _modalDescription(product) {
+  return String(product?.story || product?.desc || '').trim();
+}
+
+function _modalSizeLabel(ml) {
+  const labels = {
+    3: 'Ideal para probar',
+    5: 'Recomendado',
+    10: 'Mejor valor',
+  };
+  return labels[Number(ml)] ?? '';
 }
 
 function _stockHtml(scarcity) {

@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { buildProductModalGuidanceHtml } from '../assets/js/ui/modal.js';
 
 const ninePm = {
@@ -13,14 +14,15 @@ const ninePm = {
   },
 };
 
-test('modal guidance renders max 3 visible badges and max 2 why reasons', () => {
+test('modal guidance renders max 3 visible badges without the PDP why box', () => {
   const html = buildProductModalGuidanceHtml(ninePm);
   assert.equal((html.match(/<span class="guidance-chip /g) || []).length, 3);
-  assert.equal((html.match(/<li>/g) || []).length, 2);
+  assert.equal((html.match(/<li>/g) || []).length, 0);
   assert.ok(html.includes('>Dulce<'));
   assert.ok(html.includes('>Noche<'));
   assert.ok(html.includes('>Cita<'));
   assert.ok(!html.includes('>Fiesta<'));
+  assert.ok(!html.includes('why-block'));
 });
 
 test('modal guidance does not dump notes metadata', () => {
@@ -28,5 +30,13 @@ test('modal guidance does not dump notes metadata', () => {
   assert.ok(!html.includes('Manzana'));
   assert.ok(!html.includes('Vainilla'));
   assert.ok(!html.includes('Canela'));
-  assert.ok(html.includes('why-block'), 'keeps concise why guidance');
+  assert.ok(!html.includes('why-block'), 'why guidance belongs on the PDP');
+});
+
+test('quick view keeps full profile link subtle and below the primary CTA', () => {
+  const source = fs.readFileSync('assets/js/ui/modal.js', 'utf8');
+  assert.ok(source.includes('Ver perfil completo'));
+  assert.ok(source.includes('pdm-secondary-actions'));
+  assert.ok(source.indexOf('id="pdm-btn-add"') < source.indexOf('Ver perfil completo'));
+  assert.ok(!source.includes('Una botella completa cuesta miles'));
 });

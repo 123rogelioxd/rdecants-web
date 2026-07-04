@@ -911,28 +911,6 @@
   .pdm-info-scroll { padding-bottom: 8px; }
 }
 
-/* ── Modal "Ver detalles" CTA ───────────────────────────────── */
-.pdm-details-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 18px;
-  padding: 10px 14px;
-  font-size: 11px;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  color: var(--accent);
-  text-decoration: none;
-  border: 1px solid rgba(201, 169, 110, 0.32);
-  border-radius: 999px;
-  transition: border-color 0.25s ease, background 0.25s ease;
-}
-
-.pdm-details-cta:hover {
-  border-color: var(--accent);
-  background: rgba(201, 169, 110, 0.06);
-}
-
 /* ── Product detail page (/perfume/{slug}) ──────────────────── */
 .pdp-body { background: var(--bg, #030303); }
 
@@ -4123,10 +4101,14 @@
 }
 
 .pdm-story {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   font-size: 15px;
   color: rgba(255, 255, 255, 0.55);
-  line-height: 1.85;
-  margin-bottom: 8px;
+  line-height: 1.55;
+  margin-bottom: 12px;
+  overflow: hidden;
 }
 
 .pdm-desc {
@@ -4265,9 +4247,9 @@
 
 /* Action buttons */
 .pdm-actions {
-  display: grid;
-  grid-template-columns: 1.4fr 0.6fr;
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
 }
 
 .pdm-btn-add {
@@ -4277,29 +4259,43 @@
 }
 
 .pdm-btn-wa {
-  width: 100%;
-  background: rgba(37, 211, 102, 0.1);
-  color: #25D366;
-  border: 1px solid rgba(37, 211, 102, 0.25);
-  font-size: 11px;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: rgba(255, 255, 255, 0.46);
+  font-size: 10px;
   font-weight: 500;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  padding: 14px 20px;
-  border-radius: 999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
+  padding: 4px 0;
   transition: var(--transition);
 }
 
 .pdm-btn-wa:hover {
-  background: #25D366;
-  color: var(--white);
-  border-color: #25D366;
-  transform: translateY(-2px);
-  box-shadow: 0 12px 30px rgba(37, 211, 102, 0.25);
+  color: #25D366;
+}
+
+.pdm-secondary-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  justify-content: center;
+  min-height: 18px;
+}
+
+.pdm-details-link {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+.pdm-details-link:hover {
+  color: var(--accent);
 }
 
 /* Card cursor hint */
@@ -4429,11 +4425,6 @@
     overflow: hidden;
   }
 
-  .pdm-details-cta {
-    margin-top: 2px;
-    padding: 8px 12px;
-  }
-
   .pdm-desc {
     display: none;
   }
@@ -4488,9 +4479,10 @@
     margin-top: 0;
   }
 
-  .pdm-size-label,
-  .pdm-size-recommended {
-    display: none;
+  .pdm-size-label {
+    font-size: 8px;
+    line-height: 1.25;
+    margin-top: 1px;
   }
 
   .pdm-buybar-bottom {
@@ -4513,18 +4505,22 @@
   }
 
   .pdm-actions {
-    grid-template-columns: minmax(0, 1fr) 94px;
+    gap: 6px;
+  }
+
+  .pdm-secondary-actions {
     gap: 8px;
   }
 
-  .pdm-btn-add,
-  .pdm-btn-wa {
+  .pdm-btn-add {
     min-height: 44px;
     padding: 10px 8px;
   }
 
   .pdm-btn-wa {
     letter-spacing: 0.08em;
+    min-height: auto;
+    padding: 2px 0;
   }
 
   .pdm-related {

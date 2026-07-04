@@ -29,7 +29,8 @@ test('previously corrupted strings now read correctly', () => {
   const modal = read('assets/js/ui/modal.js');
   assert.ok(modal.includes('Decant auténtico'), 'auténtico restored');
   assert.ok(modal.includes('Elige presentación'), 'presentación restored');
-  assert.ok(modal.includes('pruébalo desde'), 'pruébalo restored');
+  assert.ok(modal.includes('Ideal para probar'), 'modal size guidance present');
+  assert.ok(modal.includes('Ver perfil completo'), 'modal full-profile link present');
   assert.ok(!modal.includes('Ver detalles\n          <span aria-hidden="true">?'),
     'broken "?" arrow replaced');
 
