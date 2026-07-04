@@ -255,6 +255,30 @@ test('PDP visible badges are limited to two strongest tags', () => {
   assert.ok(!heroSlice.includes('>Fiesta<'));
 });
 
+test('PDP places extra normalized performance badges lower than the hero', () => {
+  const html = buildProductPageHtml({
+    ...sample,
+    fragrance: {
+      ...sample.fragrance,
+      mood_tags: ['dulce'],
+      recommendation_tags: ['noche'],
+      style_tags: ['Duraci\u00f3n excepcional'],
+      commercial_roles: ['M\u00e1xima proyecci\u00f3n'],
+    },
+  });
+  const heroSlice = html.slice(
+    html.indexOf('id="pdp-hero"'),
+    html.indexOf('id="pdp-novice"')
+  );
+  const techSlice = html.slice(html.indexOf('id="pdp-tech"'));
+
+  assert.ok(heroSlice.includes('>Dulce<'));
+  assert.ok(heroSlice.includes('>Noche<'));
+  assert.ok(!heroSlice.includes('Buen rendimiento'));
+  assert.ok(techSlice.includes('Buen rendimiento'));
+  assert.ok(techSlice.includes('Buena proyecci'));
+});
+
 test('Afnan 9PM shows concise public guidance', () => {
   const afnan9pm = {
     ...sample,
@@ -279,7 +303,8 @@ test('Afnan 9PM shows concise public guidance', () => {
   const whySlice = html.slice(html.indexOf('id="pdp-novice"'), html.indexOf('id="pdp-buy"'));
 
   assert.ok(heroSlice.includes('>Noche<'));
-  assert.ok(heroSlice.includes('>Cita<'));
+  assert.ok(heroSlice.includes('>Dulce<'));
+  assert.ok(!heroSlice.includes('>Cita<'));
   assert.ok(!heroSlice.includes('>Fiesta<'));
   assert.ok(!heroSlice.includes('Manzana'), 'notes are not dumped in hero');
   assert.ok(whySlice.includes('pdp-novice-lead'), 'one summary line');

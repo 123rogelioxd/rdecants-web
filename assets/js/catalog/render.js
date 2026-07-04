@@ -242,7 +242,7 @@ function _renderGrid(products, { rememberProducts = true } = {}) {
     const genderChip = genderBadgeHtml(p.gender, 'card-gender');
 
     const badgeClass = stockState.badgeClass;
-    const guidanceHtml = getDisplayBadges(p, { limit: 1 })
+    const guidanceHtml = getDisplayBadges(p, { context: 'catalog_card' })
       .map(g => `<span class="guidance-chip guidance-chip--${g.key}">${g.label}</span>`)
       .join('');
 

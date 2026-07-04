@@ -13,10 +13,11 @@ const ninePm = {
   },
 };
 
-test('modal guidance renders max 2 visible badges and max 2 why reasons', () => {
+test('modal guidance renders max 3 visible badges and max 2 why reasons', () => {
   const html = buildProductModalGuidanceHtml(ninePm);
-  assert.equal((html.match(/<span class="guidance-chip /g) || []).length, 2);
+  assert.equal((html.match(/<span class="guidance-chip /g) || []).length, 3);
   assert.equal((html.match(/<li>/g) || []).length, 2);
+  assert.ok(html.includes('>Dulce<'));
   assert.ok(html.includes('>Noche<'));
   assert.ok(html.includes('>Cita<'));
   assert.ok(!html.includes('>Fiesta<'));

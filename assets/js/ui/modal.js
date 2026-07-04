@@ -29,7 +29,7 @@ import { getScarcityDisplay } from '../utils/scarcity.js?v=2026.06.04.2';
 import { getDisplayBadges } from '../utils/guidance.js?v=2026.06.04.2';
 import { buildWhyHtml } from './why.js?v=2026.06.04.2';
 import { productPageUrl } from './productPage.js?v=2026.06.04.2';
-import { MAX_MODAL_WHY_REASONS, MAX_VISIBLE_BADGES } from './displayLimits.js?v=2026.06.04.2';
+import { MAX_MODAL_WHY_REASONS } from './displayLimits.js?v=2026.06.04.2';
 
 /* ── Constants ──────────────────────────────────────────────── */
 const WHATSAPP_NUMBER = '5219516513018';
@@ -254,7 +254,7 @@ function _render() {
 }
 
 export function buildProductModalGuidanceHtml(product) {
-  const guidanceHtml = getDisplayBadges(product, { limit: MAX_VISIBLE_BADGES })
+  const guidanceHtml = getDisplayBadges(product, { context: 'quick_view' })
     .map(g => `<span class="guidance-chip guidance-chip--${g.key}">${g.label}</span>`)
     .join('');
   const whyHtml = buildWhyHtml(product, { limit: MAX_MODAL_WHY_REASONS });

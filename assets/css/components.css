@@ -1368,6 +1368,12 @@
 }
 .pdp-tech-body { padding-bottom: 12px; }
 
+.pdp-policy-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 /* ── Recommended size emphasis ──────────────────────────────────── */
 .pdp-size-btn { position: relative; }
 .pdp-size-btn--recommended { border-color: rgba(201, 169, 110, 0.4); }
@@ -1797,6 +1803,7 @@
 .tb-btn--like {
   width: 56px;
   height: 56px;
+  
   border-radius: 50%;
   border: 2px solid var(--border);
   font-size: 22px;

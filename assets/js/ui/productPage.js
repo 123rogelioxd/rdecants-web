@@ -40,7 +40,7 @@ import { getRelatedProducts } from '../recommendations/upsells.js?v=2026.06.04.2
 import { getReasons } from '../recommendations/reasoning.js?v=2026.06.04.2';
 import { buildFragranceProfileHtml } from './fragranceProfile.js?v=2026.06.04.2';
 import { getNoviceLead, getReturningUserLine } from './pdpNovice.js?v=2026.06.04.2';
-import { MAX_PDP_WHY_REASONS, MAX_VISIBLE_BADGES } from './displayLimits.js?v=2026.06.04.2';
+import { MAX_PDP_WHY_REASONS } from './displayLimits.js?v=2026.06.04.2';
 import {
   resolveDiscoverySets,
   renderDiscoverySetsFallback,
@@ -79,7 +79,7 @@ export function buildProductPageHtml(product) {
     : '';
   const genderHtml = _genderBadgeHtml(product.gender, 'pdp-gender');
 
-  const guidanceHtml = getDisplayBadges(product, { limit: MAX_VISIBLE_BADGES })
+  const guidanceHtml = getDisplayBadges(product, { context: 'product_detail' })
     .map(g => `<span class="guidance-chip guidance-chip--${_escape(g.key)}">${_escape(g.label)}</span>`)
     .join('');
 
@@ -417,7 +417,7 @@ function _whyYouMightLikeBlock(product) {
 }
 
 function _technicalBlock(product) {
-  const html = [_notesDetailHtml(product), buildFragranceProfileHtml(product)].filter(Boolean).join('');
+  const html = [_pdpBadgeDetailHtml(product), _notesDetailHtml(product), buildFragranceProfileHtml(product)].filter(Boolean).join('');
   if (!html) return '';
   return `
     <details class="pdp-intelligence pdp-tech" id="pdp-tech">
@@ -427,6 +427,21 @@ function _technicalBlock(product) {
       </summary>
       <div class="pdp-tech-body">${html}</div>
     </details>`;
+}
+
+function _pdpBadgeDetailHtml(product) {
+  const heroKeys = new Set(getDisplayBadges(product, { context: 'product_detail' }).map(b => b.key));
+  const extra = getDisplayBadges(product, { context: 'product_detail', limit: 6 })
+    .filter(b => !heroKeys.has(b.key));
+  if (!extra.length) return '';
+
+  return `
+    <section class="fp-block pdp-policy-badges" aria-labelledby="pdp-policy-badges-h">
+      <h3 class="fp-heading" id="pdp-policy-badges-h">Tambien destaca por</h3>
+      <div class="pdp-policy-badge-row">
+        ${extra.map(b => `<span class="guidance-chip guidance-chip--${_escape(b.key)}">${_escape(b.label)}</span>`).join('')}
+      </div>
+    </section>`;
 }
 
 function _notesDetailHtml(product) {
