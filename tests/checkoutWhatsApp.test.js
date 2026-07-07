@@ -62,6 +62,56 @@ test('buildWhatsAppMessage uses singular copy for one decant', () => {
   assert.doesNotMatch(message, /Me interesan estos decants:/);
 });
 
+test('buildWhatsAppMessage shows subtotal / código / descuento / total when a discount is applied', () => {
+  const message = buildWhatsAppMessage(
+    [
+      { name: 'VICTORY', house: 'INVICTUS', size: 5, price: 170, qty: 1 },
+      { name: 'ONE MILLION LUCKY', house: 'PACO RABANNE', size: 5, price: 380, qty: 1 },
+    ],
+    550,
+    { name: 'Roger' },
+    '',
+    { code: 'VIP8', amount: 44, total: 506 },
+  );
+
+  assert.match(message, /Subtotal: \$550 MXN/);
+  assert.match(message, /Código: VIP8/);
+  assert.match(message, /Descuento: -\$44 MXN/);
+  assert.match(message, /Total: \$506 MXN/);
+});
+
+test('buildWhatsAppMessage omits discount rows when no discount is applied', () => {
+  const message = buildWhatsAppMessage(
+    [{ name: 'VICTORY', house: 'INVICTUS', size: 5, price: 170, qty: 1 }],
+    170,
+    { name: 'Roger' },
+  );
+  assert.doesNotMatch(message, /Subtotal:|Código:|Descuento:/);
+  assert.match(message, /Total: \$170 MXN/);
+});
+
+test('buildWebOrderPayload forwards discount_code only — never the amount as truth', async () => {
+  const originalGetProductById = CatalogProvider.getProductById;
+  CatalogProvider.getProductById = async () => ({
+    id: 'p1', product_id: 'p1', gender: 'male',
+    variants: [{ size: 5, price: 170, stock: 4, availability: 4, soldOut: false, variant_id: '5' }],
+  });
+
+  try {
+    const payload = await buildWebOrderPayload(
+      [{ key: 'p1-5', sourceId: 'p1', product_id: 'p1', name: 'Sauvage', house: 'Dior', type: 'product', size: 5, price: 170, qty: 1, image: '/x.webp' }],
+      { name: 'Roger' },
+      { discountCode: 'VIP8' },
+    );
+
+    assert.equal(payload.discount_code, 'VIP8');
+    assert.ok(!('discount_amount' in payload), 'discount_amount is never sent as truth');
+    assert.ok(!('total' in payload), 'final total is never sent as truth');
+  } finally {
+    CatalogProvider.getProductById = originalGetProductById;
+  }
+});
+
 test('buildWebOrderPayload keeps existing order payload shape when product has gender', async () => {
   const originalGetProductById = CatalogProvider.getProductById;
   CatalogProvider.getProductById = async () => ({
