@@ -3046,6 +3046,175 @@
   padding: 14px;
 }
 
+/* hidden-attribute fix: the flex/display rules below (and on .shipping-status)
+   would otherwise mask the [hidden] attribute the JS toggles. Scoped guard so
+   `el.hidden = true` always wins inside the cart drawer. */
+.cart-drawer [hidden] { display: none !important; }
+
+/* ── Discount code (PREVIEW only — R Supply OS is the source of truth) ── */
+.cart-discount {
+  margin-bottom: 12px;
+}
+
+.cart-discount-form {
+  display: flex;
+  gap: 8px;
+}
+
+.cart-discount-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--white);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 12px;
+  min-height: 46px;
+  outline: none;
+  transition: border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.cart-discount-input::placeholder {
+  color: rgba(255, 255, 255, 0.28);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.cart-discount-input:focus {
+  background: rgba(255, 255, 255, 0.065);
+  border-color: rgba(201, 169, 110, 0.45);
+  box-shadow: 0 0 0 1px rgba(201, 169, 110, 0.08);
+}
+
+.cart-discount-apply {
+  flex: 0 0 auto;
+  min-height: 46px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: 1px solid rgba(201, 169, 110, 0.42);
+  background: rgba(201, 169, 110, 0.12);
+  color: var(--accent);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition: var(--transition);
+}
+
+.cart-discount-apply:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--black);
+}
+
+.cart-discount-apply:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cart-discount.is-loading .cart-discount-input { opacity: 0.6; }
+
+.cart-discount-applied {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(37, 211, 102, 0.32);
+  background: rgba(37, 211, 102, 0.08);
+  border-radius: 10px;
+}
+
+.cart-discount-applied-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.cart-discount-tag {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #25D366;
+  background: rgba(37, 211, 102, 0.14);
+  border: 1px solid rgba(37, 211, 102, 0.3);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.cart-discount-applied-text {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cart-discount-remove {
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 6px 4px;
+  min-height: 32px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.cart-discount-remove:hover { color: var(--white); }
+
+.cart-discount-msg {
+  margin: 8px 2px 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+.cart-discount-msg[data-tone="neutral"] { color: rgba(255, 255, 255, 0.5); }
+.cart-discount-msg[data-tone="invalid"] { color: var(--danger); }
+.cart-discount-msg[data-tone="error"]   { color: rgba(201, 169, 110, 0.95); }
+
+/* Summary breakdown rows (subtotal / discount) */
+.cart-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.cart-summary-row-value { font-variant-numeric: tabular-nums; }
+
+.cart-summary-row--discount,
+.cart-summary-row--discount .cart-summary-row-value { color: #25D366; }
+.cart-summary-row--discount .cart-summary-row-value { font-weight: 500; }
+
+.cart-summary-row-code {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(37, 211, 102, 0.85);
+}
+
+.cart-summary .cart-total-row {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 .cart-action-panel {
   background:
     linear-gradient(180deg, rgba(5, 5, 5, 0), rgba(5, 5, 5, 0.96) 12%),
@@ -4227,6 +4396,7 @@
   font-weight: 300;
   color: var(--accent);
   transition: all 0.25s ease;
+  white-space: nowrap;
 }
 
 .pdm-price-unit {
@@ -4258,33 +4428,9 @@
   justify-content: center;
 }
 
-.pdm-btn-wa {
-  appearance: none;
-  background: transparent;
-  border: 0;
-  color: rgba(255, 255, 255, 0.46);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  padding: 4px 0;
-  transition: var(--transition);
-}
-
-.pdm-btn-wa:hover {
-  color: #25D366;
-}
-
-.pdm-secondary-actions {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 14px;
-  justify-content: center;
-  min-height: 18px;
-}
-
 .pdm-details-link {
+  display: inline-flex;
+  margin-top: 12px;
   color: rgba(255, 255, 255, 0.5);
   font-size: 10px;
   font-weight: 500;
@@ -4508,19 +4654,9 @@
     gap: 6px;
   }
 
-  .pdm-secondary-actions {
-    gap: 8px;
-  }
-
   .pdm-btn-add {
     min-height: 44px;
     padding: 10px 8px;
-  }
-
-  .pdm-btn-wa {
-    letter-spacing: 0.08em;
-    min-height: auto;
-    padding: 2px 0;
   }
 
   .pdm-related {
@@ -5820,7 +5956,6 @@ input[type="search"]::-webkit-search-decoration,
 .btn-gold,
 .btn-whatsapp,
 .btn-continue,
-.pdm-btn-wa,
 .size-btn,
 .qty-btn,
 .sf-dp,
@@ -5835,7 +5970,6 @@ input[type="search"]::-webkit-search-decoration,
 .btn-gold:active,
 .btn-whatsapp:active:not(:disabled),
 .btn-continue:active,
-.pdm-btn-wa:active,
 .size-btn:active,
 .sf-dp:active,
 .sf-mood:active,
@@ -5847,8 +5981,7 @@ input[type="search"]::-webkit-search-decoration,
 
 .btn-primary.is-loading,
 .btn-gold.is-loading,
-.btn-whatsapp.is-loading,
-.pdm-btn-wa.is-loading {
+.btn-whatsapp.is-loading {
   position: relative;
   pointer-events: none;
   opacity: 0.78;
@@ -5856,8 +5989,7 @@ input[type="search"]::-webkit-search-decoration,
 
 .btn-primary.is-loading::before,
 .btn-gold.is-loading::before,
-.btn-whatsapp.is-loading::before,
-.pdm-btn-wa.is-loading::before {
+.btn-whatsapp.is-loading::before {
   content: '';
   width: 12px;
   height: 12px;

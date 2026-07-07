@@ -48,6 +48,25 @@ async function _post(path, payload) {
   return data;
 }
 
+/* Non-throwing POST — resolves to { ok, status, data } for both success and
+   validation responses. Used by the discount preview, where a rejected code
+   (4xx) is an expected, customer-facing outcome, not an exception. Only a
+   network/transport failure rejects. */
+async function _postSafe(path, payload) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    credentials: 'omit',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json().catch(() => null);
+  return { ok: res.ok && data?.ok !== false, status: res.status, data };
+}
+
 export const ApiClient = {
   getDecantsProducts: () => _get('/api/web/catalog'),
   getCatalog:         () => _get('/api/web/catalog'),
@@ -55,4 +74,7 @@ export const ApiClient = {
   getTrending:        () => _get('/api/web/trending'),
   getPacks:           () => _get('/api/web/packs'),
   createWebOrder:     (payload) => _post('/api/web/orders', payload),
+  /* Discount PREVIEW only — R Supply OS is the source of truth and recalculates
+     during Web Order creation. The storefront never computes discounts itself. */
+  previewDiscount:    (payload) => _postSafe('/api/web/discounts/preview', payload),
 };

@@ -4,6 +4,7 @@
    ============================================================= */
 
 import { Cart }      from './cart.js?v=2026.06.04.2';
+import { Discount }  from './discount.js?v=2026.06.04.2';
 import { ApiClient } from '../api/client.js?v=2026.06.04.2';
 import { CatalogProvider } from '../providers/catalog.js?v=2026.06.04.2';
 import { Tracker }   from '../tracking/tracker.js';
@@ -111,9 +112,12 @@ function _performCheckout(phoneNumber) {
   if (!shipping.isEligible) Tracker.amountMissingForShipping(shipping);
 
   /* Snapshot what we send — the background order is built from this and is
-     unaffected by the cart being cleared after a successful launch. */
+     unaffected by the cart being cleared after a successful launch. The discount
+     shown here is the last PREVIEW; R Supply OS recalculates the real total when
+     it creates the order (we only forward the code). */
   const orderItems = items;
-  const messageText = buildWhatsAppMessage(orderItems, total, data);
+  const discount = Discount.applied;
+  const messageText = buildWhatsAppMessage(orderItems, total, data, '', discount);
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(messageText)}`;
 
   /* 1) WhatsApp first. */
@@ -121,30 +125,34 @@ function _performCheckout(phoneNumber) {
   const opened = window.open(whatsappUrl, '_blank');
 
   if (!opened) {
-    /* Popup blocked — keep the cart intact, offer a manual link, still try
-       to record the order in the background. No lost carts. */
+    /* Popup blocked — keep the cart AND discount intact, offer a manual link,
+       still try to record the order in the background. No lost carts. */
     _showManualWhatsApp(whatsappUrl);
-    _createOrderInBackground(orderItems, data, total);
+    _createOrderInBackground(orderItems, data, total, discount);
     return;
   }
 
-  /* 2) Launch succeeded → the customer's job is done. Clear the cart and
-     record the order in the background. */
+  /* 2) Launch succeeded → the customer's job is done. Clear the cart AND the
+     applied discount (both belong to the order we just handed off), then record
+     the order in the background. */
   _showMessage('Listo, te llevamos a WhatsApp para finalizar tu pedido.', 'success');
   showToast('Listo, abrimos WhatsApp para finalizar tu pedido.');
   Cart.clear();
-  _createOrderInBackground(orderItems, data, total);
+  Discount.clear();
+  _createOrderInBackground(orderItems, data, total, discount);
 }
 
 /* Records the system order WITHOUT ever blocking the customer or showing them
    an error. On failure: log + emit background_order_failure (the admin-notify
    path). The customer never sees a system error. */
-async function _createOrderInBackground(items, data, total) {
+async function _createOrderInBackground(items, data, total, discount = null) {
   try {
     const orderable = items.filter(item => item.type !== 'pack');
     if (!orderable.length) return; // pure-pack orders are coordinated in chat
 
-    const payload = await buildWebOrderPayload(items, data);
+    /* Forward ONLY the code — R Supply OS validates and recalculates. We never
+       send the previewed amount/total as truth. */
+    const payload = await buildWebOrderPayload(items, data, { discountCode: discount?.code });
     if (!payload.items.length) return;
 
     const response = await ApiClient.createWebOrder(payload);
@@ -152,8 +160,11 @@ async function _createOrderInBackground(items, data, total) {
     if (!response?.ok || !order?.folio) throw new Error('No se pudo crear el pedido en sistema.');
 
     localStorage.setItem(LAST_ORDER_KEY, order.folio || '');
-    Tracker.checkoutCompleted(items, total, { folio: order.folio });
-    Tracker.backgroundOrderSuccess(order.folio, total);
+    /* If the backend rejected/adjusted the discount, trust its response — the
+       preview was only ever an estimate. Recorded for observability. */
+    const finalTotal = _money(order.total) || total;
+    Tracker.checkoutCompleted(items, finalTotal, { folio: order.folio });
+    Tracker.backgroundOrderSuccess(order.folio, finalTotal);
   } catch (error) {
     _logCheckoutError(error);
     Tracker.backgroundOrderFailure(String(error?.message || 'error'), total);
@@ -207,14 +218,14 @@ export function validateCheckout() {
   return null;
 }
 
-export async function buildWebOrderPayload(items, data) {
+export async function buildWebOrderPayload(items, data, options = {}) {
   const orderItems = [];
 
   for (const item of items.filter(item => item.type !== 'pack')) {
     orderItems.push(await _buildOrderItem(item));
   }
 
-  return {
+  const payload = {
     customer: {
       name: data.name || null,
       phone: data.phone || null,
@@ -235,6 +246,14 @@ export async function buildWebOrderPayload(items, data) {
       })),
     },
   };
+
+  /* Discount is opt-in and code-only. Omitting the key when absent keeps the
+     payload shape unchanged for the no-discount path. R Supply OS is the source
+     of truth: it validates the code and recalculates totals server-side. */
+  const discountCode = options.discountCode || null;
+  if (discountCode) payload.discount_code = discountCode;
+
+  return payload;
 }
 
 async function _buildOrderItem(item) {
@@ -259,7 +278,7 @@ async function _buildOrderItem(item) {
   };
 }
 
-export function buildWhatsAppMessage(items, total, data, folio = '') {
+export function buildWhatsAppMessage(items, total, data, folio = '', discount = null) {
   const lines = [
     'Hola 👋',
     '',
@@ -270,7 +289,19 @@ export function buildWhatsAppMessage(items, total, data, folio = '') {
     lines.push(`• ${_whatsAppItemLine(item)}`);
   });
 
-  lines.push('', `Total: ${formatPrice(total, 'Por confirmar')}`);
+  /* `total` is the SUBTOTAL (Cart.total()). With a valid preview we show the
+     breakdown; the final total is only an estimate — R Supply OS confirms it. */
+  const amount = _money(discount?.amount);
+  if (discount?.code && amount > 0) {
+    const finalTotal = _money(discount.total) || Math.max(0, _money(total) - amount);
+    lines.push('');
+    lines.push(`Subtotal: ${formatPrice(total, 'Por confirmar')}`);
+    lines.push(`Código: ${discount.code}`);
+    lines.push(`Descuento: -${formatPrice(amount, '$0')}`);
+    lines.push(`Total: ${formatPrice(finalTotal, 'Por confirmar')}`);
+  } else {
+    lines.push('', `Total: ${formatPrice(total, 'Por confirmar')}`);
+  }
 
   if (data.name) {
     lines.push('', `Mi nombre es ${data.name}.`);
@@ -450,6 +481,11 @@ function _validVariantId(value) {
 function _selectedVariantStock(variant) {
   const stock = Number(variant?.stock);
   return Number.isFinite(stock) && stock > 0 ? stock : 0;
+}
+
+function _money(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : 0;
 }
 
 function _whatsAppItemLine(item) {

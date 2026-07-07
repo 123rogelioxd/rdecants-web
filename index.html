@@ -35,12 +35,12 @@
     HTML itself is served no-cache so browsers always get
     the latest version string.
 
-  Current version: 2026.06.17.2 - update all ?v= values on deploy.
+  Current version: 2026.07.07.1 - update all ?v= values on deploy.
 -->
-<link rel="stylesheet" href="assets/css/tokens.css?v=2026.06.17.2">
-<link rel="stylesheet" href="assets/css/animations.css?v=2026.06.17.2">
-<link rel="stylesheet" href="assets/css/components.css?v=2026.06.17.2">
-<link rel="stylesheet" href="assets/css/styles.css?v=2026.06.17.2">
+<link rel="stylesheet" href="assets/css/tokens.css?v=2026.07.07.1">
+<link rel="stylesheet" href="assets/css/animations.css?v=2026.07.07.1">
+<link rel="stylesheet" href="assets/css/components.css?v=2026.07.07.1">
+<link rel="stylesheet" href="assets/css/styles.css?v=2026.07.07.1">
 </head>
 
 <body>
@@ -254,10 +254,36 @@
     </div>
 
     <div class="cart-action-panel">
+      <div class="cart-discount" id="cart-discount">
+        <form class="cart-discount-form" id="cart-discount-form">
+          <input class="cart-discount-input" id="cart-discount-input" type="text"
+                 placeholder="Código de descuento" autocomplete="off"
+                 autocapitalize="characters" spellcheck="false"
+                 aria-label="Código de descuento">
+          <button class="cart-discount-apply" id="cart-discount-apply" type="submit">Aplicar</button>
+        </form>
+        <div class="cart-discount-applied" id="cart-discount-applied" hidden>
+          <div class="cart-discount-applied-info">
+            <span class="cart-discount-tag" id="cart-discount-code"></span>
+            <span class="cart-discount-applied-text" id="cart-discount-saved">Código aplicado</span>
+          </div>
+          <button class="cart-discount-remove" id="cart-discount-remove" type="button" aria-label="Quitar código de descuento">Quitar</button>
+        </div>
+        <p class="cart-discount-msg" id="cart-discount-msg" data-tone="neutral" aria-live="polite" hidden></p>
+      </div>
+
       <div class="cart-summary" aria-label="Resumen del pedido">
         <div class="cart-summary-head">
           <span class="cart-summary-title">Resumen</span>
           <span class="cart-summary-count" id="cart-summary-count">0 artículos</span>
+        </div>
+        <div class="cart-summary-row">
+          <span class="cart-summary-row-label">Subtotal</span>
+          <span class="cart-summary-row-value" id="cart-subtotal-value">$0 MXN</span>
+        </div>
+        <div class="cart-summary-row cart-summary-row--discount" id="cart-discount-row" hidden>
+          <span class="cart-summary-row-label">Descuento <span class="cart-summary-row-code" id="cart-discount-row-code"></span></span>
+          <span class="cart-summary-row-value" id="cart-discount-row-value">-$0 MXN</span>
         </div>
         <div class="cart-total-row">
           <span class="cart-total-label">Total</span>
@@ -305,7 +331,7 @@
   ?v= must match the version in CSS links above.
   Update on every deploy: increment VERSION file + all ?v= strings.
 -->
-<script type="module" src="assets/js/app.js?v=2026.06.17.2"></script>
+<script type="module" src="assets/js/app.js?v=2026.07.07.1"></script>
 
 </body>
 </html>

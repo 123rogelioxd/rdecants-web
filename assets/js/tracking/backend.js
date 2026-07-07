@@ -24,6 +24,10 @@ export const API_EVENT_MAP = {
   recommended_product_added: 'recommended_product_added',
   background_order_success:  'background_order_success',
   background_order_failure:  'background_order_failure',
+  discount_apply_attempt:    'discount_apply_attempt',
+  discount_applied:          'discount_applied',
+  discount_invalid:          'discount_invalid',
+  discount_removed:          'discount_removed',
   recommendation_viewed:     'recommendation_viewed',
   recommendation_clicked:    'recommendation_clicked',
   recommendation_added:      'recommendation_added',
@@ -165,6 +169,13 @@ export function toApiPayload(event, payload = {}) {
           rail: 'shipping_completion',
         },
       };
+    case 'discount_apply_attempt':
+    case 'discount_invalid':
+      return { metadata: { code: payload.code } };
+    case 'discount_applied':
+      return { metadata: { code: payload.code, discount_amount: payload.amount } };
+    case 'discount_removed':
+      return {};
     case 'background_order_success':
       return { metadata: { folio: payload.folio, cart_total: payload.total } };
     case 'background_order_failure':

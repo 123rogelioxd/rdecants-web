@@ -10,7 +10,8 @@ import { Cart }                           from './cart/cart.js?v=2026.06.04.2';
 import { setupCheckout }                  from './cart/checkout.js?v=2026.06.04.2';
 import { renderCart, updateCartCount,
          openCart, closeCart,
-         toggleCart, sendWhatsApp }       from './cart/render.js?v=2026.06.04.2';
+         toggleCart, sendWhatsApp,
+         setupDiscountControls }          from './cart/render.js?v=2026.06.04.2';
 import { renderProducts }                   from './catalog/render.js?v=2026.06.04.2';
 import { Recommendations }                 from './recommendations/index.js?v=2026.06.04.2';
 import { setupAssistant }                   from './ui/assistant.js?v=2026.06.04.2';
@@ -161,6 +162,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   /* Initial cart state */
   setupCheckout();
+  setupDiscountControls();
   await Cart.reconcile({ silent: true });
   renderCart();
   updateCartCount();

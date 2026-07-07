@@ -4,11 +4,13 @@
    ============================================================= */
 
 import { Cart }      from './cart.js?v=2026.06.04.2';
+import { Discount, API_DOWN_MSG } from './discount.js?v=2026.06.04.2';
 import { sendCheckoutWhatsApp,
          syncCheckoutAvailability,
          trackCheckoutStarted } from './checkout.js?v=2026.06.04.2';
 import { EventBus }  from '../core/events.js';
 import { Tracker }   from '../tracking/tracker.js';
+import { showToast } from '../ui/toast.js';
 import { formatPrice, isValidPrice, getDefaultVariant } from '../utils/prices.js?v=2026.06.04.2';
 import { CatalogProvider } from '../providers/catalog.js?v=2026.06.04.2';
 import { getCartUpsells, getShippingCompletionUpsell } from '../recommendations/upsells.js?v=2026.06.04.2';
@@ -22,7 +24,6 @@ let _prevFocus = null;
 /* ── Render ─────────────────────────────────────────────────── */
 export function renderCart() {
   const container = document.getElementById('cart-items');
-  const totalEl   = document.getElementById('cart-total');
   if (!container) return;
 
   const items = Cart.items;
@@ -33,14 +34,16 @@ export function renderCart() {
       <div class="cart-empty">
         <div class="cart-empty-icon">R</div>
         <h3 class="cart-empty-title">Tu carrito est&aacute; vac&iacute;o</h3>
-        <p class="cart-empty-desc">Agrega tus decants favoritos para armar tu pedido.</p>
+        <p class="cart-empty-desc">Agrega un decant para armar tu pedido.</p>
         <button class="btn-continue cart-empty-cta" onclick="window.__rd.ui.scrollToCatalog()">
           Explorar cat&aacute;logo
         </button>
       </div>
     `;
-    if (totalEl) totalEl.textContent = '0';
-    _updateSummary(0, 0);
+    /* An empty cart can't carry a discount — drop any stale preview. */
+    Discount.remove();
+    _renderSummary();
+    renderDiscountPanel();
     syncCheckoutAvailability();
     return;
   }
@@ -92,10 +95,11 @@ export function renderCart() {
     <section class="cart-upsells" id="cart-upsells" aria-label="Completa tu pedido" hidden></section>
   `;
 
-  if (totalEl) totalEl.textContent = total;
-  _updateSummary(count, total);
+  _renderSummary();
+  renderDiscountPanel();
   syncCheckoutAvailability();
   _renderUpsells();
+  _scheduleRevalidation();
 }
 
 /* ── Add-on upsells (operational-first, low friction) ───────── */
@@ -242,12 +246,156 @@ function _upsellRow({ product, variant }, idx) {
     </div>`;
 }
 
-function _updateSummary(count, total) {
-  const countEl = document.getElementById('cart-summary-count');
-  const subtotalEl = document.getElementById('cart-subtotal');
+/* ── Summary: subtotal · discount · final total ─────────────── */
+function _renderSummary() {
+  const count = Cart.count();
+  const subtotal = Cart.total();
+  const applied = Discount.applied;
+  const finalTotal = Discount.totalFor(subtotal);
 
+  const countEl = document.getElementById('cart-summary-count');
   if (countEl) countEl.textContent = `${count} ${count === 1 ? 'artículo' : 'artículos'}`;
-  if (subtotalEl) subtotalEl.textContent = formatPrice(total, '$0 MXN');
+
+  const subtotalEl = document.getElementById('cart-subtotal-value');
+  if (subtotalEl) subtotalEl.textContent = formatPrice(subtotal, '$0 MXN');
+
+  const discountRow = document.getElementById('cart-discount-row');
+  const discountCodeEl = document.getElementById('cart-discount-row-code');
+  const discountValueEl = document.getElementById('cart-discount-row-value');
+  if (discountRow) {
+    const hasDiscount = Boolean(applied) && Discount.amount() > 0;
+    discountRow.hidden = !hasDiscount;
+    if (hasDiscount) {
+      if (discountCodeEl) discountCodeEl.textContent = applied.normalizedCode || applied.code;
+      if (discountValueEl) discountValueEl.textContent = `-${formatPrice(Discount.amount(), '$0 MXN')}`;
+    }
+  }
+
+  const totalEl = document.getElementById('cart-total');
+  if (totalEl) totalEl.textContent = finalTotal;
+}
+
+/* ── Discount panel: input ⇄ applied badge, transient messages ── */
+export function renderDiscountPanel() {
+  const wrap = document.getElementById('cart-discount');
+  if (!wrap) return;
+
+  const form = document.getElementById('cart-discount-form');
+  const applied = document.getElementById('cart-discount-applied');
+  const codeEl = document.getElementById('cart-discount-code');
+  const savedEl = document.getElementById('cart-discount-saved');
+  const state = Discount.applied;
+
+  if (state) {
+    if (form) form.hidden = true;
+    if (applied) applied.hidden = false;
+    if (codeEl) codeEl.textContent = state.normalizedCode || state.code;
+    if (savedEl) {
+      const amount = Discount.amount();
+      savedEl.textContent = amount > 0 ? `Te descontamos ${formatPrice(amount, '')}`.trim() : 'Código aplicado';
+    }
+  } else {
+    if (form) form.hidden = false;
+    if (applied) applied.hidden = true;
+  }
+}
+
+function _setDiscountMessage(message, tone = 'neutral') {
+  const el = document.getElementById('cart-discount-msg');
+  if (!el) return;
+  const text = String(message ?? '').trim();
+  el.textContent = text;
+  el.dataset.tone = tone;
+  el.hidden = !text;
+}
+
+function _setDiscountLoading(isLoading) {
+  const wrap = document.getElementById('cart-discount');
+  const input = document.getElementById('cart-discount-input');
+  const button = document.getElementById('cart-discount-apply');
+  wrap?.classList.toggle('is-loading', isLoading);
+  if (input) input.disabled = isLoading;
+  if (button) {
+    button.disabled = isLoading;
+    button.textContent = isLoading ? 'Validando…' : 'Aplicar';
+  }
+}
+
+/* One-time wiring for the discount form (apply/remove). Idempotent. */
+let _discountWired = false;
+export function setupDiscountControls() {
+  if (_discountWired) return;
+  const form = document.getElementById('cart-discount-form');
+  const removeBtn = document.getElementById('cart-discount-remove');
+  if (!form && !removeBtn) return;
+  _discountWired = true;
+
+  form?.addEventListener('submit', e => {
+    e.preventDefault();
+    _applyDiscountFromInput();
+  });
+
+  const input = document.getElementById('cart-discount-input');
+  input?.addEventListener('input', () => _setDiscountMessage('', 'neutral'));
+
+  removeBtn?.addEventListener('click', () => {
+    Discount.remove();
+    _setDiscountMessage('', 'neutral');
+    Tracker.discountRemoved();
+    const field = document.getElementById('cart-discount-input');
+    if (field) field.value = '';
+  });
+
+  renderDiscountPanel();
+}
+
+async function _applyDiscountFromInput() {
+  const input = document.getElementById('cart-discount-input');
+  const code = input?.value ?? '';
+  if (!code.trim()) {
+    _setDiscountMessage('Escribe un código para aplicarlo.', 'invalid');
+    return;
+  }
+
+  _setDiscountLoading(true);
+  Tracker.discountApplyAttempt(code);
+  let result;
+  try {
+    result = await Discount.apply(code, Cart.items, Cart.total());
+  } finally {
+    _setDiscountLoading(false);
+  }
+
+  if (result.status === 'valid') {
+    _setDiscountMessage('', 'neutral');
+    Tracker.discountApplied(result.normalizedCode, result.amount);
+    /* renderDiscountPanel + summary refresh via the discount:updated event. */
+  } else if (result.status === 'invalid') {
+    _setDiscountMessage(result.message, 'invalid');
+    Tracker.discountInvalid(code);
+  } else {
+    /* error/empty → never block checkout. */
+    _setDiscountMessage(result.message || API_DOWN_MSG, 'error');
+  }
+}
+
+/* Re-validate an applied code when the cart changes. Debounced so rapid qty
+   taps trigger a single request. If it no longer validates, the module removes
+   it and we surface a safe notice — no stale totals. */
+let _revalidateTimer = null;
+function _scheduleRevalidation() {
+  if (!Discount.isApplied()) return;
+  clearTimeout(_revalidateTimer);
+  _revalidateTimer = setTimeout(async () => {
+    if (!Discount.isApplied() || !Cart.items.length) return;
+    const result = await Discount.revalidate(Cart.items, Cart.total());
+    if (result.status === 'invalid') {
+      _setDiscountMessage('Tu código ya no aplica a este pedido. Puedes continuar sin descuento.', 'invalid');
+      showToast('Actualizamos tu total: el código ya no aplica.');
+    } else if (result.status === 'error') {
+      _setDiscountMessage('No pudimos revalidar el código. Continúa y lo confirmamos por WhatsApp.', 'error');
+    }
+  }, 550);
 }
 
 export function updateCartCount() {
@@ -329,4 +477,11 @@ function _handleCartKey(e) {
 EventBus.on('cart:updated', () => {
   renderCart();
   updateCartCount();
+});
+
+/* Discount applied/removed → refresh only the summary + panel (leave the item
+   list and the discount input's focus untouched). */
+EventBus.on('discount:updated', () => {
+  _renderSummary();
+  renderDiscountPanel();
 });

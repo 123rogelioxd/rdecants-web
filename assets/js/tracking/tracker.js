@@ -42,6 +42,10 @@ export const EVENTS = {
   RECOMMENDED_PRODUCT_ADDED: 'recommended_product_added',
   BACKGROUND_ORDER_SUCCESS: 'background_order_success',
   BACKGROUND_ORDER_FAILURE: 'background_order_failure',
+  DISCOUNT_APPLY_ATTEMPT: 'discount_apply_attempt',
+  DISCOUNT_APPLIED: 'discount_applied',
+  DISCOUNT_INVALID: 'discount_invalid',
+  DISCOUNT_REMOVED: 'discount_removed',
   CHECKOUT_STARTED: 'checkout_started',
   CHECKOUT_COMPLETED: 'checkout_completed',
 
@@ -391,6 +395,23 @@ export const Tracker = {
     this.emit(EVENTS.BACKGROUND_ORDER_FAILURE, { reason, total }, { allowDuplicate: true });
   },
 
+  /* ── Discount preview (R Supply OS is the source of truth) ────── */
+  discountApplyAttempt(code = '') {
+    this.emit(EVENTS.DISCOUNT_APPLY_ATTEMPT, { code: _normalizeCode(code) }, { allowDuplicate: true });
+  },
+
+  discountApplied(code = '', amount = 0) {
+    this.emit(EVENTS.DISCOUNT_APPLIED, { code: _normalizeCode(code), amount }, { allowDuplicate: true });
+  },
+
+  discountInvalid(code = '') {
+    this.emit(EVENTS.DISCOUNT_INVALID, { code: _normalizeCode(code) }, { allowDuplicate: true });
+  },
+
+  discountRemoved() {
+    this.emit(EVENTS.DISCOUNT_REMOVED, {}, { allowDuplicate: true });
+  },
+
   checkoutStarted(cart = [], total = 0) {
     this.emit(EVENTS.CHECKOUT_STARTED, {
       itemCount: cart.length,
@@ -516,6 +537,10 @@ export const Tracker = {
     this.emit(EVENTS.TASTE_BUILDER_RECOMMENDATIONS_CLICKED, { likes_count: likesCount });
   },
 };
+
+function _normalizeCode(code) {
+  return String(code ?? '').trim().toUpperCase().replace(/\s+/g, '');
+}
 
 function _productPayload(product = {}) {
   return {
