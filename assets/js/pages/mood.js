@@ -7,6 +7,7 @@ import { setupCheckout } from '../cart/checkout.js?v=2026.06.04.2';
 import {
   renderCart, updateCartCount,
   openCart, closeCart, toggleCart, sendWhatsApp,
+  setupDiscountControls, setupCampaignAttribution,
 } from '../cart/render.js?v=2026.06.04.2';
 import { CatalogProvider } from '../providers/catalog.js?v=2026.06.04.2';
 import { setupHeader } from '../ui/header.js';
@@ -42,9 +43,11 @@ window.sendWhatsApp = sendWhatsApp;
 document.addEventListener('DOMContentLoaded', async () => {
   setupImageStates();
   setupCheckout();
+  setupDiscountControls();
   await Cart.reconcile({ silent: true });
   renderCart();
   updateCartCount();
+  setupCampaignAttribution();
   setupHeader();
 
   const root = document.getElementById('mood-root');

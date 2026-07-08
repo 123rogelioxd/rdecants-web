@@ -28,6 +28,11 @@ export const API_EVENT_MAP = {
   discount_applied:          'discount_applied',
   discount_invalid:          'discount_invalid',
   discount_removed:          'discount_removed',
+  campaign_detected:                    'campaign_detected',
+  campaign_promo_auto_apply_attempted:  'campaign_promo_auto_apply_attempted',
+  campaign_promo_applied:               'campaign_promo_applied',
+  campaign_promo_rejected:              'campaign_promo_rejected',
+  campaign_checkout_attributed:         'campaign_checkout_attributed',
   recommendation_viewed:     'recommendation_viewed',
   recommendation_clicked:    'recommendation_clicked',
   recommendation_added:      'recommendation_added',
@@ -176,6 +181,32 @@ export function toApiPayload(event, payload = {}) {
       return { metadata: { code: payload.code, discount_amount: payload.amount } };
     case 'discount_removed':
       return {};
+    case 'campaign_detected':
+    case 'campaign_promo_auto_apply_attempted':
+    case 'campaign_promo_rejected':
+    case 'campaign_checkout_attributed':
+      return {
+        metadata: {
+          code: payload.code,
+          promo: payload.promo,
+          campaign_slug: payload.campaign_slug,
+          utm_campaign: payload.utm_campaign,
+          utm_source: payload.utm_source,
+          utm_medium: payload.utm_medium,
+        },
+      };
+    case 'campaign_promo_applied':
+      return {
+        metadata: {
+          code: payload.code,
+          promo: payload.promo,
+          campaign_slug: payload.campaign_slug,
+          utm_campaign: payload.utm_campaign,
+          utm_source: payload.utm_source,
+          utm_medium: payload.utm_medium,
+          discount_amount: payload.amount,
+        },
+      };
     case 'background_order_success':
       return { metadata: { folio: payload.folio, cart_total: payload.total } };
     case 'background_order_failure':

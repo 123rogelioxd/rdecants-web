@@ -11,7 +11,8 @@ import { setupCheckout }                  from './cart/checkout.js?v=2026.06.04.
 import { renderCart, updateCartCount,
          openCart, closeCart,
          toggleCart, sendWhatsApp,
-         setupDiscountControls }          from './cart/render.js?v=2026.06.04.2';
+         setupDiscountControls,
+         setupCampaignAttribution }       from './cart/render.js?v=2026.06.04.2';
 import { renderProducts }                   from './catalog/render.js?v=2026.06.04.2';
 import { Recommendations }                 from './recommendations/index.js?v=2026.06.04.2';
 import { setupAssistant }                   from './ui/assistant.js?v=2026.06.04.2';
@@ -166,6 +167,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   await Cart.reconcile({ silent: true });
   renderCart();
   updateCartCount();
+
+  /* Campaign links from R Supply OS: read ?promo/utm params, persist attribution
+     and auto-apply the promo when possible. Non-blocking. */
+  setupCampaignAttribution();
 
   /* Render catalog (async — provider pattern) */
   await renderProducts();

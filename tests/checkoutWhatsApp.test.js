@@ -112,6 +112,81 @@ test('buildWebOrderPayload forwards discount_code only — never the amount as t
   }
 });
 
+test('buildWebOrderPayload forwards campaign attribution (code + promo + slug + utm) but no amount', async () => {
+  const originalGetProductById = CatalogProvider.getProductById;
+  CatalogProvider.getProductById = async () => ({
+    id: 'p1', product_id: 'p1', gender: 'male',
+    variants: [{ size: 5, price: 170, stock: 4, availability: 4, soldOut: false, variant_id: '5' }],
+  });
+
+  try {
+    const payload = await buildWebOrderPayload(
+      [{ key: 'p1-5', sourceId: 'p1', product_id: 'p1', name: 'Sauvage', house: 'Dior', type: 'product', size: 5, price: 170, qty: 1, image: '/x.webp' }],
+      { name: 'Roger' },
+      {
+        discountCode: 'VIP8',
+        attribution: {
+          discount_code: 'VIP8', promo: 'VIP8', campaign_slug: 'vip-julio',
+          utm_campaign: 'vip-julio', utm_source: 'instagram', utm_medium: 'story',
+        },
+      },
+    );
+
+    assert.equal(payload.discount_code, 'VIP8');
+    assert.equal(payload.promo, 'VIP8');
+    assert.equal(payload.campaign_slug, 'vip-julio');
+    assert.equal(payload.utm_campaign, 'vip-julio');
+    assert.equal(payload.utm_source, 'instagram');
+    assert.equal(payload.utm_medium, 'story');
+    assert.ok(!('discount_amount' in payload), 'amount is never sent as truth');
+    assert.ok(!('total' in payload), 'final total is never sent as truth');
+  } finally {
+    CatalogProvider.getProductById = originalGetProductById;
+  }
+});
+
+test('buildWebOrderPayload: applied discount code overrides pending promo code', async () => {
+  const originalGetProductById = CatalogProvider.getProductById;
+  CatalogProvider.getProductById = async () => ({
+    id: 'p1', product_id: 'p1',
+    variants: [{ size: 5, price: 170, stock: 4, availability: 4, soldOut: false, variant_id: '5' }],
+  });
+
+  try {
+    const payload = await buildWebOrderPayload(
+      [{ key: 'p1-5', sourceId: 'p1', product_id: 'p1', name: 'Sauvage', house: 'Dior', type: 'product', size: 5, price: 170, qty: 1, image: '/x.webp' }],
+      { name: 'Roger' },
+      { discountCode: 'MANUAL', attribution: { discount_code: 'VIP8', promo: 'VIP8' } },
+    );
+    assert.equal(payload.discount_code, 'MANUAL');
+    assert.equal(payload.promo, 'VIP8');
+  } finally {
+    CatalogProvider.getProductById = originalGetProductById;
+  }
+});
+
+test('buildWebOrderPayload keeps the no-campaign payload shape unchanged (no empty strings)', async () => {
+  const originalGetProductById = CatalogProvider.getProductById;
+  CatalogProvider.getProductById = async () => ({
+    id: 'p1', product_id: 'p1',
+    variants: [{ size: 5, price: 170, stock: 4, availability: 4, soldOut: false, variant_id: '5' }],
+  });
+
+  try {
+    const payload = await buildWebOrderPayload(
+      [{ key: 'p1-5', sourceId: 'p1', product_id: 'p1', name: 'Sauvage', house: 'Dior', type: 'product', size: 5, price: 170, qty: 1, image: '/x.webp' }],
+      { name: 'Roger' },
+      {},
+    );
+    assert.deepEqual(Object.keys(payload).sort(), ['customer', 'items', 'metadata', 'notes'].sort());
+    for (const key of ['discount_code', 'promo', 'campaign_slug', 'utm_campaign', 'utm_source', 'utm_medium']) {
+      assert.ok(!(key in payload), `${key} not present without a campaign`);
+    }
+  } finally {
+    CatalogProvider.getProductById = originalGetProductById;
+  }
+});
+
 test('buildWebOrderPayload keeps existing order payload shape when product has gender', async () => {
   const originalGetProductById = CatalogProvider.getProductById;
   CatalogProvider.getProductById = async () => ({

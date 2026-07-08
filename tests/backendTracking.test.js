@@ -63,6 +63,29 @@ test('product modal and PDP views use distinct backend surfaces', () => {
   });
 });
 
+test('campaign attribution events map to Laravel-accepted names', () => {
+  assert.equal(API_EVENT_MAP.campaign_detected, 'campaign_detected');
+  assert.equal(API_EVENT_MAP.campaign_promo_auto_apply_attempted, 'campaign_promo_auto_apply_attempted');
+  assert.equal(API_EVENT_MAP.campaign_promo_applied, 'campaign_promo_applied');
+  assert.equal(API_EVENT_MAP.campaign_promo_rejected, 'campaign_promo_rejected');
+  assert.equal(API_EVENT_MAP.campaign_checkout_attributed, 'campaign_checkout_attributed');
+});
+
+test('campaign event payloads carry attribution metadata only — no PII', () => {
+  const attr = {
+    code: 'VIP8', promo: 'VIP8', campaign_slug: 'vip-julio',
+    utm_campaign: 'vip-julio', utm_source: 'instagram', utm_medium: 'story',
+  };
+  const detected = toApiPayload('campaign_detected', attr);
+  assert.deepEqual(detected.metadata, attr);
+  const serialized = JSON.stringify(detected);
+  assert.ok(!/phone|email|customer/i.test(serialized), 'no customer PII in campaign payloads');
+
+  const applied = toApiPayload('campaign_promo_applied', { ...attr, amount: 44 });
+  assert.equal(applied.metadata.discount_amount, 44);
+  assert.equal(applied.metadata.code, 'VIP8');
+});
+
 test('commerce events preserve backend-compatible event payloads', () => {
   assert.deepEqual(toApiPayload('add_to_cart', {
     product_id: 42,

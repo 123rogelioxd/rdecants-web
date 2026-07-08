@@ -46,6 +46,11 @@ export const EVENTS = {
   DISCOUNT_APPLIED: 'discount_applied',
   DISCOUNT_INVALID: 'discount_invalid',
   DISCOUNT_REMOVED: 'discount_removed',
+  CAMPAIGN_DETECTED: 'campaign_detected',
+  CAMPAIGN_PROMO_AUTO_APPLY_ATTEMPTED: 'campaign_promo_auto_apply_attempted',
+  CAMPAIGN_PROMO_APPLIED: 'campaign_promo_applied',
+  CAMPAIGN_PROMO_REJECTED: 'campaign_promo_rejected',
+  CAMPAIGN_CHECKOUT_ATTRIBUTED: 'campaign_checkout_attributed',
   CHECKOUT_STARTED: 'checkout_started',
   CHECKOUT_COMPLETED: 'checkout_completed',
 
@@ -412,6 +417,28 @@ export const Tracker = {
     this.emit(EVENTS.DISCOUNT_REMOVED, {}, { allowDuplicate: true });
   },
 
+  /* ── Campaign attribution + auto-promo (R Supply OS Growth Center) ──────
+     All payloads are attribution-only: promo/code + UTM. Never any PII. */
+  campaignDetected(attr = {}) {
+    this.emit(EVENTS.CAMPAIGN_DETECTED, _campaignPayload(attr), { allowDuplicate: true });
+  },
+
+  campaignPromoAutoApplyAttempted(attr = {}) {
+    this.emit(EVENTS.CAMPAIGN_PROMO_AUTO_APPLY_ATTEMPTED, _campaignPayload(attr), { allowDuplicate: true });
+  },
+
+  campaignPromoApplied(attr = {}, amount = 0) {
+    this.emit(EVENTS.CAMPAIGN_PROMO_APPLIED, { ..._campaignPayload(attr), amount }, { allowDuplicate: true });
+  },
+
+  campaignPromoRejected(attr = {}) {
+    this.emit(EVENTS.CAMPAIGN_PROMO_REJECTED, _campaignPayload(attr), { allowDuplicate: true });
+  },
+
+  campaignCheckoutAttributed(attr = {}) {
+    this.emit(EVENTS.CAMPAIGN_CHECKOUT_ATTRIBUTED, _campaignPayload(attr), { allowDuplicate: true });
+  },
+
   checkoutStarted(cart = [], total = 0) {
     this.emit(EVENTS.CHECKOUT_STARTED, {
       itemCount: cart.length,
@@ -540,6 +567,20 @@ export const Tracker = {
 
 function _normalizeCode(code) {
   return String(code ?? '').trim().toUpperCase().replace(/\s+/g, '');
+}
+
+/* Attribution-only, PII-free payload for campaign analytics. Empty fields are
+   dropped so we never emit noise. */
+function _campaignPayload(attr = {}) {
+  const out = {};
+  const code = _normalizeCode(attr.code || attr.promo);
+  if (code) out.code = code;
+  if (attr.promo) out.promo = _normalizeCode(attr.promo);
+  if (attr.campaign_slug) out.campaign_slug = attr.campaign_slug;
+  if (attr.utm_campaign) out.utm_campaign = attr.utm_campaign;
+  if (attr.utm_source) out.utm_source = attr.utm_source;
+  if (attr.utm_medium) out.utm_medium = attr.utm_medium;
+  return out;
 }
 
 function _productPayload(product = {}) {

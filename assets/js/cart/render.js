@@ -5,6 +5,8 @@
 
 import { Cart }      from './cart.js?v=2026.06.04.2';
 import { Discount, API_DOWN_MSG } from './discount.js?v=2026.06.04.2';
+import { Attribution, parseAttributionParams, normalizeCampaignCode } from './attribution.js?v=2026.06.04.2';
+import { maybeAutoApplyPromo, resetAutoApplyGuard, markAutoApplyDone } from './campaign.js?v=2026.06.04.2';
 import { sendCheckoutWhatsApp,
          syncCheckoutAvailability,
          trackCheckoutStarted } from './checkout.js?v=2026.06.04.2';
@@ -294,10 +296,71 @@ export function renderDiscountPanel() {
       const amount = Discount.amount();
       savedEl.textContent = amount > 0 ? `Te descontamos ${formatPrice(amount, '')}`.trim() : 'Código aplicado';
     }
+    /* Applied badge already communicates the code — hide the "detected" hint. */
+    _renderCampaignHint(null);
   } else {
     if (form) form.hidden = false;
     if (applied) applied.hidden = true;
+    _prefillPromoInput();
+    _renderCampaignHint(Attribution.pendingPromoCode());
   }
+}
+
+/* Pre-fill the discount input with a campaign promo the customer arrived with,
+   without clobbering anything they're already typing. */
+function _prefillPromoInput() {
+  const input = document.getElementById('cart-discount-input');
+  const code = Attribution.pendingPromoCode();
+  if (input && code && !input.value.trim()) {
+    input.value = normalizeCampaignCode(code);
+  }
+}
+
+/* Subtle "Promo detectada: VIP8" line — textContent only (never HTML), so a
+   query param can never inject markup. Hidden when there's nothing pending. */
+function _renderCampaignHint(code) {
+  const el = document.getElementById('cart-campaign-hint');
+  if (!el) return;
+  if (code) {
+    el.textContent = `Promo detectada: ${normalizeCampaignCode(code)}`;
+    el.hidden = false;
+  } else {
+    el.textContent = '';
+    el.hidden = true;
+  }
+}
+
+/* Read campaign params from the URL, persist attribution, reflect it in the
+   discount UI and try to auto-apply the promo if the cart already has items.
+   Safe to call on every page's bootstrap. */
+export function setupCampaignAttribution(search = _locationSearch()) {
+  const hadUrlParams = Object.keys(parseAttributionParams(search)).length > 0;
+  Attribution.capture(search);
+
+  if (hadUrlParams) {
+    resetAutoApplyGuard();
+    Tracker.campaignDetected(Attribution.forTracking());
+  }
+
+  renderDiscountPanel();
+  _runCampaignAutoApply();
+}
+
+/* Kick the auto-apply orchestrator with the live cart + UI callbacks. */
+function _runCampaignAutoApply() {
+  return maybeAutoApplyPromo({
+    items: Cart.items,
+    total: Cart.total(),
+    onApplied: result => {
+      _setDiscountMessage('', 'neutral');
+      showToast(`Código ${result.normalizedCode || result.code} aplicado`);
+    },
+    onMessage: (message, tone) => _setDiscountMessage(message, tone),
+  });
+}
+
+function _locationSearch() {
+  return globalThis.window?.location?.search ?? '';
 }
 
 function _setDiscountMessage(message, tone = 'neutral') {
@@ -340,6 +403,10 @@ export function setupDiscountControls() {
 
   removeBtn?.addEventListener('click', () => {
     Discount.remove();
+    /* Manual removal stops the URL promo from auto-applying again this session
+       (attribution/UTM stays for reporting; only auto-apply is suppressed). */
+    Attribution.dismissPromo();
+    markAutoApplyDone();
     _setDiscountMessage('', 'neutral');
     Tracker.discountRemoved();
     const field = document.getElementById('cart-discount-input');
@@ -356,6 +423,10 @@ async function _applyDiscountFromInput() {
     _setDiscountMessage('Escribe un código para aplicarlo.', 'invalid');
     return;
   }
+
+  /* A manual code takes over: it overrides the URL promo for discount purposes
+     and prevents auto-apply from clobbering the customer's explicit choice. */
+  markAutoApplyDone();
 
   _setDiscountLoading(true);
   Tracker.discountApplyAttempt(code);
@@ -477,6 +548,8 @@ function _handleCartKey(e) {
 EventBus.on('cart:updated', () => {
   renderCart();
   updateCartCount();
+  /* First item added after a campaign landing → try the pending promo now. */
+  _runCampaignAutoApply();
 });
 
 /* Discount applied/removed → refresh only the summary + panel (leave the item

@@ -5,6 +5,7 @@
 
 import { Cart }      from './cart.js?v=2026.06.04.2';
 import { Discount }  from './discount.js?v=2026.06.04.2';
+import { Attribution } from './attribution.js?v=2026.06.04.2';
 import { ApiClient } from '../api/client.js?v=2026.06.04.2';
 import { CatalogProvider } from '../providers/catalog.js?v=2026.06.04.2';
 import { Tracker }   from '../tracking/tracker.js';
@@ -117,6 +118,11 @@ function _performCheckout(phoneNumber) {
      it creates the order (we only forward the code). */
   const orderItems = items;
   const discount = Discount.applied;
+  /* Snapshot campaign attribution BEFORE any clearing so the background order
+     carries it even after the session state is wiped on a successful handoff. */
+  const attribution = Attribution.forOrder();
+  if (Object.keys(attribution).length) Tracker.campaignCheckoutAttributed(Attribution.forTracking());
+
   const messageText = buildWhatsAppMessage(orderItems, total, data, '', discount);
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(messageText)}`;
 
@@ -125,34 +131,40 @@ function _performCheckout(phoneNumber) {
   const opened = window.open(whatsappUrl, '_blank');
 
   if (!opened) {
-    /* Popup blocked — keep the cart AND discount intact, offer a manual link,
-       still try to record the order in the background. No lost carts. */
+    /* Popup blocked — keep the cart, discount AND attribution intact, offer a
+       manual link, still try to record the order in the background. No lost
+       carts, no lost campaign credit. */
     _showManualWhatsApp(whatsappUrl);
-    _createOrderInBackground(orderItems, data, total, discount);
+    _createOrderInBackground(orderItems, data, total, discount, attribution);
     return;
   }
 
-  /* 2) Launch succeeded → the customer's job is done. Clear the cart AND the
-     applied discount (both belong to the order we just handed off), then record
-     the order in the background. */
+  /* 2) Launch succeeded → the customer's job is done. Clear the cart, the
+     applied discount AND the campaign attribution (all belong to the order we
+     just handed off), then record the order in the background. */
   _showMessage('Listo, te llevamos a WhatsApp para finalizar tu pedido.', 'success');
   showToast('Listo, abrimos WhatsApp para finalizar tu pedido.');
   Cart.clear();
   Discount.clear();
-  _createOrderInBackground(orderItems, data, total, discount);
+  Attribution.clear();
+  _createOrderInBackground(orderItems, data, total, discount, attribution);
 }
 
 /* Records the system order WITHOUT ever blocking the customer or showing them
    an error. On failure: log + emit background_order_failure (the admin-notify
    path). The customer never sees a system error. */
-async function _createOrderInBackground(items, data, total, discount = null) {
+async function _createOrderInBackground(items, data, total, discount = null, attribution = {}) {
   try {
     const orderable = items.filter(item => item.type !== 'pack');
     if (!orderable.length) return; // pure-pack orders are coordinated in chat
 
-    /* Forward ONLY the code — R Supply OS validates and recalculates. We never
-       send the previewed amount/total as truth. */
-    const payload = await buildWebOrderPayload(items, data, { discountCode: discount?.code });
+    /* Forward ONLY the code + campaign attribution — R Supply OS validates,
+       resolves the campaign and recalculates. We never send the previewed
+       amount/total as truth. */
+    const payload = await buildWebOrderPayload(items, data, {
+      discountCode: discount?.code,
+      attribution,
+    });
     if (!payload.items.length) return;
 
     const response = await ApiClient.createWebOrder(payload);
@@ -247,11 +259,22 @@ export async function buildWebOrderPayload(items, data, options = {}) {
     },
   };
 
-  /* Discount is opt-in and code-only. Omitting the key when absent keeps the
-     payload shape unchanged for the no-discount path. R Supply OS is the source
-     of truth: it validates the code and recalculates totals server-side. */
-  const discountCode = options.discountCode || null;
-  if (discountCode) payload.discount_code = discountCode;
+  /* Campaign attribution + discount code. All code-only and opt-in — omitting
+     keys when absent keeps the payload shape unchanged for the no-campaign path.
+     R Supply OS is the source of truth: it validates the code, resolves the
+     campaign and recalculates totals server-side. We NEVER send a discount
+     amount or a frontend total as truth. */
+  const attribution = options.attribution || {};
+
+  /* discount_code: the applied (valid preview) code if any, else the pending
+     promo the customer kept. Applied wins so a manual override is honored. */
+  const discountCode = options.discountCode || attribution.discount_code || null;
+  if (discountCode)             payload.discount_code = discountCode;
+  if (attribution.promo)        payload.promo = attribution.promo;
+  if (attribution.campaign_slug) payload.campaign_slug = attribution.campaign_slug;
+  if (attribution.utm_campaign) payload.utm_campaign = attribution.utm_campaign;
+  if (attribution.utm_source)   payload.utm_source = attribution.utm_source;
+  if (attribution.utm_medium)   payload.utm_medium = attribution.utm_medium;
 
   return payload;
 }
