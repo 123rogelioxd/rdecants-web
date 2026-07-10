@@ -294,7 +294,7 @@ export function renderDiscountPanel() {
     if (codeEl) codeEl.textContent = state.normalizedCode || state.code;
     if (savedEl) {
       const amount = Discount.amount();
-      savedEl.textContent = amount > 0 ? `Te descontamos ${formatPrice(amount, '')}`.trim() : 'Código aplicado';
+      savedEl.textContent = amount > 0 ? `Ahorraste ${formatPrice(amount, '')}`.trim() : 'Código aplicado';
     }
     /* Applied badge already communicates the code — hide the "detected" hint. */
     _renderCampaignHint(null);

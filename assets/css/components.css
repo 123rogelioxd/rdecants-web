@@ -2646,12 +2646,30 @@
   transform: rotate(90deg);
 }
 
-.cart-items {
-  flex: 1; overflow-y: auto;
+/* Single scroll region for the whole drawer body — the product list AND the
+   customer/discount/trust block scroll together, so only the summary + CTA
+   stay pinned in .cart-footer below. */
+.cart-scroll {
+  flex: 1;
+  overflow-y: auto;
   min-height: 0;
-  padding: 16px 18px;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
+}
+
+.cart-items {
+  padding: 16px 18px;
+}
+
+/* Customer name/comment + discount code + trust copy — secondary to the
+   summary/total/CTA, so they scroll with the cart instead of competing for
+   pinned footer space. */
+.cart-static {
+  padding: 4px 18px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  margin-top: 6px;
 }
 
 .cart-section {
@@ -2823,16 +2841,18 @@
   border-top: 1px solid var(--border);
   background:
     linear-gradient(180deg, rgba(12, 12, 12, 0.92), rgba(5, 5, 5, 0.98));
-  /* No internal scroll — the items list is the single scroll container. */
+  /* No internal scroll — .cart-scroll is the single scroll container. */
   flex: 0 0 auto;
 }
 
-.cart-drawer--empty .cart-footer {
+.cart-drawer--empty .cart-footer,
+.cart-drawer--empty .cart-static {
   display: none;
 }
 
 .cart-drawer--empty .cart-items {
   padding: 24px;
+  min-height: 100%;
 }
 
 .checkout-panel {
@@ -3916,80 +3936,138 @@
     overflow-x: hidden;
   }
   .cart-header {
-    padding: 18px 18px 14px;
+    padding: max(16px, env(safe-area-inset-top)) 16px 12px;
+    gap: 10px;
+  }
+  .cart-title { font-size: 20px; }
+  .cart-subtitle { font-size: 11.5px; }
+  .cart-close {
+    width: 44px;
+    height: 44px;
+  }
+  .cart-scroll {
+    overflow-x: hidden;
   }
   .cart-items {
-    flex: 1 1 auto;
-    min-height: 0;
-    padding: 12px 12px 10px;
-    overflow-x: hidden;
-    overflow-y: auto;
+    padding: 12px 14px 4px;
   }
+
+  /* Fewer nested cards: the product list drops its own bordered/tinted
+     wrapper on mobile — the section label alone groups it, individual
+     .cart-item cards still delineate each product. */
   .cart-section {
-    padding: 12px;
+    background: none;
+    border: none;
+    border-radius: 0;
+    padding: 0;
   }
+  .cart-section-label {
+    margin-bottom: 8px;
+  }
+  .cart-product-list {
+    gap: 8px;
+  }
+  .cart-item {
+    padding: 12px;
+    gap: 10px;
+    border-radius: 12px;
+  }
+  .cart-item-name,
+  .cart-item-house {
+    overflow-wrap: anywhere;
+  }
+  .cart-item-name {
+    margin-bottom: 6px;
+  }
+
+  /* Customer name/comment + discount + trust — scrolls with the cart,
+     demoted below the product list, not pinned in the footer. */
+  .cart-static {
+    padding: 8px 14px 16px;
+    margin-top: 4px;
+  }
+  .checkout-panel {
+    margin-bottom: 14px;
+    padding: 0;
+    background: none;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+  }
+  .checkout-control--primary {
+    padding: 0;
+    border: none;
+    background: none;
+    border-radius: 0;
+  }
+  .checkout-field {
+    min-height: 44px;
+    margin-bottom: 8px;
+    padding: 10px 12px;
+  }
+  .checkout-notes-toggle {
+    min-height: 44px;
+    padding: 10px 0;
+  }
+  .cart-discount {
+    margin-bottom: 14px;
+  }
+  .cart-discount-remove {
+    min-height: 44px;
+    padding: 10px 6px;
+  }
+  .cart-trust {
+    gap: 5px 12px;
+    margin: 0;
+  }
+  .cart-trust li {
+    font-size: 10.5px;
+  }
+
+  /* Footer stays a compact, pinned action zone: summary + one CTA only.
+     flex-shrink + its own scroll is a safety net for very short viewports
+     (e.g. an iPhone SE with the keyboard open) — content clips into an
+     internal scroll here instead of spilling past the drawer's bottom edge. */
   .cart-footer {
     display: flex;
     flex-direction: column;
-    flex: 0 0 auto;
-    padding: 12px 12px calc(14px + env(safe-area-inset-bottom));
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 12px 14px calc(14px + env(safe-area-inset-bottom));
     box-shadow: 0 -18px 42px rgba(0, 0, 0, 0.46);
   }
-  .cart-footer .checkout-panel {
-    flex: 0 0 auto;
-    margin-bottom: 12px;
-    max-height: none;
-    overflow: visible;
-    padding: 11px;
-  }
-  .checkout-head {
-    margin-bottom: 10px;
-  }
-  .checkout-note {
-    font-size: 11px;
-    line-height: 1.45;
-  }
-  .checkout-momentum {
-    margin-bottom: 10px;
-    padding: 8px 10px;
-    font-size: 11px;
-  }
-  .cart-total-row {
-    flex: 0 0 auto;
+  .cart-action-panel {
+    margin: 0;
+    padding-top: 0;
   }
   .cart-summary {
-    flex: 0 0 auto;
-    margin-bottom: 10px;
-    padding: 12px;
+    background: none;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    margin-bottom: 12px;
   }
-  .cart-action-panel {
-    margin: 0 -12px;
-    padding: 10px 12px calc(14px + env(safe-area-inset-bottom));
+  .cart-summary-head {
+    margin-bottom: 8px;
   }
   .cart-total-amount {
-    font-size: 32px;
+    font-size: 30px;
   }
   .btn-whatsapp {
-    flex: 0 0 auto;
     min-height: 52px;
+    margin-bottom: 8px;
+  }
+  .checkout-fallback {
+    margin-bottom: 8px;
+  }
+  .checkout-next {
+    margin-bottom: 8px;
+    font-size: 10.5px;
   }
   .cart-action-panel .btn-continue {
-    flex: 0 0 auto;
-    min-height: 0;
-    margin-top: 0;
-    padding: 6px 14px;
-  }
-  .checkout-grid { grid-template-columns: 1fr; }
-  .checkout-field {
-    min-height: 42px;
-    margin-bottom: 8px;
-    padding: 10px 11px;
-  }
-  .checkout-helper {
-    margin-bottom: 9px;
-  }
-  .checkout-textarea {
-    min-height: 46px;
+    min-height: 44px;
+    padding: 10px 14px;
   }
 
   .footer-links { gap: 20px; flex-wrap: wrap; }
@@ -6099,11 +6177,24 @@ textarea:focus-visible {
 
 @media (max-width: 480px) {
   .cart-items {
-    padding: 12px;
+    padding: 10px 12px 4px;
+  }
+
+  .cart-static {
+    padding: 8px 12px 14px;
+  }
+
+  .cart-footer {
+    padding-left: 12px;
+    padding-right: 12px;
   }
 
   .cart-item {
-    padding: 14px;
+    padding: 12px;
+  }
+
+  .cart-total-amount {
+    font-size: 28px;
   }
 
   .pdm-info-scroll {
