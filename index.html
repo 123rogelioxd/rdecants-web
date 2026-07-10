@@ -233,27 +233,27 @@
     <button class="cart-close" onclick="closeCart()" aria-label="Cerrar carrito">×</button>
   </div>
 
-  <div class="cart-items" id="cart-items">
-    <!-- Rendered by cart/render.js -->
-  </div>
-
-  <div class="cart-footer">
-    <div class="checkout-panel" id="checkout-form" aria-label="Datos de checkout">
-      <label class="checkout-control checkout-control--primary" for="checkout-name">
-        <span>Tu nombre (opcional)</span>
-        <input class="checkout-field" id="checkout-name" type="text" autocomplete="name" placeholder="Ej. Roger Díaz">
-        <small class="checkout-name-error" id="checkout-name-error" aria-live="polite"></small>
-      </label>
-
-      <button type="button" class="checkout-notes-toggle" id="checkout-notes-toggle" aria-expanded="false" aria-controls="checkout-notes">
-        Agregar comentario
-      </button>
-      <textarea class="checkout-field checkout-textarea" id="checkout-notes" rows="3" placeholder="Horario, referencia o detalle especial" hidden></textarea>
-
-      <p class="checkout-error" id="checkout-error" aria-live="polite"></p>
+  <div class="cart-scroll" id="cart-scroll">
+    <div class="cart-items" id="cart-items">
+      <!-- Rendered by cart/render.js -->
     </div>
 
-    <div class="cart-action-panel">
+    <div class="cart-static">
+      <div class="checkout-panel" id="checkout-form" aria-label="Datos de checkout">
+        <label class="checkout-control checkout-control--primary" for="checkout-name">
+          <span>Tu nombre (opcional)</span>
+          <input class="checkout-field" id="checkout-name" type="text" autocomplete="name" placeholder="Ej. Roger Díaz">
+          <small class="checkout-name-error" id="checkout-name-error" aria-live="polite"></small>
+        </label>
+
+        <button type="button" class="checkout-notes-toggle" id="checkout-notes-toggle" aria-expanded="false" aria-controls="checkout-notes">
+          Agregar comentario
+        </button>
+        <textarea class="checkout-field checkout-textarea" id="checkout-notes" rows="3" placeholder="Horario, referencia o detalle especial" hidden></textarea>
+
+        <p class="checkout-error" id="checkout-error" aria-live="polite"></p>
+      </div>
+
       <div class="cart-discount" id="cart-discount">
         <form class="cart-discount-form" id="cart-discount-form">
           <input class="cart-discount-input" id="cart-discount-input" type="text"
@@ -273,6 +273,16 @@
         <p class="cart-campaign-hint" id="cart-campaign-hint" aria-live="polite" hidden></p>
       </div>
 
+      <ul class="cart-trust" aria-label="Garantías del pedido">
+        <li>✓ Perfumes originales</li>
+        <li>✓ Decants preparados al momento</li>
+        <li>✓ Envíos a todo México</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="cart-footer">
+    <div class="cart-action-panel">
       <div class="cart-summary" aria-label="Resumen del pedido">
         <div class="cart-summary-head">
           <span class="cart-summary-title">Resumen</span>
@@ -295,12 +305,6 @@
           <span class="shipping-note" id="shipping-note"></span>
         </div>
       </div>
-
-      <ul class="cart-trust" aria-label="Garantías del pedido">
-        <li>✓ Perfumes originales</li>
-        <li>✓ Decants preparados al momento</li>
-        <li>✓ Envíos a todo México</li>
-      </ul>
 
       <button class="btn-whatsapp" id="checkout-whatsapp" onclick="sendWhatsApp()" aria-label="Enviar pedido por WhatsApp">
         📲 Enviar pedido por WhatsApp
