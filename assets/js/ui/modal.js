@@ -15,6 +15,7 @@
 
 import { showToast } from './toast.js';
 import { primeImageStates } from './images.js';
+import { lockBodyScroll, unlockBodyScroll } from './scrollLock.js';
 import { Tracker } from '../tracking/tracker.js';
 import { getDefaultVariant,
          getPriceForSize,
@@ -82,7 +83,7 @@ export function openProductModal(product) {
     _modal.classList.add('pdm-modal--open');
   });
 
-  document.body.style.overflow = 'hidden';
+  lockBodyScroll();
 
   /* Focus the close button after transition */
   setTimeout(() => {
@@ -96,7 +97,7 @@ export function closeProductModal() {
 
   _overlay.classList.remove('pdm-overlay--open');
   _modal.classList.remove('pdm-modal--open');
-  document.body.style.overflow = '';
+  unlockBodyScroll();
 
   /* Restore focus */
   _prevFocus?.focus?.();

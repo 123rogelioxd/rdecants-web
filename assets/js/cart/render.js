@@ -13,6 +13,7 @@ import { sendCheckoutWhatsApp,
 import { EventBus }  from '../core/events.js';
 import { Tracker }   from '../tracking/tracker.js';
 import { showToast } from '../ui/toast.js';
+import { lockBodyScroll, unlockBodyScroll } from '../ui/scrollLock.js';
 import { formatPrice, isValidPrice, getDefaultVariant } from '../utils/prices.js?v=2026.06.04.2';
 import { CatalogProvider } from '../providers/catalog.js?v=2026.06.04.2';
 import { getCartUpsells, getShippingCompletionUpsell } from '../recommendations/upsells.js?v=2026.06.04.2';
@@ -64,20 +65,21 @@ export function renderCart() {
 
     return `
       <div class="cart-item">
-        <div class="cart-item-info">
-          <p class="cart-item-house">${item.house}</p>
-          <p class="cart-item-name">${item.name}</p>
-          <div class="cart-item-meta">
-            <span>${label} &times; ${item.qty}</span>
-            <span>Disponibles: ${item.stock}</span>
+        <div class="cart-item-top">
+          <div class="cart-item-id">
+            <p class="cart-item-house">${item.house}</p>
+            <p class="cart-item-name">${item.name}</p>
           </div>
-          ${isMaxed ? '<p class="cart-stock-note">Máximo disponible seleccionado</p>' : ''}
-          <p class="cart-item-price">${formatPrice(subtotal, 'Precio por confirmar')}</p>
-        </div>
-        <div class="cart-item-controls">
           <button class="remove-btn"
             onclick="window.__rd.cart.remove('${item.key}')"
             aria-label="Eliminar ${item.name}">×</button>
+        </div>
+        <div class="cart-item-bottom">
+          <div class="cart-item-meta-price">
+            <span class="cart-item-meta">${label} &times; ${item.qty} &middot; Disponibles: ${item.stock}</span>
+            ${isMaxed ? '<span class="cart-stock-note">Máximo disponible</span>' : ''}
+            <span class="cart-item-price">${formatPrice(subtotal, 'Precio por confirmar')}</span>
+          </div>
           <div class="qty-controls">
             <button class="qty-btn"
               onclick="window.__rd.cart.changeQty('${item.key}', -1)"
@@ -485,7 +487,7 @@ export function openCart() {
   drawer?.setAttribute('aria-hidden', 'false');
   document.getElementById('cart-overlay')?.classList.add('active');
   document.body.classList.add('cart-open');
-  document.body.style.overflow = 'hidden';
+  lockBodyScroll();
   Tracker.cartOpened();
   trackCheckoutStarted();
   document.removeEventListener('keydown', _handleCartKey);
@@ -499,7 +501,7 @@ export function closeCart() {
   drawer?.setAttribute('aria-hidden', 'true');
   document.getElementById('cart-overlay')?.classList.remove('active');
   document.body.classList.remove('cart-open');
-  document.body.style.overflow = '';
+  unlockBodyScroll();
   Tracker.cartClosed();
   document.removeEventListener('keydown', _handleCartKey);
   _prevFocus?.focus?.();
