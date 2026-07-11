@@ -24,6 +24,7 @@ import {
   Personalization,
   personalizeProducts,
 } from '../recommendations/personalization.js?v=2026.06.04.2';
+import { lockBodyScroll, unlockBodyScroll } from './scrollLock.js';
 
 /* ── State ──────────────────────────────────────────────────── */
 const _DEFAULT = {
@@ -468,7 +469,7 @@ function _openDrawer() {
   _prevFocus = document.activeElement;
   _drawer.classList.add('sf-drawer--open');
   _drawerOverlay.classList.add('sf-ov--open');
-  document.body.style.overflow = 'hidden';
+  lockBodyScroll();
   _bar?.querySelector('#sf-mobile-btn')
     ?.setAttribute('aria-expanded', 'true');
   document.addEventListener('keydown', _handleDrawerKey);
@@ -478,7 +479,7 @@ function _openDrawer() {
 function _closeDrawer() {
   _drawer.classList.remove('sf-drawer--open');
   _drawerOverlay.classList.remove('sf-ov--open');
-  document.body.style.overflow = '';
+  unlockBodyScroll();
   _bar?.querySelector('#sf-mobile-btn')
     ?.setAttribute('aria-expanded', 'false');
   document.removeEventListener('keydown', _handleDrawerKey);

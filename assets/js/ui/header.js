@@ -5,6 +5,7 @@
    ============================================================= */
 
 import { SearchBar } from './searchbar.js?v=2026.06.04.2';
+import { lockBodyScroll, unlockBodyScroll } from './scrollLock.js';
 
 export function setupHeader() {
   const header = document.querySelector('.header');
@@ -53,7 +54,7 @@ function _setupHeaderSearch() {
   /* Mobile — toggle overlay */
   mobileBtn?.addEventListener('click', () => {
     wrap.classList.add('hs-wrap--open');
-    document.body.style.overflow = 'hidden';
+    lockBodyScroll();
     setTimeout(() => input.focus(), 80);
   });
 
@@ -82,7 +83,7 @@ function _setupHeaderSearch() {
 
 function _closeOverlay(wrap, input, xBtn) {
   wrap.classList.remove('hs-wrap--open');
-  document.body.style.overflow = '';
+  unlockBodyScroll();
   input.value = '';
   xBtn.hidden = true;
   SearchBar.applyQuery('');

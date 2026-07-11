@@ -2732,7 +2732,9 @@
 .cart-empty-desc { font-size: 12px; }
 
 .cart-item {
-  display: flex; gap: 14px; align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   padding: 14px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.016));
   border: 1px solid rgba(255, 255, 255, 0.075);
@@ -2742,7 +2744,16 @@
 
 .cart-item:hover { border-color: var(--border-hl); }
 
-.cart-item-info { flex: 1; }
+/* Row 1: identity (house/name) + remove — short by design so the row
+   height comes from the text, not a stacked controls column. */
+.cart-item-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cart-item-id { flex: 1; min-width: 0; }
 
 .cart-item-house {
   font-size: 9px;
@@ -2756,46 +2767,47 @@
   font-size: 14px;
   font-weight: 500;
   line-height: 1.25;
-  margin-bottom: 8px;
+}
+
+/* Row 2: meta + price on the left, qty stepper on the right — one line,
+   vertically centered against the stepper's own 44px touch target. */
+.cart-item-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cart-item-meta-price {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 8px;
 }
 
 .cart-item-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 8px;
-}
-
-.cart-item-meta span {
-  background: rgba(255, 255, 255, 0.045);
-  border: 1px solid rgba(255, 255, 255, 0.055);
-  border-radius: 999px;
-  color: rgba(255, 255, 255, 0.58);
+  color: rgba(255, 255, 255, 0.55);
   font-size: 11px;
-  line-height: 1;
-  padding: 6px 9px;
+  line-height: 1.3;
 }
 
 .cart-stock-note {
   color: rgba(201, 169, 110, 0.9);
-  font-size: 11px;
-  line-height: 1.35;
-  margin: -2px 0 7px;
+  font-size: 10.5px;
+  line-height: 1.3;
 }
 
 .cart-item-price {
   font-family: var(--font-serif);
-  font-size: 18px;
+  font-size: 16px;
   color: var(--accent);
   line-height: 1;
 }
 
-.cart-item-controls {
-  display: flex; flex-direction: column;
-  align-items: flex-end; gap: 8px;
-}
-
 .qty-controls {
+  flex: 0 0 auto;
   display: flex; align-items: center; gap: 8px;
 }
 
@@ -3949,7 +3961,7 @@
     overflow-x: hidden;
   }
   .cart-items {
-    padding: 12px 14px 4px;
+    padding: 10px 14px 2px;
   }
 
   /* Fewer nested cards: the product list drops its own bordered/tinted
@@ -3962,32 +3974,58 @@
     padding: 0;
   }
   .cart-section-label {
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
   .cart-product-list {
-    gap: 8px;
+    gap: 6px;
   }
   .cart-item {
-    padding: 12px;
-    gap: 10px;
+    padding: 10px 12px;
+    gap: 6px;
     border-radius: 12px;
   }
   .cart-item-name,
   .cart-item-house {
     overflow-wrap: anywhere;
   }
-  .cart-item-name {
-    margin-bottom: 6px;
+
+  /* "Completa tu pedido" — a horizontally swipeable strip of compact
+     cards instead of a tall vertical stack, so 2-3 recommendations cost
+     one row of height, not three, before reaching the total/CTA. The
+     single-item shipping-completion card (nested in .cart-shipping-complete)
+     is intentionally excluded — one recommendation reads better full-width. */
+  .cart-upsells {
+    margin-top: 10px;
+    padding-top: 10px;
+  }
+  .cart-upsells > .cart-upsell-list {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    gap: 8px;
+    margin: 0 -14px;
+    padding: 2px 14px 6px;
+    scrollbar-width: none;
+  }
+  .cart-upsells > .cart-upsell-list::-webkit-scrollbar { display: none; }
+  .cart-upsells > .cart-upsell-list .cart-upsell-item {
+    flex: 0 0 auto;
+    width: 210px;
+    scroll-snap-align: start;
   }
 
   /* Customer name/comment + discount + trust — scrolls with the cart,
      demoted below the product list, not pinned in the footer. */
   .cart-static {
-    padding: 8px 14px 16px;
-    margin-top: 4px;
+    padding: 6px 14px 14px;
+    margin-top: 2px;
   }
   .checkout-panel {
-    margin-bottom: 14px;
+    margin-bottom: 10px;
     padding: 0;
     background: none;
     border: none;
@@ -4002,7 +4040,7 @@
   }
   .checkout-field {
     min-height: 44px;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     padding: 10px 12px;
   }
   .checkout-notes-toggle {
@@ -4010,7 +4048,7 @@
     padding: 10px 0;
   }
   .cart-discount {
-    margin-bottom: 14px;
+    margin-bottom: 10px;
   }
   .cart-discount-remove {
     min-height: 44px;
@@ -6190,7 +6228,7 @@ textarea:focus-visible {
   }
 
   .cart-item {
-    padding: 12px;
+    padding: 9px 10px;
   }
 
   .cart-total-amount {
