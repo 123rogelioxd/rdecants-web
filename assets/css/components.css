@@ -3937,17 +3937,36 @@
 
   .trust-grid { grid-template-columns: 1fr 1fr; }
 
+  /* ── Mobile cart: ONE scroll owner ───────────────────────────
+     The "scroll-locked" regression came from TWO competing
+     overflow-y:auto containers (.cart-scroll AND .cart-footer) nested
+     inside a fixed-height flex column. On real touch devices the
+     gesture was routed to whichever scroller sat under the finger — the
+     tall footer (little to scroll) swallowed most downward swipes, so
+     the cart felt frozen. Fix: the drawer itself is the single vertical
+     scroller. The header sticks to the top, the summary/CTA sticks to
+     the bottom, and everything between them flows in the SAME scroll
+     context. No nested vertical scrollers, no touch-action:none, no
+     gesture-intercepting overlay. */
   .cart-drawer {
     inset: 0;
     bottom: auto;
     width: 100vw;
     max-width: none;
-    height: 100dvh;
-    max-height: 100dvh;
+    height: 100vh;                   /* fallback for engines without dvh */
+    height: 100dvh;                  /* dynamic viewport — accounts for the URL bar */
     border-left: 0;
+    display: block;                  /* not flex — children flow as blocks */
+    overflow-y: auto;                /* the ONE vertical scroll owner */
     overflow-x: hidden;
+    overscroll-behavior: contain;    /* don't chain to the (fixed) body */
+    -webkit-overflow-scrolling: touch;
   }
   .cart-header {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: #080808;             /* opaque — content scrolls under it */
     padding: max(16px, env(safe-area-inset-top)) 16px 12px;
     gap: 10px;
   }
@@ -3957,11 +3976,18 @@
     width: 44px;
     height: 44px;
   }
+  /* No longer a scroll container — just normal flow inside the drawer. */
   .cart-scroll {
-    overflow-x: hidden;
+    overflow: visible;
+    min-height: 0;
   }
   .cart-items {
     padding: 10px 14px 2px;
+  }
+  /* Empty cart still centers vertically now the drawer (not .cart-scroll)
+     owns the height. */
+  .cart-drawer--empty .cart-items {
+    min-height: 74dvh;
   }
 
   /* Fewer nested cards: the product list drops its own bordered/tinted
@@ -4003,9 +4029,14 @@
     flex-direction: row;
     flex-wrap: nowrap;
     overflow-x: auto;
+    overflow-y: hidden;
     overscroll-behavior-x: contain;
     scroll-snap-type: x proximity;
     -webkit-overflow-scrolling: touch;
+    /* Horizontal panning only — a mostly-vertical swipe over the strip is
+       NOT captured here; the browser hands it to the drawer's scroller, so
+       the strip never traps the cart's vertical gesture. */
+    touch-action: pan-x;
     gap: 8px;
     margin: 0 -14px;
     padding: 2px 14px 6px;
@@ -4014,8 +4045,14 @@
   .cart-upsells > .cart-upsell-list::-webkit-scrollbar { display: none; }
   .cart-upsells > .cart-upsell-list .cart-upsell-item {
     flex: 0 0 auto;
-    width: 210px;
+    width: 176px;
+    gap: 10px;
+    padding: 8px 10px;
     scroll-snap-align: start;
+  }
+  .cart-upsells > .cart-upsell-list .cart-upsell-img {
+    width: 40px;
+    height: 40px;
   }
 
   /* Customer name/comment + discount + trust — scrolls with the cart,
@@ -4062,18 +4099,21 @@
     font-size: 10.5px;
   }
 
-  /* Footer stays a compact, pinned action zone: summary + one CTA only.
-     flex-shrink + its own scroll is a safety net for very short viewports
-     (e.g. an iPhone SE with the keyboard open) — content clips into an
-     internal scroll here instead of spilling past the drawer's bottom edge. */
+  /* Sticky bottom action bar — summary + WhatsApp CTA stay reachable
+     without being a SECOND scroll container. It is opaque so the cart
+     content scrolls cleanly underneath, and it participates in the
+     drawer's single scroll context (no internal overflow-y). On a very
+     short viewport the whole drawer scrolls; the bar rests in-flow once
+     you reach the bottom. */
   .cart-footer {
-    display: flex;
-    flex-direction: column;
-    flex: 0 1 auto;
-    min-height: 0;
-    overflow-y: auto;
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    display: block;
+    overflow: visible;
+    background: linear-gradient(180deg, #0c0c0c, #050505);
     padding: 12px 14px calc(14px + env(safe-area-inset-bottom));
-    box-shadow: 0 -18px 42px rgba(0, 0, 0, 0.46);
+    box-shadow: 0 -18px 42px rgba(0, 0, 0, 0.55);
   }
   .cart-action-panel {
     margin: 0;
