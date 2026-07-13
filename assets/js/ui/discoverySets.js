@@ -267,7 +267,8 @@ function _bindSetActions(root, sets) {
         total: set.total,
         savings: 0,
       });
-      window.__rd?.ui?.openCart?.();
+      /* No forced cart open — the "Kit agregado · Ver carrito" toast keeps the
+         customer browsing, consistent with single-product adds. */
     });
   });
 

@@ -15,9 +15,33 @@
   --soft:   rgba(255, 255, 255, 0.45);
 
   --accent: #c9a96e;   /* luxury gold */
+  --accent-strong: #d9bd85; /* brighter gold for hover/emphasis */
+  --accent-soft:   rgba(201, 169, 110, 0.14); /* gold tint fill */
+  --accent-line:   rgba(201, 169, 110, 0.32); /* gold hairline border */
 
   --danger:      #ff4d4f;
   --danger-soft: rgba(255, 77, 79, 0.15);
+
+  /* ── Surfaces (layered dark system) ─────────────────── */
+  --surface-0: #030303;   /* page base (=black) */
+  --surface-1: #070707;   /* raised section (=deep) */
+  --surface-2: #0c0c0c;   /* card (=card) */
+  --surface-raised: #111111; /* hover / elevated card */
+  --overlay-scrim: rgba(3, 3, 3, 0.72); /* modal/drawer backdrop */
+
+  /* ── Text hierarchy (semantic aliases) ──────────────── */
+  --text-strong: #ffffff;                 /* headings, key values */
+  --text:        rgba(255, 255, 255, 0.65); /* body (=muted) */
+  --text-soft:   rgba(255, 255, 255, 0.45); /* captions (=soft) */
+  --text-on-gold: #030303;                /* text over gold fills */
+
+  /* ── State: WhatsApp / success / low-stock warning ──── */
+  --wa:          #25d366;
+  --wa-strong:   #1ebe5b;
+  --success:     #4ade80;
+  --success-soft: rgba(74, 222, 128, 0.14);
+  --warn:        #e0a53d;   /* low-stock amber (not neon) */
+  --warn-soft:   rgba(224, 165, 61, 0.14);
 
   /* ── Typography scale ───────────────────────────────── */
   --text-xs:  12px;
@@ -58,6 +82,26 @@
   /* ── Transitions ────────────────────────────────────── */
   --transition: all 0.45s cubic-bezier(0.19, 1, 0.22, 1);
 
+  /* ── Motion scale (duration + easing) ───────────────── */
+  --dur-fast:  140ms;
+  --dur:       240ms;
+  --dur-slow:  420ms;
+  --ease-out:      cubic-bezier(0.19, 1, 0.22, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ── Safe areas (iPhone notch / home indicator) ─────── */
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
+
   /* ── Aliases (card-bg kept for readability) ─────────── */
   --card-bg: #0c0c0c;
+}
+
+/* Honor the user's motion preference across every token-driven animation. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur:      0ms;
+    --dur-slow: 0ms;
+  }
 }

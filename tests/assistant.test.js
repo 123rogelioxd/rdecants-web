@@ -37,15 +37,31 @@ const catalog = [freshOffice, sweetNight, intenseOud, soldOut];
 
 const ids = (list) => list.map(r => r.product.id);
 
-test('exposes four guided questions including gender', () => {
-  assert.equal(ASSISTANT_QUESTIONS.length, 4);
+test('exposes exactly three guided questions including gender', () => {
+  assert.equal(ASSISTANT_QUESTIONS.length, 3, 'finder asks no more than three questions');
   for (const q of ASSISTANT_QUESTIONS) {
     assert.ok(q.id && q.label && Array.isArray(q.options) && q.options.length >= 2);
   }
+  assert.deepEqual(
+    ASSISTANT_QUESTIONS.map(q => q.id),
+    ['family', 'occasion', 'gender'],
+    'budget question dropped; family/occasion/gender remain',
+  );
   const genderQ = ASSISTANT_QUESTIONS.find(q => q.id === 'gender');
   assert.ok(genderQ, 'has a gender question');
   assert.equal(genderQ.options.length, 4, 'gender question has 4 options');
   assert.equal(genderQ.options[0].value, 'any', 'defaults to "Me da igual"');
+});
+
+test('finder result cap honors a limit of three (customer-facing contract)', () => {
+  const big = [];
+  for (let i = 0; i < 10; i++) big.push(product(`p${i}`, ['marino', 'citrico'], 'fresco oficina verano'));
+  const res = getAssistantRecommendations(
+    { family: 'fresco', occasion: 'oficina', climate: 'calido' },
+    big,
+    { limit: 3 },
+  );
+  assert.ok(res.length <= 3, 'never returns more than three recommendations');
 });
 
 test('returns nothing for an empty catalog', () => {
