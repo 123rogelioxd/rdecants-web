@@ -13,9 +13,14 @@ import { CatalogProvider } from '../providers/catalog.js?v=2026.06.04.2';
 import { Tracker } from '../tracking/tracker.js';
 import { openProductModal } from './modal.js?v=2026.06.04.2';
 import { primeImageStates } from './images.js';
-import { formatPrice } from '../utils/prices.js?v=2026.06.04.2';
+import { formatPrice, getVariantForSize } from '../utils/prices.js?v=2026.06.04.2';
 
-const RAIL_CONTEXT = { railId: 'assistant', railTitle: 'Asistente de fragancias' };
+const RAIL_CONTEXT = { railId: 'assistant', railTitle: 'Encuentra tu fragancia' };
+
+/* Customer-facing contract: the finder returns at most three recommendations
+   (one clear top pick + up to two alternatives). The engine can return more
+   for other surfaces, so the cap is enforced here. */
+const FINDER_LIMIT = 3;
 
 /* Default answer = first option of each question (frictionless start). */
 const _answers = Object.fromEntries(ASSISTANT_QUESTIONS.map(q => [q.id, q.options[0].value]));
@@ -30,14 +35,34 @@ export function setupAssistant(containerId = 'assistant') {
   _bindForm();
 }
 
+/* Launch the finder from an external entry point (discovery shortcuts, hero
+   CTA) with some answers pre-selected, then run it. Used to turn "Citas",
+   "Oficina", "Regalo" etc. into a real guided flow instead of a dead button. */
+export function presetFinder(answers = {}, { run = true } = {}) {
+  if (!_root) return;
+
+  Object.entries(answers).forEach(([q, value]) => {
+    if (!(q in _answers) || value == null) return;
+    _answers[q] = value;
+    _root.querySelectorAll(`.asst-chip[data-q="${q}"]`).forEach(btn => {
+      const active = btn.dataset.value === String(value);
+      btn.classList.toggle('asst-chip--active', active);
+      btn.setAttribute('aria-pressed', String(active));
+    });
+  });
+
+  _root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (run) _generate();
+}
+
 /* ── Shell ─────────────────────────────────────────────────── */
 function _renderShell() {
   _root.innerHTML = `
     <div class="container">
       <div class="asst-head fade-up">
-        <p class="section-label">Asistente de fragancias</p>
-        <h2 class="section-title">Encuentra tu<br><em>match ideal</em></h2>
-        <p class="asst-sub">Responde unas preguntas rápidas y te sugerimos opciones pensadas para ti.</p>
+        <p class="section-label">Encuentra tu fragancia</p>
+        <h2 class="section-title">Responde 3 preguntas<br><em>y te decimos cuál</em></h2>
+        <p class="asst-sub">Sin tecnicismos. Te damos una recomendación principal y un par de alternativas, con el precio real de 5&nbsp;ml.</p>
       </div>
 
       <form class="asst-form fade-up" id="asst-form" aria-label="Preguntas guiadas">
@@ -111,7 +136,7 @@ async function _generate() {
     products = [];
   }
 
-  const results = getAssistantRecommendations(_answers, products);
+  const results = getAssistantRecommendations(_answers, products, { limit: FINDER_LIMIT });
   _lastResults = results;
   Tracker.assistantCompleted(results, _answers);
 
@@ -132,7 +157,7 @@ async function _generate() {
   }
 
   resultsEl.innerHTML = `
-    <p class="asst-results-label">Pensado para ti</p>
+    <p class="asst-results-label">Tu recomendación</p>
     <div class="asst-results-grid">
       ${results.map(_resultCard).join('')}
     </div>`;
@@ -147,13 +172,23 @@ async function _generate() {
 function _resultCard(result, idx) {
   const { product, variant, matchTier, reasons, useCase } = result;
   const canAdd = Boolean(variant);
+  const isTop = idx === 0;
   const hasImage = product.image && product.image.trim() !== '';
   const reasonsHtml = reasons.map(r => `<li>${r}</li>`).join('');
 
+  /* Show the real 10 ml step-up when it exists and differs from the entry
+     variant. Never invented — pulled from the same priced variant list. */
+  const upgrade = getVariantForSize(product, 10);
+  const upgradeHtml = (canAdd && upgrade && upgrade.price && Number(variant.size) !== 10)
+    ? `<span class="asst-card-upgrade">o 10&nbsp;ml · ${formatPrice(upgrade.price)}</span>`
+    : '';
+
   return `
-    <article class="asst-card" data-product-id="${product.id}" data-position="${idx}">
+    <article class="asst-card ${isTop ? 'asst-card--top' : ''}" data-product-id="${product.id}" data-position="${idx}">
       <div class="asst-card-media">
-        <span class="asst-match asst-match--${matchTier.key}">${matchTier.label}</span>
+        ${isTop
+          ? '<span class="asst-top-flag">Nuestra recomendación</span>'
+          : `<span class="asst-match asst-match--${matchTier.key}">${matchTier.label}</span>`}
         <span class="asst-card-img">
           ${hasImage
             ? `<img src="${product.image}" alt="${product.name}" loading="lazy" decoding="async"
@@ -167,11 +202,14 @@ function _resultCard(result, idx) {
         ${useCase ? `<p class="asst-card-usecase">${useCase}</p>` : ''}
         ${reasonsHtml ? `<ul class="asst-card-reasons">${reasonsHtml}</ul>` : ''}
         <div class="asst-card-foot">
-          <span class="asst-card-price">${canAdd ? `${formatPrice(variant.price)} <small>/ ${variant.size}ml</small>` : 'Consultar'}</span>
+          <span class="asst-card-price">
+            ${canAdd ? `${formatPrice(variant.price)} <small>/ ${variant.size}ml</small>` : 'Consultar'}
+            ${upgradeHtml}
+          </span>
           <div class="asst-card-actions">
-            <button type="button" class="asst-card-detail" data-action="detail">Ver</button>
+            <button type="button" class="asst-card-detail" data-action="detail">Ver detalle</button>
             ${canAdd
-              ? `<button type="button" class="btn-primary asst-card-add" data-action="add">Agregar</button>`
+              ? `<button type="button" class="btn-primary asst-card-add" data-action="add">Agregar 5&nbsp;ml</button>`
               : ''}
           </div>
         </div>
@@ -194,8 +232,11 @@ function _bindResults(resultsEl, results) {
     card.querySelector('[data-action="add"]')?.addEventListener('click', () => {
       if (!result.variant) return;
       Tracker.recommendationClicked(result.product, position, RAIL_CONTEXT);
+      Tracker.recommendationAdded(result.product, position, RAIL_CONTEXT);
+      /* No forced cart open — Cart.add fires an actionable "Ver carrito" toast,
+         so the customer keeps their place in the finder. Consistent with the
+         catalog cards and the product modal. */
       window.__rd?.cart?.add(result.product.id, result.variant.size);
-      window.__rd?.ui?.openCart?.();
     });
   });
 }

@@ -178,7 +178,10 @@ export const Cart = {
     }
 
     if (added) {
-      showToast(`${bundle.title} — Kit agregado`);
+      showToast(`${bundle.title} — Kit agregado ✓`, {
+        actionLabel: 'Ver carrito',
+        onAction: () => window.__rd?.ui?.openCart?.(),
+      });
       _commit();
     }
   },

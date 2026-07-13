@@ -26,10 +26,15 @@ const MAX_OLFACTIVE_SCORE = 30;
 const MAX_COMMERCIAL_SCORE = 20;
 const MAX_POPULARITY_SCORE = 10;
 
+/* Three high-value questions only (customer language, not internal taxonomy).
+   Budget is intentionally NOT asked — the real 5 ml price is always shown on
+   every result card, so a price question adds friction without adding signal.
+   The engine still honours an explicit `budget` answer when provided (used by
+   tests and any future surface); the finder UI simply leaves it unset ('any'). */
 export const ASSISTANT_QUESTIONS = [
   {
     id: 'family',
-    label: '¿Qué tipo de aroma prefieres?',
+    label: '¿Qué tipo de aroma buscas?',
     options: [
       { value: 'fresco', label: 'Fresco' },
       { value: 'dulce', label: 'Dulce' },
@@ -38,22 +43,12 @@ export const ASSISTANT_QUESTIONS = [
   },
   {
     id: 'occasion',
-    label: '¿Para qué ocasión?',
+    label: '¿Para qué momento?',
     options: [
-      { value: 'dia', label: 'Día' },
+      { value: 'dia', label: 'Diario' },
       { value: 'noche', label: 'Noche' },
       { value: 'oficina', label: 'Oficina' },
-      { value: 'fiesta', label: 'Fiesta' },
-    ],
-  },
-  {
-    id: 'budget',
-    label: '¿Presupuesto por decant?',
-    options: [
-      { value: 'low', label: 'Hasta $150' },
-      { value: 'mid', label: '$150-$250' },
-      { value: 'high', label: '$250+' },
-      { value: 'any', label: 'Sin límite' },
+      { value: 'cita', label: 'Cita' },
     ],
   },
   {

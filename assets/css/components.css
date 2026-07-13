@@ -277,8 +277,10 @@
 .hero-content {
   position: relative; z-index: 2;
   padding: 0 clamp(20px, 5vw, 80px);
-  max-width: 520px;
-  animation: heroReveal 1.2s ease 2.6s both;
+  max-width: 560px;
+  /* The promise must be readable almost immediately (the old 2.6s delay left
+     the headline invisible well past the intro splash). */
+  animation: heroReveal 0.9s var(--ease-out, ease) 0.25s both;
   text-shadow: 0 2px 24px rgba(0, 0, 0, 0.68);
 }
 
@@ -7739,4 +7741,245 @@ textarea:focus-visible {
   color: var(--muted, rgba(255,255,255,.45));
   line-height: 1.5;
   margin: 4px 0 10px;
+}
+
+/* ============================================================
+   REDESIGN 2026.07 — IA, positioning & trust surfaces
+   Header nav · discovery shortcuts · how-it-works · authenticity
+   · FAQ · finder top-pick + upgrade. Tokens only.
+   ============================================================ */
+
+/* ── Header primary navigation (desktop) ─────────────────────── */
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: clamp(20px, 2.4vw, 36px);
+  margin-left: clamp(20px, 2.5vw, 36px);
+  margin-right: auto;
+}
+.header-nav-link {
+  position: relative;
+  padding: 6px 0;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color var(--dur) var(--ease-standard);
+}
+.header-nav-link:hover,
+.header-nav-link:focus-visible { color: var(--text-strong); }
+.header-nav-link::after {
+  content: '';
+  position: absolute;
+  left: 0; bottom: 0;
+  width: 100%; height: 1px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--dur) var(--ease-out);
+}
+.header-nav-link:hover::after,
+.header-nav-link:focus-visible::after { transform: scaleX(1); }
+
+/* ── Discovery shortcuts (intent-first entry points) ─────────── */
+.shortcuts-section {
+  padding: clamp(30px, 5vw, 52px) 0 clamp(20px, 4vw, 34px);
+}
+.shortcuts-head { margin-bottom: 18px; }
+.shortcuts-title {
+  font-family: var(--font-serif);
+  font-size: clamp(24px, 4vw, 34px);
+  font-weight: 300;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+.shortcuts-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.shortcut-chip {
+  min-height: 44px;
+  padding: 12px 22px;
+  border-radius: 999px;
+  border: 1px solid var(--border-hl);
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: color var(--dur) var(--ease-standard),
+              border-color var(--dur) var(--ease-standard),
+              background var(--dur) var(--ease-standard),
+              transform var(--dur-fast) var(--ease-standard);
+}
+.shortcut-chip:hover {
+  color: var(--text-strong);
+  border-color: var(--accent-line);
+  background: var(--surface-raised);
+  transform: translateY(-1px);
+}
+.shortcut-chip:active { transform: translateY(0); }
+.shortcut-chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ── How purchasing works — 3 steps ──────────────────────────── */
+.steps-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: clamp(16px, 2.5vw, 28px);
+  grid-template-columns: repeat(3, 1fr);
+  counter-reset: step;
+}
+.step-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: clamp(24px, 3vw, 34px);
+}
+.step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px; height: 40px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-line);
+  color: var(--accent);
+  font-family: var(--font-serif);
+  font-size: 18px;
+  margin-bottom: 18px;
+}
+.step-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-strong);
+  letter-spacing: 0.01em;
+  margin-bottom: 8px;
+}
+.step-desc {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+/* ── Authenticity & preparation ──────────────────────────────── */
+.proof-grid {
+  display: grid;
+  gap: clamp(16px, 2.5vw, 28px);
+  grid-template-columns: repeat(3, 1fr);
+}
+.proof-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: clamp(24px, 3vw, 32px);
+  background: linear-gradient(180deg, var(--surface-1), var(--surface-2));
+}
+.proof-title {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--text-strong);
+  margin-bottom: 10px;
+}
+.proof-title::before {
+  content: '✦';
+  color: var(--accent);
+  margin-right: 10px;
+  font-size: 13px;
+  vertical-align: middle;
+}
+.proof-desc {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+/* ── FAQ (native <details>/<summary>) ────────────────────────── */
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  max-width: 760px;
+}
+.faq-item { border-bottom: 1px solid var(--border); }
+.faq-q {
+  position: relative;
+  list-style: none;
+  cursor: pointer;
+  padding: 20px 44px 20px 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-strong);
+}
+.faq-q::-webkit-details-marker { display: none; }
+.faq-q::after {
+  content: '+';
+  position: absolute;
+  right: 4px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 22px;
+  line-height: 1;
+  color: var(--accent);
+}
+.faq-item[open] .faq-q::after { content: '\2212'; }
+.faq-q:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.faq-a {
+  margin: 0;
+  padding: 0 44px 22px 0;
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--text);
+}
+
+/* ── Finder: distinct top pick + real 10 ml upgrade ──────────── */
+.asst-card-media { position: relative; }
+.asst-card--top {
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 1px var(--accent-line), var(--shadow-sm);
+}
+.asst-top-flag {
+  position: absolute;
+  top: 12px; left: 12px;
+  z-index: 2;
+  background: var(--accent);
+  color: var(--text-on-gold);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  border-radius: 999px;
+}
+.asst-card-upgrade {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--text-soft);
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  /* Keep the mobile/tablet header compact — search + cart stay immediate. */
+  .header-nav { display: none; }
+}
+@media (max-width: 768px) {
+  .steps-grid,
+  .proof-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Reduced motion ──────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .hero-content { animation: none; }
+  .shortcut-chip:hover { transform: none; }
 }

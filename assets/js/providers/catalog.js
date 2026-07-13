@@ -13,6 +13,30 @@ import { PRODUCTS, PACKS } from '../../../data/products.js?v=2026.06.04.2';
 let _productsCache = null;
 let _packsCache = null;
 
+/* Local demo data (data/products.js) is a DEVELOPER fallback only. It must
+   never reach real customers. This pure predicate decides whether the fallback
+   is allowed for a given environment so it can be unit-tested off the DOM.
+
+   Rules:
+     • The kill switch `DECANTS_HIDE_DEMO_PRODUCTS = true` disables demo data
+       everywhere (production ships with it set).
+     • Otherwise demo data is allowed only on localhost / 127.0.0.1.
+     • Any other host (production) never falls back to demo products; a catalog
+       failure degrades to a clean empty state instead. */
+export function isDemoFallbackAllowed({ hostname = '', hideFlag = false } = {}) {
+  if (hideFlag === true || String(hideFlag).toLowerCase() === 'true') return false;
+  const host = String(hostname).toLowerCase();
+  return host === 'localhost' || host === '127.0.0.1';
+}
+
+function _demoFallbackAllowed() {
+  const hostname = globalThis.window?.location?.hostname ?? '';
+  const hideFlag = globalThis.document
+    ?.querySelector?.('meta[name="DECANTS_HIDE_DEMO_PRODUCTS"]')
+    ?.getAttribute?.('content') ?? false;
+  return isDemoFallbackAllowed({ hostname, hideFlag });
+}
+
 export const CatalogProvider = {
   async getProducts() {
     if (_productsCache) return _productsCache;
@@ -35,6 +59,10 @@ export const CatalogProvider = {
       console.warn('[RDecants] catalog API unavailable.', err.message);
     }
 
+    /* Production degrades to a clean empty state (no demo SKUs). Returned
+       un-cached so the API can recover on a later call. */
+    if (!_demoFallbackAllowed()) return [];
+
     _productsCache = PRODUCTS.map(_mapProduct).filter(Boolean);
     return _productsCache;
   },
@@ -51,8 +79,10 @@ export const CatalogProvider = {
         return _packsCache;
       }
     } catch (err) {
-      console.warn('[RDecants] packs API unavailable, using local data.', err.message);
+      console.warn('[RDecants] packs API unavailable.', err.message);
     }
+
+    if (!_demoFallbackAllowed()) return [];
 
     _packsCache = PACKS;
     return _packsCache;

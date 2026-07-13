@@ -23,6 +23,7 @@ import { setupScrollAnimations,
          observeFadeUp,
          setupHeroParallax }             from './ui/animations.js?v=2026.06.14.1';
 import { setupHeader }                    from './ui/header.js';
+import { setupShortcuts }                 from './ui/shortcuts.js';
 import { showToast }                      from './ui/toast.js';
 import { openProductModal,
          closeProductModal }             from './ui/modal.js?v=2026.06.04.2';
@@ -177,6 +178,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   /* Guided shopping assistant (inline, metadata-driven) */
   setupAssistant('assistant');
+
+  /* Discovery shortcuts + hero/nav scroll links → real filters or the finder.
+     Runs after the catalog (SearchBar.init) and finder are mounted so their
+     module state is ready. */
+  setupShortcuts();
 
   /* Mood-based discovery rails (lazy-hydrates on scroll) — capped at 3 moods */
   Recommendations.render('recommendation-rails');
