@@ -8,8 +8,8 @@ import {
   USE_CASE_PROFILES,
   productSignals,
   scoreProfileMatch,
-} from '../recommendations/taxonomy.js?v=2026.06.04.2';
-import { MAX_VISIBLE_BADGES } from '../ui/displayLimits.js?v=2026.06.04.2';
+} from '../recommendations/taxonomy.js';
+import { MAX_VISIBLE_BADGES } from '../ui/displayLimits.js';
 
 const MIN_SCORE = 3;
 

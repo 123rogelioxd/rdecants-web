@@ -1,4 +1,4 @@
-import { getValidVariants } from './prices.js?v=2026.06.04.2';
+import { getValidVariants } from './prices.js';
 
 /* =============================================================
    RDECANTS — OPERATIONAL SCARCITY
@@ -56,11 +56,11 @@ export function getScarcityDisplay(product) {
   }
 
   if (state === 'last_units') {
-    return _display(state, 'low', 'Ultimas unidades', 'danger', demand);
+    return _display(state, 'low', 'Últimas unidades', 'danger', demand);
   }
 
   if (state === 'low') {
-    return _display(state, 'few', 'Pocas unidades disponibles', 'trend', demand);
+    return _display(state, 'few', 'Pocas unidades', 'trend', demand);
   }
 
   return _display(state, 'ok', 'Disponible', '', demand);

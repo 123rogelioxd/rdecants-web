@@ -16,10 +16,10 @@
      setupTasteBuilder(containerId)          → home page mount
    ============================================================= */
 
-import { isSellable, getOperationalScore } from '../recommendations/scoring.js?v=2026.06.04.2';
-import { Personalization } from '../recommendations/personalization.js?v=2026.06.04.2';
-import { getGuidanceBadges } from '../utils/guidance.js?v=2026.06.04.2';
-import { formatPrice, getDisplayVariant } from '../utils/prices.js?v=2026.06.04.2';
+import { isSellable, getOperationalScore } from '../recommendations/scoring.js';
+import { Personalization } from '../recommendations/personalization.js';
+import { getGuidanceBadges } from '../utils/guidance.js';
+import { formatPrice, getDisplayVariant } from '../utils/prices.js';
 import { Tracker } from '../tracking/tracker.js';
 import { primeImageStates } from './images.js';
 
@@ -115,7 +115,7 @@ export async function setupTasteBuilder(containerId) {
 
   let products = [];
   try {
-    const { CatalogProvider } = await import('../providers/catalog.js?v=2026.06.04.2');
+    const { CatalogProvider } = await import('../providers/catalog.js');
     products = await CatalogProvider.getProducts();
   } catch {
     products = [];

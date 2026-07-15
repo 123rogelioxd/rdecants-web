@@ -8,7 +8,7 @@
    Priority: recommendation_tags -> mood_tags -> style_tags -> climates.
    ============================================================= */
 
-import { normalizeText } from './taxonomy.js?v=2026.06.04.2';
+import { normalizeText } from './taxonomy.js';
 
 const DEFAULT_LIMIT = 4;
 

@@ -15,6 +15,19 @@
   transition: var(--transition);
 }
 
+/* Real anchor/scroll destinations — offset by the fixed header's actual
+   height (76px desktop / 68px mobile, matching .sf-bar's own sticky "top")
+   plus breathing room, so a heading never lands partially hidden underneath
+   it after a hash link, header/footer nav, or scrollIntoView() call. */
+#guide, #catalog, #faq, #pdp-buy {
+  scroll-margin-top: 92px;
+}
+@media (max-width: 768px) {
+  #guide, #catalog, #faq, #pdp-buy {
+    scroll-margin-top: 84px;
+  }
+}
+
 .header-logo {
   display: flex;
   align-items: center;
@@ -198,13 +211,12 @@
 
 /* ── Hero ────────────────────────────────────────────────────── */
 .hero {
-  min-height: 760px;
-  height: max(760px, 100svh);
+  min-height: clamp(460px, 62vh, 560px);
   position: relative;
   overflow: hidden;
   display: flex;
   align-items: flex-end;
-  padding-bottom: clamp(60px, 10vh, 100px);
+  padding-bottom: clamp(40px, 6vh, 64px);
   background: #030303;
 }
 
@@ -271,17 +283,20 @@
     saturate(1.08)
     drop-shadow(-46px 42px 90px rgba(0, 0, 0, 0.78))
     drop-shadow(0 22px 54px rgba(201, 169, 110, 0.16));
-  animation: heroFloat 6s ease-in-out infinite;
 }
 
 .hero-content {
   position: relative; z-index: 2;
   padding: 0 clamp(20px, 5vw, 80px);
   max-width: 560px;
-  /* The promise must be readable almost immediately (the old 2.6s delay left
-     the headline invisible well past the intro splash). */
-  animation: heroReveal 0.9s var(--ease-out, ease) 0.25s both;
   text-shadow: 0 2px 24px rgba(0, 0, 0, 0.68);
+}
+
+/* Entrance only when motion is armed (see the .rd-anim gate). Default state
+   is fully visible so a hidden tab / reduced-motion / no-JS never leaves the
+   promise stuck at opacity 0. */
+html.rd-anim .hero-content {
+  animation: heroReveal 0.7s var(--ease-out, ease) 0.1s both;
 }
 
 .hero-eyebrow {
@@ -301,11 +316,11 @@
 
 .hero-title {
   font-family: var(--font-serif);
-  font-size: clamp(52px, 9vw, 100px);
+  font-size: clamp(40px, 6vw, 74px);
   font-weight: 300;
-  line-height: 0.95;
+  line-height: 0.98;
   letter-spacing: -0.01em;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .hero-title em {
@@ -315,10 +330,10 @@
 
 .hero-desc {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.5);
-  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.56);
+  line-height: 1.7;
   max-width: 380px;
-  margin-bottom: 40px;
+  margin-bottom: 28px;
 }
 
 .hero-actions {
@@ -401,10 +416,10 @@
   padding: 0 clamp(16px, 4vw, 48px);
 }
 
-.section { padding: clamp(92px, 11vw, 148px) 0; }
+.section { padding: clamp(52px, 7vw, 92px) 0; }
 
 .section-header {
-  margin-bottom: clamp(40px, 6vw, 80px);
+  margin-bottom: clamp(26px, 4vw, 44px);
   display: flex; align-items: flex-end; justify-content: space-between;
   flex-wrap: wrap; gap: 16px;
 }
@@ -426,61 +441,43 @@
 
 .section-title {
   font-family: var(--font-serif);
-  font-size: var(--text-3xl);
+  font-size: clamp(30px, 4.2vw, 46px);
   font-weight: 300;
   letter-spacing: -0.02em;
   line-height: 1.05;
 }
 
-/* ── Intro splash ────────────────────────────────────────────── */
-#intro {
-  position: fixed; inset: 0;
-  background: var(--black);
-  display: flex; flex-direction: column;
-  justify-content: center; align-items: center; gap: 8px;
-  z-index: 9999;
-  animation: introFade 0.8s ease 2.2s forwards;
+.catalog-intro {
+  font-size: 12px;
+  color: var(--muted);
+  max-width: 260px;
+  line-height: 1.7;
 }
 
-.intro-logo {
-  font-family: var(--font-serif);
-  font-size: clamp(48px, 12vw, 100px);
-  font-weight: 300;
-  letter-spacing: 0.25em;
-  color: var(--white);
-  animation: introReveal 1s ease 0.3s both;
-}
-
-.intro-sub {
-  font-size: 10px;
-  letter-spacing: 0.45em;
-  color: var(--accent);
-  text-transform: uppercase;
-  animation: introReveal 1s ease 0.6s both;
-}
-
-.intro-line {
-  width: 40px; height: 1px;
-  background: var(--accent);
-  margin-top: 8px;
-  animation: introLine 0.8s ease 0.9s both;
-}
+/* The catalog sits directly under the guide band — tighten the seam so
+   guidance and browsing read as one continuous surface. */
+.section--catalog { padding-top: clamp(20px, 3vw, 36px); }
 
 /* ── Product grid ────────────────────────────────────────────── */
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
-  gap: clamp(24px, 3vw, 38px);
+  grid-template-columns: repeat(auto-fill, minmax(min(230px, 100%), 1fr));
+  gap: clamp(16px, 2vw, 26px);
   max-width: 100%;
   min-width: 0;
 }
 
-/* Compact mobile catalog — desktop always shows the full grid, so the
-   "Ver más perfumes" control and the cap are hidden outside mobile. */
-.catalog-more { display: none; }
+/* Incremental catalog — the "Ver más perfumes" control appears on every
+   viewport (mobile AND desktop) whenever more products remain to load. */
+.catalog-more { display: flex; }
 
 .catalog-more-panel {
   width: min(100%, 360px);
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin: 28px auto 0;
+  text-align: center;
 }
 
 .catalog-more-count {
@@ -552,14 +549,14 @@
     rgba(8, 8, 8, 0.98) 100%
   );
   border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 18px;
+  border-radius: 14px;
   overflow: hidden;
   transition:
-    transform  0.55s cubic-bezier(0.19, 1, 0.22, 1),
-    border-color 0.45s ease,
-    box-shadow 0.55s ease;
+    transform var(--dur) var(--ease-out),
+    border-color var(--dur) ease,
+    box-shadow var(--dur) ease;
   position: relative;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.38);
   isolation: isolate;
   display: flex;
   flex-direction: column;
@@ -584,23 +581,23 @@
 }
 
 .product-card:hover {
-  transform: translateY(-10px);
-  border-color: rgba(201, 169, 110, 0.18);
+  transform: translateY(-4px);
+  border-color: rgba(201, 169, 110, 0.20);
   box-shadow:
-    0 40px 90px rgba(0, 0, 0, 0.75),
+    0 18px 44px rgba(0, 0, 0, 0.6),
     0 0 0 1px rgba(201, 169, 110, 0.08);
 }
 
 .card-badge {
   position: absolute;
-  top: 14px; left: 14px;
+  top: 10px; left: 10px;
   background: var(--accent);
   color: var(--black);
   font-size: 8px;
   font-weight: 600;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  padding: 5px 10px;
+  padding: 4px 9px;
   border-radius: 999px;
   z-index: 2;
 }
@@ -618,9 +615,9 @@
 
 .card-img-wrap {
   position: relative;
-  height: 250px;
+  aspect-ratio: 1 / 1;
   background:
-    radial-gradient(circle at center, rgba(32, 32, 60, 0.55) 0%, rgba(0, 0, 0, 0) 70%),
+    radial-gradient(circle at center, rgba(32, 32, 60, 0.5) 0%, rgba(0, 0, 0, 0) 70%),
     linear-gradient(180deg, #101010 0%, #050505 100%);
   overflow: hidden;
 }
@@ -628,27 +625,30 @@
 .card-img-wrap img {
   width: 100%; height: 100%;
   object-fit: contain;
-  padding: 24px;
-  transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  padding: 16px;
+  transition: transform var(--dur-slow) var(--ease-out);
 }
 
-.product-card:hover .card-img-wrap img { transform: scale(1.06); }
+.product-card:hover .card-img-wrap img { transform: scale(1.04); }
 
 .card-body {
   display: flex;
   flex: 1;
   flex-direction: column;
-  padding: 24px;
+  padding: 14px 14px 16px;
   min-width: 0;
 }
 
 .card-house {
-  font-size: 11px;
-  letter-spacing: 0.28em;
-  opacity: 0.6;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  opacity: 0.62;
   color: var(--muted);
   text-transform: uppercase;
-  margin-bottom: 10px;
+  margin-bottom: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .card-title-row {
@@ -664,12 +664,12 @@
   display: -webkit-box;
   -webkit-box-orient: vertical;
   font-family: var(--font-serif);
-  font-size: clamp(27px, 2vw, 34px);
-  font-weight: 400;
+  font-size: clamp(16px, 1.3vw, 19px);
+  font-weight: 500;
   -webkit-line-clamp: 2;
-  line-height: 1.02;
+  line-height: 1.16;
   letter-spacing: 0;
-  margin-bottom: 0;
+  margin-bottom: 10px;
   min-width: 0;
   overflow: hidden;
   overflow-wrap: anywhere;
@@ -763,27 +763,30 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .pdm-guidance { margin-top: 6px; }
 
 .guidance-chip {
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 500;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.13em;
   line-height: 1;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.72);
-  background: rgba(255, 255, 255, 0.045);
+  color: rgba(255, 255, 255, 0.68);
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border-hl);
   border-radius: 999px;
-  padding: 5px 11px;
+  padding: 5px 9px;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* PDP/quick-view keep a slightly larger, more legible chip. */
+.pdm-guidance .guidance-chip { font-size: 9px; padding: 6px 11px; letter-spacing: 0.14em; }
 
 /* ── "¿Por qué esta fragancia?" reasoning block ─────────────── */
 .why-block {
@@ -1116,27 +1119,33 @@
 
 .pdp-stock { margin-bottom: 14px; }
 
+/* Add is the dominant action; WhatsApp is a subordinate consultation option
+   below it — same hierarchy as the quick-view modal, so the two purchase
+   surfaces feel like one system. */
 .pdp-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
 }
 
 .pdp-btn-add { width: 100%; }
 .pdp-btn-wa {
   width: 100%;
-  padding: 12px 16px;
-  background: #25D366;
-  color: #fff;
-  border: none;
+  min-height: 44px;
+  padding: 11px 16px;
+  background: none;
+  border: 1px solid rgba(37, 211, 102, 0.32);
+  color: var(--wa);
   border-radius: 999px;
-  font-size: 12px;
-  letter-spacing: 0.2em;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: filter 0.2s ease;
+  transition: border-color var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard);
 }
-.pdp-btn-wa:hover { filter: brightness(1.08); }
+.pdp-btn-wa:hover { border-color: var(--wa); color: var(--wa-strong); }
+.pdp-btn-wa:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .pdp-intelligence { margin-bottom: 32px; }
 
@@ -1872,7 +1881,7 @@
   position: fixed;
   left: 14px;
   right: 14px;
-  bottom: 14px;
+  bottom: max(14px, calc(14px + env(safe-area-inset-bottom)));
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1885,12 +1894,24 @@
   box-shadow: 0 10px 32px rgba(0, 0, 0, 0.55);
   transform: translateY(140%);
   transition: transform 0.32s ease;
-  z-index: 80;
+  /* Above .whatsapp-float (z-index 400) so the bar is never obstructed;
+     the float itself is hidden while this bar is open (see the
+     .pdp-cta-visible rule below) so there is no visual collision either. */
+  z-index: 410;
   pointer-events: none;
 }
 .pdp-sticky-cta--open {
   transform: translateY(0);
   pointer-events: auto;
+}
+
+/* The floating WhatsApp button would otherwise sit on top of the sticky buy
+   bar's right edge — hide it while the bar is visible; it reappears the
+   moment the bar hides (hero or the real buy section back in view). */
+body.pdp-cta-visible .whatsapp-float {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
 }
 .pdp-sticky-cta-info {
   display: flex;
@@ -1922,14 +1943,6 @@
 
 @media (min-width: 768px) {
   .pdp-sticky-cta { left: auto; right: 24px; bottom: 24px; max-width: 380px; }
-}
-
-/* Ensure WhatsApp float and sticky CTA share the corner gracefully */
-@media (max-width: 767px) {
-  .pdp-sticky-cta--open ~ .whatsapp-float,
-  body:has(.pdp-sticky-cta--open) .whatsapp-float {
-    bottom: 90px;
-  }
 }
 
 @media (min-width: 768px) {
@@ -2213,10 +2226,9 @@
 
 .card-purchase {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 16px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
   max-width: 100%;
   margin-top: auto;
   min-width: 0;
@@ -2228,7 +2240,8 @@
 
 .card-price {
   font-family: var(--font-serif);
-  font-size: 28px;
+  font-size: 17px;
+  font-weight: 600;
   color: var(--accent);
   line-height: 1;
   white-space: nowrap;
@@ -2239,15 +2252,19 @@
 
 .card-price small {
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: 10px;
+  font-weight: 400;
   color: var(--muted);
   margin-left: 4px;
 }
 
 .card-action {
-  max-width: 100%;
-  flex: 0 0 auto;
-  padding: 12px 18px;
+  width: 100%;
+  justify-content: center;
+  min-height: 44px;
+  padding: 11px 16px;
+  font-size: 10px;
+  letter-spacing: 0.14em;
   box-sizing: border-box;
 }
 
@@ -2261,7 +2278,6 @@
   width: 5px; height: 5px;
   border-radius: 50%;
   background: var(--danger);
-  animation: pulse 1.5s ease-in-out infinite;
 }
 
 .sizes {
@@ -2675,16 +2691,15 @@
 }
 
 .cart-section {
-  background: rgba(255, 255, 255, 0.022);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 14px;
-  padding: 14px;
+  padding: 0;
 }
 
+/* The individual .cart-item cards below already carry the visual framing —
+   this outer wrapper stays plain (just the label) so the review area isn't
+   a card inside a card. */
 .cart-products-section {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018));
-  border-color: rgba(255, 255, 255, 0.1);
+  background: none;
+  border: none;
 }
 
 .cart-section-label,
@@ -2869,14 +2884,11 @@
   min-height: 100%;
 }
 
+/* Optional name/comment — a plain block, not a boxed card, so it reads as
+   secondary to the product review above it and the total below. */
 .checkout-panel {
-  margin-bottom: 12px;
-  padding: 14px;
-  background:
-    linear-gradient(180deg, rgba(201, 169, 110, 0.075), rgba(255, 255, 255, 0.026));
-  border: 1px solid rgba(201, 169, 110, 0.24);
-  border-radius: 14px;
-  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.26);
+  margin-bottom: 16px;
+  padding: 0;
 }
 
 .checkout-head {
@@ -3045,11 +3057,9 @@
   color: rgba(255, 255, 255, 0.82);
 }
 
-.checkout-form--ready {
-  border-color: rgba(37, 211, 102, 0.26);
-  background:
-    linear-gradient(180deg, rgba(37, 211, 102, 0.07), rgba(255, 255, 255, 0.026));
-}
+/* Shipping eligibility is already communicated once, near the total (see
+   .shipping-status) — the optional name/comment block stays plain rather
+   than also changing color, so it doesn't add a second competing signal. */
 
 .checkout-momentum[data-key="ready"]::before {
   background: #25D366;
@@ -3087,12 +3097,30 @@
 
 /* ── Discount code (PREVIEW only — R Supply OS is the source of truth) ── */
 .cart-discount {
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
+
+/* Progressive disclosure — a plain text-link, not a field, so it never
+   competes with the primary WhatsApp action for attention. */
+.cart-discount-toggle {
+  background: none;
+  border: none;
+  padding: 4px 0;
+  color: rgba(255, 255, 255, 0.42);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-standard);
+}
+.cart-discount-toggle:hover { color: rgba(255, 255, 255, 0.7); }
+.cart-discount-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .cart-discount-form {
   display: flex;
   gap: 8px;
+  margin-top: 8px;
 }
 
 .cart-discount-input {
@@ -3836,9 +3864,8 @@
 
   .hero {
     align-items: flex-end;
-    height: 100svh;
-    min-height: 620px;
-    padding: 92px 0 max(38px, env(safe-area-inset-bottom));
+    min-height: clamp(430px, 60vh, 520px);
+    padding: 80px 0 max(30px, env(safe-area-inset-bottom));
   }
 
   .hero-bg {
@@ -3904,8 +3931,8 @@
   }
 
   .hero-title {
-    font-size: 60px;
-    line-height: 0.94;
+    font-size: 46px;
+    line-height: 0.96;
     margin-bottom: 14px;
   }
 
@@ -4152,29 +4179,16 @@
 
   .footer-links { gap: 20px; flex-wrap: wrap; }
 
-  .card-name     { font-size: 28px; }
   .pack-name     { font-size: 40px; }
   .pack-price-now { font-size: 40px; }
 
   .card-story,
   .pack-desc { font-size: 14px; }
-
-  .card-img-wrap { height: 210px; }
-  .card-body { padding: 20px; }
-  .card-purchase {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 14px;
-  }
-  .card-action {
-    width: 100%;
-    justify-content: center;
-    min-height: 48px;
-  }
 }
 
 @media (max-width: 480px) {
-  .products-grid { grid-template-columns: 1fr; }
+  /* Catalog stays 2-up even on the smallest phones — compact cards make the
+     collection scannable and comparable instead of one billboard per screen. */
   .packs-grid    { grid-template-columns: 1fr; }
   .trust-grid    { grid-template-columns: 1fr; }
   .hero-actions  { flex-direction: row; align-items: center; }
@@ -4182,8 +4196,8 @@
 
 @media (max-width: 380px) {
   .hero {
-    min-height: 600px;
-    padding-bottom: max(32px, env(safe-area-inset-bottom));
+    min-height: 420px;
+    padding-bottom: max(28px, env(safe-area-inset-bottom));
   }
 
   .hero-content {
@@ -4192,7 +4206,7 @@
   }
 
   .hero-title {
-    font-size: 52px;
+    font-size: 40px;
   }
 
   .hero-desc {
@@ -4468,11 +4482,13 @@
   padding: 18px clamp(28px, 4vw, 44px) 20px;
 }
 
+/* Price sits on its own full-width row above the actions — a fixed-width
+   column next to it (the old layout) clips long formatted prices like
+   "$1,705 MXN" at any viewport. Stacking is simple and never overlaps. */
 .pdm-buybar-bottom {
-  display: grid;
-  grid-template-columns: minmax(120px, 0.7fr) minmax(220px, 1fr);
-  gap: 14px;
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 /* Size selector */
@@ -4549,12 +4565,14 @@
   color: rgba(255, 255, 255, 0.45);
 }
 
-/* Price display */
+/* Price display — price and its unit read inline on one row, always in sync
+   with the selected size (updated by _updateSizeUI, never a stale value). */
 .pdm-price-row {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: baseline;
-  gap: 2px;
+  gap: 8px;
+  flex-wrap: wrap;
   margin-bottom: 0;
 }
 
@@ -4588,6 +4606,7 @@
   display: flex;
   flex-direction: column;
   gap: 9px;
+  min-width: 0;
 }
 
 .pdm-btn-add {
@@ -4596,20 +4615,67 @@
   justify-content: center;
 }
 
+/* Secondary row: a full-profile link and a WhatsApp inquiry action, both
+   visually subordinate to the primary "Agregar" button above them. */
+.pdm-secondary-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
 .pdm-details-link {
   display: inline-flex;
-  margin-top: 12px;
+  align-items: center;
+  min-height: 36px;
   color: rgba(255, 255, 255, 0.5);
   font-size: 10px;
   font-weight: 500;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   text-decoration: none;
-  transition: var(--transition);
+  white-space: nowrap;
+  transition: color var(--dur-fast) var(--ease-standard);
 }
 
 .pdm-details-link:hover {
   color: var(--accent);
+}
+
+.pdm-btn-wa {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  min-height: 36px;
+  padding: 0 4px;
+  background: none;
+  border: none;
+  color: var(--wa);
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-standard);
+}
+
+.pdm-btn-wa::before {
+  content: '';
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--wa);
+  flex-shrink: 0;
+}
+
+.pdm-btn-wa:hover { color: var(--wa-strong); }
+.pdm-btn-wa:focus-visible,
+.pdm-details-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* Card cursor hint */
@@ -4800,9 +4866,16 @@
   }
 
   .pdm-buybar-bottom {
-    display: grid;
-    grid-template-columns: 80px minmax(0, 1fr);
-    gap: 10px;
+    gap: 8px;
+  }
+
+  .pdm-secondary-actions {
+    margin-top: 2px;
+  }
+
+  .pdm-details-link,
+  .pdm-btn-wa {
+    min-height: 44px;
   }
 
   .pdm-price {
@@ -4874,6 +4947,114 @@
   border-color: rgba(201, 169, 110, 0.2);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(201, 169, 110, 0.08);
 }
+
+/* ── Toolbar: count + active-filter chips (left) · sort + Filtrar (right) ── */
+.sf-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  flex-wrap: wrap;
+}
+
+.sf-active {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.sf-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.sf-sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Removable active-filter chips */
+.sf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  padding: 5px 8px 5px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--text-strong);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-standard),
+              background var(--dur-fast) var(--ease-standard);
+}
+.sf-chip:hover { border-color: var(--accent); background: rgba(201, 169, 110, 0.2); }
+.sf-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sf-chip-x {
+  display: grid;
+  place-items: center;
+  width: 17px; height: 17px;
+  border-radius: 50%;
+  background: rgba(201, 169, 110, 0.24);
+  color: var(--accent-strong);
+  font-size: 13px;
+  line-height: 1;
+}
+
+.sf-chip-clear {
+  background: none;
+  border: none;
+  color: var(--text-soft);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 6px 4px;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-standard);
+}
+.sf-chip-clear:hover { color: var(--text-strong); }
+.sf-chip-clear:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* "Filtrar" progressive-disclosure button (all viewports) */
+.sf-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border-hl);
+  background: var(--surface-2);
+  color: var(--text-strong);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-standard),
+              color var(--dur-fast) var(--ease-standard),
+              background var(--dur-fast) var(--ease-standard);
+}
+.sf-filter-btn:hover { border-color: var(--accent-line); background: var(--surface-raised); }
+.sf-filter-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sf-filter-btn--active { border-color: var(--accent); color: var(--accent); }
 
 /* ── "Explorando: <mood>" banner ─────────────────────────────── */
 .sf-exploring {
@@ -5528,29 +5709,40 @@ input[type="search"]::-webkit-search-decoration,
 
 /* ── Responsive ──────────────────────────────────────────────── */
 
-/* Mobile: hide desktop controls, show filter button */
+/* Mobile: compact bar; the filter panel is a bottom sheet (base .sf-drawer). */
 @media (max-width: 767px) {
-  .sf-row-moods .sf-moods   { display: none; }
-  .sf-controls .sf-sel-wrap { display: none; }
-  .sf-mobile-btn            { display: inline-flex; }
-
   .sf-bar {
-    top: 68px;
-    padding: 12px 16px;
+    top: 64px;
+    padding: 12px 14px;
     border-radius: var(--radius-sm);
   }
-
-  .sf-row-top {
-    gap: 8px;
-  }
+  .sf-toolbar { gap: 10px 12px; }
 }
 
-/* Desktop: always show selects + mood pills, hide filter btn */
+/* Desktop: the SAME filter panel becomes a centered modal (not a bottom sheet),
+   so progressive disclosure works identically on every viewport. */
 @media (min-width: 768px) {
-  .sf-mobile-btn { display: none; }
-  /* Drawer and its overlay are invisible but still exist in DOM */
-  .sf-ov,
-  .sf-drawer     { display: none; }
+  .sf-drawer {
+    left: 50%;
+    right: auto;
+    bottom: auto;
+    top: 50%;
+    width: min(460px, calc(100vw - 48px));
+    max-height: min(80svh, 640px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    transform: translate(-50%, -46%);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.32s var(--ease-out), opacity 0.2s ease;
+    box-shadow: 0 40px 100px rgba(0, 0, 0, 0.7);
+  }
+  .sf-drawer--open {
+    transform: translate(-50%, -50%);
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .sf-drawer-handle { display: none; }
 }
 
 /* Recommendation rails */
@@ -6060,10 +6252,16 @@ input[type="search"]::-webkit-search-decoration,
     radial-gradient(circle at 50% 42%, rgba(201, 169, 110, 0.08), transparent 58%),
     linear-gradient(90deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025));
   background-size: 100% 100%, 240% 100%;
-  animation: imgSheen 1.45s ease-in-out infinite;
   opacity: 1;
   transition: opacity 0.38s ease;
   pointer-events: none;
+}
+
+/* Loading shimmer is a motion enhancement only — never for reduced-motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .img-shell:not(.img-loaded):not(.img-failed)::before {
+    animation: imgSheen 1.45s ease-in-out infinite;
+  }
 }
 
 .img-shell img {
@@ -6098,15 +6296,17 @@ input[type="search"]::-webkit-search-decoration,
 }
 
 .img-shell.img-failed::after {
-  content: 'R';
+  content: var(--img-initial, 'R');
   position: absolute;
   inset: 0;
   z-index: 1;
   display: grid;
   place-items: center;
-  color: rgba(201, 169, 110, 0.32);
+  color: rgba(201, 169, 110, 0.30);
   font-family: var(--font-serif);
-  font-size: clamp(44px, 8vw, 76px);
+  font-weight: 300;
+  font-size: clamp(32px, 6vw, 54px);
+  letter-spacing: 0.06em;
   pointer-events: none;
 }
 
@@ -6285,12 +6485,12 @@ textarea:focus-visible {
 @media (max-width: 768px) {
   .products-grid {
     gap: 12px;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .product-card {
     border-radius: 12px;
-    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.42);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.42);
   }
 
   .product-card::before {
@@ -6316,13 +6516,13 @@ textarea:focus-visible {
   }
 
   .card-body {
-    padding: 16px;
+    padding: 12px 12px 14px;
   }
 
   .card-house {
-    margin-bottom: 6px;
+    margin-bottom: 5px;
     font-size: 8px;
-    letter-spacing: 0.16em;
+    letter-spacing: 0.14em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -6335,8 +6535,9 @@ textarea:focus-visible {
   }
 
   .card-name {
-    font-size: 25px;
-    line-height: 1.04;
+    font-size: 15px;
+    line-height: 1.16;
+    margin-bottom: 8px;
     -webkit-line-clamp: 2;
   }
 
@@ -6368,12 +6569,12 @@ textarea:focus-visible {
   }
 
   .card-price {
-    font-size: 23px;
+    font-size: 15px;
   }
 
   .card-price small {
     font-size: 9px;
-    margin-left: 2px;
+    margin-left: 3px;
   }
 
   .card-stock {
@@ -7982,4 +8183,346 @@ textarea:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .hero-content { animation: none; }
   .shortcut-chip:hover { transform: none; }
+}
+
+/* =============================================================
+   GUIDED CATALOG (Phase 1) — guide bar, trust strip, guided grid
+   chrome, contextual kit. Scoped, additive; reuses existing tokens.
+   ============================================================= */
+
+/* ── Guide bar (catalog control layer) ───────────────────────── */
+.guide-section { padding: clamp(28px, 4vw, 44px) 0 clamp(20px, 3vw, 30px); }
+.guide-head { margin-bottom: 16px; }
+.guide-title {
+  font-family: var(--font-serif);
+  font-size: clamp(22px, 3.4vw, 30px);
+  font-weight: 300;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+.guide-chips { display: flex; flex-wrap: wrap; gap: 10px; }
+.guide-chip {
+  min-height: 44px;
+  padding: 12px 22px;
+  border-radius: 999px;
+  border: 1px solid var(--border-hl);
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  transition: color var(--dur) var(--ease-standard),
+              border-color var(--dur) var(--ease-standard),
+              background var(--dur) var(--ease-standard),
+              transform var(--dur-fast) var(--ease-standard);
+}
+.guide-chip:hover {
+  color: var(--text-strong);
+  border-color: var(--accent-line);
+  background: var(--surface-raised);
+  transform: translateY(-1px);
+}
+.guide-chip:active { transform: translateY(0); }
+.guide-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Finder disclosure */
+.guide-finder { margin-top: 16px; }
+.guide-finder-toggle {
+  background: none;
+  border: none;
+  padding: 6px 0;
+  color: var(--accent);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+}
+.guide-finder-toggle:hover { color: var(--accent-strong); }
+.guide-finder-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* ── Finder stepper (one decision at a time) ─────────────────── */
+.guide-stepper {
+  margin-top: 16px;
+  max-width: 540px;
+  padding: 20px 22px 18px;
+  border: 1px solid var(--border-hl);
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012));
+}
+.guide-stepper[hidden] { display: none; }
+
+.gs-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.gs-progress { display: flex; gap: 6px; }
+.gs-dot {
+  width: 24px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border-hl);
+  transition: background var(--dur) var(--ease-standard);
+}
+.gs-dot--on { background: var(--accent); }
+.gs-count {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  white-space: nowrap;
+}
+
+.gs-q {
+  font-family: var(--font-serif);
+  font-size: clamp(20px, 3vw, 24px);
+  font-weight: 400;
+  color: var(--text-strong);
+  line-height: 1.15;
+  margin-bottom: 16px;
+}
+.gs-options { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+.gs-option {
+  min-height: 44px;
+  padding: 11px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--border-hl);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-standard),
+              border-color var(--dur-fast) var(--ease-standard),
+              background var(--dur-fast) var(--ease-standard),
+              transform var(--dur-fast) var(--ease-standard);
+}
+.gs-option:hover { color: var(--text-strong); border-color: var(--accent-line); transform: translateY(-1px); }
+.gs-option:active { transform: translateY(0); }
+.gs-option--active { color: var(--text-strong); border-color: var(--accent); background: var(--accent-soft); }
+.gs-option:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.gs-nav { display: flex; align-items: center; gap: 12px; }
+.gs-back {
+  background: none;
+  border: none;
+  padding: 6px 0;
+  color: var(--text-soft);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-standard);
+}
+.gs-back:hover { color: var(--text-strong); }
+.gs-back:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* Each step animates in only when motion is armed. */
+@media (prefers-reduced-motion: no-preference) {
+  html.rd-anim .gs-step-body { animation: gsStepIn var(--dur) var(--ease-out) both; }
+}
+@keyframes gsStepIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ── Trust strip (concrete, near the first commercial decision) ── */
+.trust-strip { padding: var(--space-3) 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.trust-strip-list {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 22px;
+}
+.trust-strip-list li { display: flex; flex-direction: column; gap: 5px; }
+.trust-strip-list strong {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text-strong);
+}
+.trust-strip-list strong::before {
+  content: "✓";
+  color: var(--accent);
+  margin-right: 7px;
+  font-weight: 700;
+}
+.trust-strip-list span { font-size: 12px; line-height: 1.6; color: var(--text-soft); }
+
+/* ── Guided grid state header ("Para ti · … · Ver todo") ──────── */
+/* Editorially confident, not a promo banner: a plain surface with a single
+   hairline border — no gold fill. This is the ONE guided-state summary on
+   screen (the toolbar stays empty while guided; see searchbar.js). */
+.catalog-guide-state {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding: 13px 18px;
+  border: 1px solid var(--border-hl);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+}
+.cgs-info { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.cgs-kicker {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+}
+.cgs-answers { font-family: var(--font-serif); font-size: 19px; font-weight: 400; color: var(--text-strong); }
+.cgs-count { font-size: 12px; color: var(--text-soft); }
+.cgs-actions { display: flex; gap: 8px; }
+.cgs-adjust, .cgs-clear {
+  min-height: 40px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  transition: background var(--dur) var(--ease-standard), color var(--dur) var(--ease-standard), border-color var(--dur) var(--ease-standard);
+}
+.cgs-adjust { background: none; border: 1px solid var(--border-hl); color: var(--text); }
+.cgs-adjust:hover { border-color: var(--accent-line); color: var(--text-strong); }
+.cgs-clear { background: none; border: 1px solid transparent; color: var(--accent); }
+.cgs-clear:hover { color: var(--accent-strong); }
+.cgs-adjust:focus-visible, .cgs-clear:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ── Top-pick card treatment (guided) ────────────────────────── */
+.product-card--top {
+  border: 1px solid var(--accent-line);
+  box-shadow: 0 0 0 1px var(--accent-soft), var(--shadow-sm);
+}
+.card-top-flag {
+  position: absolute;
+  top: 0; left: 0;
+  z-index: 2;
+  padding: 6px 12px;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--text-on-gold);
+  background: var(--accent);
+  border-bottom-right-radius: var(--radius-sm);
+}
+.card-why {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text);
+  margin: 2px 0 4px;
+}
+.card-signal { font-size: 11px; }
+.card-signal--stock { color: var(--warn); font-weight: 500; }
+
+/* ── Contextual kit prompt (post-recommendation only) ──────────
+   Compact — a fraction of a viewport, never another full section. */
+.catalog-kit-prompt { margin-top: 20px; }
+.catalog-kit-prompt[hidden] { display: none; }
+.ck-inner {
+  padding: 14px 16px;
+  border: 1px solid var(--border-hl);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+}
+.ck-kicker {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--text-strong);
+  margin-bottom: 10px;
+}
+
+.ck-compact { display: flex; flex-direction: column; gap: 12px; }
+
+.ck-mini-list {
+  list-style: none;
+  margin: 0; padding: 0;
+  display: flex;
+  gap: 8px;
+}
+.ck-mini-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+.ck-mini-img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-width: 56px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #101010, #050505);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.ck-mini-img img { width: 100%; height: 100%; object-fit: contain; padding: 6px; }
+.ck-mini-img--fallback::after {
+  content: '✦';
+  font-size: 16px;
+  color: rgba(201, 169, 110, 0.3);
+}
+.ck-mini-name {
+  font-size: 10px;
+  line-height: 1.3;
+  color: var(--text-soft);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.ck-compact-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.ck-compact-meta {
+  font-size: 11px;
+  color: var(--text-soft);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.ck-compact-price {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.ck-compact-add {
+  min-height: 40px;
+  padding: 9px 16px;
+  font-size: 10px;
+  flex: 0 0 auto;
+  width: 100%;
+}
+@media (min-width: 480px) {
+  .ck-compact-foot { flex-wrap: nowrap; }
+  .ck-compact-add { width: auto; }
+}
+
+@media (max-width: 768px) {
+  .trust-strip-list { grid-template-columns: 1fr 1fr; gap: 16px; }
+}
+@media (max-width: 480px) {
+  .trust-strip-list { grid-template-columns: 1fr; }
+  .catalog-guide-state { flex-direction: column; align-items: flex-start; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .guide-chip:hover { transform: none; }
 }

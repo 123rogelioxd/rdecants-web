@@ -5,8 +5,8 @@
    provide anything specific enough to say.
    ============================================================= */
 
-import { getReasons } from '../recommendations/reasoning.js?v=2026.06.04.2';
-import { MAX_MODAL_WHY_REASONS } from './displayLimits.js?v=2026.06.04.2';
+import { getReasons } from '../recommendations/reasoning.js';
+import { MAX_MODAL_WHY_REASONS } from './displayLimits.js';
 
 export function buildWhyHtml(product, { heading = '¿Por qué esta fragancia?', limit = MAX_MODAL_WHY_REASONS } = {}) {
   const reasons = getReasons(product, { limit });

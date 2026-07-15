@@ -13,8 +13,8 @@
    query string would load a second, un-initialised module instance.
    ============================================================= */
 
-import { SearchBar } from './searchbar.js?v=2026.06.04.2';
-import { presetFinder } from './assistant.js?v=2026.06.04.2';
+import { SearchBar } from './searchbar.js';
+import { presetFinder } from './assistant.js';
 
 /* Each shortcut resolves to a real action. 'mood' filters the live catalog;
    'finder' launches the guided flow with an occasion/gender pre-selected. */

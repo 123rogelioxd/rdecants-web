@@ -10,8 +10,8 @@
    source of truth; we only ever forward the CODE.
    ============================================================= */
 
-import { Attribution } from './attribution.js?v=2026.06.04.2';
-import { Discount }    from './discount.js?v=2026.06.04.2';
+import { Attribution } from './attribution.js';
+import { Discount }    from './discount.js';
 import { Tracker }     from '../tracking/tracker.js';
 
 /* Once we've attempted an auto-apply this page load we don't retry on every

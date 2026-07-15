@@ -5,6 +5,7 @@ import {
   DISCOVERY_SET_TEMPLATES,
   resolveDiscoverySets,
   buildDiscoverySetsHtml,
+  buildCompactKitHtml,
 } from '../assets/js/ui/discoverySets.js';
 
 import { EVENTS, Tracker, shouldEmitEvent } from '../assets/js/tracking/tracker.js';
@@ -174,6 +175,65 @@ test('buildDiscoverySetsHtml escapes product names and houses', () => {
   assert.ok(!html.includes('<b>Bold</b>'), 'HTML tags in name escaped');
   assert.ok(html.includes('&lt;b&gt;'), 'name HTML-escaped correctly');
   assert.ok(html.includes('&amp;'), 'ampersand escaped');
+});
+
+/* ── buildCompactKitHtml — the post-recommendation contextual kit ──
+   Deliberately compact (a fraction of a viewport): tiny images/names,
+   one total, one CTA — never the full editorial .ds-card. ─────────── */
+
+test('buildCompactKitHtml returns empty string for no set', () => {
+  assert.equal(buildCompactKitHtml(null), '');
+  assert.equal(buildCompactKitHtml(undefined), '');
+});
+
+test('buildCompactKitHtml renders one mini item per product, the total and a single CTA', () => {
+  const set = resolveDiscoverySets(catalog)[0];
+  const html = buildCompactKitHtml(set);
+
+  const miniItemCount = (html.match(/class="ck-mini-item"/g) ?? []).length;
+  assert.equal(miniItemCount, set.products.length, 'one mini item per product');
+
+  for (const p of set.products) {
+    assert.ok(html.includes(p.name), `product name "${p.name}" present`);
+  }
+
+  assert.ok(html.includes('3 decants de 3'), 'size/quantity meta present');
+  assert.ok(html.includes('Agregar set'), 'single compact CTA present');
+  const ctaCount = (html.match(/ck-compact-add/g) ?? []).length;
+  assert.equal(ctaCount, 1, 'exactly one Add button');
+  assert.ok(html.includes(`data-set-id="${set.id}"`), 'set id wired for event binding');
+
+  /* No editorial copy/theme paragraph, no per-item price line — that's what
+     makes this compact rather than another full .ds-card. */
+  assert.ok(!html.includes(set.copy), 'no editorial copy paragraph');
+  assert.ok(!html.includes('ds-card'), 'does not reuse the full editorial card markup');
+});
+
+test('buildCompactKitHtml escapes product names', () => {
+  const xssSet = {
+    id: 'xss-test',
+    name: 'Set <script>',
+    total: 100,
+    products: [
+      { id: 'x1', name: '<b>Bold</b>', house: 'House & Co', image: '' },
+      { id: 'x2', name: 'Two', house: 'H2', image: '' },
+    ],
+  };
+  const html = buildCompactKitHtml(xssSet);
+  assert.ok(!html.includes('<script>'));
+  assert.ok(!html.includes('<b>Bold</b>'));
+  assert.ok(html.includes('&lt;b&gt;'));
+});
+
+test('buildCompactKitHtml falls back to a product-aware placeholder when a product has no image', () => {
+  const set = {
+    id: 'no-image-set',
+    total: 300,
+    products: [{ id: 'x1', name: 'No Image Product', house: 'H', image: '' }],
+  };
+  const html = buildCompactKitHtml(set);
+  assert.ok(html.includes('ck-mini-img--fallback'), 'fallback class applied when no image');
+  assert.ok(!html.includes('<img'), 'no broken <img> tag rendered without a src');
 });
 
 /* ── Tracking ───────────────────────────────────────────────────── */

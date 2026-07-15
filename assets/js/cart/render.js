@@ -3,23 +3,23 @@
    Renders cart drawer from current Cart state.
    ============================================================= */
 
-import { Cart }      from './cart.js?v=2026.06.04.2';
-import { Discount, API_DOWN_MSG } from './discount.js?v=2026.06.04.2';
-import { Attribution, parseAttributionParams, normalizeCampaignCode } from './attribution.js?v=2026.06.04.2';
-import { maybeAutoApplyPromo, resetAutoApplyGuard, markAutoApplyDone } from './campaign.js?v=2026.06.04.2';
+import { Cart }      from './cart.js';
+import { Discount, API_DOWN_MSG } from './discount.js';
+import { Attribution, parseAttributionParams, normalizeCampaignCode } from './attribution.js';
+import { maybeAutoApplyPromo, resetAutoApplyGuard, markAutoApplyDone } from './campaign.js';
 import { sendCheckoutWhatsApp,
          syncCheckoutAvailability,
-         trackCheckoutStarted } from './checkout.js?v=2026.06.04.2';
+         trackCheckoutStarted } from './checkout.js';
 import { EventBus }  from '../core/events.js';
 import { Tracker }   from '../tracking/tracker.js';
 import { showToast } from '../ui/toast.js';
 import { lockBodyScroll, unlockBodyScroll } from '../ui/scrollLock.js';
-import { formatPrice, isValidPrice, getDefaultVariant } from '../utils/prices.js?v=2026.06.04.2';
-import { CatalogProvider } from '../providers/catalog.js?v=2026.06.04.2';
-import { getCartUpsells, getShippingCompletionUpsell } from '../recommendations/upsells.js?v=2026.06.04.2';
-import { getCollectionPairs } from '../recommendations/crossSell.js?v=2026.06.04.2';
-import { Personalization, filterDisliked } from '../recommendations/personalization.js?v=2026.06.04.2';
-import { getShippingState } from './momentum.js?v=2026.06.04.2';
+import { formatPrice, isValidPrice, getDefaultVariant } from '../utils/prices.js';
+import { CatalogProvider } from '../providers/catalog.js';
+import { getCartUpsells, getShippingCompletionUpsell } from '../recommendations/upsells.js';
+import { getCollectionPairs } from '../recommendations/crossSell.js';
+import { Personalization, filterDisliked } from '../recommendations/personalization.js';
+import { getShippingState } from './momentum.js';
 
 const WHATSAPP_NUMBER = '5219516513018';
 let _prevFocus = null;
@@ -76,7 +76,7 @@ export function renderCart() {
         </div>
         <div class="cart-item-bottom">
           <div class="cart-item-meta-price">
-            <span class="cart-item-meta">${label} &times; ${item.qty} &middot; Disponibles: ${item.stock}</span>
+            <span class="cart-item-meta">${label} &times; ${item.qty}</span>
             ${isMaxed ? '<span class="cart-stock-note">Máximo disponible</span>' : ''}
             <span class="cart-item-price">${formatPrice(subtotal, 'Precio por confirmar')}</span>
           </div>
@@ -96,7 +96,6 @@ export function renderCart() {
         }).join('')}
       </div>
     </section>
-    <section class="cart-upsells" id="cart-upsells" aria-label="Completa tu pedido" hidden></section>
   `;
 
   _renderSummary();
@@ -279,18 +278,26 @@ function _renderSummary() {
   if (totalEl) totalEl.textContent = finalTotal;
 }
 
-/* ── Discount panel: input ⇄ applied badge, transient messages ── */
+/* ── Discount panel: toggle ⇄ input ⇄ applied badge, transient messages ──
+   Progressive disclosure: the code input starts collapsed behind "¿Tienes un
+   código?" so it never competes with the primary WhatsApp action. It expands
+   automatically when there's something to show (a pending campaign promo, or
+   a code the customer already typed) and stays expanded across re-renders
+   once the customer opens it — a cart update never collapses their input. */
 export function renderDiscountPanel() {
   const wrap = document.getElementById('cart-discount');
   if (!wrap) return;
 
+  const toggle = document.getElementById('cart-discount-toggle');
   const form = document.getElementById('cart-discount-form');
   const applied = document.getElementById('cart-discount-applied');
   const codeEl = document.getElementById('cart-discount-code');
   const savedEl = document.getElementById('cart-discount-saved');
+  const input = document.getElementById('cart-discount-input');
   const state = Discount.applied;
 
   if (state) {
+    if (toggle) toggle.hidden = true;
     if (form) form.hidden = true;
     if (applied) applied.hidden = false;
     if (codeEl) codeEl.textContent = state.normalizedCode || state.code;
@@ -300,12 +307,17 @@ export function renderDiscountPanel() {
     }
     /* Applied badge already communicates the code — hide the "detected" hint. */
     _renderCampaignHint(null);
-  } else {
-    if (form) form.hidden = false;
-    if (applied) applied.hidden = true;
-    _prefillPromoInput();
-    _renderCampaignHint(Attribution.pendingPromoCode());
+    return;
   }
+
+  if (applied) applied.hidden = true;
+  _prefillPromoInput();
+  _renderCampaignHint(Attribution.pendingPromoCode());
+
+  const alreadyOpen = form ? !form.hidden : false;
+  const expand = Boolean(Attribution.pendingPromoCode()) || alreadyOpen || Boolean(input?.value?.trim());
+  if (toggle) { toggle.hidden = expand; toggle.setAttribute('aria-expanded', String(expand)); }
+  if (form) form.hidden = !expand;
 }
 
 /* Pre-fill the discount input with a campaign promo the customer arrived with,
@@ -402,6 +414,14 @@ export function setupDiscountControls() {
 
   const input = document.getElementById('cart-discount-input');
   input?.addEventListener('input', () => _setDiscountMessage('', 'neutral'));
+
+  const toggle = document.getElementById('cart-discount-toggle');
+  toggle?.addEventListener('click', () => {
+    if (form) form.hidden = false;
+    toggle.hidden = true;
+    toggle.setAttribute('aria-expanded', 'true');
+    input?.focus();
+  });
 
   removeBtn?.addEventListener('click', () => {
     Discount.remove();

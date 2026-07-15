@@ -14,8 +14,8 @@
    as profit.
    ============================================================= */
 
-import { getScarcityState, hasHighDemand } from '../utils/scarcity.js?v=2026.06.04.2';
-import { getOrderableVariants, getDisplayVariant } from '../utils/prices.js?v=2026.06.04.2';
+import { getScarcityState, hasHighDemand } from '../utils/scarcity.js';
+import { getOrderableVariants, getDisplayVariant } from '../utils/prices.js';
 
 const AVAILABLE_SCORE = 4;
 const LOW_SCORE = 2;

@@ -13,8 +13,14 @@ test('header search imports the same SearchBar module instance as the catalog', 
   const header = read('assets/js/ui/header.js');
   const render = read('assets/js/catalog/render.js');
 
-  assert.match(header, /from '\.\/searchbar\.js\?v=2026\.06\.04\.2'/);
-  assert.match(render, /from '\.\.\/ui\/searchbar\.js\?v=2026\.06\.04\.2'/);
+  /* Single module identity: both import searchbar.js with the SAME bare
+     specifier (no ?v= query). A divergent query string would load a second,
+     un-initialised SearchBar instance — the exact duplicate-state bug the
+     guided-catalog Phase 0 dedup removed. */
+  assert.match(header, /from '\.\/searchbar\.js'/);
+  assert.match(render, /from '\.\.\/ui\/searchbar\.js'/);
+  assert.doesNotMatch(header, /searchbar\.js\?v=/);
+  assert.doesNotMatch(render, /searchbar\.js\?v=/);
 });
 
 test('header has the only global search input and delegates to SearchBar.applyQuery', () => {

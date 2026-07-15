@@ -1,14 +1,13 @@
-console.log('CATALOG PROVIDER BUILD 2026.06.04.2 LOADED');
-
 /* =============================================================
    RDECANTS — CATALOG PROVIDER
    Abstraction layer between rendering and data source.
    ============================================================= */
 
-import { ApiClient } from '../api/client.js?v=2026.06.04.2';
-import { API_BASE, normalizeApiImageUrl } from '../api/config.js?v=2026.06.04.2';
-import { normalizeGender } from '../utils/gender.js?v=2026.06.04.2';
-import { PRODUCTS, PACKS } from '../../../data/products.js?v=2026.06.04.2';
+import { ApiClient } from '../api/client.js';
+import { normalizeApiImageUrl } from '../api/config.js';
+import { normalizeGender } from '../utils/gender.js';
+import { sentenceCase, composeDisplayName } from '../utils/presentation.js';
+import { PRODUCTS, PACKS } from '../../../data/products.js';
 
 let _productsCache = null;
 let _packsCache = null;
@@ -47,16 +46,11 @@ export const CatalogProvider = {
 
       if (Array.isArray(items)) {
         _productsCache = items.map(_mapProduct).filter(Boolean);
-        console.info('[RDecants] catalog fetched', {
-          API_BASE,
-          fetchedAt: new Date().toISOString(),
-          productCount: _productsCache.length,
-          firstProductWithDescription: _productsCache.find(product => product.desc),
-        });
         return _productsCache;
       }
-    } catch (err) {
-      console.warn('[RDecants] catalog API unavailable.', err.message);
+    } catch {
+      /* Network/transport failure — fall through to the environment-gated
+         fallback below. No production console noise. */
     }
 
     /* Production degrades to a clean empty state (no demo SKUs). Returned
@@ -128,6 +122,14 @@ function _mapProduct(p) {
 
   const id = String(p.id ?? p.product_id ?? p.slug ?? p.name);
 
+  /* Presentation normalization (see utils/presentation.js): compose the
+     concentration into the display name so duplicate base names (two
+     "SAUVAGE", "LE MALE" vs "LE MALE ELIXIR") are self-distinguishing, and
+     sentence-case the machine-written description/story. rawName is kept for
+     any consumer that needs the un-composed name. Invents nothing. */
+  const rawName = p.name ?? p.nombre ?? 'Perfume';
+  const concentration = _displayConcentration(p.concentration ?? p.concentracion ?? p.display_concentration);
+
   const notes = Array.isArray(p.notes)
     ? p.notes
     : typeof p.notes === 'string'
@@ -170,11 +172,12 @@ function _mapProduct(p) {
     product_id: p.product_id ?? p.id ?? id,
     slug: p.slug ?? null,
     category: p.category ?? p.categoria ?? null,
-    name: p.name ?? p.nombre ?? 'Perfume',
+    name: composeDisplayName(rawName, concentration),
+    rawName,
     house: p.house ?? p.brand ?? p.marca ?? '',
-    desc: p.desc ?? p.description ?? p.descripcion ?? '',
-    story: p.story ?? p.tagline ?? p.desc ?? p.description ?? p.descripcion ?? 'Fragancia original en decant premium.',
-    concentration: _displayConcentration(p.concentration ?? p.concentracion ?? p.display_concentration),
+    desc: sentenceCase(p.desc ?? p.description ?? p.descripcion ?? ''),
+    story: sentenceCase(p.story ?? p.tagline ?? p.desc ?? p.description ?? p.descripcion ?? 'Fragancia original en decant premium.'),
+    concentration,
     gender: normalizeGender(
       p.gender ??
       p.gender_positioning ??

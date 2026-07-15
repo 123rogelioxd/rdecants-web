@@ -94,10 +94,28 @@ export function formatPrice(value, fallback = 'Consultar precio') {
   return `$${n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')} MXN`;
 }
 
-export function getSizeLabel(ml) {
+/* True only when `ml` is genuinely cheaper PER MILLILITRE than the base size
+   (default 5 ml). This is what makes "Mejor valor" / a 10 ml upgrade nudge an
+   honest claim: when 10 ml costs exactly 2× the 5 ml price it saves nothing,
+   so no value language is shown. Returns false when either price is missing. */
+export function isBetterValuePerMl(product, ml = 10, baseMl = 5) {
+  const target = getVariantForSize(product, ml);
+  const base = getVariantForSize(product, baseMl);
+  if (!isValidPrice(target?.price) || !isValidPrice(base?.price)) return false;
+  const targetSize = Number(target.size) || ml;
+  const baseSize = Number(base.size) || baseMl;
+  if (targetSize <= 0 || baseSize <= 0) return false;
+  return (Number(target.price) / targetSize) < (Number(base.price) / baseSize);
+}
+
+/* Size label. The 10 ml "Mejor valor" claim is COMPUTED, never assumed:
+   it only appears when 10 ml is actually cheaper per ml than 5 ml for this
+   product. Without product context (legacy single-arg callers) the 10 ml
+   label is empty rather than a false value claim. */
+export function getSizeLabel(ml, product = null) {
   if (ml === 3)  return 'Ideal para probar';
   if (ml === 5)  return 'Uso frecuente';
-  if (ml === 10) return 'Mejor valor';
+  if (ml === 10) return isBetterValuePerMl(product, 10, 5) ? 'Mejor valor' : '';
   return '';
 }
 

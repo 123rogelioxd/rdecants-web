@@ -18,12 +18,13 @@ import {
   SORT_LABELS,
   MOOD_LABELS,
   GENDER_LABELS,
-} from '../catalog/search.js?v=2026.06.04.2';
+} from '../catalog/search.js';
 import { Tracker }   from '../tracking/tracker.js';
 import {
   Personalization,
   personalizeProducts,
-} from '../recommendations/personalization.js?v=2026.06.04.2';
+} from '../recommendations/personalization.js';
+import { rankCatalogForAnswers } from '../recommendations/assistant.js';
 import { lockBodyScroll, unlockBodyScroll } from './scrollLock.js';
 
 /* ── State ──────────────────────────────────────────────────── */
@@ -34,12 +35,15 @@ const _DEFAULT = {
   priceRange: null,
   sort:       'trending',
   gender:     null,
+  /* Guided-catalog answers ({ family, occasion, gender }) set by the finder /
+     intent chips. When present, the finder's beginner-safe ranking defines the
+     grid order in place (top pick pinned) instead of the normal filter/sort. */
+  guide:      null,
 };
 
 let _state            = { ..._DEFAULT };
 let _allProducts      = [];
 let _onFilter         = null;
-let _debounceTimer    = null;
 let _lastResultCount  = 0;
 let _lastTrackedQuery = '';
 /* Query typed in the header before the catalog finishes loading.
@@ -80,14 +84,8 @@ export const SearchBar = {
     _bindBarEvents();
     _bindDrawerEvents();
 
-    /* Sync the bar input so the buffered query is visible */
-    if (queued) {
-      const input = _bar?.querySelector('#sf-input');
-      const xBtn  = _bar?.querySelector('#sf-x');
-      if (input) input.value = queued;
-      if (xBtn)  xBtn.hidden = false;
-    }
-
+    /* A query buffered before the catalog loaded is already in _state.query; the
+       header input holds its own value, and _run() renders it as an active chip. */
     _run();          /* initial render; uses _state.query if set */
   },
 
@@ -98,23 +96,45 @@ export const SearchBar = {
 
   applyMood(mood) {
     if (!_onFilter) return;
+    _state.guide = null;
     _state.mood = mood || null;
     _syncBarFromState();
     _syncDrawer();
     _run();
   },
 
+  /* Guided-catalog entry point: the finder / intent chips hand their answers
+     here; the grid re-ranks in place by beginner-safe fit with the top pick
+     pinned. Clears any manual filters so the two never fight. */
+  applyGuide(answers) {
+    if (!_onFilter) return;
+    _state = { ..._DEFAULT, guide: { ...answers } };
+    _syncBarFromState();
+    _syncDrawer?.();
+    _run();
+  },
+
+  /* Exit guided mode ("Ver todo") back to the full default catalog. */
+  clearGuide() {
+    if (!_onFilter) return;
+    _state.guide = null;
+    _syncBarFromState();
+    _run();
+  },
+
+  isGuided() {
+    return Boolean(_state.guide);
+  },
+
+  /* The header owns the search input and delegates every keystroke here. */
   applyQuery(query) {
     if (!_onFilter) {
       /* SearchBar not ready yet — buffer query for init() */
       _pendingQuery = query || null;
       return;
     }
+    if (query) _state.guide = null;   /* typing a search exits guided mode */
     _state.query = query || '';
-    const input = _bar?.querySelector('#sf-input');
-    const xBtn  = _bar?.querySelector('#sf-x');
-    if (input) input.value = _state.query;
-    if (xBtn)  xBtn.hidden = !_state.query;
     _run();
   },
 
@@ -131,6 +151,7 @@ export const SearchBar = {
 
   applySort(sort) {
     if (!_onFilter) return;
+    _state.guide = null;
     _state.sort = sort || 'trending';
     _syncBarFromState();
     _run();
@@ -142,27 +163,10 @@ export const SearchBar = {
    ══════════════════════════════════════════════════════════════ */
 
 function _buildBar() {
-  const houses = getUniqueHouses(_allProducts);
-
-  /* Mood pills (desktop) */
-  const moodPills = Object.entries(MOOD_LABELS).map(([key, label]) =>
-    `<button class="sf-mood ${_state.mood === key ? 'sf-mood--on' : ''}"
-       data-mood="${key}" aria-pressed="${_state.mood === key}">
-       ${label}
-     </button>`
-  ).join('');
-
-  /* House options */
-  const houseOpts = houses.map(h =>
-    `<option value="${h}">${h}</option>`
-  ).join('');
-
-  /* Price options */
-  const priceOpts = Object.entries(PRICE_LABELS).map(([k, v]) =>
-    `<option value="${k}">${v}</option>`
-  ).join('');
-
-  /* Sort options */
+  /* Sort stays inline (a primary, expected control); house / price / gender /
+     scent live behind the "Filtrar" panel so a 50-product catalog never shows
+     a wall of controls. Search is owned solely by the header — the bar shows
+     the active query as a removable chip instead of a second input. */
   const sortOpts = Object.entries(SORT_LABELS).map(([k, v]) =>
     `<option value="${k}" ${k === 'trending' ? 'selected' : ''}>${v}</option>`
   ).join('');
@@ -171,63 +175,19 @@ function _buildBar() {
   _bar.id        = 'sf-bar';
   _bar.className = 'sf-bar';
   _bar.setAttribute('role',       'search');
-  _bar.setAttribute('aria-label', 'Buscar y filtrar fragancias');
+  _bar.setAttribute('aria-label', 'Filtrar y ordenar fragancias');
 
   _bar.innerHTML = `
-    <!-- Active mood explorer banner (visible only when a mood is set) -->
-    <div class="sf-exploring" id="sf-exploring" hidden aria-live="polite"></div>
-
     <!-- "Para ti" personalization banner (visible when for_you sort is active) -->
     <div class="sf-for-you" id="sf-for-you" hidden aria-live="polite"></div>
 
-    <!-- Row 1: search input + controls -->
-    <div class="sf-row sf-row-top">
+    <div class="sf-toolbar">
+      <!-- Count + removable active-filter chips (search / gender / scent / house / price) -->
+      <div class="sf-active" id="sf-active" aria-live="polite"></div>
 
-      <div class="sf-search">
-        <svg class="sf-search-icon" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-          <circle cx="11" cy="11" r="8"/>
-          <path d="m21 21-4.35-4.35"/>
-        </svg>
-        <input
-          id="sf-input"
-          class="sf-input"
-          type="search"
-          placeholder="Buscar fragancia, marca o nota…"
-          autocomplete="off"
-          spellcheck="false"
-          aria-label="Buscar fragancias"
-        >
-        <button class="sf-x" id="sf-x" aria-label="Limpiar búsqueda" hidden>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="2.5" width="10" height="10" aria-hidden="true">
-            <path d="M18 6 6 18M6 6l12 12"/>
-          </svg>
-        </button>
-      </div>
-
-      <div class="sf-controls">
+      <div class="sf-tools">
         <div class="sf-sel-wrap">
-          <select id="sf-house" class="sf-sel" aria-label="Filtrar por casa">
-            <option value="">Casa</option>${houseOpts}
-          </select>
-          <svg class="sf-arrow" viewBox="0 0 10 6" stroke="currentColor"
-               stroke-width="1.5" fill="none" aria-hidden="true">
-            <path d="M1 1l4 4 4-4"/>
-          </svg>
-        </div>
-
-        <div class="sf-sel-wrap">
-          <select id="sf-price" class="sf-sel" aria-label="Filtrar por precio">
-            <option value="">Precio</option>${priceOpts}
-          </select>
-          <svg class="sf-arrow" viewBox="0 0 10 6" stroke="currentColor"
-               stroke-width="1.5" fill="none" aria-hidden="true">
-            <path d="M1 1l4 4 4-4"/>
-          </svg>
-        </div>
-
-        <div class="sf-sel-wrap">
+          <label class="sf-sr-only" for="sf-sort">Ordenar por</label>
           <select id="sf-sort" class="sf-sel" aria-label="Ordenar por">
             ${sortOpts}
           </select>
@@ -237,46 +197,16 @@ function _buildBar() {
           </svg>
         </div>
 
-        <span class="sf-count" id="sf-count"
-          aria-live="polite" aria-atomic="true"></span>
-
-        <button class="sf-clear" id="sf-clear"
-          aria-label="Limpiar todos los filtros" hidden>
-          × Limpiar
+        <button class="sf-filter-btn" id="sf-filter-btn"
+          aria-label="Abrir filtros" aria-expanded="false" aria-controls="sf-drawer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.5" width="14" height="14" aria-hidden="true">
+            <path d="M3 6h18M7 12h10M11 18h2"/>
+          </svg>
+          Filtrar
+          <span class="sf-badge" id="sf-badge" aria-label="filtros activos" hidden>0</span>
         </button>
       </div>
-    </div>
-
-    <!-- Row 1b: gender preference pills (desktop only — mobile uses drawer) -->
-    <div class="sf-row sf-row-gender">
-      <span class="sf-gender-label" aria-hidden="true">Para:</span>
-      <div class="sf-genders" role="group" aria-label="Filtrar por género">
-        <button class="sf-gender-btn ${!_state.gender ? 'sf-gender-btn--on' : ''}"
-          data-gender="" aria-pressed="${!_state.gender}">Todos</button>
-        ${Object.entries(GENDER_LABELS).map(([key, label]) =>
-          `<button class="sf-gender-btn ${_state.gender === key ? 'sf-gender-btn--on' : ''}"
-            data-gender="${key}" aria-pressed="${_state.gender === key}">${label}</button>`
-        ).join('')}
-      </div>
-    </div>
-
-    <!-- Row 2: mood pills (desktop) + mobile filter button -->
-    <div class="sf-row sf-row-moods">
-
-      <div class="sf-moods" role="group" aria-label="Filtrar por mood">
-        ${moodPills}
-      </div>
-
-      <button class="sf-mobile-btn" id="sf-mobile-btn"
-        aria-label="Abrir filtros" aria-expanded="false">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="1.5" width="13" height="13" aria-hidden="true">
-          <path d="M3 6h18M7 12h10M11 18h2"/>
-        </svg>
-        Filtros
-        <span class="sf-badge" id="sf-badge" aria-label="filtros activos" hidden>0</span>
-      </button>
-
     </div>
   `;
 }
@@ -287,65 +217,48 @@ function _injectBar() {
 }
 
 function _bindBarEvents() {
-  const input = _bar.querySelector('#sf-input');
-  const xBtn  = _bar.querySelector('#sf-x');
-
-  input?.addEventListener('input', e => {
-    _state.query = e.target.value;
-    xBtn.hidden  = !_state.query;
-    _debounce();
-  });
-
-  xBtn?.addEventListener('click', () => {
-    _state.query = '';
-    input.value  = '';
-    xBtn.hidden  = true;
-    input.focus();
-    _run();
-  });
-
-  _bar.querySelectorAll('.sf-gender-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const g = btn.dataset.gender;
-      _state.gender = (g === '' || _state.gender === g) ? null : g;
-      _syncGender(_bar);
-      _run();
-      if (_state.gender) Tracker.genderFilterApplied(_state.gender, 'catalog');
-    });
-  });
-
-  _bar.querySelectorAll('.sf-mood').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const m = btn.dataset.mood;
-      _state.mood = _state.mood === m ? null : m;
-      _syncMoods(_bar);
-      _run();
-      if (_state.mood) Tracker.filterApplied('mood', _state.mood, _lastResultCount);
-    });
-  });
-
-  _bar.querySelector('#sf-house')?.addEventListener('change', e => {
-    _state.house = e.target.value;
-    _run();
-    if (_state.house) Tracker.filterApplied('house', _state.house, _lastResultCount);
-  });
-
-  _bar.querySelector('#sf-price')?.addEventListener('change', e => {
-    _state.priceRange = e.target.value || null;
-    _run();
-    if (_state.priceRange) Tracker.filterApplied('price', _state.priceRange, _lastResultCount);
-  });
-
+  /* Sort is the only inline control. Changing it exits guided mode so the
+     finder ranking and a manual sort never fight over the grid. */
   _bar.querySelector('#sf-sort')?.addEventListener('change', e => {
+    _state.guide = null;
     _state.sort = e.target.value;
     _run();
     if (_state.sort === 'for_you') Tracker.forYouSortApplied('user');
     else Tracker.filterApplied('sort', _state.sort, _lastResultCount);
   });
 
-  _bar.querySelector('#sf-clear')?.addEventListener('click', _clearAll);
+  /* "Filtrar" → progressive-disclosure panel (same panel on mobile + desktop). */
+  _bar.querySelector('#sf-filter-btn')?.addEventListener('click', _openDrawer);
 
-  _bar.querySelector('#sf-mobile-btn')?.addEventListener('click', _openDrawer);
+  /* Active-filter chips: each removes just its own filter; "Limpiar todo" resets. */
+  _bar.querySelector('#sf-active')?.addEventListener('click', e => {
+    const chip = e.target.closest('[data-clear]');
+    if (chip) _clearFilter(chip.dataset.clear);
+  });
+}
+
+/* Remove a single active filter (or all) from the chip row. */
+function _clearFilter(key) {
+  if (key === 'all') { _clearAll(); return; }
+  _state.guide = null;
+  if (key === 'query') { _state.query = ''; _clearHeaderSearchInput(); _lastTrackedQuery = ''; }
+  if (key === 'gender') _state.gender = null;
+  if (key === 'mood')   _state.mood = null;
+  if (key === 'house')  _state.house = '';
+  if (key === 'price')  _state.priceRange = null;
+  _syncBarFromState();
+  _syncDrawer();
+  _run();
+  Tracker.filterCleared();
+}
+
+/* The header owns the search input; keep it in sync when the query is cleared
+   from the catalog (chip removal / clear-all) so the two never drift apart. */
+function _clearHeaderSearchInput() {
+  const hs  = document.getElementById('hs-input');
+  const hsx = document.getElementById('hs-x');
+  if (hs)  hs.value = '';
+  if (hsx) hsx.hidden = true;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -376,7 +289,6 @@ function _buildDrawer() {
   const moodPills  = Object.entries(MOOD_LABELS).map(([k, v])   => _dp('mood',  k, v)).join('');
   const housePills = houses.map(h                                => _dp('house', h, h)).join('');
   const pricePills = Object.entries(PRICE_LABELS).map(([k, v])  => _dp('price', k, v)).join('');
-  const sortPills  = Object.entries(SORT_LABELS).map(([k, v])   => _dp('sort',  k, v)).join('');
 
   const genderPills = [
     `<button class="sf-dp" data-t="gender" data-v="" aria-label="Filtrar todos">Todos</button>`,
@@ -413,11 +325,6 @@ function _buildDrawer() {
       <section class="sf-drawer-sec">
         <p class="sf-drawer-label">Precio / 5ml</p>
         <div class="sf-dp-group">${pricePills}</div>
-      </section>
-
-      <section class="sf-drawer-sec">
-        <p class="sf-drawer-label">Ordenar</p>
-        <div class="sf-dp-group">${sortPills}</div>
       </section>
 
     </div>
@@ -470,7 +377,7 @@ function _openDrawer() {
   _drawer.classList.add('sf-drawer--open');
   _drawerOverlay.classList.add('sf-ov--open');
   lockBodyScroll();
-  _bar?.querySelector('#sf-mobile-btn')
+  _bar?.querySelector('#sf-filter-btn')
     ?.setAttribute('aria-expanded', 'true');
   document.addEventListener('keydown', _handleDrawerKey);
   setTimeout(() => _drawer.querySelector('#sf-drawer-close')?.focus(), 120);
@@ -480,7 +387,7 @@ function _closeDrawer() {
   _drawer.classList.remove('sf-drawer--open');
   _drawerOverlay.classList.remove('sf-ov--open');
   unlockBodyScroll();
-  _bar?.querySelector('#sf-mobile-btn')
+  _bar?.querySelector('#sf-filter-btn')
     ?.setAttribute('aria-expanded', 'false');
   document.removeEventListener('keydown', _handleDrawerKey);
   _prevFocus?.focus?.();
@@ -519,6 +426,20 @@ function _handleDrawerKey(e) {
    ══════════════════════════════════════════════════════════════ */
 
 function _run() {
+  /* Guided mode: the finder's beginner-safe ranking defines the grid order in
+     place (top pick pinned). Manual filters/sort are bypassed — using any of
+     them exits guided mode (handlers null _state.guide). */
+  if (_state.guide) {
+    const recommendations = rankCatalogForAnswers(_state.guide, _allProducts);
+    const products = recommendations.map(r => r.product);
+    _lastResultCount = products.length;
+    _onFilter?.(products, { guided: true, answers: _state.guide, recommendations });
+    _updateActiveChips(products.length);
+    _updateBadge();
+    _updateForYouBanner(0);
+    return;
+  }
+
   /* 1. Pure filter: query, mood, house, price, gender, sort base */
   const filtered = filterProducts(_allProducts, _state);
 
@@ -531,10 +452,8 @@ function _run() {
 
   _lastResultCount = result.length;
   _onFilter?.(result);
-  _updateCount(result.length);
-  _updateClear();
+  _updateActiveChips(result.length);
   _updateBadge();
-  _updateExploring(result.length);
   _updateForYouBanner(result.length);
   _trackSearchQuery(result.length);
 }
@@ -585,7 +504,7 @@ function _updateForYouBanner(count = 0) {
   if (!hasSignal) {
     banner.innerHTML = `
       <span class="sf-fy-kicker">✦ Para ti</span>
-      <span class="sf-fy-label">Completa el Taste Builder para personalizar el catálogo</span>
+      <span class="sf-fy-label">Abre algunas fragancias y ordenamos el catálogo según tu gusto</span>
       <button type="button" class="sf-fy-clear" aria-label="Ver destacados">Ver destacados ×</button>`;
   } else {
     const noun = likeCount === 1 ? '1 fragancia evaluada' : `${likeCount} fragancias evaluadas`;
@@ -615,51 +534,52 @@ function _trackSearchQuery(count) {
   }
 }
 
-/** Visible "Mood activo" badge. The catalog NEVER filters silently —
-   if a mood is on, the user sees what's active and how to remove it. */
-function _updateExploring(count = 0) {
-  const banner = _bar?.querySelector('#sf-exploring');
-  if (!banner) return;
-  const label = _state.mood ? MOOD_LABELS[_state.mood] : null;
-  if (!label) {
-    banner.hidden = true;
-    banner.innerHTML = '';
-    return;
-  }
-  const noun = count === 1 ? 'perfume encontrado' : 'perfumes encontrados';
-  banner.hidden = false;
-  banner.innerHTML = `
-    <span class="sf-exploring-kicker">Mood activo</span>
-    <strong class="sf-exploring-label">${label}</strong>
-    <span class="sf-exploring-count">${count} ${noun}</span>
-    <button type="button" class="sf-exploring-clear"
-      aria-label="Quitar filtro de mood">Quitar filtro</button>`;
-  banner.querySelector('.sf-exploring-clear')
-    ?.addEventListener('click', () => {
-      _state.mood = null;
-      _syncBarFromState();
-      _syncDrawer();
-      _run();
-    });
+/* Active-filter state. The catalog NEVER filters silently — every active
+   filter (search / gender / scent-mood / house / price) is shown as its own
+   removable chip next to the result count, plus a single "Limpiar todo". In
+   guided mode the guide-state header above the grid is the primary summary, so
+   the bar just reports how many recommendations were found. */
+function _activeChips() {
+  return [
+    _state.query      ? { key: 'query',  label: `“${_state.query}”` }        : null,
+    _state.gender     ? { key: 'gender', label: GENDER_LABELS[_state.gender] } : null,
+    _state.mood       ? { key: 'mood',   label: MOOD_LABELS[_state.mood] }     : null,
+    _state.house      ? { key: 'house',  label: _state.house }                 : null,
+    _state.priceRange ? { key: 'price',  label: PRICE_LABELS[_state.priceRange] } : null,
+  ].filter(Boolean);
 }
 
-function _debounce() {
-  clearTimeout(_debounceTimer);
-  _debounceTimer = setTimeout(_run, 280);
+function _updateActiveChips(count = 0) {
+  const el = _bar?.querySelector('#sf-active');
+  if (!el) return;
+  const total = _allProducts.length;
+
+  /* Guided mode already gets ONE compact state header (answers + count +
+     Ajustar/Ver todo) directly above the grid — see _syncGuideState in
+     catalog/render.js. Repeating the count here would say "Para ti" twice
+     in the same screen, so this row stays empty while guided. */
+  if (_state.guide) {
+    el.innerHTML = '';
+    return;
+  }
+
+  const chips = _activeChips();
+  const countText = count === total ? `${total} fragancias` : `${count} de ${total}`;
+  el.innerHTML = `
+    <span class="sf-count ${chips.length ? 'sf-count--filtered' : ''}">${countText}</span>
+    ${chips.map(c =>
+      `<button class="sf-chip" type="button" data-clear="${c.key}"
+        aria-label="Quitar filtro ${c.label}">${c.label}<span class="sf-chip-x" aria-hidden="true">×</span></button>`
+    ).join('')}
+    ${chips.length
+      ? `<button class="sf-chip-clear" type="button" data-clear="all">Limpiar todo</button>`
+      : ''}
+  `;
 }
 
 /* ══════════════════════════════════════════════════════════════
    UI SYNC HELPERS
    ══════════════════════════════════════════════════════════════ */
-
-/** Toggle .sf-mood--on on all mood buttons in a container */
-function _syncMoods(container) {
-  container.querySelectorAll('.sf-mood').forEach(btn => {
-    const on = btn.dataset.mood === _state.mood;
-    btn.classList.toggle('sf-mood--on', on);
-    btn.setAttribute('aria-pressed', String(on));
-  });
-}
 
 /** Sync all drawer pill states from _state */
 function _syncDrawer() {
@@ -675,51 +595,22 @@ function _syncDrawer() {
   });
 }
 
-/** Toggle .sf-gender-btn--on on all gender buttons in a container */
-function _syncGender(container) {
-  container.querySelectorAll('.sf-gender-btn').forEach(btn => {
-    const on = btn.dataset.gender === '' ? !_state.gender : btn.dataset.gender === _state.gender;
-    btn.classList.toggle('sf-gender-btn--on', on);
-    btn.setAttribute('aria-pressed', String(on));
-  });
-}
-
-/** Push _state into bar's select elements + mood + gender pills */
+/** Push _state into the bar's only inline control (sort). Gender / mood / house
+    / price now live in the drawer and are synced by _syncDrawer(). */
 function _syncBarFromState() {
   if (!_bar) return;
-  _syncGender(_bar);
-  _syncMoods(_bar);
-  const h = _bar.querySelector('#sf-house');
-  const p = _bar.querySelector('#sf-price');
   const s = _bar.querySelector('#sf-sort');
-  if (h) h.value = _state.house;
-  if (p) p.value = _state.priceRange ?? '';
   if (s) s.value = _state.sort;
 }
 
-function _updateCount(n) {
-  const el = _bar?.querySelector('#sf-count');
-  if (!el) return;
-  const total = _allProducts.length;
-  el.textContent = n === total
-    ? `${total} fragancias`
-    : `${n} de ${total}`;
-  el.classList.toggle('sf-count--filtered', n !== total);
-}
-
-function _updateClear() {
-  const btn = _bar?.querySelector('#sf-clear');
-  if (btn) btn.hidden = !_hasActiveFilters();
-}
-
 function _updateBadge() {
-  const mobileBtn = _bar?.querySelector('#sf-mobile-btn');
+  const filterBtn = _bar?.querySelector('#sf-filter-btn');
   const badge     = _bar?.querySelector('#sf-badge');
-  if (!mobileBtn || !badge) return;
+  if (!filterBtn || !badge) return;
   const n = _activeFilterCount();
   badge.textContent = n;
   badge.hidden      = n === 0;
-  mobileBtn.classList.toggle('sf-mobile-btn--active', n > 0);
+  filterBtn.classList.toggle('sf-filter-btn--active', n > 0);
 }
 
 function _hasActiveFilters() {
@@ -728,7 +619,8 @@ function _hasActiveFilters() {
     _state.mood  ||
     _state.house ||
     _state.priceRange ||
-    _state.gender
+    _state.gender ||
+    _state.guide
   );
 }
 
@@ -747,12 +639,10 @@ function _clearAll() {
   _state        = { ..._DEFAULT };
   _pendingQuery = null;
   _lastTrackedQuery = '';
+  _clearHeaderSearchInput();
   if (!_bar) return;
-  const input = _bar.querySelector('#sf-input');
-  const xBtn  = _bar.querySelector('#sf-x');
-  if (input) input.value = '';
-  if (xBtn)  xBtn.hidden  = true;
   _syncBarFromState();
+  _syncDrawer();
   _run();
   if (hadFilters) Tracker.filterCleared();
 }

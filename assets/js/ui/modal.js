@@ -22,11 +22,12 @@ import { getDefaultVariant,
          getDisplayVariant,
          getVariantForSize,
          getValidVariants,
+         isBetterValuePerMl,
          formatPrice,
-         PRIMARY_SIZES } from '../utils/prices.js?v=2026.06.04.2';
-import { getScarcityDisplay } from '../utils/scarcity.js?v=2026.06.04.2';
-import { getDisplayBadges } from '../utils/guidance.js?v=2026.06.04.2';
-import { productPageUrl } from './productPage.js?v=2026.06.04.2';
+         PRIMARY_SIZES } from '../utils/prices.js';
+import { getScarcityDisplay } from '../utils/scarcity.js';
+import { getDisplayBadges } from '../utils/guidance.js';
+import { productPageUrl } from './productPage.js';
 
 /* ── Constants ──────────────────────────────────────────────── */
 const WHATSAPP_NUMBER = '5219516513018';
@@ -227,7 +228,7 @@ function _render() {
               </a>
               <button class="pdm-btn-wa" type="button"
                 aria-label="Consultar ${p.name} por WhatsApp">
-                WhatsApp
+                Consultar por WhatsApp
               </button>
             </div>
           </div>
@@ -396,18 +397,19 @@ function _modalDescription(product) {
 }
 
 function _modalSizeLabel(ml) {
-  const labels = {
-    3: 'Ideal para probar',
-    5: 'Recomendado',
-    10: 'Mejor valor',
-  };
-  return labels[Number(ml)] ?? '';
+  const n = Number(ml);
+  if (n === 3) return 'Ideal para probar';
+  if (n === 5) return 'Recomendado';
+  /* "Mejor valor" only when 10 ml is genuinely cheaper per ml for THIS
+     product — never a blanket claim on a size that saves nothing. */
+  if (n === 10) return isBetterValuePerMl(_activeProduct, 10, 5) ? 'Mejor valor' : '';
+  return '';
 }
 
 function _stockHtml(scarcity) {
   if (scarcity.state === 'sold_out') return `
     <p class="card-stock pdm-stock">
-      <span class="stock-dot" style="background:var(--danger)"></span>
+      <span class="stock-dot"></span>
       Agotado
     </p>`;
   return `

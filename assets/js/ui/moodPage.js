@@ -15,16 +15,16 @@
 
 import { primeImageStates } from './images.js';
 import { Tracker } from '../tracking/tracker.js';
-import { getDisplayVariant, formatPrice } from '../utils/prices.js?v=2026.06.04.2';
-import { rankProductsForMood } from '../moods/engine.js?v=2026.06.04.2';
+import { getDisplayVariant, formatPrice } from '../utils/prices.js';
+import { rankProductsForMood } from '../moods/engine.js';
 import {
   MOODS,
   findMoodBySlug,
   getRelatedMoods,
   moodPageUrl,
   readMoodSlugFromLocation,
-} from '../moods/catalog.js?v=2026.06.04.2';
-import { productPageUrl } from './productPage.js?v=2026.06.04.2';
+} from '../moods/catalog.js';
+import { productPageUrl } from './productPage.js';
 
 /* Re-export for callers (page bootstrap, tests, modal). */
 export { findMoodBySlug, moodPageUrl, readMoodSlugFromLocation, MOODS };

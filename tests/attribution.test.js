@@ -36,11 +36,11 @@ const KEY = 'rdecants_attribution';
 
 /* Same specifier (incl. ?v=) the app uses, so these share module instances. */
 const { Attribution, parseAttributionParams, sanitizeValue, normalizeCampaignCode } =
-  await import('../assets/js/cart/attribution.js?v=2026.06.04.2');
-const { ApiClient } = await import('../assets/js/api/client.js?v=2026.06.04.2');
-const { Discount } = await import('../assets/js/cart/discount.js?v=2026.06.04.2');
+  await import('../assets/js/cart/attribution.js');
+const { ApiClient } = await import('../assets/js/api/client.js');
+const { Discount } = await import('../assets/js/cart/discount.js');
 const { maybeAutoApplyPromo, resetAutoApplyGuard } =
-  await import('../assets/js/cart/campaign.js?v=2026.06.04.2');
+  await import('../assets/js/cart/campaign.js');
 
 function reset() {
   _store.clear();

@@ -7,6 +7,28 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 
+<!-- Scroll-reveal gate. Adds .rd-anim (which arms the entrance animations)
+     ONLY when motion can actually run: JS on, IntersectionObserver present,
+     motion allowed, and the tab is foregrounded. In every other case content
+     renders fully visible with no transition — no-JS, reduced-motion, and
+     background/hidden tabs never get stuck at opacity 0 waiting on an
+     observer or a throttled animation. The load fallback reveals anything
+     still pending even if the main bundle fails. -->
+<script>
+  (function () {
+    var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if ('IntersectionObserver' in window && !reduce && !document.hidden) {
+      document.documentElement.className += ' rd-anim';
+    }
+    addEventListener('load', function () {
+      setTimeout(function () {
+        var els = document.querySelectorAll('.fade-up:not(.visible)');
+        for (var i = 0; i < els.length; i++) els[i].classList.add('visible');
+      }, 1200);
+    });
+  })();
+</script>
+
 <title>RDecants — Encuentra el perfume que sí usarías | Decants originales</title>
 <meta name="description" content="Prueba fragancias originales en decants de 5 ml y sube a 10 ml cuando ya sabes que es para ti. Envíos a todo México; pago y asesoría por WhatsApp.">
 <meta name="theme-color" content="#030303">
@@ -45,12 +67,12 @@
     HTML itself is served no-cache so browsers always get
     the latest version string.
 
-  Current version: 2026.07.13.1 - update all ?v= values on deploy.
+  Current version: 2026.07.15.2 - update all ?v= values on deploy.
 -->
-<link rel="stylesheet" href="assets/css/tokens.css?v=2026.07.13.1">
-<link rel="stylesheet" href="assets/css/animations.css?v=2026.07.13.1">
-<link rel="stylesheet" href="assets/css/components.css?v=2026.07.13.1">
-<link rel="stylesheet" href="assets/css/styles.css?v=2026.07.13.1">
+<link rel="stylesheet" href="assets/css/tokens.css?v=2026.07.15.2">
+<link rel="stylesheet" href="assets/css/animations.css?v=2026.07.15.2">
+<link rel="stylesheet" href="assets/css/components.css?v=2026.07.15.2">
+<link rel="stylesheet" href="assets/css/styles.css?v=2026.07.15.2">
 
 <script type="application/ld+json">
 {
@@ -75,13 +97,6 @@
 
 <body>
 
-<!-- INTRO SPLASH -->
-<div id="intro" aria-hidden="true">
-  <p class="intro-logo">R DECANTS</p>
-  <p class="intro-sub">Fragrance Edition</p>
-  <div class="intro-line"></div>
-</div>
-
 <!-- HEADER -->
 <header class="header">
   <a href="/" class="header-logo" aria-label="RDecants — inicio">
@@ -91,7 +106,7 @@
   <!-- Primary navigation (desktop) -->
   <nav class="header-nav" aria-label="Navegación principal">
     <a href="#catalog" class="header-nav-link" data-scroll="catalog">Catálogo</a>
-    <a href="#assistant" class="header-nav-link" data-scroll="assistant" data-focus-finder>Encuentra tu fragancia</a>
+    <a href="#guide" class="header-nav-link" data-scroll="guide" data-focus-finder>Encuentra tu fragancia</a>
     <a href="#faq" class="header-nav-link" data-scroll="faq">Ayuda</a>
   </nav>
 
@@ -154,7 +169,7 @@
     </p>
 
     <div class="hero-actions">
-      <button class="btn-primary" data-scroll="assistant" data-focus-finder aria-label="Encontrar mi fragancia con el buscador guiado">
+      <button class="btn-primary" data-scroll="guide" data-focus-finder aria-label="Encontrar mi fragancia con el buscador guiado">
         Encontrar mi fragancia
       </button>
       <button class="btn-ghost" data-scroll="catalog" aria-label="Ver el catálogo completo">
@@ -164,36 +179,23 @@
   </div>
 </section>
 
-<!-- DISCOVERY SHORTCUTS — intent-first entry points (real filters / finder) -->
-<section class="shortcuts-section" id="discovery-shortcuts" aria-labelledby="shortcuts-title">
-  <div class="container">
-    <div class="shortcuts-head fade-up">
-      <p class="section-label">Empieza por aquí</p>
-      <h2 class="shortcuts-title" id="shortcuts-title">¿Para qué lo quieres?</h2>
-    </div>
-    <div class="shortcuts-grid" role="group" aria-label="Descubre por intención">
-      <button class="shortcut-chip" data-shortcut="diario"  type="button">Para diario</button>
-      <button class="shortcut-chip" data-shortcut="citas"   type="button">Citas</button>
-      <button class="shortcut-chip" data-shortcut="calor"   type="button">Calor</button>
-      <button class="shortcut-chip" data-shortcut="noche"   type="button">Noche</button>
-      <button class="shortcut-chip" data-shortcut="oficina" type="button">Oficina</button>
-      <button class="shortcut-chip" data-shortcut="regalo"  type="button">Regalo</button>
-    </div>
-  </div>
+<!-- GUIDE BAR — the catalog's control layer: intent chips + compact finder.
+     Both drive the SAME catalog grid in place (ui/guide.js → SearchBar.applyGuide). -->
+<section class="guide-section" id="guide" aria-labelledby="guide-title">
+  <!-- Rendered by ui/guide.js -->
 </section>
 
-<div class="divider"></div>
-
-<!-- CATALOG — first commercial surface after discovery -->
-<section class="section" id="catalog">
+<!-- CATALOG — the single commercial surface; the guide bar re-ranks it in place.
+     Placed directly after the guide so guidance and browsing read as one flow. -->
+<section class="section section--catalog" id="catalog">
   <div class="container">
 
     <div class="section-header fade-up">
       <div>
         <p class="section-label">Catálogo</p>
-        <h2 class="section-title">Nuestra<br>colección</h2>
+        <h2 class="section-title">Nuestra colección</h2>
       </div>
-      <p style="font-size:12px;color:var(--muted);max-width:240px;line-height:1.7;">
+      <p class="catalog-intro">
         Fragancias originales seleccionadas para todos los gustos — masculinas, femeninas y unisex — en decants para probar con calma.
       </p>
     </div>
@@ -205,85 +207,29 @@
   </div>
 </section>
 
-<div class="divider"></div>
-
-<!-- GUIDED FINDER (inline, metadata-driven, ≤3 questions / ≤3 results) -->
-<section class="section" id="assistant" aria-label="Encuentra tu fragancia">
-  <!-- Rendered by ui/assistant.js -->
-</section>
-
-<div class="divider"></div>
-
-<!-- RECOMMENDATION RAILS (mood-based discovery, dynamic from catalog) -->
-<section class="section" id="recommendation-rails" aria-label="Recomendaciones por mood">
-  <!-- Rendered by recommendations/index.js -->
-</section>
-
-<div class="divider"></div>
-
-<!-- KITS PARA EMPEZAR (single merged kit section — Discovery Sets engine, honest pricing, no fake discount) -->
-<section class="section" id="discovery-sets" aria-label="Kits para empezar" hidden>
-  <!-- Rendered by ui/discoverySets.js -->
-</section>
-
-<div class="divider"></div>
-
-<!-- HOW PURCHASING WORKS -->
-<section class="section" id="how-it-works" aria-labelledby="how-title">
+<!-- HOW IT WORKS / TRUST — concrete, supportable process claims after the
+     collection and before Help. Reassurance is also placed at the actual
+     decision points (cart, product detail), not only here. -->
+<section class="trust-strip" aria-label="Cómo funciona comprar en RDecants">
   <div class="container">
-    <div class="section-header fade-up">
-      <div>
-        <p class="section-label">Cómo funciona</p>
-        <h2 class="section-title" id="how-title">Prueba antes de<br>comprar la botella</h2>
-      </div>
-    </div>
-
-    <ol class="steps-grid">
-      <li class="step-card fade-up">
-        <span class="step-num">1</span>
-        <h3 class="step-title">Elige tu decant de 5 ml</h3>
-        <p class="step-desc">Pide 5 ml de la fragancia que te llama la atención. Es original, servida de un frasco auténtico.</p>
+    <ul class="trust-strip-list">
+      <li>
+        <strong>De frascos originales</strong>
+        <span>Cada decant se sirve de un frasco auténtico de la casa — sin clones. Pregúntanos por el lote.</span>
       </li>
-      <li class="step-card fade-up">
-        <span class="step-num">2</span>
-        <h3 class="step-title">Pruébalo en tu piel</h3>
-        <p class="step-desc">Úsalo unos días y descubre cómo huele en ti y cómo rinde, sin comprometerte con la botella completa.</p>
+      <li>
+        <strong>Preparados al momento</strong>
+        <span>Llenamos y sellamos tu decant cuando haces el pedido, para que llegue fresco.</span>
       </li>
-      <li class="step-card fade-up">
-        <span class="step-num">3</span>
-        <h3 class="step-title">Sube a 10 ml cuando ya sabes</h3>
-        <p class="step-desc">Si es para ti, pide 10 ml o coordina la botella. El pago y el envío se confirman por WhatsApp.</p>
+      <li>
+        <strong>Pruebas 5 ml, subes a 10 ml</strong>
+        <span>Confirma que es para ti antes de invertir en la botella completa.</span>
       </li>
-    </ol>
-  </div>
-</section>
-
-<div class="divider"></div>
-
-<!-- AUTHENTICITY & PREPARATION -->
-<section class="section" id="authenticity" aria-labelledby="auth-title">
-  <div class="container">
-    <div class="section-header fade-up">
-      <div>
-        <p class="section-label">Autenticidad y preparación</p>
-        <h2 class="section-title" id="auth-title">Originales, preparados<br>al momento</h2>
-      </div>
-    </div>
-
-    <div class="proof-grid">
-      <div class="proof-card fade-up">
-        <h3 class="proof-title">Frascos originales</h3>
-        <p class="proof-desc">Cada decant se llena de un frasco original y auténtico de la casa. Sin imitaciones ni clones.</p>
-      </div>
-      <div class="proof-card fade-up">
-        <h3 class="proof-title">Preparados al momento</h3>
-        <p class="proof-desc">Servimos tu decant cuando haces el pedido, para que llegue fresco y con la cantidad exacta.</p>
-      </div>
-      <div class="proof-card fade-up">
-        <h3 class="proof-title">Empaque cuidado</h3>
-        <p class="proof-desc">Vial sellado y protegido para que llegue en perfecto estado a cualquier parte de México.</p>
-      </div>
-    </div>
+      <li>
+        <strong>Pago y envío por WhatsApp</strong>
+        <span>Coordinas todo por chat y envían a todo México; nada se cobra en la web.</span>
+      </li>
+    </ul>
   </div>
 </section>
 
@@ -320,6 +266,10 @@
         <summary class="faq-q">¿Y si algo llega mal?</summary>
         <p class="faq-a">Escríbenos por WhatsApp y lo resolvemos. Revisamos cada incidencia de forma personal.</p>
       </details>
+      <details class="faq-item">
+        <summary class="faq-q">¿Qué pasa después de enviar mi pedido por WhatsApp?</summary>
+        <p class="faq-a">Recibimos tu pedido con lo que agregaste al carrito y te contestamos por ese mismo chat para confirmar disponibilidad, costo de envío y forma de pago antes de prepararlo.</p>
+      </details>
     </div>
   </div>
 </section>
@@ -333,8 +283,7 @@
     <nav class="footer-links">
       <a href="https://wa.me/5219516513018" target="_blank" rel="noopener">WhatsApp</a>
       <a href="#catalog" data-scroll="catalog">Catálogo</a>
-      <a href="#assistant" data-scroll="assistant">Encuentra tu fragancia</a>
-      <a href="#discovery-sets">Kits</a>
+      <a href="#guide" data-scroll="guide" data-focus-finder>Encuentra tu fragancia</a>
       <a href="#faq" data-scroll="faq">Ayuda</a>
     </nav>
 
@@ -380,7 +329,11 @@
       </div>
 
       <div class="cart-discount" id="cart-discount">
-        <form class="cart-discount-form" id="cart-discount-form">
+        <button type="button" class="cart-discount-toggle" id="cart-discount-toggle"
+          aria-expanded="false" aria-controls="cart-discount-form">
+          ¿Tienes un código de descuento?
+        </button>
+        <form class="cart-discount-form" id="cart-discount-form" hidden>
           <input class="cart-discount-input" id="cart-discount-input" type="text"
                  placeholder="Código de descuento" autocomplete="off"
                  autocapitalize="characters" spellcheck="false"
@@ -403,6 +356,10 @@
         <li>✓ Decants preparados al momento</li>
         <li>✓ Envíos a todo México</li>
       </ul>
+
+      <!-- Optional add-ons — secondary, after the customer has seen products,
+           the checkout form and the trust list. Populated by cart/render.js. -->
+      <section class="cart-upsells" id="cart-upsells" aria-label="Completa tu pedido" hidden></section>
     </div>
   </div>
 
@@ -461,7 +418,7 @@
   ?v= must match the version in CSS links above.
   Update on every deploy: increment VERSION file + all ?v= strings.
 -->
-<script type="module" src="assets/js/app.js?v=2026.07.13.1"></script>
+<script type="module" src="assets/js/app.js?v=2026.07.15.2"></script>
 
 </body>
 </html>

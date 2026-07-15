@@ -8,7 +8,8 @@ import { Tracker }          from '../tracking/tracker.js';
 import { openProductModal } from '../ui/modal.js';
 import { observeFadeUp }    from '../ui/animations.js';
 import { primeImageStates } from '../ui/images.js';
-import { Personalization, personalizeRails, filterDisliked } from './personalization.js?v=2026.06.04.2';
+import { Personalization, personalizeRails, filterDisliked } from './personalization.js';
+import { isSellable } from './scoring.js';
 
 const MAX_PER_RAIL = 5;
 const MIN_PER_RAIL = 2;
@@ -132,9 +133,13 @@ export const Recommendations = {
 
 export function buildRails(products, featured = null) {
   const featuredId = featured?.id;
+  /* Only ever surface products the customer can actually buy — a rail must
+     never feature a sold-out / inactive product (the exact defect the audit
+     found on the live mood surfaces). */
+  const sellable = (Array.isArray(products) ? products : []).filter(isSellable);
   const rails = RAILS
     .map(config => {
-      const scored = products
+      const scored = sellable
         .map(product => ({
           product,
           score: config.trending
@@ -145,7 +150,7 @@ export function buildRails(products, featured = null) {
         .sort((a, b) => b.score - a.score || _stockDemand(b.product) - _stockDemand(a.product))
         .map(item => item.product);
 
-      const items = _fillRail(scored, products, config, featuredId).slice(0, MAX_PER_RAIL);
+      const items = _fillRail(scored, sellable, config, featuredId).slice(0, MAX_PER_RAIL);
       return { ...config, items };
     })
     .filter(rail => rail.items.length >= MIN_PER_RAIL);

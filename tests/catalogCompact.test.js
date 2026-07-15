@@ -17,9 +17,11 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { filterProducts } from '../assets/js/catalog/search.js';
 import {
-  getCatalogCapShown,
-  getCatalogCapVisibility,
-  getCatalogRenderProducts,
+  getInitialVisible,
+  getCatalogStep,
+  getVisibleProducts,
+  getCatalogShown,
+  hasMoreToShow,
   normalizeCatalogProducts,
 } from '../assets/js/catalog/render.js';
 
@@ -127,111 +129,67 @@ test('a search query still returns every matching result (no cap in logic)', () 
   assert.equal(order(list, { query: 'sauvage' }).length, 20);
 });
 
-/* ── B. Renderer: compact cap + counter + tracking ───────────── */
+/* ── B. Renderer: incremental load-more (every viewport) ─────── */
 
-test('render.js caps the mobile browse view and offers show more/less', () => {
+test('render.js renders an initial batch and appends more incrementally', () => {
   const r = read('assets/js/catalog/render.js');
-  assert.match(r, /MOBILE_CATALOG_CAP\s*=\s*8/, 'cap constant is 8');
-  assert.ok(r.includes('Ver más perfumes'), 'expand label present');
-  assert.ok(r.includes('Mostrar menos'), 'collapse label present');
-  assert.ok(r.includes('products-grid--capped'), 'cap class toggled');
+  assert.match(r, /CATALOG_INITIAL_MOBILE\s*=\s*8/, 'mobile initial batch is 8');
+  assert.match(r, /CATALOG_INITIAL_DESKTOP\s*=\s*12/, 'desktop initial batch is 12');
+  assert.ok(r.includes('Ver más perfumes'), 'load-more label present');
+  assert.ok(r.includes('function _loadMore'), 'incremental append function present');
+  assert.ok(r.includes('_visibleCount'), 'visible-count model present');
   assert.match(r, /Mostrando \$\{shown\} de \$\{total\} perfumes/, 'counter present');
+  /* Only visible cards are ever in the DOM — no CSS nth-child cap hiding. */
+  assert.ok(!/products-grid--capped/.test(r), 'no cap class — only rendered cards exist');
 });
 
-test('mobile collapsed catalog exposes only 8 visible cards', () => {
-  const visible = getCatalogCapVisibility(36, { isMobile: true, expanded: false });
-  assert.equal(visible.length, 8);
-  assert.deepEqual(visible, [true, true, true, true, true, true, true, true]);
+test('initial visible batch and step are viewport-aware (mobile 8, desktop 12)', () => {
+  assert.equal(getInitialVisible(true), 8, 'mobile initial batch');
+  assert.equal(getInitialVisible(false), 12, 'desktop initial batch');
+  assert.equal(getCatalogStep(true), 8, 'mobile step');
+  assert.equal(getCatalogStep(false), 12, 'desktop step');
 });
 
-test('_renderGrid mobile browse mode renders only the first 8 cards', () => {
-  const list = Array.from({ length: 36 }, (_, idx) => P(`p${idx + 1}`));
-  const rendered = getCatalogRenderProducts(list, { isMobile: true, expanded: false });
-  assert.equal(rendered.length, 8);
-  assert.deepEqual(rendered.map(p => p.id), ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']);
+test('getVisibleProducts slices to the visible count and never exceeds the list', () => {
+  const list = Array.from({ length: 50 }, (_, i) => P(`p${i + 1}`));
+  assert.equal(getVisibleProducts(list, 12).length, 12);
+  assert.deepEqual(getVisibleProducts(list, 8).map(p => p.id).slice(0, 3), ['p1', 'p2', 'p3']);
+  assert.equal(getVisibleProducts(list, 100).length, 50, 'clamped to the list length');
+  assert.deepEqual(getVisibleProducts(undefined, 8), []);
 });
 
-test('mobile collapsed counter matches visible cards', () => {
-  const total = 36;
-  const shown = getCatalogCapShown(total, { isMobile: true, expanded: false });
-  const visibleCount = getCatalogCapVisibility(total, { isMobile: true, expanded: false }).filter(Boolean).length;
-  assert.equal(shown, visibleCount);
-  assert.equal(shown, 8);
+test('getCatalogShown / hasMoreToShow drive the load-more control', () => {
+  assert.equal(getCatalogShown(50, 12), 12);
+  assert.equal(getCatalogShown(50, 60), 50, 'never shows more than the total');
+  assert.equal(hasMoreToShow(50, 12), true);
+  assert.equal(hasMoreToShow(50, 50), false);
+  assert.equal(hasMoreToShow(8, 12), false, 'short lists need no load-more');
 });
 
-test('expanding the mobile catalog shows every card', () => {
-  const visible = getCatalogCapVisibility(36, { isMobile: true, expanded: true });
-  assert.equal(visible.filter(Boolean).length, 36);
-  assert.equal(getCatalogCapShown(36, { isMobile: true, expanded: true }), 36);
-});
+test('incremental append reaches the full list in viewport-sized steps', () => {
+  const total = 50;
+  // desktop: 12 → 24 → 36 → 48 → 50
+  let v = getInitialVisible(false);
+  const desktopSteps = [v];
+  while (hasMoreToShow(total, v)) { v = Math.min(v + getCatalogStep(false), total); desktopSteps.push(v); }
+  assert.deepEqual(desktopSteps, [12, 24, 36, 48, 50]);
 
-test('collapsing the mobile catalog returns to 8 cards', () => {
-  const expanded = getCatalogCapVisibility(36, { isMobile: true, expanded: true });
-  const collapsed = getCatalogCapVisibility(expanded.length, { isMobile: true, expanded: false });
-  assert.equal(collapsed.filter(Boolean).length, 8);
-});
-
-test('search disables the mobile cap', () => {
-  const visible = getCatalogCapVisibility(20, { isMobile: true, filtersActive: true });
-  assert.equal(visible.length, 20);
-  assert.equal(getCatalogCapShown(20, { isMobile: true, filtersActive: true }), 20);
-});
-
-test('filter disables the mobile cap', () => {
-  const visible = getCatalogCapVisibility(14, { isMobile: true, filtersActive: true });
-  assert.equal(visible.length, 14);
+  // mobile: 8 → 16 → 24 → 32 → 40 → 48 → 50
+  let m = getInitialVisible(true);
+  const mobileSteps = [m];
+  while (hasMoreToShow(total, m)) { m = Math.min(m + getCatalogStep(true), total); mobileSteps.push(m); }
+  assert.deepEqual(mobileSteps, [8, 16, 24, 32, 40, 48, 50]);
 });
 
 test('catalog fallback normalizes empty or invalid product lists safely', () => {
   assert.deepEqual(normalizeCatalogProducts(undefined), []);
   assert.deepEqual(normalizeCatalogProducts(null), []);
   assert.deepEqual(normalizeCatalogProducts([P('p1'), null, undefined, P('p2')]).map(p => p.id), ['p1', 'p2']);
-  assert.deepEqual(getCatalogRenderProducts(undefined, { isMobile: true, expanded: true }), []);
 });
 
-test('search results render without the compact limit', () => {
-  const list = Array.from({ length: 20 }, (_, idx) => P(`search-${idx + 1}`));
-  const rendered = getCatalogRenderProducts(list, {
-    isMobile: true,
-    filtersActive: true,
-    expanded: false,
-  });
-  assert.equal(rendered.length, 20);
-});
-
-test('filtered results render without the compact limit', () => {
-  const list = Array.from({ length: 14 }, (_, idx) => P(`filter-${idx + 1}`));
-  const rendered = getCatalogRenderProducts(list, {
-    isMobile: true,
-    filtersActive: true,
-    expanded: false,
-  });
-  assert.equal(rendered.length, 14);
-});
-
-test('desktop catalog always shows every card', () => {
-  const visible = getCatalogCapVisibility(36, { isMobile: false, expanded: false });
-  assert.equal(visible.length, 36);
-  assert.equal(getCatalogCapShown(36, { isMobile: false, expanded: false }), 36);
-});
-
-test('render.js disables the cap whenever a filter/search is active', () => {
+test('render.js emits catalog_expanded on load-more', () => {
   const r = read('assets/js/catalog/render.js');
-  assert.ok(r.includes('SearchBar.hasActiveFilters'), 'cap is gated on active filters');
-});
-
-test('render.js emits catalog_expanded / catalog_collapsed', () => {
-  const r = read('assets/js/catalog/render.js');
-  assert.ok(r.includes('Tracker.catalogExpanded'), 'expand tracked');
-  assert.ok(r.includes('Tracker.catalogCollapsed'), 'collapse tracked');
-});
-
-test('tracker exposes the catalog expand/collapse events + methods', () => {
-  const t = read('assets/js/tracking/tracker.js');
-  assert.ok(t.includes("CATALOG_EXPANDED:      'catalog_expanded'"), 'expanded event');
-  assert.ok(t.includes("CATALOG_COLLAPSED:     'catalog_collapsed'"), 'collapsed event');
-  assert.ok(/catalogExpanded\(total, visibleBefore\)/.test(t), 'expanded method');
-  assert.ok(/catalogCollapsed\(total\)/.test(t), 'collapsed method');
+  assert.ok(r.includes('Tracker.catalogExpanded'), 'each load-more is tracked');
 });
 
 test('SearchBar exposes hasActiveFilters() reusing its private check', () => {
@@ -240,22 +198,25 @@ test('SearchBar exposes hasActiveFilters() reusing its private check', () => {
     'public hasActiveFilters delegates to existing logic');
 });
 
-/* ── C. CSS: cap is mobile-only, desktop unaffected ──────────── */
+/* ── C. CSS: incremental control + no nth-child hiding ───────── */
 
-test('compact catalog does not rely on nth-child CSS hiding', () => {
+test('catalog does not rely on nth-child CSS hiding and shows load-more on all viewports', () => {
   const css = read('assets/css/components.css');
   assert.ok(!/\.products-grid\.products-grid--capped > \.product-card:nth-of-type\(n \+ 9\)/.test(css),
-    'rendered catalog cards are not hidden by old mobile nth-child rules');
-  assert.ok(css.includes('.products-grid > .product-card[hidden]'), 'explicit hidden attributes are still respected');
-  assert.ok(/\.catalog-more\s*\{\s*display:\s*none;/.test(css),
-    '"Ver más" control hidden by default (desktop)');
-  assert.ok(css.includes('.catalog-more-btn'), 'show-more button styled');
+    'no old nth-child cap rule');
+  assert.ok(css.includes('.products-grid > .product-card[hidden]'), 'explicit hidden attributes still respected');
+  assert.ok(/\.catalog-more\s*\{\s*display:\s*flex;/.test(css),
+    '"Ver más" control is visible on every viewport (incremental on desktop too)');
+  assert.ok(css.includes('.catalog-more-btn'), 'load-more button styled');
   assert.ok(css.includes('.catalog-more-count'), 'counter styled');
 });
 
 test('catalog cards render visible by default instead of waiting on IntersectionObserver', () => {
   const r = read('assets/js/catalog/render.js');
-  assert.match(r, /card\.className\s*=\s*'product-card product-card--clickable fade-up visible'/,
+  /* Cards carry `fade-up visible` at creation (never opacity:0 waiting on an
+     observer). The class is now built in a template literal so a guided top
+     pick can append product-card--top. */
+  assert.match(r, /card\.className\s*=\s*`product-card product-card--clickable fade-up visible/,
     'product cards include visible at creation time');
 });
 
@@ -273,33 +234,54 @@ test('catalog show-more control uses premium panel/count/button classes', () => 
   assert.ok(css.includes('-webkit-appearance: none'), 'native button appearance removed');
 });
 
-test('search input hides native clear control and keeps custom clear button', () => {
+test('catalog bar has no duplicate search input — the header owns search', () => {
   const css = read('assets/css/components.css');
   const s = read('assets/js/ui/searchbar.js');
+  const header = read('assets/js/ui/header.js');
 
+  /* Native WebKit search cancel stays hidden for the (single) header input. */
   assert.ok(css.includes('input[type="search"]::-webkit-search-cancel-button'),
     'native WebKit search cancel hidden');
-  assert.ok(css.includes('appearance: none'), 'native search/button appearance removed');
-  assert.ok(s.includes('type="search"'), 'main search input remains type=search');
-  assert.ok(s.includes('class="sf-x" id="sf-x"'), 'custom clear button remains');
-  assert.ok(s.includes('aria-label="Limpiar'), 'custom clear button remains accessible');
+  /* The catalog bar no longer renders its own search box. */
+  assert.ok(!s.includes('id="sf-input"'), 'catalog bar renders no duplicate search input');
+  /* The header delegates the one global search to SearchBar. */
+  assert.match(header, /SearchBar\.applyQuery/);
+  /* An active search is surfaced in the catalog as a removable chip instead. */
+  assert.match(s, /key:\s*'query'/);
+  assert.match(s, /data-clear="all"/);
 });
 
-test('gender quick-chips stay visible (scrollable) on mobile instead of display:none', () => {
-  const css = read('assets/css/components.css');
-  const start = css.indexOf('.sf-row-gender {');
-  assert.ok(start > -1, 'gender row rule present');
-  /* the old "drawer handles mobile" display:none rule must be gone */
-  assert.ok(!/\.sf-row-gender \{ display: none; \}/.test(css),
-    'gender row no longer hidden on mobile');
+test('secondary filters (gender/house/price/scent) live behind one Filtrar panel', () => {
+  const s = read('assets/js/ui/searchbar.js');
+  /* One progressive-disclosure control opens the panel (shared mobile+desktop). */
+  assert.ok(s.includes('id="sf-filter-btn"'), 'single Filtrar button present');
+  /* Gender / house / price / mood pills live inside the drawer panel. */
+  assert.match(s, /data-t="gender"/);
+  assert.match(s, /_dp\('house'/);
+  assert.match(s, /_dp\('price'/);
+  assert.match(s, /_dp\('mood'/);
+  /* Each active filter is individually removable via a chip. */
+  assert.match(s, /key:\s*'gender'/);
+  assert.match(s, /key:\s*'house'/);
+  assert.match(s, /key:\s*'price'/);
 });
 
-/* ── D. Catalog still leads into the recommendation sections ──── */
+/* ── D. Guided catalog: the guide bar drives the catalog in place ──
+   The standalone finder/rails/kits sections are gone; the guide bar (intent
+   chips + compact finder) sits ABOVE the catalog and re-ranks it via
+   SearchBar.applyGuide. */
 
-test('Assistant remains reachable right after the catalog', () => {
+test('the guide bar precedes and drives the catalog (no standalone finder section)', () => {
   const html = read('index.html');
+  const guide = html.indexOf('id="guide"');
   const catalog = html.indexOf('id="catalog"');
-  const assistant = html.indexOf('id="assistant"');
-  assert.ok(catalog > -1 && assistant > -1, 'both sections present');
-  assert.ok(catalog < assistant, 'assistant follows the catalog');
+  assert.ok(guide > -1 && catalog > -1, 'guide bar and catalog both present');
+  assert.ok(guide < catalog, 'guide bar comes before the catalog it controls');
+  assert.equal(html.indexOf('id="assistant"'), -1, 'no standalone finder section on the home page');
+
+  const s = read('assets/js/ui/searchbar.js');
+  assert.ok(/applyGuide\(answers\)/.test(s), 'SearchBar exposes applyGuide for the finder ranking');
+
+  const g = read('assets/js/ui/guide.js');
+  assert.ok(g.includes('SearchBar.applyGuide'), 'the guide bar drives the catalog in place');
 });

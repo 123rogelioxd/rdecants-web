@@ -6,31 +6,26 @@
    handlers use window.__rd.* instead of loose globals.
    ============================================================= */
 
-import { Cart }                           from './cart/cart.js?v=2026.06.04.2';
-import { setupCheckout }                  from './cart/checkout.js?v=2026.06.04.2';
+import { Cart }                           from './cart/cart.js';
+import { setupCheckout }                  from './cart/checkout.js';
 import { renderCart, updateCartCount,
          openCart, closeCart,
          toggleCart, sendWhatsApp,
          setupDiscountControls,
-         setupCampaignAttribution }       from './cart/render.js?v=2026.06.04.2';
-import { renderProducts }                   from './catalog/render.js?v=2026.06.04.2';
-import { Recommendations }                 from './recommendations/index.js?v=2026.06.04.2';
-import { setupAssistant }                   from './ui/assistant.js?v=2026.06.04.2';
-import { setupDiscoverySets }               from './ui/discoverySets.js?v=2026.06.04.2';
-import { Personalization }                  from './recommendations/personalization.js?v=2026.06.04.2';
-import { CatalogProvider }                  from './providers/catalog.js?v=2026.06.04.2';
+         setupCampaignAttribution }       from './cart/render.js';
+import { renderProducts }                   from './catalog/render.js';
+import { setupGuide }                        from './ui/guide.js';
+import { SearchBar }                         from './ui/searchbar.js';
+import { Personalization }                  from './recommendations/personalization.js';
+import { CatalogProvider }                  from './providers/catalog.js';
 import { setupScrollAnimations,
-         observeFadeUp,
-         setupHeroParallax }             from './ui/animations.js?v=2026.06.14.1';
+         observeFadeUp }                 from './ui/animations.js';
 import { setupHeader }                    from './ui/header.js';
-import { setupShortcuts }                 from './ui/shortcuts.js';
-import { showToast }                      from './ui/toast.js';
 import { openProductModal,
-         closeProductModal }             from './ui/modal.js?v=2026.06.04.2';
-import { SearchBar }                     from './ui/searchbar.js?v=2026.06.04.2';
+         closeProductModal }             from './ui/modal.js';
 import { setupImageStates }              from './ui/images.js';
 import { Tracker }                        from './tracking/tracker.js';
-import { installBackendTracking }          from './tracking/backend.js?v=2026.06.04.2';
+import { installBackendTracking }          from './tracking/backend.js';
 import { EventBus }                       from './core/events.js';
 import { AppState }                       from './core/state.js';
 
@@ -67,6 +62,8 @@ window.__rd = {
       document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
       closeCart();
     },
+    /* Exit guided mode ("Ver todo") back to the full catalog. */
+    clearGuide: () => SearchBar.clearGuide(),
   },
   /* Privacy: let the visitor wipe their local taste signal at will. */
   personalization: {
@@ -99,27 +96,6 @@ window.scrollToCatalog = window.__rd.ui.scrollToCatalog;
 
 installBackendTracking(Tracker);
 
-/* ── Intro ──────────────────────────────────────────────────── */
-function removeIntro() {
-  const intro = document.getElementById('intro');
-  if (!intro) return;
-
-  /* Skip animation on repeat visits within the same session */
-  const seen = sessionStorage.getItem('rd_intro');
-  if (seen) {
-    intro.remove();
-    return;
-  }
-  sessionStorage.setItem('rd_intro', '1');
-
-  /* First visit: short branded moment then clear */
-  setTimeout(() => {
-    intro.style.transition = 'opacity 0.5s ease';
-    intro.style.opacity    = '0';
-    setTimeout(() => intro.remove(), 500);
-  }, 700);
-}
-
 /* ── Behavioral observability ───────────────────────────────── */
 function _setupScrollTracking() {
   /* Scroll depth — fires at 25/50/75/100% */
@@ -141,7 +117,7 @@ function _setupScrollTracking() {
 
   /* Section viewed — fires once per section when 15% enters viewport */
   const SECTIONS = [
-    'assistant', 'recommendation-rails', 'discovery-sets',
+    'guide', 'catalog', 'faq',
   ];
   if (!('IntersectionObserver' in window)) return;
   SECTIONS.forEach((id, positionIndex) => {
@@ -157,9 +133,29 @@ function _setupScrollTracking() {
   });
 }
 
+/* ── Scroll links (hero CTA, header nav, footer) ────────────────
+   Smooth-scroll to a section; when the link is marked data-focus-finder,
+   open the guide finder so a beginner lands on the questions, not just
+   near them. */
+function _setupScrollLinks() {
+  document.querySelectorAll('[data-scroll]').forEach(el => {
+    el.addEventListener('click', event => {
+      const target = document.getElementById(el.dataset.scroll);
+      if (!target) return;
+      event.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (el.hasAttribute('data-focus-finder')) {
+        window.setTimeout(() => {
+          const toggle = document.getElementById('guide-finder-toggle');
+          if (toggle && toggle.getAttribute('aria-expanded') !== 'true') toggle.click();
+        }, 420);
+      }
+    });
+  });
+}
+
 /* ── Bootstrap ──────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', async () => {
-  removeIntro();
   setupImageStates();
 
   /* Initial cart state */
@@ -173,24 +169,21 @@ document.addEventListener('DOMContentLoaded', async () => {
      and auto-apply the promo when possible. Non-blocking. */
   setupCampaignAttribution();
 
-  /* Render catalog (async — provider pattern) */
+  /* Render catalog (async — provider pattern). SearchBar mounts here; the guide
+     bar drives it via SearchBar.applyGuide, so the catalog must exist first. */
   await renderProducts();
 
-  /* Guided shopping assistant (inline, metadata-driven) */
-  setupAssistant('assistant');
+  /* Guide bar — the catalog's control layer (intent chips + compact finder).
+     Mounted after the catalog so SearchBar is ready to receive applyGuide().
+     Rails, the standalone finder section, mood section and kit section are
+     intentionally NOT mounted on the home page anymore; their engines are
+     reused contextually (finder ranking drives the grid; kits appear after a
+     recommendation; mood pages remain as /mood/{slug} landing pages). */
+  setupGuide('guide');
 
-  /* Discovery shortcuts + hero/nav scroll links → real filters or the finder.
-     Runs after the catalog (SearchBar.init) and finder are mounted so their
-     module state is ready. */
-  setupShortcuts();
-
-  /* Mood-based discovery rails (lazy-hydrates on scroll) — capped at 3 moods */
-  Recommendations.render('recommendation-rails');
-
-  /* Kits para empezar — single merged kit section (honest pricing, no fake discount).
-     Anchor Discovery, Taste Builder and Smart Bundles are intentionally NOT mounted
-     on the home page anymore; their modules are kept for reuse elsewhere. */
-  setupDiscoverySets('discovery-sets');
+  /* Hero / header / footer scroll links → smooth-scroll, optionally opening the
+     finder. Replaces the old shortcuts binder. */
+  _setupScrollLinks();
 
   /* After dynamic content is in DOM, observe scroll animations */
   observeFadeUp();
@@ -198,7 +191,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   /* UI setup */
   setupHeader();
-  setupHeroParallax();
   _setupScrollTracking();
 
   AppState.set('initialized', true);
