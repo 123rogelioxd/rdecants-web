@@ -18,15 +18,15 @@
      renderDiscoverySetsFallback(root, sets)   — PDP fallback
    ============================================================= */
 
-import { isSellable, getOperationalScore } from '../recommendations/scoring.js?v=2026.06.04.2';
-import { Personalization, filterDisliked } from '../recommendations/personalization.js?v=2026.06.04.2';
+import { isSellable, getOperationalScore } from '../recommendations/scoring.js';
+import { Personalization, filterDisliked } from '../recommendations/personalization.js';
 import {
   USE_CASE_PROFILES,
   SCENT_FAMILIES,
   productSignals,
   scoreProfileMatch,
-} from '../recommendations/taxonomy.js?v=2026.06.04.2';
-import { getPriceForSize, formatPrice } from '../utils/prices.js?v=2026.06.04.2';
+} from '../recommendations/taxonomy.js';
+import { getPriceForSize, formatPrice } from '../utils/prices.js';
 import { Tracker } from '../tracking/tracker.js';
 import { primeImageStates } from './images.js';
 
@@ -186,6 +186,39 @@ function _setCard(set) {
     </article>`;
 }
 
+/* Compact contextual-kit card — a fraction of a viewport, not an editorial
+   card. Used ONLY by the post-recommendation kit prompt (renderContextualKit),
+   never as a standing homepage section. Pure + unit-testable, mirroring
+   buildDiscoverySetsHtml's shape (same data-set-id contract for _bindSetActions,
+   same escaping). */
+export function buildCompactKitHtml(set) {
+  if (!set) return '';
+
+  const items = set.products.map(p => {
+    const hasImage = Boolean(p.image && p.image.trim());
+    return `
+      <li class="ck-mini-item">
+        <span class="ck-mini-img${hasImage ? '' : ' ck-mini-img--fallback'}">
+          ${hasImage ? `<img src="${_esc(p.image)}" alt="" loading="lazy" decoding="async">` : ''}
+        </span>
+        <span class="ck-mini-name">${_esc(p.name)}</span>
+      </li>`;
+  }).join('');
+
+  return `
+    <div class="ck-compact" data-set-id="${_esc(set.id)}">
+      <ul class="ck-mini-list" aria-label="Fragancias incluidas en ${_esc(set.name)}">${items}</ul>
+      <div class="ck-compact-foot">
+        <span class="ck-compact-meta">3 decants de 3&nbsp;ml</span>
+        <span class="ck-compact-price">${formatPrice(set.total, 'Consultar')}</span>
+        <button class="btn-primary ck-compact-add" data-set-id="${_esc(set.id)}"
+          aria-label="Agregar ${_esc(set.name)} al carrito">
+          Agregar set
+        </button>
+      </div>
+    </div>`;
+}
+
 /* ── UI — home page mount ───────────────────────────────────────── */
 
 export async function setupDiscoverySets(containerId) {
@@ -194,7 +227,7 @@ export async function setupDiscoverySets(containerId) {
 
   let products = [];
   try {
-    const { CatalogProvider } = await import('../providers/catalog.js?v=2026.06.04.2');
+    const { CatalogProvider } = await import('../providers/catalog.js');
     products = await CatalogProvider.getProducts();
   } catch {
     products = [];
@@ -281,6 +314,71 @@ function _bindSetActions(root, sets) {
       }
     });
   });
+}
+
+/* ── Contextual kit prompt (post-recommendation only) ───────────── */
+
+/* Rendered by the catalog AFTER a guided recommendation — never as a standing
+   homepage section. Picks the ONE kit most relevant to the finder answers so
+   "prefer to try a few?" is offered exactly when that thought is live. */
+export async function renderContextualKit(slot, answers = {}) {
+  if (!slot) return;
+
+  let products = [];
+  try {
+    const { CatalogProvider } = await import('../providers/catalog.js');
+    products = await CatalogProvider.getProducts();
+  } catch {
+    products = [];
+  }
+
+  const taste = Personalization.getTaste();
+  const eligible = filterDisliked(products, taste, { minCount: 3 });
+  const sets = resolveDiscoverySets(eligible);
+  const set = sets.length ? _pickSetForAnswers(sets, answers) : null;
+
+  if (!set) { slot.hidden = true; slot.innerHTML = ''; return; }
+
+  /* Compact — a fraction of a viewport, not another editorial card. The
+     finder answers were already explained above; this only adds the offer. */
+  slot.hidden = false;
+  slot.innerHTML = `
+    <div class="ck-inner">
+      <p class="ck-kicker">¿Prefieres probar los tres?</p>
+      ${buildCompactKitHtml(set)}
+    </div>`;
+
+  primeImageStates(slot);
+  Tracker.discoverySetViewed(set);
+  _bindCompactKitActions(slot, set);
+}
+
+function _bindCompactKitActions(root, set) {
+  root.querySelector('.ck-compact-add')?.addEventListener('click', async () => {
+    Tracker.discoverySetAdded(set);
+    await window.__rd?.cart?.addBundle?.({
+      id: set.id,
+      title: set.name,
+      items: set.products,
+      itemSize: set.itemSize,
+      originalTotal: set.total,
+      total: set.total,
+      savings: 0,
+    });
+    /* No forced cart open — the "Kit agregado · Ver carrito" toast keeps the
+       customer browsing, consistent with single-product adds. */
+  });
+
+  root.querySelector('.ck-compact')?.addEventListener('click', e => {
+    if (!e.target.closest('.ck-compact-add')) Tracker.discoverySetClicked(set, 'contextual_compact');
+  });
+}
+
+function _pickSetForAnswers(sets, answers = {}) {
+  const byId = id => sets.find(s => s.id === id);
+  const byOccasion = { cita: 'citas', noche: 'noches', oficina: 'oficina', dia: 'frescos' }[answers.occasion];
+  const byFamily = { fresco: 'frescos', dulce: 'citas', intenso: 'noches' }[answers.family];
+  return byId(byOccasion) || byId(byFamily) || byId('bestsellers') || sets[0];
 }
 
 /* "Ver más kits" — reveal the kits hidden on mobile beyond MOBILE_VISIBLE_SETS. */

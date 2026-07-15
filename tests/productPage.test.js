@@ -157,11 +157,11 @@ test('catalog gender badge helper renders known labels and hides missing metadat
 });
 
 test('PDP module imports getSizeLabel from versioned prices module', async () => {
-  const prices = await import('../assets/js/utils/prices.js?v=2026.06.04.2');
+  const prices = await import('../assets/js/utils/prices.js');
   assert.equal(typeof prices.getSizeLabel, 'function');
   assert.equal(prices.getSizeLabel(5), 'Uso frecuente');
 
-  const productPage = await import('../assets/js/ui/productPage.js?v=2026.06.04.2');
+  const productPage = await import('../assets/js/ui/productPage.js');
   assert.equal(typeof productPage.buildProductPageHtml, 'function');
 });
 

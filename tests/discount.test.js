@@ -25,9 +25,9 @@ Object.defineProperty(globalThis, 'navigator', {
 
 /* Same specifier (incl. ?v=) that discount.js uses, so we patch the SAME
    ApiClient module instance. */
-const { ApiClient } = await import('../assets/js/api/client.js?v=2026.06.04.2');
+const { ApiClient } = await import('../assets/js/api/client.js');
 const { Discount, normalizeCode, buildPreviewPayload, API_DOWN_MSG } =
-  await import('../assets/js/cart/discount.js?v=2026.06.04.2');
+  await import('../assets/js/cart/discount.js');
 
 function stubPreview(fn) { ApiClient.previewDiscount = fn; }
 

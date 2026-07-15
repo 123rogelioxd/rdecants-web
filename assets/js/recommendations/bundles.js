@@ -20,9 +20,9 @@ import {
   CLIMATES,
   productSignals,
   scoreProfileMatch,
-} from './taxonomy.js?v=2026.06.04.2';
-import { isSellable, getOperationalScore, getAovSignal } from './scoring.js?v=2026.06.04.2';
-import { getDefaultVariant } from '../utils/prices.js?v=2026.06.04.2';
+} from './taxonomy.js';
+import { isSellable, getOperationalScore, getAovSignal } from './scoring.js';
+import { getDefaultVariant } from '../utils/prices.js';
 
 const DEFAULT_SIZE = 3;
 const MIN_ITEMS = 2;

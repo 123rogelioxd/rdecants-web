@@ -10,16 +10,22 @@ import {
   productSignals,
   scoreProfileMatch,
   normalizeText,
-} from './taxonomy.js?v=2026.06.04.2';
-import { getMatchTier } from './reasoning.js?v=2026.06.04.2';
-import { isSellable, getOperationalScore, getAovSignal } from './scoring.js?v=2026.06.04.2';
-import { getDefaultVariant, getOrderableVariants } from '../utils/prices.js?v=2026.06.04.2';
-import { getGenderEligibility } from '../utils/gender.js?v=2026.06.04.2';
+} from './taxonomy.js';
+import { getMatchTier } from './reasoning.js';
+import { isSellable, getOperationalScore } from './scoring.js';
+import { getDefaultVariant, getOrderableVariants } from '../utils/prices.js';
+import { getGenderEligibility } from '../utils/gender.js';
 
 const MIN_RESULTS = 2;
 const MAX_RESULTS = 4;
 const LEVEL_BOOST = 2;
 const GENDER_BOOST = 3;
+
+/* Two candidates whose FIT scores fall within this many points are treated as
+   "equally suitable" — a near-tie the accessible-price and operational signals
+   are allowed to break. A larger gap means one is a genuinely better match and
+   fit alone decides, so price can never bury a superior recommendation. */
+const FIT_BAND = 6;
 
 const MAX_CONTEXT_SCORE = 40;
 const MAX_OLFACTIVE_SCORE = 30;
@@ -174,52 +180,100 @@ const FAMILY_RULES = {
   },
 };
 
-export function getAssistantRecommendations(answers = {}, products = [], { limit = MAX_RESULTS } = {}) {
-  if (!Array.isArray(products) || !products.length) return [];
-
-  const candidates = products
+/* Build the sellable, gender-eligible, budget-fitting candidate set with a
+   FIT score for each. Shared by the capped finder (getAssistantRecommendations)
+   and the full guided-catalog ranking (rankCatalogForAnswers) so both surfaces
+   rank identically off one engine. */
+function _buildCandidates(answers, products) {
+  return products
     .filter(isSellable)
     .map(product => ({ product, genderEligibility: getGenderEligibility(product, answers.gender) }))
     .filter(entry => entry.genderEligibility.eligible)
-    .map(entry => ({
-      ...entry,
-      variant: _variantForBudget(entry.product, answers.budget),
-    }))
+    .map(entry => ({ ...entry, variant: _variantForBudget(entry.product, answers.budget) }))
     .filter(entry => entry.variant)
     .map(entry => {
       const signals = productSignals(entry.product);
       const breakdown = _matchBreakdown(entry.product, signals, answers);
-      const matchScore = breakdown.total;
       return {
         ...entry,
         breakdown,
-        matchScore,
-        rankScore: matchScore - entry.genderEligibility.penalty,
+        matchScore: breakdown.total,
+        /* FIT is suitability only (no commercial/operational/price). It ranks. */
+        fit: breakdown.fit,
+        operational: getOperationalScore(entry.product),
+        price: Number(entry.variant.price) || Infinity,
       };
     })
-    .filter(entry => entry.matchScore > 0);
+    /* Require genuine suitability — a product that only scored on commercial
+       appeal (fit === 0) is never recommended. */
+    .filter(entry => entry.fit > 0);
+}
 
-  if (!candidates.length) return [];
-
-  const maxScore = Math.max(...candidates.map(c => c.matchScore));
-  const ranked = candidates.sort((a, b) =>
-    _priorityRank(a.genderEligibility.priority) - _priorityRank(b.genderEligibility.priority) ||
-    b.rankScore - a.rankScore ||
-    b.breakdown.context - a.breakdown.context ||
-    b.breakdown.commercial - a.breakdown.commercial ||
-    getAovSignal(b.product) - getAovSignal(a.product));
-
-  const top = ranked.slice(0, Math.max(MIN_RESULTS, Math.min(limit, MAX_RESULTS)));
-
-  return top.map(({ product, variant, matchScore, breakdown }) => ({
+function _toRecommendation(entry, maxFit, answers) {
+  const { product, variant, fit, breakdown } = entry;
+  return {
     product,
     variant,
-    matchScore,
-    matchTier: getMatchTier(matchScore, maxScore),
+    matchScore: fit,
+    matchTier: getMatchTier(fit, maxFit),
     reasons: _explainRecommendation(product, breakdown),
     scoreBreakdown: breakdown,
     useCase: OCCASION_LABEL[answers.occasion] ?? _topUseCaseLabel(product),
+  };
+}
+
+export function getAssistantRecommendations(answers = {}, products = [], { limit = MAX_RESULTS } = {}) {
+  if (!Array.isArray(products) || !products.length) return [];
+
+  const candidates = _buildCandidates(answers, products);
+  if (!candidates.length) return [];
+
+  const maxFit = Math.max(...candidates.map(c => c.fit));
+  const ranked = _rankBeginnerSafe(candidates);
+  const top = ranked.slice(0, Math.max(MIN_RESULTS, Math.min(limit, MAX_RESULTS)));
+
+  return top.map(entry => _toRecommendation(entry, maxFit, answers));
+}
+
+/* Guided-catalog ranking: the SAME beginner-safe order as the finder, but
+   uncapped, so the finder's answers can re-rank the whole catalog grid in place
+   (top pick flagged) instead of rendering a separate results view. Returns only
+   genuinely-suitable matches; the caller offers "Ver todo" to exit guided mode
+   back to the full catalog. */
+export function rankCatalogForAnswers(answers = {}, products = []) {
+  if (!Array.isArray(products) || !products.length) return [];
+
+  const candidates = _buildCandidates(answers, products);
+  if (!candidates.length) return [];
+
+  const maxFit = Math.max(...candidates.map(c => c.fit));
+  return _rankBeginnerSafe(candidates).map((entry, index) => ({
+    ..._toRecommendation(entry, maxFit, answers),
+    isTop: index === 0,
   }));
+}
+
+/* Beginner-safe ranking (see FIT_BAND). Ordering priority:
+     1. Gender fit tier — primary before secondary before fallback.
+     2. FIT, bucketed into bands — a clearly better match always wins; price
+        can never displace a genuinely superior recommendation.
+     3. Within a band (equally suitable) → the more ACCESSIBLE (cheaper) option
+        first, so a first-time buyer is never led with the most expensive of
+        equals.
+     4. Operational health — real stock/demand — a close tie-break only.
+     5. Product id — fully deterministic for tests.
+   Commercial appeal and raw price never enter fit; they only act here, and
+   only within a near-tie. */
+function _rankBeginnerSafe(candidates) {
+  return candidates
+    .map(entry => ({ entry, band: Math.round(entry.fit / FIT_BAND) }))
+    .sort((a, b) =>
+      _priorityRank(a.entry.genderEligibility.priority) - _priorityRank(b.entry.genderEligibility.priority) ||
+      b.band - a.band ||
+      a.entry.price - b.entry.price ||
+      b.entry.operational - a.entry.operational ||
+      String(a.entry.product.id).localeCompare(String(b.entry.product.id)))
+    .map(({ entry }) => entry);
 }
 
 function _matchScore(product, signals, answers) {
@@ -232,7 +286,16 @@ function _matchBreakdown(product, signals, answers) {
   const commercial = _commercialScore(product);
   const popularity = _popularityScore(product);
   const performance = _performanceScore(product, answers);
-  const adjustment = _levelAdjust(product, signals, answers.level) + _genderScore(product, answers.gender);
+  const levelAdjust = _levelAdjust(product, signals, answers.level);
+  const genderBoost = _genderScore(product, answers.gender);
+
+  /* FIT = suitability only: how well the fragrance matches the customer's
+     answers (occasion/climate context + scent family + performance − any
+     contradiction penalty + a small beginner-safe level nudge). It deliberately
+     EXCLUDES commercial appeal, operational health, popularity and price so that
+     match quality is the sole ranking input; the excluded signals act only as
+     near-tie breakers in _rankBeginnerSafe. */
+  const fit = Math.max(0, context.score + olfactive.score + performance.score + levelAdjust - context.penalty);
 
   return {
     context: context.score,
@@ -241,9 +304,10 @@ function _matchBreakdown(product, signals, answers) {
     popularity,
     performance: performance.score,
     penalty: context.penalty,
+    fit,
     warnings: context.warnings,
     positives: [...context.positives, ...olfactive.positives, ...performance.positives],
-    total: context.score + olfactive.score + commercial + popularity + performance.score + adjustment - context.penalty,
+    total: context.score + olfactive.score + commercial + popularity + performance.score + levelAdjust + genderBoost - context.penalty,
   };
 }
 

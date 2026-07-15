@@ -1,7 +1,6 @@
 /* =============================================================
    RDECANTS — CATALOG RENDERER
-   Renders featured product, product grid, and packs.
-   Data comes exclusively from CatalogProvider.
+   Renders the product grid. Data comes exclusively from CatalogProvider.
 
    States handled:
      • loading   — placeholder text while fetching
@@ -10,86 +9,39 @@
      • no-match  — elegant empty state when filters return 0
    ============================================================= */
 
-import { CatalogProvider }  from '../providers/catalog.js?v=2026.06.04.2';
+import { CatalogProvider }  from '../providers/catalog.js';
 import { Tracker }          from '../tracking/tracker.js';
-import { openProductModal } from '../ui/modal.js?v=2026.06.04.2';
-import { SearchBar }        from '../ui/searchbar.js?v=2026.06.04.2';
+import { openProductModal } from '../ui/modal.js';
+import { SearchBar }        from '../ui/searchbar.js';
 import { observeFadeUp }    from '../ui/animations.js';
 import { primeImageStates } from '../ui/images.js';
-import { getDefaultVariant,
-         getDisplayVariant,
-         formatPrice }      from '../utils/prices.js?v=2026.06.04.2';
-import { getScarcityDisplay } from '../utils/scarcity.js?v=2026.06.04.2';
-import { getDisplayBadges }  from '../utils/guidance.js?v=2026.06.04.2';
+import { getDisplayVariant,
+         formatPrice }      from '../utils/prices.js';
+import { getScarcityDisplay } from '../utils/scarcity.js';
+import { getDisplayBadges }  from '../utils/guidance.js';
 
 /* module-level ref kept for SearchBar callback */
 let _productsContainer = null;
 
-/* Compact mobile catalog: the default browse view shows the first
-   MOBILE_CATALOG_CAP cards; the rest sit behind "Ver más perfumes".
-   The cap is mobile-only (CSS media query) and NEVER applies while a
-   search/filter is active — those views always show every result. */
-const MOBILE_CATALOG_CAP = 8;
-let _catalogExpanded = false;
+/* Incremental catalog rendering. The grid never paints the whole result set at
+   once: it renders an initial batch (viewport-aware) and appends the next batch
+   on "Ver más perfumes". This applies in EVERY state — default browse, filtered,
+   and guided — so no long list (50 products, or a 30-match guided view) is ever
+   dumped in one paint. Each fresh render (filter/guide change) resets the
+   visible count to the initial batch; the guided top pick is first, so it is
+   always in that first batch. */
+const CATALOG_INITIAL_MOBILE  = 8;
+const CATALOG_INITIAL_DESKTOP = 12;
+const CATALOG_STEP_MOBILE  = 8;
+const CATALOG_STEP_DESKTOP = 12;
+
 let _lastCatalogProducts = [];
+let _visibleCount = 0;
+/* Render context carried between the initial paint and incremental appends so
+   "Ver más" builds identical cards (incl. the guided top-pick treatment). */
+let _renderCtx = { guided: null, recById: null };
 let _catalogResizeBound = false;
 let _lastMobileCatalogState = null;
-
-/* ── Featured ────────────────────────────────────────────────── */
-export async function renderFeatured() {
-  const el = document.getElementById('featured-product');
-  if (!el) return;
-
-  el.innerHTML = '<p class="catalog-loading">Cargando...</p>';
-
-  const featured = await CatalogProvider.getFeatured();
-
-  if (!featured) {
-    el.closest('section')?.remove();
-    return;
-  }
-
-  Tracker.productView(featured);
-  const featuredVariant = getDefaultVariant(featured);
-  const canAddFeatured = _isOrderableVariant(featuredVariant);
-  const featuredPrice = featuredVariant
-    ? `${formatPrice(featuredVariant.price)} <small>/ ${featuredVariant.size}ml</small>`
-    : 'Consultar precio';
-
-  el.innerHTML = `
-    <div class="featured-img">
-      <img src="${featured.image}" alt="${featured.name}" loading="lazy" decoding="async">
-    </div>
-    <div class="featured-info">
-      <span class="featured-tag">FRAGANCIA DESTACADA</span>
-      <p style="font-size:11px;letter-spacing:.35em;color:var(--muted);text-transform:uppercase;margin-bottom:10px;">
-        ${featured.house}
-      </p>
-      <h2 class="featured-title">${featured.name}</h2>
-      <p class="featured-desc">${featured.story}</p>
-      <div class="card-notes" style="margin-bottom:28px;">
-        ${featured.notes.map(n => `<span class="note-tag">${n}</span>`).join('')}
-      </div>
-      ${featured.stock <= 3
-        ? `<p class="card-stock"><span class="stock-dot"></span>${_stockText(featured.stock)}</p>`
-        : ''}
-      <div class="featured-price">
-        ${featuredPrice}
-      </div>
-      <div style="display:flex;gap:12px;flex-wrap:wrap;">
-        <button class="btn-primary"
-          ${canAddFeatured ? `onclick="window.__rd.cart.add('${featured.id}', ${featuredVariant.size})"` : 'disabled aria-disabled="true"'}
-          aria-label="${canAddFeatured ? `Agregar ${featured.name} ${featuredVariant.size}ml al carrito` : 'Precio por consultar'}">
-          ${canAddFeatured ? 'Agregar a mi colección' : 'Consultar precio'}
-        </button>
-        <button class="btn-ghost" onclick="window.__rd.ui.scrollToCatalog()">
-          Ver coleccion
-        </button>
-      </div>
-    </div>
-  `;
-  primeImageStates(el);
-}
 
 function _emptyState(title, desc) {
   return `
@@ -121,9 +73,11 @@ export async function renderProducts() {
   /* Track initial view for all products once */
   products.forEach(p => Tracker.productView(p));
 
-  /* SearchBar handles the first and all subsequent renders */
-  SearchBar.init(products, (filtered) => {
-    _renderGrid(filtered);
+  /* SearchBar handles the first and all subsequent renders. In guided mode it
+     passes ranking meta so the grid pins the finder's top pick and shows the
+     editorial state header + contextual kit prompt. */
+  SearchBar.init(products, (filtered, meta) => {
+    _renderGrid(filtered, { guided: meta?.guided ? meta : null });
     observeFadeUp();
   });
 
@@ -141,61 +95,15 @@ export async function renderProducts() {
   }
 }
 
-/* ── Packs ───────────────────────────────────────────────────── */
-export async function renderPacks() {
-  const container = document.getElementById('packs-grid');
-  if (!container) return;
-
-  container.innerHTML = '<p class="catalog-loading">Cargando packs...</p>';
-
-  const packs = await CatalogProvider.getPacks();
-
-  if (!packs?.length) {
-    container.innerHTML = _emptyState(
-      'Packs en curaduria',
-      'Aun no hay packs disponibles, pero el catalogo sigue abierto para armar tu seleccion.',
-    );
-    return;
-  }
-
-  container.innerHTML = '';
-
-  packs.forEach((p, idx) => {
-    const card = document.createElement('div');
-    card.className         = 'pack-card fade-up';
-    card.style.transitionDelay = `${idx * 0.08}s`;
-
-    card.innerHTML = `
-      <span class="pack-badge">${p.badge}</span>
-      <div class="pack-emoji">${p.emoji}</div>
-      <h3 class="pack-name">${p.name}</h3>
-      <p class="pack-desc">${p.desc}</p>
-      <p class="pack-detail">${p.detail}</p>
-      ${p.stock <= 3
-        ? `<div class="pack-stock"><span class="stock-dot"></span>${_stockText(p.stock)}</div>`
-        : ''}
-      <div class="pack-pricing">
-        <span class="pack-price-now">$${p.price}</span>
-        <span class="pack-price-was">$${p.originalPrice}</span>
-      </div>
-          <button class="btn-gold" style="width:100%;"
-        onclick="window.__rd.cart.addPack('${p.id}')"
-        aria-label="Agregar pack ${p.name} al carrito">
-        Quiero este pack
-      </button>
-    `;
-
-    container.appendChild(card);
-  });
-}
-
 /* ── Grid renderer (used by SearchBar callback) ──────────────── */
-function _renderGrid(products, { rememberProducts = true } = {}) {
+function _renderGrid(products, { rememberProducts = true, guided = null, preserveVisible = false } = {}) {
   if (!_productsContainer) return;
 
-  /* Reset any compact-cap UI from a previous render before re-painting */
   _removeShowMore();
-  _productsContainer.classList.remove('products-grid--capped');
+
+  /* Guided-mode chrome (editorial state header + contextual kit) is torn down
+     and rebuilt each render so a return to the plain catalog is always clean. */
+  _syncGuideState(guided, products.length);
 
   _productsContainer.innerHTML = '';
   const catalogProducts = normalizeCatalogProducts(products);
@@ -203,196 +111,266 @@ function _renderGrid(products, { rememberProducts = true } = {}) {
 
   /* Empty state */
   if (!catalogProducts.length) {
+    _syncKitPrompt(null);
     const empty = document.createElement('div');
     empty.className = 'sf-empty premium-empty';
-    empty.innerHTML = `
-      <div class="sf-empty-icon" aria-hidden="true">R</div>
-      <h3 class="sf-empty-title">Sin match perfecto</h3>
-      <p class="sf-empty-desc">
-        Intenta otros filtros o ajusta tu busqueda
-      </p>
-      <button class="btn-ghost sf-empty-clear"
-        onclick="window.__rd?.ui?.clearSearch?.()">
-        Limpiar filtros ->
-      </button>
-    `;
+    empty.innerHTML = guided
+      ? `
+        <div class="sf-empty-icon" aria-hidden="true">R</div>
+        <h3 class="sf-empty-title">Aún no hay un match exacto</h3>
+        <p class="sf-empty-desc">Ajusta tus respuestas o explora toda la colección.</p>
+        <button class="btn-ghost sf-empty-clear" onclick="window.__rd?.ui?.clearGuide?.()">
+          Ver todo el catálogo
+        </button>`
+      : `
+        <div class="sf-empty-icon" aria-hidden="true">R</div>
+        <h3 class="sf-empty-title">Sin match perfecto</h3>
+        <p class="sf-empty-desc">Intenta otros filtros o ajusta tu búsqueda</p>
+        <button class="btn-ghost sf-empty-clear" onclick="window.__rd?.ui?.clearSearch?.()">
+          Limpiar filtros →
+        </button>`;
     _productsContainer.appendChild(empty);
     return;
   }
 
-  const frag = document.createDocumentFragment();
+  /* Reason lookup for the guided top pick (one honest, deterministic line).
+     Kept on _renderCtx so incremental appends build identical cards. */
+  const recById = guided?.recommendations
+    ? new Map(guided.recommendations.map(r => [String(r.product.id), r]))
+    : null;
+  _renderCtx = { guided, recById };
+
   const total = catalogProducts.length;
-  const productsToRender = getCatalogRenderProducts(catalogProducts, {
-    expanded: _catalogExpanded,
-    filtersActive: _catalogFiltersActive(),
-    isMobile: _isMobileCatalog(),
-  });
+  const initial = getInitialVisible(_isMobileCatalog());
+  /* Fresh render (filter/guide change) → back to the initial batch. On a resize
+     re-render we keep whatever the customer had already revealed. */
+  _visibleCount = preserveVisible
+    ? Math.min(Math.max(_visibleCount, initial), total)
+    : Math.min(initial, total);
 
-  productsToRender.forEach((p, idx) => {
-    const displayVariant = getDisplayVariant(p);
-    const priceHtml = displayVariant
-      ? `${formatPrice(displayVariant.price)} <small>${displayVariant.size}ml</small>`
-      : 'Consultar precio';
-    const stockState = getScarcityDisplay(p);
-    const isSoldOut = stockState.state === 'sold_out';
-    const canQuickAdd = !isSoldOut && _isOrderableVariant(displayVariant);
-    const concentrationChip = p.concentration
-      ? `<span class="card-concentration">${p.concentration}</span>`
-      : '';
-    const genderChip = genderBadgeHtml(p.gender, 'card-gender');
-
-    const badgeClass = stockState.badgeClass;
-    const guidanceHtml = getDisplayBadges(p, { context: 'catalog_card' })
-      .map(g => `<span class="guidance-chip guidance-chip--${g.key}">${g.label}</span>`)
-      .join('');
-
-    const card = document.createElement('div');
-    card.className             = 'product-card product-card--clickable fade-up visible';
-    card.style.transitionDelay = `${idx * 0.05}s`;
-    card.setAttribute('role',       'button');
-    card.setAttribute('tabindex',   '0');
-    card.setAttribute('aria-label', `Ver detalle de ${p.name}`);
-
-    card.innerHTML = `
-      ${stockState.key !== 'ok' ? `<span class="card-badge ${badgeClass}">${stockState.label}</span>` : ''}
-      <div class="card-img-wrap">
-        <img src="${p.image}" alt="${p.name}" loading="lazy" decoding="async">
-      </div>
-      <div class="card-body">
-        <p class="card-house">${p.house}</p>
-        <div class="card-title-row">
-          <h3 class="card-name">${p.name}</h3>
-          <div class="card-meta-chips">
-            ${genderChip}
-            ${concentrationChip}
-          </div>
-        </div>
-        ${guidanceHtml ? `<div class="card-guidance" aria-label="Recomendado para">${guidanceHtml}</div>` : ''}
-        <div class="card-purchase">
-          <div>
-            <p class="card-price">${priceHtml}</p>
-            <p class="card-stock card-stock--${stockState.key}">
-              <span class="stock-dot"></span>${stockState.label}
-            </p>
-          </div>
-          <button class="btn-primary card-action"
-            ${isSoldOut ? 'disabled aria-disabled="true"' : ''}
-            aria-label="${isSoldOut ? `${p.name} agotado` : canQuickAdd ? `Agregar ${p.name} al carrito` : `Consultar disponibilidad de ${p.name}`}">
-            ${isSoldOut ? 'Agotado' : canQuickAdd ? 'Agregar' : 'Consultar'}
-          </button>
-        </div>
-      </div>
-    `;
-
-    /* Click → modal */
-    card.querySelector('.card-action')?.addEventListener('click', e => {
-      e.stopPropagation();
-      if (isSoldOut) return;
-      if (canQuickAdd) {
-        /* No auto-open — the add toast ("Ver carrito") keeps browsing uninterrupted. */
-        window.__rd?.cart?.add(p.id, displayVariant.size);
-      } else {
-        openProductModal(p);
-      }
-      Tracker.productClicked(p, canQuickAdd ? 'quick_add' : 'card_action');
-    });
-
-    card.addEventListener('click', e => {
-      if (e.target.closest('.card-action')) return;
-      openProductModal(p);
-      const activeQuery = SearchBar.getState().query;
-      if (activeQuery) Tracker.searchResultClicked(p, activeQuery, idx);
-      Tracker.productClicked(p, 'grid');
-    });
-
-    /* Keyboard → modal */
-    card.addEventListener('keydown', e => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        openProductModal(p);
-      }
-    });
-
-    frag.appendChild(card);
-  });
+  const frag = document.createDocumentFragment();
+  getVisibleProducts(catalogProducts, _visibleCount)
+    .forEach((p, idx) => frag.appendChild(_buildCard(p, idx, _renderCtx)));
 
   _productsContainer.appendChild(frag);
   primeImageStates(_productsContainer);
-  _applyCatalogCap(total);
+
+  _syncLoadMore(total);
+
+  /* Contextual kit prompt — only after a guided recommendation, never as a
+     standing homepage section. */
+  _syncKitPrompt(guided);
 }
 
-/* ── Compact mobile catalog ──────────────────────────────────── */
+/* Build a single product card node. Shared by the initial paint and by
+   incremental "Ver más" appends so every card is identical, including the
+   guided top-pick treatment. `absoluteIndex` is the card's position in the full
+   list (used only for a small, capped stagger). */
+function _buildCard(p, absoluteIndex, { guided, recById } = {}) {
+  const displayVariant = getDisplayVariant(p);
+  const priceHtml = displayVariant
+    ? `${formatPrice(displayVariant.price)} <small>${displayVariant.size}ml</small>`
+    : 'Consultar precio';
+  const stockState = getScarcityDisplay(p);
+  const isSoldOut = stockState.state === 'sold_out';
+  const canQuickAdd = !isSoldOut && _isOrderableVariant(displayVariant);
 
-/* Decide whether the compact cap + "Ver más perfumes" control applies.
-   Capping only happens in the default browse view: no active filters and
-   more items than the cap. Search/filtered views show everything. */
-function _applyCatalogCap(total) {
-  const filtersActive = _catalogFiltersActive();
-  const isMobile = _isMobileCatalog();
-  _lastMobileCatalogState = isMobile;
-  _ensureCatalogCapResizeSync();
+  /* Card face reduced to essentials (image · house · name · one fit signal ·
+     price · action). Concentration lives in the display name and gender is a
+     filter, so neither clutters the card. Exactly one signal is shown:
+       • the guided reason line for the top pick, or
+       • one guidance chip (scent/occasion) describing fit.
+     Availability is deliberately NOT shown inline — only a genuinely urgent
+     state (sold out / last units) earns the corner badge, so scarcity stays
+     rare and honest instead of firing on every low-stock SKU. */
+  const rec = recById?.get(String(p.id));
+  const isTop = Boolean(guided && rec?.isTop);
+  const guidanceBadge = getDisplayBadges(p, { context: 'catalog_card' })[0];
+  const isUrgent = stockState.state === 'sold_out' || stockState.state === 'last_units';
+  const guidanceHtml = guidanceBadge
+    ? `<div class="card-guidance" aria-label="Ideal para"><span class="guidance-chip guidance-chip--${guidanceBadge.key}">${guidanceBadge.label}</span></div>`
+    : '';
+  const whyHtml = isTop && rec?.reasons?.length
+    ? `<p class="card-why">${rec.reasons[0]}</p>`
+    : '';
 
-  if (filtersActive || !isMobile || total <= MOBILE_CATALOG_CAP) {
-    _catalogExpanded = false;
-    return;
-  }
+  const card = document.createElement('div');
+  card.className             = `product-card product-card--clickable fade-up visible${isTop ? ' product-card--top' : ''}`;
+  /* Cap the stagger so late batches never wait on a long transition delay. */
+  card.style.transitionDelay = `${Math.min(absoluteIndex, 8) * 0.04}s`;
+  card.setAttribute('role',       'button');
+  card.setAttribute('tabindex',   '0');
+  card.setAttribute('aria-label', `Ver detalle de ${p.name}`);
 
-  if (!_catalogExpanded) _productsContainer.classList.add('products-grid--capped');
-  _renderShowMore(total);
-}
+  card.innerHTML = `
+    ${isTop ? '<span class="card-top-flag">Nuestra recomendación</span>' : ''}
+    ${!isTop && isUrgent ? `<span class="card-badge ${stockState.badgeClass}">${stockState.label}</span>` : ''}
+    <div class="card-img-wrap${p.image ? '' : ' img-shell img-failed'}" style="--img-initial:${_brandInitialCss(p)}">
+      ${p.image ? `<img src="${p.image}" alt="${p.name}" loading="lazy" decoding="async">` : ''}
+    </div>
+    <div class="card-body">
+      <p class="card-house">${p.house}</p>
+      <h3 class="card-name">${p.name}</h3>
+      ${whyHtml}
+      ${guidanceHtml}
+      <div class="card-purchase">
+        <p class="card-price">${priceHtml}</p>
+        <button class="btn-primary card-action"
+          ${isSoldOut ? 'disabled aria-disabled="true"' : ''}
+          aria-label="${isSoldOut ? `${p.name} agotado` : canQuickAdd ? `Agregar ${p.name} al carrito` : `Consultar disponibilidad de ${p.name}`}">
+          ${isSoldOut ? 'Agotado' : canQuickAdd ? 'Agregar' : 'Consultar'}
+        </button>
+      </div>
+    </div>
+  `;
 
-function _renderShowMore(total) {
-  const shown = getCatalogCapShown(total, {
-    expanded: _catalogExpanded,
-    filtersActive: _catalogFiltersActive(),
-    isMobile: _isMobileCatalog(),
+  card.querySelector('.card-action')?.addEventListener('click', e => {
+    e.stopPropagation();
+    if (isSoldOut) return;
+    if (canQuickAdd) {
+      /* No auto-open — the add toast ("Ver carrito") keeps browsing uninterrupted. */
+      window.__rd?.cart?.add(p.id, displayVariant.size);
+    } else {
+      openProductModal(p);
+    }
+    Tracker.productClicked(p, canQuickAdd ? 'quick_add' : 'card_action');
   });
 
+  card.addEventListener('click', e => {
+    if (e.target.closest('.card-action')) return;
+    openProductModal(p);
+    const activeQuery = SearchBar.getState().query;
+    if (activeQuery) Tracker.searchResultClicked(p, activeQuery, absoluteIndex);
+    Tracker.productClicked(p, 'grid');
+  });
+
+  card.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      openProductModal(p);
+    }
+  });
+
+  return card;
+}
+
+/* ── Guided-mode chrome ──────────────────────────────────────── */
+
+const _FAMILY_LABELS = { fresco: 'Fresco', dulce: 'Dulce', intenso: 'Intenso', elegante: 'Elegante' };
+const _OCCASION_LABELS = { dia: 'Diario', diario: 'Diario', noche: 'Noche', oficina: 'Oficina', cita: 'Cita', fiesta: 'Fiesta' };
+const _GENDER_LABELS = { hombre: 'Hombre', mujer: 'Mujer', unisex: 'Unisex' };
+
+function _guideAnswerLabels(answers = {}) {
+  return [
+    _FAMILY_LABELS[answers.family],
+    _OCCASION_LABELS[answers.occasion],
+    _GENDER_LABELS[answers.gender],
+  ].filter(Boolean);
+}
+
+/* Editorial state header above the grid: "Para ti · Fresco · Diario · N
+   fragancias" with Ajustar (reopen the finder) and Ver todo (exit guided). */
+function _syncGuideState(guided, count = 0) {
+  document.getElementById('catalog-guide-state')?.remove();
+  if (!guided) return;
+
+  const labels = _guideAnswerLabels(guided.answers);
+  const noun = count === 1 ? 'fragancia' : 'fragancias';
+  const el = document.createElement('div');
+  el.id = 'catalog-guide-state';
+  el.className = 'catalog-guide-state';
+  el.innerHTML = `
+    <div class="cgs-info">
+      <span class="cgs-kicker">Para ti</span>
+      ${labels.length ? `<span class="cgs-answers">${labels.join(' · ')}</span>` : ''}
+      <span class="cgs-count">${count} ${noun}</span>
+    </div>
+    <div class="cgs-actions">
+      <button type="button" class="cgs-adjust" id="cgs-adjust">Ajustar</button>
+      <button type="button" class="cgs-clear" id="cgs-clear">Ver todo</button>
+    </div>`;
+  _productsContainer.insertAdjacentElement('beforebegin', el);
+
+  el.querySelector('#cgs-clear')?.addEventListener('click', () => window.__rd?.ui?.clearGuide?.());
+  el.querySelector('#cgs-adjust')?.addEventListener('click', () => {
+    document.getElementById('guide')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+}
+
+/* Contextual kit prompt after guided results. Rendered by the kits module so
+   all kit logic (resolve, sellability, add-to-cart) stays in one place. */
+function _syncKitPrompt(guided) {
+  const existing = document.getElementById('catalog-kit-prompt');
+  if (!guided) { existing?.remove(); return; }
+
+  let slot = existing;
+  if (!slot) {
+    slot = document.createElement('div');
+    slot.id = 'catalog-kit-prompt';
+    slot.className = 'catalog-kit-prompt';
+    const anchor = document.getElementById('catalog-more') || _productsContainer;
+    anchor.insertAdjacentElement('afterend', slot);
+  }
+
+  import('../ui/discoverySets.js')
+    .then(({ renderContextualKit }) => renderContextualKit?.(slot, guided.answers))
+    .catch(() => { slot.remove(); });
+}
+
+/* ── Incremental "Ver más perfumes" ──────────────────────────── */
+
+/* Show / update the load-more control. Present in ANY state (default, filtered,
+   guided) whenever there are more products than are currently painted. */
+function _syncLoadMore(total) {
+  _removeShowMore();
+  _lastMobileCatalogState = _isMobileCatalog();
+  _ensureCatalogCapResizeSync();
+
+  if (_visibleCount >= total) return;
+
+  const shown = getCatalogShown(total, _visibleCount);
   const wrap = document.createElement('div');
   wrap.className = 'catalog-more catalog-more-panel';
   wrap.id        = 'catalog-more';
   wrap.innerHTML = `
     <p class="catalog-more-count catalog-count" id="catalog-more-count">Mostrando ${shown} de ${total} perfumes</p>
-    <button type="button" class="catalog-more-btn" id="catalog-more-btn"
-      aria-expanded="${_catalogExpanded}">
-      ${_catalogExpanded ? 'Mostrar menos' : 'Ver más perfumes'}
+    <button type="button" class="catalog-more-btn" id="catalog-more-btn" aria-label="Ver más perfumes">
+      Ver más perfumes
     </button>`;
 
   _productsContainer.insertAdjacentElement('afterend', wrap);
-  wrap.querySelector('#catalog-more-btn')
-    ?.addEventListener('click', _toggleCatalog);
+  wrap.querySelector('#catalog-more-btn')?.addEventListener('click', _loadMore);
 }
 
-function _toggleCatalog() {
-  const products = normalizeCatalogProducts(_lastCatalogProducts);
-  if (!products.length) {
-    _removeShowMore();
-    _productsContainer?.classList.remove('products-grid--capped');
-    return;
-  }
+/* Append the next batch — never re-render or paint the whole list. Preserves the
+   current view (finder ranking / filters), the guided top-pick treatment and
+   every already-rendered card. */
+function _loadMore() {
+  const list = normalizeCatalogProducts(_lastCatalogProducts);
+  const total = list.length;
+  if (!total || _visibleCount >= total) { _removeShowMore(); return; }
 
-  _catalogExpanded = !_catalogExpanded;
-  const nextTotal = products.length;
+  const before = _visibleCount;
+  _visibleCount = Math.min(before + getCatalogStep(_isMobileCatalog()), total);
 
-  if (_catalogExpanded) {
-    Tracker.catalogExpanded(nextTotal, Math.min(MOBILE_CATALOG_CAP, nextTotal));
-  } else {
-    Tracker.catalogCollapsed(nextTotal);
-  }
+  const frag = document.createDocumentFragment();
+  list.slice(before, _visibleCount)
+    .forEach((p, i) => frag.appendChild(_buildCard(p, before + i, _renderCtx)));
+  _productsContainer.appendChild(frag);
+  primeImageStates(_productsContainer);
+  observeFadeUp();
 
-  _renderGrid(products, { rememberProducts: false });
-
-  if (!_catalogExpanded) {
-    requestAnimationFrame(() => {
-      _productsContainer?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-  }
+  Tracker.catalogExpanded(total, before);
+  _syncLoadMore(total);
 }
 
 function _removeShowMore() {
   document.getElementById('catalog-more')?.remove();
 }
 
+/* When the viewport crosses the mobile/desktop boundary the initial batch size
+   changes; re-render the current view (preserving how much the customer has
+   already revealed and any guided ranking). */
 function _ensureCatalogCapResizeSync() {
   if (_catalogResizeBound || typeof window === 'undefined') return;
   _catalogResizeBound = true;
@@ -400,7 +378,13 @@ function _ensureCatalogCapResizeSync() {
     const isMobile = _isMobileCatalog();
     if (isMobile === _lastMobileCatalogState) return;
     _lastMobileCatalogState = isMobile;
-    if (_lastCatalogProducts.length) _renderGrid(_lastCatalogProducts);
+    if (_lastCatalogProducts.length) {
+      _renderGrid(_lastCatalogProducts, {
+        rememberProducts: false,
+        guided: _renderCtx.guided,
+        preserveVisible: true,
+      });
+    }
   });
 }
 
@@ -408,43 +392,37 @@ function _isMobileCatalog() {
   return Boolean(globalThis.matchMedia?.('(max-width: 768px)').matches);
 }
 
-function _catalogFiltersActive() {
-  return SearchBar.hasActiveFilters?.() ?? false;
+/* ── Pure incremental helpers (DOM-free, unit-tested) ────────── */
+
+/* Initial batch painted before any "Ver más": smaller on mobile, larger on
+   desktop, so neither viewport ever gets the whole 50-card list at once. */
+export function getInitialVisible(isMobile) {
+  return isMobile ? CATALOG_INITIAL_MOBILE : CATALOG_INITIAL_DESKTOP;
 }
 
-export function getCatalogRenderProducts(products, {
-  expanded = false,
-  filtersActive = false,
-  isMobile = false,
-  cap = MOBILE_CATALOG_CAP,
-} = {}) {
+/* How many more cards each "Ver más" reveals. */
+export function getCatalogStep(isMobile) {
+  return isMobile ? CATALOG_STEP_MOBILE : CATALOG_STEP_DESKTOP;
+}
+
+/* The slice actually rendered for a given visible count. */
+export function getVisibleProducts(products, visibleCount) {
   const list = normalizeCatalogProducts(products);
-  if (!isMobile || filtersActive || expanded || list.length <= cap) return list;
-  return list.slice(0, cap);
+  if (!Number.isFinite(visibleCount)) return list;
+  return list.slice(0, Math.max(0, visibleCount));
 }
 
-export function getCatalogCapVisibility(total, {
-  expanded = false,
-  filtersActive = false,
-  isMobile = false,
-  cap = MOBILE_CATALOG_CAP,
-} = {}) {
-  return getCatalogRenderProducts(Array.from({ length: Math.max(0, total) }, () => ({})), {
-    expanded,
-    filtersActive,
-    isMobile,
-    cap,
-  }).map(() => true);
+/* Count shown in "Mostrando X de Y" — never more than the total. */
+export function getCatalogShown(total, visibleCount) {
+  const t = Math.max(0, Number(total) || 0);
+  if (!Number.isFinite(visibleCount)) return t;
+  return Math.min(Math.max(0, visibleCount), t);
 }
 
-export function getCatalogCapShown(total, {
-  expanded = false,
-  filtersActive = false,
-  isMobile = false,
-  cap = MOBILE_CATALOG_CAP,
-} = {}) {
-  if (!isMobile || filtersActive || expanded) return total;
-  return Math.min(cap, total);
+/* Whether a "Ver más" control is still needed. */
+export function hasMoreToShow(total, visibleCount) {
+  const t = Math.max(0, Number(total) || 0);
+  return getCatalogShown(t, visibleCount) < t;
 }
 
 export function normalizeCatalogProducts(products) {
@@ -452,12 +430,18 @@ export function normalizeCatalogProducts(products) {
 }
 
 /* ── Helpers ─────────────────────────────────────────────────── */
-function _stockText(stock) {
-  if (stock <= 1) return 'Ultima unidad disponible';
-  if (stock <= 3) return `Solo ${stock} unidades disponibles`;
-  if (stock <= 5) return 'Alta demanda esta semana';
-  return 'Disponible';
+
+/* CSS `content` value for the image fallback monogram. When a product photo
+   is missing or fails to load, the placeholder shows the house's initial
+   (e.g. "C" for Chanel) instead of a generic "R", so the rare fallback reads
+   as intentional and product-specific rather than a database default. */
+function _brandInitialCss(p) {
+  const source = String(p?.house || p?.name || 'R').trim();
+  const ch = source.charAt(0).toUpperCase();
+  const safe = /[A-Z0-9À-Ý]/.test(ch) ? ch : 'R';
+  return `'${safe}'`;
 }
+
 
 export function genderLabel(gender) {
   const labels = {

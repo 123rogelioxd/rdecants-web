@@ -213,13 +213,18 @@ test('mood.html exists at the frontend root', () => {
   assert.ok(existsSync(join(root, 'assets/js/moods/catalog.js')));
 });
 
-/* ── Catalog mood badge — never silently filter ─────────────── */
-test('searchbar mood-active banner shows "Mood activo" + count + Quitar', () => {
-  /* Inspect source to verify the contract; full DOM test runs in browser */
+/* ── Catalog never silently filters ─────────────────────────────
+   An active mood is surfaced as a removable active-filter chip in the
+   catalog bar (alongside search / gender / house / price), so the user can
+   always see what is active and remove it individually. */
+test('an active mood is shown as a removable active-filter chip', () => {
   const src = readFileSync(join(root, 'assets/js/ui/searchbar.js'), 'utf8');
-  assert.match(src, /Mood activo/);
-  assert.match(src, /perfumes? encontrados?/);
-  assert.match(src, /Quitar filtro/);
+  /* mood is one of the active-filter chips, labelled from MOOD_LABELS */
+  assert.match(src, /key:\s*'mood'/);
+  assert.match(src, /MOOD_LABELS\[_state\.mood\]/);
+  /* each chip is individually removable and there is a single clear-all */
+  assert.match(src, /data-clear="\$\{c\.key\}"/);
+  assert.match(src, /data-clear="all"/);
 });
 
 /* ── Home rails navigate to /mood/{slug} (not silent filter) ─ */

@@ -18,7 +18,7 @@ Object.defineProperty(globalThis, 'navigator', {
 });
 
 const { buildWhatsAppMessage, buildWebOrderPayload } = await import('../assets/js/cart/checkout.js');
-const { CatalogProvider } = await import('../assets/js/providers/catalog.js?v=2026.06.04.2');
+const { CatalogProvider } = await import('../assets/js/providers/catalog.js');
 
 test('buildWhatsAppMessage creates a natural customer WhatsApp message', () => {
   const message = buildWhatsAppMessage(

@@ -12,7 +12,7 @@
    DOM-free so it can be unit-tested without a browser (like momentum.js).
    ============================================================= */
 
-import { ApiClient } from '../api/client.js?v=2026.06.04.2';
+import { ApiClient } from '../api/client.js';
 import { EventBus }  from '../core/events.js';
 
 const STORAGE_KEY = 'rdecants_discount';

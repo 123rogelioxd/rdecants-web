@@ -33,13 +33,16 @@ test('cart item template uses the compact two-row structure', () => {
   assert.doesNotMatch(renderSrc, /cart-item-controls/, 'old stacked controls column removed');
 });
 
-test('cart item keeps all data (house, name, size, qty, stock, price) — only the layout changed', () => {
+test('cart item keeps house/name/size/qty/price — internal stock count is never shown to the customer', () => {
   assert.match(renderSrc, /item\.house/);
   assert.match(renderSrc, /item\.name/);
   assert.match(renderSrc, /\$\{label\}/);
   assert.match(renderSrc, /item\.qty/);
-  assert.match(renderSrc, /Disponibles: \$\{item\.stock\}/);
   assert.match(renderSrc, /formatPrice\(subtotal, 'Precio por confirmar'\)/);
+  /* Raw internal inventory ("Disponibles: 17") is never rendered — only a
+     plain-language note appears, and only once the customer hits the max. */
+  assert.doesNotMatch(renderSrc, /Disponibles:/);
+  assert.match(renderSrc, /Máximo disponible/);
 });
 
 test('remove and quantity controls keep their exact cart API calls and a11y labels', () => {

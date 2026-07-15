@@ -8,12 +8,12 @@
    only renders and wires interactions.
    ============================================================= */
 
-import { ASSISTANT_QUESTIONS, getAssistantRecommendations } from '../recommendations/assistant.js?v=2026.06.04.2';
-import { CatalogProvider } from '../providers/catalog.js?v=2026.06.04.2';
+import { ASSISTANT_QUESTIONS, getAssistantRecommendations } from '../recommendations/assistant.js';
+import { CatalogProvider } from '../providers/catalog.js';
 import { Tracker } from '../tracking/tracker.js';
-import { openProductModal } from './modal.js?v=2026.06.04.2';
+import { openProductModal } from './modal.js';
 import { primeImageStates } from './images.js';
-import { formatPrice, getVariantForSize } from '../utils/prices.js?v=2026.06.04.2';
+import { formatPrice, getVariantForSize, isBetterValuePerMl } from '../utils/prices.js';
 
 const RAIL_CONTEXT = { railId: 'assistant', railTitle: 'Encuentra tu fragancia' };
 
@@ -176,10 +176,12 @@ function _resultCard(result, idx) {
   const hasImage = product.image && product.image.trim() !== '';
   const reasonsHtml = reasons.map(r => `<li>${r}</li>`).join('');
 
-  /* Show the real 10 ml step-up when it exists and differs from the entry
-     variant. Never invented — pulled from the same priced variant list. */
+  /* Show the 10 ml step-up ONLY when it is genuinely better value per ml than
+     the shown size — never nudge to a bigger size that saves nothing. Price is
+     real, pulled from the same priced variant list; never invented. */
   const upgrade = getVariantForSize(product, 10);
-  const upgradeHtml = (canAdd && upgrade && upgrade.price && Number(variant.size) !== 10)
+  const upgradeHtml = (canAdd && upgrade && upgrade.price && Number(variant.size) !== 10
+      && isBetterValuePerMl(product, 10, Number(variant.size)))
     ? `<span class="asst-card-upgrade">o 10&nbsp;ml · ${formatPrice(upgrade.price)}</span>`
     : '';
 

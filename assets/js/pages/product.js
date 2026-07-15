@@ -3,18 +3,18 @@
    Mirrors app.js's bootstrap but renders a single product page.
    ============================================================= */
 
-import { Cart } from '../cart/cart.js?v=2026.06.04.2';
-import { setupCheckout } from '../cart/checkout.js?v=2026.06.04.2';
+import { Cart } from '../cart/cart.js';
+import { setupCheckout } from '../cart/checkout.js';
 import {
   renderCart, updateCartCount,
   openCart, closeCart, toggleCart, sendWhatsApp,
   setupDiscountControls, setupCampaignAttribution,
-} from '../cart/render.js?v=2026.06.04.2';
-import { CatalogProvider } from '../providers/catalog.js?v=2026.06.04.2';
+} from '../cart/render.js';
+import { CatalogProvider } from '../providers/catalog.js';
 import { setupHeader } from '../ui/header.js';
 import { setupImageStates } from '../ui/images.js';
 import { Tracker } from '../tracking/tracker.js';
-import { installBackendTracking } from '../tracking/backend.js?v=2026.06.04.2';
+import { installBackendTracking } from '../tracking/backend.js';
 import { AppState } from '../core/state.js';
 import {
   buildProductPageHtml,
@@ -23,7 +23,7 @@ import {
   renderCollectionPairs,
   readSlugFromLocation,
   findProductBySlug,
-} from '../ui/productPage.js?v=2026.06.04.2';
+} from '../ui/productPage.js';
 
 /* ── Global bridge (shared with rest of the app) ─────────────── */
 window.__rd = window.__rd || {};
@@ -63,6 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const slug = readSlugFromLocation();
   if (!slug) {
     root.innerHTML = buildProductPageHtml(null);
+    _markNotFoundForSeo();
     return;
   }
 
@@ -78,6 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (!product) {
     document.title = 'Fragancia no disponible — RDecants';
+    _markNotFoundForSeo();
     AppState.set('initialized', true);
     return;
   }
@@ -91,3 +93,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   AppState.set('initialized', true);
   Tracker.emit('page_view', { path: window.location.pathname, productId: product.id });
 });
+
+/* Static hosting always answers /perfume/{slug} with HTTP 200 (required for
+   client-side routing to work at all) — there is no way to return a real 404
+   status without a serverless function, which is out of scope here. The
+   closest honest equivalent: tell search engines not to index an unknown or
+   removed product URL, so a soft-404 page can never rank or get treated as
+   real content. */
+function _markNotFoundForSeo() {
+  if (document.querySelector('meta[name="robots"]')) return;
+  const meta = document.createElement('meta');
+  meta.name = 'robots';
+  meta.content = 'noindex';
+  document.head.appendChild(meta);
+}

@@ -4,7 +4,7 @@
    Delegates all filtering to the existing SearchBar engine.
    ============================================================= */
 
-import { SearchBar } from './searchbar.js?v=2026.06.04.2';
+import { SearchBar } from './searchbar.js';
 import { lockBodyScroll, unlockBodyScroll } from './scrollLock.js';
 
 export function setupHeader() {

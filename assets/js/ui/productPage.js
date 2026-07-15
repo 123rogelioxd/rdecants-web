@@ -33,25 +33,27 @@ import {
   formatPrice,
   getSizeLabel,
   PRIMARY_SIZES,
-} from '../utils/prices.js?v=2026.06.04.2';
-import { getScarcityDisplay } from '../utils/scarcity.js?v=2026.06.04.2';
-import { getDisplayBadges } from '../utils/guidance.js?v=2026.06.04.2';
-import { getRelatedProducts } from '../recommendations/upsells.js?v=2026.06.04.2';
-import { getReasons } from '../recommendations/reasoning.js?v=2026.06.04.2';
-import { buildFragranceProfileHtml } from './fragranceProfile.js?v=2026.06.04.2';
-import { getNoviceLead, getReturningUserLine } from './pdpNovice.js?v=2026.06.04.2';
-import { MAX_PDP_WHY_REASONS } from './displayLimits.js?v=2026.06.04.2';
+} from '../utils/prices.js';
+import { getScarcityDisplay } from '../utils/scarcity.js';
+import { getDisplayBadges } from '../utils/guidance.js';
+import { getRelatedProducts } from '../recommendations/upsells.js';
+import { getReasons } from '../recommendations/reasoning.js';
+import { buildFragranceProfileHtml } from './fragranceProfile.js';
+import { getNoviceLead, getReturningUserLine } from './pdpNovice.js';
+import { MAX_PDP_WHY_REASONS } from './displayLimits.js';
 import {
   resolveDiscoverySets,
   renderDiscoverySetsFallback,
-} from './discoverySets.js?v=2026.06.04.2';
-import { Personalization, filterDisliked } from '../recommendations/personalization.js?v=2026.06.04.2';
+} from './discoverySets.js';
+import { Personalization, filterDisliked } from '../recommendations/personalization.js';
 import {
   getCollectionPairs,
   getComplementReason,
-} from '../recommendations/crossSell.js?v=2026.06.04.2';
-import { getConfidenceBadge } from './pdpConfidence.js?v=2026.06.04.2';
+} from '../recommendations/crossSell.js';
+import { getConfidenceBadge } from './pdpConfidence.js';
 import { showToast } from './toast.js';
+
+const WHATSAPP_NUMBER = '5219516513018';
 
 /* ── Public: build the page HTML ─────────────────────────────── */
 export function buildProductPageHtml(product) {
@@ -143,7 +145,7 @@ export function buildProductPageHtml(product) {
           : '<div class="pdp-price-consult">Precio disponible por consulta personalizada.</div>'}
 
         <div class="pdp-sizes" role="group" aria-label="Seleccionar presentación" ${variants.length ? '' : 'hidden'}>
-          ${_sizesHtml(variants, defaultSize)}
+          ${_sizesHtml(variants, defaultSize, product)}
         </div>
 
         ${lowestPrice !== null ? `
@@ -164,8 +166,8 @@ export function buildProductPageHtml(product) {
             ${_isOrderableVariant(defaultVariant) ? 'Agregar' : 'Agotado'}
           </button>
           <button class="pdp-btn-wa" id="pdp-btn-wa"
-            aria-label="Preparar pedido de ${_escape(product.name)} por WhatsApp">
-            WhatsApp
+            aria-label="Consultar ${_escape(product.name)} por WhatsApp">
+            Consultar por WhatsApp
           </button>
         </div>
       </div>
@@ -211,7 +213,9 @@ export function hydrateProductPage(root, product, deps = {}) {
     });
   });
 
-  /* Add to cart */
+  /* Add to cart — same behavior as the catalog card and the quick-view modal:
+     an actionable toast, never a forced-open drawer, so the customer keeps
+     their place on the page (and can open the cart on their own terms). */
   root.querySelector('#pdp-btn-add')?.addEventListener('click', async () => {
     const variant = getVariantForSize(product, selectedSize);
     if (selectedSize === null || getPriceForSize(product, selectedSize) === null || !_isOrderableVariant(variant)) {
@@ -220,21 +224,27 @@ export function hydrateProductPage(root, product, deps = {}) {
     }
     const cart = deps.cart ?? window.__rd?.cart;
     await cart?.add?.(product.id, selectedSize);
-    (deps.openCart ?? window.__rd?.ui?.openCart)?.();
   });
 
-  /* WhatsApp */
-  root.querySelector('#pdp-btn-wa')?.addEventListener('click', async () => {
+  /* WhatsApp — opens a direct product inquiry, same pattern as the modal's
+     WhatsApp button (never a hidden add-to-cart). Consistent label, consistent
+     action, everywhere the button appears. */
+  root.querySelector('#pdp-btn-wa')?.addEventListener('click', () => {
     const variant = getVariantForSize(product, selectedSize);
-    if (!_isOrderableVariant(variant)) {
-      showToast('Apartamos tu pedido y te llevamos a WhatsApp para confirmar.');
-      (deps.openCart ?? window.__rd?.ui?.openCart)?.();
-      return;
-    }
-    const cart = deps.cart ?? window.__rd?.cart;
-    await cart?.add?.(product.id, selectedSize);
-    showToast('Apartamos tu pedido y te llevamos a WhatsApp para confirmar.');
-    (deps.openCart ?? window.__rd?.ui?.openCart)?.();
+    const house = product.house ? `${product.house} ` : '';
+    const sizeText = variant?.size ? ` — ${variant.size}ml` : '';
+    const priceText = (variant && variant.price) ? ` (${formatPrice(variant.price)})` : '';
+    const message = [
+      'Hola 👋',
+      '',
+      `Me interesa este decant: ${house}${product.name}${sizeText}${priceText}.`,
+      '',
+      '¿Me ayudas a confirmar disponibilidad, envío y forma de pago?',
+    ].join('\n');
+    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+    Tracker.productClicked(product, 'pdp_whatsapp_direct');
+    const opened = window.open(url, '_blank');
+    if (!opened) window.location.href = url;
   });
 
   /* Smooth-scroll buttons (hero "Comprar" / "¿Es para mí?" / sticky CTA) */
@@ -468,6 +478,9 @@ function _setupStickyCta(root) {
     const shouldShow = !state.heroVisible && !state.buyVisible;
     sticky.classList.toggle('pdp-sticky-cta--open', shouldShow);
     sticky.setAttribute('aria-hidden', String(!shouldShow));
+    /* The floating WhatsApp button sits in the same corner as this bar's
+       primary action — hide it only while the bar is actually visible. */
+    document.body.classList.toggle('pdp-cta-visible', shouldShow);
   };
 
   new IntersectionObserver(entries => {
@@ -483,24 +496,25 @@ function _setupStickyCta(root) {
 
 /* ── Pure rendering helpers ─────────────────────────────────── */
 
-function _sizesHtml(variants, defaultSize) {
+function _sizesHtml(variants, defaultSize, product = null) {
   return PRIMARY_SIZES
     .map(ml => {
       const variant = variants.find(v => v.size === ml);
       if (!variant) return '';
       const disabled = variant.soldOut || variant.availability <= 0 || !_validVariantId(variant.variant_id);
       const recommended = ml === 5;
+      const label = getSizeLabel(ml, product);   /* 10 ml "Mejor valor" only when truly cheaper per ml */
       return `
         <button
           class="pdp-size-btn ${ml === defaultSize ? 'pdp-size-btn--active' : ''} ${recommended ? 'pdp-size-btn--recommended' : ''} ${disabled ? 'pdp-size-btn--disabled' : ''}"
           data-size="${ml}"
           ${disabled ? 'disabled aria-disabled="true"' : ''}
           aria-pressed="${ml === defaultSize}"
-          aria-label="${ml}ml - $${variant.price} MXN — ${getSizeLabel(ml)}${disabled ? ' agotado' : ''}">
+          aria-label="${ml}ml - $${variant.price} MXN${label ? ` — ${label}` : ''}${disabled ? ' agotado' : ''}">
           ${recommended ? '<span class="pdp-size-flag">Recomendado</span>' : ''}
           <span class="pdp-size-ml">${ml}ml</span>
           <span class="pdp-size-price">$${variant.price}</span>
-          <span class="pdp-size-label">${disabled ? 'Agotado' : getSizeLabel(ml)}</span>
+          <span class="pdp-size-label">${disabled ? 'Agotado' : label}</span>
         </button>`;
     }).join('');
 }
@@ -564,7 +578,7 @@ function _relatedCard(product, idx) {
 function _stockHtml(scarcity) {
   if (scarcity.state === 'sold_out') {
     return `<p class="card-stock pdp-stock">
-      <span class="stock-dot" style="background:var(--danger)"></span>Agotado
+      <span class="stock-dot"></span>Agotado
     </p>`;
   }
   return `<p class="card-stock pdp-stock card-stock--${scarcity.key}">

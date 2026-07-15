@@ -12,7 +12,8 @@ import {
   productSignals,
   scoreProfileMatch,
   normalizeText,
-} from '../recommendations/taxonomy.js?v=2026.06.04.2';
+} from '../recommendations/taxonomy.js';
+import { isSellable } from '../recommendations/scoring.js';
 
 /* Per-signal weights. Fragrance metadata is canonical; legacy notes
    are kept as a tie-breaker so products without enriched data still
@@ -92,6 +93,10 @@ export function scoreProductForMood(product, mood) {
 export function rankProductsForMood(products, mood, { limit = 12 } = {}) {
   if (!Array.isArray(products) || !mood) return [];
   return products
+    /* A curated collection may never feature something the customer cannot
+       buy — sold-out / inactive products are excluded before ranking so the
+       first card on a mood page is always purchasable. */
+    .filter(isSellable)
     .map(product => ({ product, score: scoreProductForMood(product, mood) }))
     .filter(item => item.score > 0)
     .sort((a, b) => {

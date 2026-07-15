@@ -1,51 +1,45 @@
 /* =============================================================
    RDECANTS — ANIMATIONS
    All @keyframes + scroll-reveal utilities.
+
+   Principle: content is USABLE and VISIBLE without motion. Every
+   animation here is a progressive enhancement, gated on both JS
+   (html.rd-anim) and the user's motion preference. Nothing is ever
+   hidden waiting on an observer that might not fire, and no element
+   floats or pulses forever (see the product brief: no permanent
+   movement, no content hidden until IntersectionObserver fires).
    ============================================================= */
 
-/* ── Intro splash ────────────────────────────────────────────── */
-@keyframes introReveal {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes introLine {
-  from { width: 0; opacity: 0; }
-  to   { width: 40px; opacity: 1; }
-}
-
-@keyframes introFade {
-  to { opacity: 0; pointer-events: none; visibility: hidden; }
-}
-
-/* ── Hero ────────────────────────────────────────────────────── */
+/* ── Hero content entrance (one-shot, quick) ─────────────────── */
 @keyframes heroReveal {
-  from { opacity: 0; transform: translateY(40px); }
+  from { opacity: 0; transform: translateY(24px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Float applied to .hero-img-wrap img so the wrap's transform stays stable */
-@keyframes heroFloat {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-12px); }
+/* ── Add-to-cart / selection pop (one-shot) ──────────────────── */
+@keyframes rdPop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
 }
 
-/* ── Stock pulse ─────────────────────────────────────────────── */
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.5; transform: scale(0.7); }
-}
+/* ── Scroll-reveal utility ───────────────────────────────────
+   Default state = fully visible. The hidden→reveal transition is
+   layered on ONLY when JS is active (html.rd-anim) and the user
+   allows motion. Reduced-motion users and no-JS contexts always
+   see content immediately. */
+.fade-up { opacity: 1; transform: none; }
 
-/* ── Scroll-reveal utility ───────────────────────────────────── */
-.fade-up {
-  opacity: 0;
-  transform: translateY(40px);
-  transition:
-    opacity  1s cubic-bezier(0.19, 1, 0.22, 1),
-    transform 1s cubic-bezier(0.19, 1, 0.22, 1);
-}
-
-.fade-up.visible {
-  opacity: 1;
-  transform: translateY(0);
+@media (prefers-reduced-motion: no-preference) {
+  html.rd-anim .fade-up {
+    opacity: 0;
+    transform: translateY(16px);
+    transition:
+      opacity   var(--dur-slow) var(--ease-out),
+      transform var(--dur-slow) var(--ease-out);
+  }
+  html.rd-anim .fade-up.visible {
+    opacity: 1;
+    transform: none;
+  }
 }

@@ -78,14 +78,14 @@ test('display: sold_out is a hard danger state, never showing demand', () => {
 test('display: last_units copy + danger styling', () => {
   const d = getScarcityDisplay(product([variant(5, 100, 1)]));
   assert.equal(d.key, 'low');
-  assert.equal(d.label, 'Ultimas unidades');
+  assert.equal(d.label, 'Últimas unidades');
   assert.equal(d.badgeClass, 'danger');
 });
 
 test('display: low tier uses the subtle "pocas unidades" copy', () => {
   const d = getScarcityDisplay(product([variant(5, 100, 4)]));
   assert.equal(d.key, 'few');
-  assert.equal(d.label, 'Pocas unidades disponibles');
+  assert.equal(d.label, 'Pocas unidades');
   assert.equal(d.badgeClass, 'trend');
 });
 
