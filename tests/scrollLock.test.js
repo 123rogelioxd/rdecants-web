@@ -136,11 +136,10 @@ test('repeated open/close cycles do not accumulate styles or leak scroll offsets
 const CONSUMERS = [
   'assets/js/cart/render.js',
   'assets/js/ui/modal.js',
-  'assets/js/ui/header.js',
   'assets/js/ui/searchbar.js',
 ];
 
-test('the cart drawer, quick-view modal, search overlay and filter drawer all share the one scroll lock', () => {
+test('the cart drawer, quick-view modal and filter drawer share the one scroll lock', () => {
   for (const file of CONSUMERS) {
     const src = fs.readFileSync(file, 'utf8');
     assert.match(src, /from\s+['"].*scrollLock\.js['"]/, `${file} imports the shared lock`);
@@ -152,4 +151,24 @@ test('the cart drawer, quick-view modal, search overlay and filter drawer all sh
       `${file} must not run its own competing overflow toggle`,
     );
   }
+});
+
+test('filter drawer open/close is idempotent and teardown releases an active lock', () => {
+  const src = fs.readFileSync('assets/js/ui/searchbar.js', 'utf8');
+
+  assert.match(
+    src,
+    /function _openDrawer\(\)\s*{\s*if \(!_drawer \|\| !_drawerOverlay \|\| _drawer\.classList\.contains\('sf-drawer--open'\)\) return;/,
+    'opening an already-open filter drawer must not acquire another lock',
+  );
+  assert.match(
+    src,
+    /function _closeDrawer\(\)\s*{\s*if \(!_drawer\?\.classList\.contains\('sf-drawer--open'\)\) return;/,
+    'closing an already-closed drawer must not release another component lock',
+  );
+  assert.match(
+    src,
+    /init\(allProducts, onFilter\)[\s\S]*?classList\.contains\('sf-drawer--open'\)[\s\S]*?unlockBodyScroll\(\)[\s\S]*?_drawer\?\.remove\(\)/,
+    'reinitializing the catalog must release the filter drawer before removing it',
+  );
 });

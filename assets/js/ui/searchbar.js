@@ -64,10 +64,14 @@ export const SearchBar = {
 
   init(allProducts, onFilter) {
     /* tear down any existing instance */
+    if (_drawer?.classList.contains('sf-drawer--open')) {
+      unlockBodyScroll();
+    }
     document.removeEventListener('keydown', _handleDrawerKey);
     _bar?.remove();
     _drawer?.remove();
     _drawerOverlay?.remove();
+    _prevFocus = null;
 
     _allProducts = allProducts;
     _onFilter    = onFilter;
@@ -372,6 +376,7 @@ function _bindDrawerEvents() {
 }
 
 function _openDrawer() {
+  if (!_drawer || !_drawerOverlay || _drawer.classList.contains('sf-drawer--open')) return;
   _syncDrawer();
   _prevFocus = document.activeElement;
   _drawer.classList.add('sf-drawer--open');
@@ -384,6 +389,7 @@ function _openDrawer() {
 }
 
 function _closeDrawer() {
+  if (!_drawer?.classList.contains('sf-drawer--open')) return;
   _drawer.classList.remove('sf-drawer--open');
   _drawerOverlay.classList.remove('sf-ov--open');
   unlockBodyScroll();

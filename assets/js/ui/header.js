@@ -5,7 +5,6 @@
    ============================================================= */
 
 import { SearchBar } from './searchbar.js';
-import { lockBodyScroll, unlockBodyScroll } from './scrollLock.js';
 
 export function setupHeader() {
   const header = document.querySelector('.header');
@@ -51,10 +50,10 @@ function _setupHeaderSearch() {
     input.focus();
   });
 
-  /* Mobile — toggle overlay */
+  /* Mobile: reveal the fixed search bar without locking the page. Search
+     results remain the primary document content and must stay scrollable. */
   mobileBtn?.addEventListener('click', () => {
     wrap.classList.add('hs-wrap--open');
-    lockBodyScroll();
     setTimeout(() => input.focus(), 80);
   });
 
@@ -83,7 +82,6 @@ function _setupHeaderSearch() {
 
 function _closeOverlay(wrap, input, xBtn) {
   wrap.classList.remove('hs-wrap--open');
-  unlockBodyScroll();
   input.value = '';
   xBtn.hidden = true;
   SearchBar.applyQuery('');
