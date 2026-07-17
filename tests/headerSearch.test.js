@@ -40,6 +40,22 @@ test('mobile live search remains part of the document scroll instead of taking a
   assert.match(header, /wrap\.classList\.add\('hs-wrap--open'\)/);
 });
 
+test('an active query shows Relevancia and clearing it restores the saved sort', () => {
+  const src = read('assets/js/ui/searchbar.js');
+
+  assert.match(src, /<option value="relevance" hidden>Relevancia<\/option>/);
+  assert.match(
+    src,
+    /s\.value = _state\.query\?\.trim\(\) \? 'relevance' : _state\.sort/,
+    'the visible sort must follow the effective search order without overwriting the saved sort',
+  );
+  assert.match(
+    src,
+    /_state\.sort === 'for_you' && !_state\.query\?\.trim\(\)/,
+    'personalization must not replace relevance while a query is active',
+  );
+});
+
 test('typing Sauvage in the open mobile search does not prevent window scroll', async () => {
   class FakeClassList {
     constructor() { this.values = new Set(); }

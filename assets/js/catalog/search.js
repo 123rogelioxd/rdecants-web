@@ -125,12 +125,35 @@ const COMMERCIAL_HERO_PATTERNS = [
   /afnan.*9pm|9pm.*afnan|afnan.*9 pm|9 pm.*afnan/,
 ];
 
-const SEARCH_ALIASES = [
-  { terms: ['yves saint laurent', 'ysl', 'y edp', 'y'], match: ['yves saint laurent', 'ysl', ' y ', 'y edp'] },
-  { terms: ['bleu de chanel', 'bleu', 'bdc'], match: ['bleu de chanel', 'bleu', 'chanel'] },
-  { terms: ['jean paul gaultier', 'jpg', 'le male', 'gaultier'], match: ['jean paul gaultier', 'jpg', 'le male', 'gaultier'] },
-  { terms: ['acqua di gio', 'adg', 'aqua di gio'], match: ['acqua di gio', 'acqua', 'adg'] },
+/* Brand abbreviations are identity aliases, not query shortcuts. They are
+   added to a product's searchable identity and must still combine with every
+   other meaningful query token ("jpg le beau" cannot degrade to "jpg"). */
+const BRAND_QUERY_ALIASES = [
+  { alias: 'jpg', brand: 'jean paul gaultier' },
+  { alias: 'ysl', brand: 'yves saint laurent' },
+  { alias: 'adg', brand: 'acqua di gio' },
+  { alias: 'lv',  brand: 'louis vuitton' },
+  { alias: 'mfk', brand: 'maison francis kurkdjian' },
 ];
+
+const MIN_SEARCH_SCORE = 600;
+const SEARCH_SCORE = {
+  nameExact:       1000,
+  namePrefix:       950,
+  namePhrase:       900,
+  primaryAllTokens: 850,
+  aliasExact:       800,
+  aliasPhrase:      750,
+  partialIdentity:  MIN_SEARCH_SCORE,
+};
+
+/* Query-token equivalents are intentionally narrow. They let common numeric
+   naming variants participate in the same all-token rule without turning a
+   short token into a substring or fuzzy wildcard. */
+const SEARCH_TOKEN_EQUIVALENTS = {
+  '1': ['one'],
+  one: ['1'],
+};
 
 /* ── Public constants ──────────────────────────────────────────── */
 
@@ -179,11 +202,18 @@ export const GENDER_LABELS = {
  */
 export function filterProducts(products, state) {
   let result = [...products];
+  let searchScores = null;
 
-  /* 1 — Text search (name, house, notes, story, desc) */
+  /* 1 — Text search. Keep the score alongside the original product object so
+     subsequent filters are a true intersection and never refill the grid. */
   if (state.query?.trim()) {
-    const q = _norm(state.query);
-    result = result.filter(p => _matchesSearch(p, q));
+    searchScores = new Map();
+    result = result.filter(product => {
+      const score = scoreSearchResult(product, state.query);
+      if (score < MIN_SEARCH_SCORE) return false;
+      searchScores.set(product, score);
+      return true;
+    });
   }
 
   /* 2 — Mood */
@@ -213,8 +243,11 @@ export function filterProducts(products, state) {
     });
   }
 
-  /* 5 — Sort */
-  return _sort(result, state.sort ?? 'trending');
+  /* 6 — Sort. With a query, relevance is always the primary key and the
+     selected catalog sort (including Destacados) is only a tiebreaker. */
+  return searchScores
+    ? _sortByRelevance(result, searchScores, state.sort ?? 'trending')
+    : _sort(result, state.sort ?? 'trending');
 }
 
 /**
@@ -226,12 +259,16 @@ export function getUniqueHouses(products) {
 
 /* ── Internals ─────────────────────────────────────────────────── */
 
-/** Lowercase + strip diacritics for fuzzy matching */
+/** Canonical query normalization: case/accents/punctuation/space agnostic. */
 function _norm(str) {
   return String(str ?? '')
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '');
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/['’]/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
 }
 
 function _matchesMood(product, mood) {
@@ -249,90 +286,158 @@ function _matchesMood(product, mood) {
   );
 }
 
-function _matchesSearch(product, query) {
-  /* Alias-strict path: when the query references a known commercial alias
-     (ysl, bdc, jpg, "y edp", ...), the result must belong to that alias
-     group. */
-  const aliasGroups = _matchingAliasGroups(query);
-  if (aliasGroups.length) {
-    return aliasGroups.some(group => _productInAliasGroup(product, group));
+/**
+ * Relevance score for a product/query pair. A score below MIN_SEARCH_SCORE is
+ * not eligible. Description and tags can add a small corroborating boost but
+ * can never make a product eligible on their own.
+ */
+export function scoreSearchResult(product, rawQuery) {
+  const query = _norm(rawQuery);
+  const meaningfulQueryTokens = _searchTokens(query);
+  if (!query || !meaningfulQueryTokens.length) return 0;
+
+  /* Short words cannot qualify alone, but inside a meaningful compound query
+     they must match exactly (Y in "Y EDP", le in "Le parfum", de/di in
+     fragrance names). This prevents the remaining long token from taking over. */
+  const queryTokens = _identityTokens(query);
+
+  const fields = _searchFields(product);
+  const namePhrases = [...fields.names, ...fields.brandAndName];
+  const primaryTokens = _identityTokens([...fields.names, ...fields.brands].join(' '));
+  const identityTokens = _identityTokens([
+    ...fields.names,
+    ...fields.brands,
+    ...fields.brandAliases,
+    ...fields.aliases,
+  ].join(' '));
+
+  let score = 0;
+
+  if (fields.names.some(name => name === query)) {
+    score = SEARCH_SCORE.nameExact;
+  } else if (namePhrases.some(name => _startsWithPhrase(name, query))) {
+    score = SEARCH_SCORE.namePrefix;
+  } else if (namePhrases.some(name => _containsPhrase(name, query))) {
+    score = SEARCH_SCORE.namePhrase;
+  } else if (_allTokensMatch(queryTokens, primaryTokens, { allowFuzzy: false })) {
+    score = SEARCH_SCORE.primaryAllTokens;
+  } else if (fields.aliases.some(alias => alias === query)) {
+    score = SEARCH_SCORE.aliasExact;
+  } else if (fields.aliases.some(alias => _containsPhrase(alias, query))) {
+    score = SEARCH_SCORE.aliasPhrase;
+  } else {
+    const quality = _allTokensMatch(queryTokens, identityTokens, { allowFuzzy: true });
+    if (!quality) return 0;
+    score = SEARCH_SCORE.partialIdentity + quality;
   }
 
-  const queryTokens = _searchTokens(query);
-  if (!queryTokens.length) return false;
-
-  const haystack = _searchText(product);
-  const tokens = _searchTokens(haystack);
-
-  /* Multi-token query: require every meaningful token to match commercial
-     identity. Short glue words like "de" are ignored. */
-  if (queryTokens.length > 1) {
-    return queryTokens.every(part =>
-      haystack.includes(part) ||
-      _fuzzyTokenMatch(part, tokens)
-    );
-  }
-
-  const [singleToken] = queryTokens;
-  return (
-    haystack.includes(singleToken) ||
-    _fuzzyTokenMatch(singleToken, tokens)
+  /* Secondary metadata is a bounded tiebreak signal after identity qualifies. */
+  const secondaryTokens = new Set(_searchTokens(fields.secondary.join(' ')));
+  const secondaryBoost = meaningfulQueryTokens.reduce(
+    (total, token) => total + (secondaryTokens.has(token) ? 2 : 0),
+    0,
   );
+  return score + Math.min(secondaryBoost, 10);
 }
 
-/** Alias groups whose meaningful terms appear in the query. */
-function _matchingAliasGroups(query) {
-  const queryTokens = new Set(query.split(/\s+/).filter(Boolean));
-  return SEARCH_ALIASES.map(group => ({
-    group,
-    matchedTerms: group.terms.filter(term => {
-      const t = _norm(term);
-      if (!t || t.length < 3) return false;
-      if (t.length === 1) return queryTokens.has(t);
-      return query === t || query.includes(t);
-    }),
-  })).filter(match => match.matchedTerms.length);
-}
-
-/** A product belongs to an alias group iff its commercial identity matches it. */
-function _productInAliasGroup(product, aliasMatch) {
-  const identity = _searchText(product);
-  return aliasMatch.matchedTerms.some(term => _aliasTermMatchesProduct(identity, _norm(term)));
-}
-
-function _aliasTermMatchesProduct(identity, term) {
-  if (!term || term.length < 3) return false;
-  if (identity.includes(term)) return true;
-  if (term === 'bdc') return identity.includes('bleu de chanel');
-  if (term === 'jpg') return identity.includes('jean paul gaultier');
-  if (term === 'ysl') return identity.includes('yves saint laurent');
-  if (term === 'adg') return identity.includes('acqua di gio');
-  return false;
-}
-
-function _searchText(product) {
-  const f = product.fragrance ?? null;
-  return _norm([
-    product.name,
-    product.house,
-    product.brand,
-    product.slug,
-    product.concentration,
+function _searchFields(product) {
+  const f = product?.fragrance ?? null;
+  const concentration = _norm(product?.concentration);
+  const rawNames = _uniqueNormalized([
+    product?.name,
+    product?.rawName,
+    product?.raw_name,
+  ]);
+  const names = _uniqueNormalized([
+    ...rawNames,
+    ...rawNames.map(name => concentration && !name.endsWith(` ${concentration}`)
+      ? `${name} ${concentration}`
+      : name),
+  ]);
+  const brands = _uniqueNormalized([product?.house, product?.brand]);
+  const brandAliases = BRAND_QUERY_ALIASES
+    .filter(({ brand }) => brands.some(value => _containsPhrase(value, brand)))
+    .map(({ alias }) => alias);
+  const aliases = _uniqueNormalized([
+    ..._asArray(product?.aliases),
+    product?.canonical_name,
+    product?.slug,
+    product?.sku,
     f?.canonical_name,
-    ...(f?.aliases ?? []),
-  ].filter(Boolean).join(' '));
+    ..._asArray(f?.aliases),
+  ]);
+  const brandAndName = _uniqueNormalized(
+    brands.flatMap(brand => names.flatMap(name => [
+      `${brand} ${name}`,
+      `${name} ${brand}`,
+    ])),
+  );
+  const secondary = _uniqueNormalized([
+    product?.desc,
+    product?.story,
+    product?.badge,
+    product?.category,
+    ..._asArray(product?.notes),
+    f?.scent_family_normalized,
+    ..._asArray(f?.mood_tags),
+    ..._asArray(f?.recommendation_tags),
+    ..._asArray(f?.recommended_context_tags),
+    ..._asArray(f?.style_tags),
+    ..._asArray(f?.accords),
+  ]);
+
+  return { names, brands, brandAliases, aliases, brandAndName, secondary };
+}
+
+function _asArray(value) {
+  if (Array.isArray(value)) return value.filter(Boolean);
+  return value ? [value] : [];
+}
+
+function _uniqueNormalized(values) {
+  return [...new Set(values.map(_norm).filter(Boolean))];
+}
+
+function _startsWithPhrase(text, phrase) {
+  return text === phrase || text.startsWith(`${phrase} `);
+}
+
+function _containsPhrase(text, phrase) {
+  return text === phrase || ` ${text} `.includes(` ${phrase} `);
 }
 
 function _searchTokens(text) {
-  return _norm(text).split(/\s+/).filter(token => token.length >= 3);
+  return _identityTokens(text).filter(token => token.length >= 3);
 }
 
-function _fuzzyTokenMatch(queryToken, tokens) {
-  if (queryToken.length < 3) return false;
-  return tokens.some(token =>
-    token.includes(queryToken) ||
-    _distanceWithin(queryToken, token, queryToken.length > 5 ? 2 : 1)
-  );
+function _identityTokens(text) {
+  return _norm(text).split(/\s+/).filter(Boolean);
+}
+
+function _allTokensMatch(queryTokens, identityTokens, { allowFuzzy }) {
+  let quality = 0;
+  for (const queryToken of queryTokens) {
+    const tokenQuality = Math.max(
+      0,
+      ...identityTokens.map(identityToken =>
+        _tokenMatchQuality(queryToken, identityToken, allowFuzzy)),
+    );
+    if (!tokenQuality) return 0;
+    quality += tokenQuality;
+  }
+  return quality;
+}
+
+function _tokenMatchQuality(queryToken, identityToken, allowFuzzy) {
+  if (queryToken === identityToken) return 6;
+  if ((SEARCH_TOKEN_EQUIVALENTS[queryToken] ?? []).includes(identityToken)) return 6;
+  if (queryToken.length >= 4 && identityToken.startsWith(queryToken)) return 4;
+  if (!allowFuzzy || queryToken.length < 4 || identityToken.length < 4) return 0;
+
+  /* Three-letter tokens (EDT/EDP/eau) are exact-only. For longer words, keep
+     edit distance bounded and proportional; notably, beau can never match eau. */
+  const maxDistance = queryToken.length >= 6 ? 2 : 1;
+  return _distanceWithin(queryToken, identityToken, maxDistance) ? 1 : 0;
 }
 
 function _distanceWithin(a, b, max) {
@@ -463,6 +568,17 @@ function _availabilityRank(p) {
     return p.variants.some(v => ((v.availability ?? v.stock ?? 0) > 0) && !v.soldOut) ? 1 : 0;
   }
   return 1;
+}
+
+function _sortByRelevance(products, searchScores, sort) {
+  const tiebreakOrder = new Map(
+    _sort(products, sort).map((product, index) => [product, index]),
+  );
+
+  return [...products].sort((a, b) =>
+    (searchScores.get(b) ?? 0) - (searchScores.get(a) ?? 0) ||
+    (tiebreakOrder.get(a) ?? 0) - (tiebreakOrder.get(b) ?? 0)
+  );
 }
 
 function _sort(products, sort) {

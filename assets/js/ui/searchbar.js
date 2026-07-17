@@ -193,6 +193,7 @@ function _buildBar() {
         <div class="sf-sel-wrap">
           <label class="sf-sr-only" for="sf-sort">Ordenar por</label>
           <select id="sf-sort" class="sf-sel" aria-label="Ordenar por">
+            <option value="relevance" hidden>Relevancia</option>
             ${sortOpts}
           </select>
           <svg class="sf-arrow" viewBox="0 0 10 6" stroke="currentColor"
@@ -432,6 +433,11 @@ function _handleDrawerKey(e) {
    ══════════════════════════════════════════════════════════════ */
 
 function _run() {
+  /* The control reflects the effective primary order. _state.sort is retained
+     underneath so it can act as the relevance tiebreak and be restored when
+     the query is cleared. */
+  _syncBarFromState();
+
   /* Guided mode: the finder's beginner-safe ranking defines the grid order in
      place (top pick pinned). Manual filters/sort are bypassed — using any of
      them exits guided mode (handlers null _state.guide). */
@@ -452,7 +458,7 @@ function _run() {
   /* 2. Personalization pass — only when "Para ti" sort is active.
      Disliked products sink to the bottom; non-disliked are re-ranked
      by taste affinity. Falls back to filtered order when no taste signal. */
-  const result = _state.sort === 'for_you'
+  const result = _state.sort === 'for_you' && !_state.query?.trim()
     ? _applyPersonalization(filtered)
     : filtered;
 
@@ -606,7 +612,7 @@ function _syncDrawer() {
 function _syncBarFromState() {
   if (!_bar) return;
   const s = _bar.querySelector('#sf-sort');
-  if (s) s.value = _state.sort;
+  if (s) s.value = _state.query?.trim() ? 'relevance' : _state.sort;
 }
 
 function _updateBadge() {
