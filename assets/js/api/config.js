@@ -10,7 +10,7 @@ export const API_BASE =
     : 'https://api.rdecants.com');
 
 // Keep this in sync with the asset query strings in the HTML entry points.
-export const BUILD_VERSION = '2026.06.04.2';
+export const BUILD_VERSION = '2026.07.19.1';
 
 export function normalizeApiImageUrl(value) {
   const url = String(value ?? '').trim();

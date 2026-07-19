@@ -253,7 +253,7 @@ function _upsellRow({ product, variant }, idx) {
 function _renderSummary() {
   const count = Cart.count();
   const subtotal = Cart.total();
-  const applied = Discount.applied;
+  const codes = Discount.codes();
   const finalTotal = Discount.totalFor(subtotal);
 
   const countEl = document.getElementById('cart-summary-count');
@@ -266,10 +266,11 @@ function _renderSummary() {
   const discountCodeEl = document.getElementById('cart-discount-row-code');
   const discountValueEl = document.getElementById('cart-discount-row-value');
   if (discountRow) {
-    const hasDiscount = Boolean(applied) && Discount.amount() > 0;
+    const hasDiscount = codes.length > 0 && Discount.amount() > 0;
     discountRow.hidden = !hasDiscount;
     if (hasDiscount) {
-      if (discountCodeEl) discountCodeEl.textContent = applied.normalizedCode || applied.code;
+      /* One code: "Descuento VIP8". Two: "Descuento VIP8, F50". */
+      if (discountCodeEl) discountCodeEl.textContent = codes.join(', ');
       if (discountValueEl) discountValueEl.textContent = `-${formatPrice(Discount.amount(), '$0 MXN')}`;
     }
   }
@@ -284,40 +285,76 @@ function _renderSummary() {
    automatically when there's something to show (a pending campaign promo, or
    a code the customer already typed) and stays expanded across re-renders
    once the customer opens it — a cart update never collapses their input. */
+/* Whether the customer has opened the "add another code" form. Kept open across
+   re-renders until a code applies (or is removed), so a background cart update
+   never collapses an in-progress entry. */
+let _addAnotherOpen = false;
+
 export function renderDiscountPanel() {
   const wrap = document.getElementById('cart-discount');
   if (!wrap) return;
 
   const toggle = document.getElementById('cart-discount-toggle');
-  const form = document.getElementById('cart-discount-form');
-  const applied = document.getElementById('cart-discount-applied');
-  const codeEl = document.getElementById('cart-discount-code');
-  const savedEl = document.getElementById('cart-discount-saved');
-  const input = document.getElementById('cart-discount-input');
-  const state = Discount.applied;
+  const form   = document.getElementById('cart-discount-form');
+  const list   = document.getElementById('cart-discount-applied-list');
+  const input  = document.getElementById('cart-discount-input');
 
-  if (state) {
+  const applied = Discount.applied;   // array (0..MAX)
+  const count = applied.length;
+  const canAddMore = Discount.canAddMore();
+
+  /* Applied chips — each reuses .cart-discount-applied so one code looks exactly
+     as before and a second just stacks below it. Own Quitar button per code. */
+  if (list) {
+    if (count) {
+      list.hidden = false;
+      list.innerHTML = applied.map(a => {
+        const code = a.normalizedCode || a.code;
+        const saved = a.amount > 0 ? `Ahorraste ${formatPrice(a.amount, '')}`.trim() : 'Código aplicado';
+        return `
+          <div class="cart-discount-applied">
+            <div class="cart-discount-applied-info">
+              <span class="cart-discount-tag">${_escape(code)}</span>
+              <span class="cart-discount-applied-text">${_escape(saved)}</span>
+            </div>
+            <button class="cart-discount-remove" type="button" data-code="${_escape(code)}"
+              aria-label="Quitar código ${_escape(code)}">Quitar</button>
+          </div>`;
+      }).join('');
+    } else {
+      list.hidden = true;
+      list.innerHTML = '';
+    }
+  }
+
+  /* The "promo detectada" hint only matters before the first code is applied. */
+  _renderCampaignHint(count ? null : Attribution.pendingPromoCode());
+  if (!count) _prefillPromoInput();
+
+  /* At the max there's no way to add more — hide the toggle and form entirely. */
+  if (!canAddMore) {
     if (toggle) toggle.hidden = true;
     if (form) form.hidden = true;
-    if (applied) applied.hidden = false;
-    if (codeEl) codeEl.textContent = state.normalizedCode || state.code;
-    if (savedEl) {
-      const amount = Discount.amount();
-      savedEl.textContent = amount > 0 ? `Ahorraste ${formatPrice(amount, '')}`.trim() : 'Código aplicado';
-    }
-    /* Applied badge already communicates the code — hide the "detected" hint. */
-    _renderCampaignHint(null);
     return;
   }
 
-  if (applied) applied.hidden = true;
-  _prefillPromoInput();
-  _renderCampaignHint(Attribution.pendingPromoCode());
+  const wantOpen = _addAnotherOpen
+    || (count === 0 && (Boolean(Attribution.pendingPromoCode()) || Boolean(input?.value?.trim())));
 
-  const alreadyOpen = form ? !form.hidden : false;
-  const expand = Boolean(Attribution.pendingPromoCode()) || alreadyOpen || Boolean(input?.value?.trim());
-  if (toggle) { toggle.hidden = expand; toggle.setAttribute('aria-expanded', String(expand)); }
-  if (form) form.hidden = !expand;
+  if (toggle) {
+    toggle.hidden = wantOpen;
+    toggle.textContent = count ? '¿Agregar otro código?' : '¿Tienes un código de descuento?';
+    toggle.setAttribute('aria-expanded', String(wantOpen));
+  }
+  if (form) form.hidden = !wantOpen;
+}
+
+/* Escape dynamic text before injecting into innerHTML (codes are normalized but
+   we never trust input into markup). */
+function _escape(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
+  ));
 }
 
 /* Pre-fill the discount input with a campaign promo the customer arrived with,
@@ -403,8 +440,8 @@ let _discountWired = false;
 export function setupDiscountControls() {
   if (_discountWired) return;
   const form = document.getElementById('cart-discount-form');
-  const removeBtn = document.getElementById('cart-discount-remove');
-  if (!form && !removeBtn) return;
+  const list = document.getElementById('cart-discount-applied-list');
+  if (!form && !list) return;
   _discountWired = true;
 
   form?.addEventListener('submit', e => {
@@ -417,25 +454,32 @@ export function setupDiscountControls() {
 
   const toggle = document.getElementById('cart-discount-toggle');
   toggle?.addEventListener('click', () => {
-    if (form) form.hidden = false;
-    toggle.hidden = true;
-    toggle.setAttribute('aria-expanded', 'true');
-    input?.focus();
+    _addAnotherOpen = true;
+    renderDiscountPanel();
+    document.getElementById('cart-discount-input')?.focus();
   });
 
-  removeBtn?.addEventListener('click', () => {
-    Discount.remove();
-    /* Manual removal stops the URL promo from auto-applying again this session
-       (attribution/UTM stays for reporting; only auto-apply is suppressed). */
-    Attribution.dismissPromo();
-    markAutoApplyDone();
-    _setDiscountMessage('', 'neutral');
-    Tracker.discountRemoved();
-    const field = document.getElementById('cart-discount-input');
-    if (field) field.value = '';
+  /* Per-chip remove — delegated because chips are re-rendered on every change. */
+  list?.addEventListener('click', e => {
+    const btn = e.target.closest('.cart-discount-remove');
+    if (!btn) return;
+    _removeDiscount(btn.dataset.code || null);
   });
 
   renderDiscountPanel();
+}
+
+async function _removeDiscount(code) {
+  _addAnotherOpen = false;
+  await Discount.remove(code, Cart.items, Cart.total());
+  /* Manual removal stops the URL promo from auto-applying again this session
+     (attribution/UTM stays for reporting; only auto-apply is suppressed). */
+  Attribution.dismissPromo();
+  markAutoApplyDone();
+  _setDiscountMessage('', 'neutral');
+  Tracker.discountRemoved();
+  const field = document.getElementById('cart-discount-input');
+  if (field) field.value = '';
 }
 
 async function _applyDiscountFromInput() {
@@ -449,6 +493,7 @@ async function _applyDiscountFromInput() {
   /* A manual code takes over: it overrides the URL promo for discount purposes
      and prevents auto-apply from clobbering the customer's explicit choice. */
   markAutoApplyDone();
+  _addAnotherOpen = true; // keep the form open through the attempt
 
   _setDiscountLoading(true);
   Tracker.discountApplyAttempt(code);
@@ -460,9 +505,14 @@ async function _applyDiscountFromInput() {
   }
 
   if (result.status === 'valid') {
+    _addAnotherOpen = false;
+    if (input) input.value = '';
     _setDiscountMessage('', 'neutral');
     Tracker.discountApplied(result.normalizedCode, result.amount);
-    /* renderDiscountPanel + summary refresh via the discount:updated event. */
+    renderDiscountPanel(); // collapse to the applied chips + "add another" toggle
+  } else if (result.status === 'duplicate' || result.status === 'max') {
+    /* Client-side guard — keep the form open with a clear notice. */
+    _setDiscountMessage(result.message, 'invalid');
   } else if (result.status === 'invalid') {
     _setDiscountMessage(result.message, 'invalid');
     Tracker.discountInvalid(code);

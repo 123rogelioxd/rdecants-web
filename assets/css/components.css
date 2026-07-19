@@ -3180,6 +3180,15 @@ body.pdp-cta-visible .whatsapp-float {
 
 .cart-discount.is-loading .cart-discount-input { opacity: 0.6; }
 
+/* Stacks 1–2 applied coupon chips. Each chip keeps the single-coupon look. */
+.cart-discount-applied-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.cart-discount-applied-list[hidden] { display: none; }
+
 .cart-discount-applied {
   display: flex;
   align-items: center;

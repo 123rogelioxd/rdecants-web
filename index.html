@@ -67,12 +67,12 @@
     HTML itself is served no-cache so browsers always get
     the latest version string.
 
-  Current version: 2026.07.15.2 - update all ?v= values on deploy.
+  Current version: 2026.07.19.1 - update all ?v= values on deploy.
 -->
-<link rel="stylesheet" href="assets/css/tokens.css?v=2026.07.15.2">
-<link rel="stylesheet" href="assets/css/animations.css?v=2026.07.15.2">
-<link rel="stylesheet" href="assets/css/components.css?v=2026.07.15.2">
-<link rel="stylesheet" href="assets/css/styles.css?v=2026.07.15.2">
+<link rel="stylesheet" href="assets/css/tokens.css?v=2026.07.19.1">
+<link rel="stylesheet" href="assets/css/animations.css?v=2026.07.19.1">
+<link rel="stylesheet" href="assets/css/components.css?v=2026.07.19.1">
+<link rel="stylesheet" href="assets/css/styles.css?v=2026.07.19.1">
 
 <script type="application/ld+json">
 {
@@ -333,6 +333,7 @@
           aria-expanded="false" aria-controls="cart-discount-form">
           ¿Tienes un código de descuento?
         </button>
+        <div class="cart-discount-applied-list" id="cart-discount-applied-list" hidden><!-- applied coupon chips rendered by cart/render.js --></div>
         <form class="cart-discount-form" id="cart-discount-form" hidden>
           <input class="cart-discount-input" id="cart-discount-input" type="text"
                  placeholder="Código de descuento" autocomplete="off"
@@ -340,13 +341,6 @@
                  aria-label="Código de descuento">
           <button class="cart-discount-apply" id="cart-discount-apply" type="submit">Aplicar</button>
         </form>
-        <div class="cart-discount-applied" id="cart-discount-applied" hidden>
-          <div class="cart-discount-applied-info">
-            <span class="cart-discount-tag" id="cart-discount-code"></span>
-            <span class="cart-discount-applied-text" id="cart-discount-saved">Código aplicado</span>
-          </div>
-          <button class="cart-discount-remove" id="cart-discount-remove" type="button" aria-label="Quitar código de descuento">Quitar</button>
-        </div>
         <p class="cart-discount-msg" id="cart-discount-msg" data-tone="neutral" aria-live="polite" hidden></p>
         <p class="cart-campaign-hint" id="cart-campaign-hint" aria-live="polite" hidden></p>
       </div>
@@ -418,7 +412,7 @@
   ?v= must match the version in CSS links above.
   Update on every deploy: increment VERSION file + all ?v= strings.
 -->
-<script type="module" src="assets/js/app.js?v=2026.07.15.2"></script>
+<script type="module" src="assets/js/app.js?v=2026.07.19.1"></script>
 
 </body>
 </html>
