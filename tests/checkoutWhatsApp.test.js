@@ -90,6 +90,50 @@ test('buildWhatsAppMessage omits discount rows when no discount is applied', () 
   assert.match(message, /Total: \$170 MXN/);
 });
 
+test('buildWhatsAppMessage lists both coupons + total discount when two are applied', () => {
+  const message = buildWhatsAppMessage(
+    [{ name: 'VICTORY', house: 'INVICTUS', size: 5, price: 1000, qty: 1 }],
+    1000,
+    { name: 'Roger' },
+    '',
+    [
+      { code: 'TEN', amount: 100 },
+      { code: 'F50', amount: 50 },
+    ],
+  );
+
+  assert.match(message, /Subtotal: \$1,?000 MXN/);
+  assert.match(message, /Código: TEN/);
+  assert.match(message, /Descuento: -\$100 MXN/);
+  assert.match(message, /Código: F50/);
+  assert.match(message, /Descuento: -\$50 MXN/);
+  assert.match(message, /Descuento total: -\$150 MXN/);
+  assert.match(message, /Total: \$850 MXN/);
+});
+
+test('buildWebOrderPayload forwards coupon_codes[] (canonical) + discount_code mirror', async () => {
+  const originalGetProductById = CatalogProvider.getProductById;
+  CatalogProvider.getProductById = async () => ({
+    id: 'p1', product_id: 'p1',
+    variants: [{ size: 5, price: 170, stock: 4, availability: 4, soldOut: false, variant_id: '5' }],
+  });
+
+  try {
+    const payload = await buildWebOrderPayload(
+      [{ key: 'p1-5', sourceId: 'p1', product_id: 'p1', name: 'Sauvage', house: 'Dior', type: 'product', size: 5, price: 170, qty: 1, image: '/x.webp' }],
+      { name: 'Roger' },
+      { couponCodes: ['TEN', 'F50'] },
+    );
+
+    assert.deepEqual(payload.coupon_codes, ['TEN', 'F50']);
+    assert.equal(payload.discount_code, 'TEN'); // legacy mirror = first code
+    assert.ok(!('discount_amount' in payload), 'amount is never sent as truth');
+    assert.ok(!('total' in payload), 'final total is never sent as truth');
+  } finally {
+    CatalogProvider.getProductById = originalGetProductById;
+  }
+});
+
 test('buildWebOrderPayload forwards discount_code only — never the amount as truth', async () => {
   const originalGetProductById = CatalogProvider.getProductById;
   CatalogProvider.getProductById = async () => ({

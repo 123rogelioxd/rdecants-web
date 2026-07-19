@@ -50,8 +50,14 @@ function reset() {
 function stubPreview(fn) { ApiClient.previewDiscount = fn; }
 function storedRecord() { return JSON.parse(_store.get(KEY)); }
 
+/* Multi-coupon preview shape (coupon_codes[] contract). */
 const VALID_PREVIEW = async () => ({ ok: true, status: 200, data: {
-  valid: true, normalized_code: 'VIP8', discount_amount: 44, total: 506,
+  valid: true,
+  coupons: [{ code: 'VIP8', discount_amount: 44, sequence: 1 }],
+  rejected: [],
+  coupon_codes: ['VIP8'],
+  total_discount: 44,
+  total: 506,
 } });
 
 /* ── 1. Reading params ──────────────────────────────────────── */

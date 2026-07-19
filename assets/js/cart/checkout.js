@@ -161,10 +161,10 @@ async function _createOrderInBackground(items, data, total, discount = null, att
     /* Forward ONLY the code + campaign attribution — R Supply OS validates,
        resolves the campaign and recalculates. We never send the previewed
        amount/total as truth. */
-    const payload = await buildWebOrderPayload(items, data, {
-      discountCode: discount?.code,
-      attribution,
-    });
+    const couponCodes = Array.isArray(discount)
+      ? discount.map(d => d?.normalizedCode || d?.code).filter(Boolean)
+      : (discount?.code ? [discount.code] : []);
+    const payload = await buildWebOrderPayload(items, data, { couponCodes, attribution });
     if (!payload.items.length) return;
 
     const response = await ApiClient.createWebOrder(payload);
@@ -266,10 +266,23 @@ export async function buildWebOrderPayload(items, data, options = {}) {
      amount or a frontend total as truth. */
   const attribution = options.attribution || {};
 
-  /* discount_code: the applied (valid preview) code if any, else the pending
-     promo the customer kept. Applied wins so a manual override is honored. */
-  const discountCode = options.discountCode || attribution.discount_code || null;
-  if (discountCode)             payload.discount_code = discountCode;
+  /* Coupon codes: the applied set (up to 2) wins; else a single legacy
+     discountCode, else the pending promo the customer kept. We forward
+     coupon_codes[] (the canonical contract) plus discount_code = the first
+     code as a legacy mirror — R Supply OS prefers coupon_codes and stays the
+     source of truth (it validates, resolves campaigns and recalculates). We
+     never send a discount amount or a frontend total as truth. */
+  let codes = Array.isArray(options.couponCodes) ? options.couponCodes.filter(Boolean) : [];
+  if (!codes.length) {
+    const single = options.discountCode || attribution.discount_code;
+    if (single) codes = [single];
+  }
+  codes = codes.map(c => String(c).trim().toUpperCase()).filter(Boolean).slice(0, 2);
+
+  if (codes.length) {
+    payload.coupon_codes = codes;
+    payload.discount_code = codes[0];
+  }
   if (attribution.promo)        payload.promo = attribution.promo;
   if (attribution.campaign_slug) payload.campaign_slug = attribution.campaign_slug;
   if (attribution.utm_campaign) payload.utm_campaign = attribution.utm_campaign;
@@ -312,15 +325,26 @@ export function buildWhatsAppMessage(items, total, data, folio = '', discount = 
     lines.push(`• ${_whatsAppItemLine(item)}`);
   });
 
-  /* `total` is the SUBTOTAL (Cart.total()). With a valid preview we show the
-     breakdown; the final total is only an estimate — R Supply OS confirms it. */
-  const amount = _money(discount?.amount);
-  if (discount?.code && amount > 0) {
-    const finalTotal = _money(discount.total) || Math.max(0, _money(total) - amount);
+  /* `total` is the SUBTOTAL (Cart.total()). With one or two valid previews we
+     show the per-code breakdown; the final total is only an estimate — R Supply
+     OS confirms it. `discount` may be a single object (legacy) or a list. */
+  const applied = _normalizeDiscountList(discount);
+  const totalDiscount = applied.reduce((sum, d) => sum + _money(d.amount), 0);
+
+  if (applied.length && totalDiscount > 0) {
+    /* One code: honor its preview total. Two codes: subtotal − sum. */
+    const finalTotal = (applied.length === 1 && _money(applied[0].total) > 0)
+      ? _money(applied[0].total)
+      : Math.max(0, _money(total) - totalDiscount);
     lines.push('');
     lines.push(`Subtotal: ${formatPrice(total, 'Por confirmar')}`);
-    lines.push(`Código: ${discount.code}`);
-    lines.push(`Descuento: -${formatPrice(amount, '$0')}`);
+    applied.forEach(d => {
+      lines.push(`Código: ${d.code}`);
+      lines.push(`Descuento: -${formatPrice(_money(d.amount), '$0')}`);
+    });
+    if (applied.length > 1) {
+      lines.push(`Descuento total: -${formatPrice(totalDiscount, '$0')}`);
+    }
     lines.push(`Total: ${formatPrice(finalTotal, 'Por confirmar')}`);
   } else {
     lines.push('', `Total: ${formatPrice(total, 'Por confirmar')}`);
@@ -509,6 +533,16 @@ function _selectedVariantStock(variant) {
 function _money(value) {
   const n = Number(value);
   return Number.isFinite(n) && n > 0 ? Math.round(n) : 0;
+}
+
+/* Normalize the discount argument to a list of { code, amount, total } with a
+   positive amount. Accepts a single object (legacy) or an array of applied
+   coupons — so callers and the WhatsApp message support one or two codes. */
+function _normalizeDiscountList(discount) {
+  const list = Array.isArray(discount) ? discount : (discount ? [discount] : []);
+  return list
+    .filter(d => d && (d.code || d.normalizedCode) && _money(d.amount) > 0)
+    .map(d => ({ code: d.normalizedCode || d.code, amount: _money(d.amount), total: _money(d.total) }));
 }
 
 function _whatsAppItemLine(item) {
