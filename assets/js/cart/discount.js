@@ -1,13 +1,18 @@
 /* =============================================================
-   RDECANTS — DISCOUNT PREVIEW STATE
+   RDECANTS — DISCOUNT PREVIEW STATE (up to 2 stacked codes)
 
    Source-of-truth rule (locked):
-     • R Supply OS validates and recalculates every discount during
-       Web Order creation. The storefront NEVER computes discount math.
-     • This module only *previews* a code so the customer can see an
-       estimated amount/total before the WhatsApp handoff.
-     • When we create the Web Order we send ONLY the discount_code —
-       never the amount or the final total as truth.
+     • R Supply OS validates, decides stackability and recalculates every
+       discount during Web Order creation. The storefront NEVER computes
+       discount math and never sends amounts/totals as truth.
+     • This module only *previews* the set of codes so the customer can see
+       an estimate before the WhatsApp handoff. It always sends the whole
+       code set (coupon_codes[]) and trusts the backend's applied/rejected
+       breakdown — the backend coordinator decides which combine.
+     • When we create the Web Order we forward ONLY the codes.
+
+   Up to MAX_COUPONS codes. Two codes combine only when the backend says so
+   (both must be stackable); a rejected second code leaves the first intact.
 
    DOM-free so it can be unit-tested without a browser (like momentum.js).
    ============================================================= */
@@ -16,13 +21,14 @@ import { ApiClient } from '../api/client.js';
 import { EventBus }  from '../core/events.js';
 
 const STORAGE_KEY = 'rdecants_discount';
+export const MAX_COUPONS = 2;
 
 /* Customer-safe copy — never leak technical/validation jargon. */
 export const API_DOWN_MSG = 'No pudimos validar el código ahorita. Puedes continuar sin descuento.';
 const DEFAULT_INVALID_MSG = 'Ese código no es válido o ya expiró.';
 
-/* ── Applied preview (null when none) ───────────────────────────
-   { code, normalizedCode, amount, subtotal, total, message } */
+/* Applied coupons the backend confirmed, ordered by calculation sequence.
+   Each: { code, normalizedCode, amount, sequence } */
 let _applied = _load();
 
 export function normalizeCode(raw) {
@@ -30,129 +36,154 @@ export function normalizeCode(raw) {
 }
 
 export const Discount = {
-  get applied() { return _applied ? { ..._applied } : null; },
+  /* Full applied list (copy). */
+  get applied() { return _applied.map(a => ({ ...a })); },
 
-  isApplied() { return Boolean(_applied); },
+  /* First applied code — kept for backward-compatible callers. */
+  get code() { return _applied.length ? (_applied[0].normalizedCode || _applied[0].code) : null; },
 
-  /* The only value that ever leaves the frontend as intent. */
-  get code() { return _applied ? (_applied.normalizedCode || _applied.code) : null; },
+  /* Applied codes in order — the only values that leave the frontend as intent. */
+  codes() { return _applied.map(a => a.normalizedCode || a.code); },
 
-  amount() { return _applied ? _money(_applied.amount) : 0; },
+  count() { return _applied.length; },
+  isApplied() { return _applied.length > 0; },
+  canAddMore() { return _applied.length < MAX_COUPONS; },
 
-  /* Final total for a given subtotal, honoring the last preview. Never lets a
-     stale preview drive the total below zero or above the subtotal. */
+  /* Total discount across all applied codes (sum == backend total_discount). */
+  amount() { return _applied.reduce((sum, a) => sum + _money(a.amount), 0); },
+
+  /* Final total for a subtotal, honoring the last preview. Never below zero
+     or above the subtotal, even with a stale preview. */
   totalFor(subtotal) {
     const sub = _money(subtotal);
-    if (!_applied) return sub;
-    const amt = Math.min(_money(_applied.amount), sub);
+    const amt = Math.min(this.amount(), sub);
     return Math.max(0, sub - amt);
   },
 
-  /* Preview a raw code against the current cart. Pure orchestration — does NOT
-     mutate applied state. Returns a discriminated result:
+  /* Add one code to the set and re-preview the whole set. Does not add a
+     duplicate or exceed MAX_COUPONS. Returns a discriminated result:
        { status: 'empty' }
-       { status: 'valid', code, normalizedCode, amount, total, message }
-       { status: 'invalid', message }   ← customer-safe, do not block checkout
-       { status: 'error', message }     ← API/network hiccup, allow checkout */
-  async preview(rawCode, items = [], subtotal = 0) {
+       { status: 'duplicate' | 'max', message }
+       { status: 'valid', code, normalizedCode, amount, total }
+       { status: 'invalid', code, message }   ← customer-safe, keep checkout open
+       { status: 'error', message }           ← API/network hiccup, allow checkout */
+  async apply(rawCode, items = [], subtotal = 0) {
     const code = normalizeCode(rawCode);
     if (!code) return { status: 'empty' };
+    if (this.codes().includes(code)) {
+      return { status: 'duplicate', code, message: 'Ese código ya está aplicado.' };
+    }
+    if (!this.canAddMore()) {
+      return { status: 'max', code, message: `Solo puedes usar ${MAX_COUPONS} códigos por pedido.` };
+    }
 
-    let res;
-    try {
-      res = await ApiClient.previewDiscount(buildPreviewPayload(code, items));
-    } catch {
+    const parsed = await _previewSet([...this.codes(), code], items);
+    if (parsed.status === 'error') return { status: 'error', code, message: API_DOWN_MSG };
+    if (parsed.status === 'reject') return { status: 'invalid', code, message: parsed.message || DEFAULT_INVALID_MSG };
+
+    _store(parsed.applied);
+
+    const hit = parsed.applied.find(a => a.code === code);
+    if (hit) {
+      return { status: 'valid', code, normalizedCode: hit.normalizedCode, amount: hit.amount, total: parsed.total };
+    }
+    const rejected = parsed.rejected.find(r => r.code === code);
+    return { status: 'invalid', code, message: rejected?.message || DEFAULT_INVALID_MSG };
+  },
+
+  /* Remove one code and re-preview the rest (so the remaining code's amount is
+     recomputed authoritatively). Removing the last one clears the discount. */
+  async remove(rawCode = null, items = [], subtotal = 0) {
+    if (rawCode == null) { _store([]); return { status: 'removed' }; }
+
+    const code = normalizeCode(rawCode);
+    const remaining = this.codes().filter(c => c !== code);
+
+    if (!remaining.length) { _store([]); return { status: 'removed' }; }
+
+    const parsed = await _previewSet(remaining, items);
+    if (parsed.status === 'error') {
+      /* Keep whatever still validated locally; drop only the removed code so we
+         never show a stale total. Backend confirms at order time. */
+      _store(_applied.filter(a => a.code !== code));
       return { status: 'error', message: API_DOWN_MSG };
     }
-    return _parsePreview(code, res, subtotal);
+    _store(parsed.applied);
+    return { status: 'ok' };
   },
 
-  /* Preview + persist on success. Returns the same result shape as preview(). */
-  async apply(rawCode, items = [], subtotal = 0) {
-    const result = await this.preview(rawCode, items, subtotal);
-    if (result.status === 'valid') {
-      _applied = {
-        code: result.code,
-        normalizedCode: result.normalizedCode,
-        amount: result.amount,
-        subtotal: _money(subtotal),
-        total: result.total,
-        message: result.message,
-      };
-      _commit();
-    }
-    return result;
-  },
-
-  /* Re-preview the applied code (cart changed). On success we refresh the
-     amount/total; on any non-valid outcome we REMOVE it so the customer never
-     sees a stale total. R Supply OS still has the final say at order time. */
+  /* Re-preview the applied set (cart changed). On success refresh amounts; any
+     code that no longer validates is dropped so the customer never sees a stale
+     total. Returns 'none' | 'valid' | 'invalid' | 'error'. */
   async revalidate(items = [], subtotal = 0) {
-    if (!_applied) return { status: 'none' };
+    if (!_applied.length) return { status: 'none' };
 
-    const result = await this.preview(_applied.normalizedCode || _applied.code, items, subtotal);
-    if (result.status === 'valid') {
-      _applied = {
-        ..._applied,
-        normalizedCode: result.normalizedCode,
-        amount: result.amount,
-        subtotal: _money(subtotal),
-        total: result.total,
-        message: result.message,
-      };
-      _commit();
-    } else {
-      this.remove();
-    }
-    return result;
+    const before = this.codes();
+    const parsed = await _previewSet(before, items);
+    if (parsed.status === 'error') return { status: 'error', message: API_DOWN_MSG };
+
+    _store(parsed.applied);
+    const dropped = before.some(c => !parsed.applied.find(a => a.code === c));
+    return { status: dropped ? 'invalid' : 'valid' };
   },
 
-  remove() {
-    if (!_applied) return;
-    _applied = null;
-    _commit();
-  },
-
-  clear() { this.remove(); },
+  clear() { if (_applied.length) _store([]); },
 };
 
 /* ── Internals ──────────────────────────────────────────────── */
-function _parsePreview(code, res, subtotal) {
+
+/* Preview a set of codes via the multi-coupon contract. Returns:
+     { status:'ok', applied:[…], rejected:[…], totalDiscount, total }
+     { status:'reject', message }   ← 4xx (bad payload / >2 codes)
+     { status:'error' }             ← network/5xx */
+async function _previewSet(codes, items) {
+  const list = codes.map(normalizeCode).filter(Boolean);
+  if (!list.length) return { status: 'ok', applied: [], rejected: [], totalDiscount: 0, total: 0 };
+
+  let res;
+  try {
+    res = await ApiClient.previewDiscount(buildPreviewPayload(list, items));
+  } catch {
+    return { status: 'error' };
+  }
+
   const { ok, status, data } = res || {};
-
   if (!ok) {
-    /* 4xx → the code itself was rejected; surface the backend's safe message.
-       5xx / anything else → treat as a soft error, keep checkout open. */
     if (status >= 400 && status < 500) {
-      return { status: 'invalid', message: _safeMessage(data?.message ?? data?.discount_message) };
+      return { status: 'reject', message: _safeMessage(data?.message ?? data?.discount_message) };
     }
-    return { status: 'error', message: API_DOWN_MSG };
+    return { status: 'error' };
   }
 
-  const valid = data?.valid !== false;
-  const amount = _money(data?.discount_amount ?? data?.amount);
-
-  if (!valid || amount <= 0) {
-    return { status: 'invalid', message: _safeMessage(data?.message ?? data?.discount_message) };
-  }
-
-  const sub = _money(subtotal);
-  const backendTotal = _money(data?.total);
-  const total = backendTotal > 0 ? backendTotal : Math.max(0, sub - amount);
+  const coupons = Array.isArray(data?.coupons) ? data.coupons : [];
+  const rejected = Array.isArray(data?.rejected) ? data.rejected : [];
 
   return {
-    status: 'valid',
-    code,
-    normalizedCode: normalizeCode(data?.normalized_code ?? data?.code ?? code),
-    amount,
-    total,
-    message: _safeMessage(data?.message, ''),
+    status: 'ok',
+    applied: coupons
+      .map(c => ({
+        code: normalizeCode(c.code),
+        normalizedCode: normalizeCode(c.code),
+        amount: _money(c.discount_amount ?? c.amount),
+        sequence: Number(c.sequence) || 0,
+      }))
+      .filter(a => a.code && a.amount > 0)
+      .sort((a, b) => a.sequence - b.sequence),
+    rejected: rejected
+      .filter(r => r && r.code)
+      .map(r => ({ code: normalizeCode(r.code), message: _safeMessage(r.message) })),
+    totalDiscount: _money(data?.total_discount),
+    total: _money(data?.total),
   };
 }
 
-export function buildPreviewPayload(code, items = []) {
+/* Multi-coupon preview payload. Accepts an array of codes (or a single string).
+   Sends coupon_codes[] — the storefront's canonical contract. Packs are never
+   priced server-side, so they're filtered out. */
+export function buildPreviewPayload(codes, items = []) {
+  const list = (Array.isArray(codes) ? codes : [codes]).map(normalizeCode).filter(Boolean);
   return {
-    code: normalizeCode(code),
+    coupon_codes: list,
     channel: 'storefront',
     items: (items || [])
       .filter(item => item && item.type !== 'pack')
@@ -162,6 +193,16 @@ export function buildPreviewPayload(code, items = []) {
         quantity: Number(item.qty) || 1,
       })),
   };
+}
+
+function _store(applied) {
+  _applied = (applied || []).map(a => ({
+    code: a.code,
+    normalizedCode: a.normalizedCode || a.code,
+    amount: _money(a.amount),
+    sequence: Number(a.sequence) || 0,
+  }));
+  _commit();
 }
 
 function _safeMessage(message, fallback = DEFAULT_INVALID_MSG) {
@@ -176,7 +217,7 @@ function _money(value) {
 
 function _commit() {
   try {
-    if (_applied) localStorage.setItem(STORAGE_KEY, JSON.stringify(_applied));
+    if (_applied.length) localStorage.setItem(STORAGE_KEY, JSON.stringify(_applied));
     else localStorage.removeItem(STORAGE_KEY);
   } catch { /* storage unavailable — in-memory state still works */ }
   EventBus.emit('discount:updated', { applied: Discount.applied });
@@ -185,18 +226,20 @@ function _commit() {
 function _load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
+    if (!raw) return [];
     const parsed = JSON.parse(raw);
-    if (!parsed || !parsed.code) return null;
-    return {
-      code: parsed.code,
-      normalizedCode: parsed.normalizedCode || parsed.code,
-      amount: _money(parsed.amount),
-      subtotal: _money(parsed.subtotal),
-      total: _money(parsed.total),
-      message: String(parsed.message ?? ''),
-    };
+    /* Back-compat: the previous single-coupon shape stored one object. */
+    const list = Array.isArray(parsed) ? parsed : (parsed && parsed.code ? [parsed] : []);
+    return list
+      .filter(a => a && a.code)
+      .slice(0, MAX_COUPONS)
+      .map(a => ({
+        code: normalizeCode(a.code),
+        normalizedCode: normalizeCode(a.normalizedCode || a.code),
+        amount: _money(a.amount),
+        sequence: Number(a.sequence) || 0,
+      }));
   } catch {
-    return null;
+    return [];
   }
 }
