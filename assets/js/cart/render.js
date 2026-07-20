@@ -249,11 +249,11 @@ function _upsellRow({ product, variant }, idx) {
     </div>`;
 }
 
-/* ── Summary: subtotal · discount · final total ─────────────── */
+/* ── Summary: subtotal · one discount row per coupon · final total ──── */
 function _renderSummary() {
   const count = Cart.count();
   const subtotal = Cart.total();
-  const codes = Discount.codes();
+  const applied = Discount.applied.filter(a => a.amount > 0);
   const finalTotal = Discount.totalFor(subtotal);
 
   const countEl = document.getElementById('cart-summary-count');
@@ -262,17 +262,19 @@ function _renderSummary() {
   const subtotalEl = document.getElementById('cart-subtotal-value');
   if (subtotalEl) subtotalEl.textContent = formatPrice(subtotal, '$0 MXN');
 
-  const discountRow = document.getElementById('cart-discount-row');
-  const discountCodeEl = document.getElementById('cart-discount-row-code');
-  const discountValueEl = document.getElementById('cart-discount-row-value');
-  if (discountRow) {
-    const hasDiscount = codes.length > 0 && Discount.amount() > 0;
-    discountRow.hidden = !hasDiscount;
-    if (hasDiscount) {
-      /* One code: "Descuento VIP8". Two: "Descuento VIP8, F50". */
-      if (discountCodeEl) discountCodeEl.textContent = codes.join(', ');
-      if (discountValueEl) discountValueEl.textContent = `-${formatPrice(Discount.amount(), '$0 MXN')}`;
-    }
+  /* Each applied coupon gets its own row ("Descuento ESPANA40  -$40 MXN"),
+     never combined — so the customer can see exactly what each code did. */
+  const rowsEl = document.getElementById('cart-discount-rows');
+  if (rowsEl) {
+    rowsEl.hidden = !applied.length;
+    rowsEl.innerHTML = applied.map(a => {
+      const code = a.normalizedCode || a.code;
+      return `
+        <div class="cart-summary-row cart-summary-row--discount">
+          <span class="cart-summary-row-label">Descuento <span class="cart-summary-row-code">${_escape(code)}</span></span>
+          <span class="cart-summary-row-value">-${formatPrice(a.amount, '$0 MXN')}</span>
+        </div>`;
+    }).join('');
   }
 
   const totalEl = document.getElementById('cart-total');
@@ -298,6 +300,8 @@ export function renderDiscountPanel() {
   const form   = document.getElementById('cart-discount-form');
   const list   = document.getElementById('cart-discount-applied-list');
   const input  = document.getElementById('cart-discount-input');
+  const apply  = document.getElementById('cart-discount-apply');
+  const maxMsg = document.getElementById('cart-discount-max-msg');
 
   const applied = Discount.applied;   // array (0..MAX)
   const count = applied.length;
@@ -331,7 +335,9 @@ export function renderDiscountPanel() {
   _renderCampaignHint(count ? null : Attribution.pendingPromoCode());
   if (!count) _prefillPromoInput();
 
-  /* At the max there's no way to add more — hide the toggle and form entirely. */
+  /* At the max there's no way to add more — hide the toggle and form entirely
+     and explain why so the customer isn't left wondering where it went. */
+  if (maxMsg) maxMsg.hidden = canAddMore;
   if (!canAddMore) {
     if (toggle) toggle.hidden = true;
     if (form) form.hidden = true;
@@ -343,10 +349,18 @@ export function renderDiscountPanel() {
 
   if (toggle) {
     toggle.hidden = wantOpen;
-    toggle.textContent = count ? '¿Agregar otro código?' : '¿Tienes un código de descuento?';
+    toggle.textContent = count ? '¿Tienes otro cupón?' : '¿Tienes un código de descuento?';
     toggle.setAttribute('aria-expanded', String(wantOpen));
   }
   if (form) form.hidden = !wantOpen;
+  if (input) input.placeholder = count ? 'Ingresa tu segundo código' : 'Código de descuento';
+  if (apply && !apply.disabled) apply.textContent = _applyButtonLabel();
+}
+
+/* "Aplicar" for the first code, "Aplicar otro cupón" once one is already
+   applied — matches the toggle/placeholder copy for the second slot. */
+function _applyButtonLabel() {
+  return Discount.count() > 0 ? 'Aplicar otro cupón' : 'Aplicar';
 }
 
 /* Escape dynamic text before injecting into innerHTML (codes are normalized but
@@ -431,7 +445,7 @@ function _setDiscountLoading(isLoading) {
   if (input) input.disabled = isLoading;
   if (button) {
     button.disabled = isLoading;
-    button.textContent = isLoading ? 'Validando…' : 'Aplicar';
+    button.textContent = isLoading ? 'Validando…' : _applyButtonLabel();
   }
 }
 

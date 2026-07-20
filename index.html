@@ -67,12 +67,12 @@
     HTML itself is served no-cache so browsers always get
     the latest version string.
 
-  Current version: 2026.07.19.1 - update all ?v= values on deploy.
+  Current version: 2026.07.19.2 - update all ?v= values on deploy.
 -->
-<link rel="stylesheet" href="assets/css/tokens.css?v=2026.07.19.1">
-<link rel="stylesheet" href="assets/css/animations.css?v=2026.07.19.1">
-<link rel="stylesheet" href="assets/css/components.css?v=2026.07.19.1">
-<link rel="stylesheet" href="assets/css/styles.css?v=2026.07.19.1">
+<link rel="stylesheet" href="assets/css/tokens.css?v=2026.07.19.2">
+<link rel="stylesheet" href="assets/css/animations.css?v=2026.07.19.2">
+<link rel="stylesheet" href="assets/css/components.css?v=2026.07.19.2">
+<link rel="stylesheet" href="assets/css/styles.css?v=2026.07.19.2">
 
 <script type="application/ld+json">
 {
@@ -343,6 +343,7 @@
         </form>
         <p class="cart-discount-msg" id="cart-discount-msg" data-tone="neutral" aria-live="polite" hidden></p>
         <p class="cart-campaign-hint" id="cart-campaign-hint" aria-live="polite" hidden></p>
+        <p class="cart-discount-max-msg" id="cart-discount-max-msg" aria-live="polite" hidden>Máximo 2 cupones por pedido.</p>
       </div>
 
       <ul class="cart-trust" aria-label="Garantías del pedido">
@@ -368,10 +369,7 @@
           <span class="cart-summary-row-label">Subtotal</span>
           <span class="cart-summary-row-value" id="cart-subtotal-value">$0 MXN</span>
         </div>
-        <div class="cart-summary-row cart-summary-row--discount" id="cart-discount-row" hidden>
-          <span class="cart-summary-row-label">Descuento <span class="cart-summary-row-code" id="cart-discount-row-code"></span></span>
-          <span class="cart-summary-row-value" id="cart-discount-row-value">-$0 MXN</span>
-        </div>
+        <div class="cart-discount-rows" id="cart-discount-rows" hidden><!-- one row per applied coupon, rendered by cart/render.js --></div>
         <div class="cart-total-row">
           <span class="cart-total-label">Total</span>
           <span class="cart-total-amount">$<span id="cart-total">0</span> <small>MXN</small></span>
@@ -412,7 +410,7 @@
   ?v= must match the version in CSS links above.
   Update on every deploy: increment VERSION file + all ?v= strings.
 -->
-<script type="module" src="assets/js/app.js?v=2026.07.19.1"></script>
+<script type="module" src="assets/js/app.js?v=2026.07.19.2"></script>
 
 </body>
 </html>

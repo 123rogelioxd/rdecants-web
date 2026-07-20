@@ -23,7 +23,7 @@ test('HTML entry points declare no-cache metadata and current asset version', ()
     assert.match(html, /http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/);
     assert.match(html, /http-equiv="Pragma" content="no-cache"/);
     assert.match(html, /http-equiv="Expires" content="0"/);
-    assert.match(html, /\?v=2026.07.19.1/);
+    assert.match(html, /\?v=2026.07.19.2/);
   }
 });
 

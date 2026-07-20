@@ -3266,6 +3266,19 @@ body.pdp-cta-visible .whatsapp-float {
   color: rgba(201, 169, 110, 0.9);
 }
 
+/* "Máximo 2 cupones por pedido." — shown once two codes are applied and the
+   toggle/form are hidden, so the customer still understands why. */
+.cart-discount-max-msg {
+  margin: 8px 2px 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+/* Per-coupon summary rows (one per applied code). Each reuses
+   .cart-summary-row so spacing/typography match the subtotal row exactly. */
+.cart-discount-rows[hidden] { display: none; }
+
 /* Summary breakdown rows (subtotal / discount) */
 .cart-summary-row {
   display: flex;
