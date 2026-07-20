@@ -8,6 +8,13 @@ import { Tracker }         from '../tracking/tracker.js';
 import { EventBus }        from '../core/events.js';
 import { showToast }       from '../ui/toast.js';
 import { getPriceForSize, getVariantForSize, isValidPrice } from '../utils/prices.js';
+import {
+  canConsumeSharedMl,
+  clampToSharedAvailability,
+  findSharedAvailabilityViolation,
+  physicalProductKey,
+  sharedAvailableMl,
+} from './availability.js';
 
 const STORAGE_KEY = 'rdecants_cart';
 
@@ -27,6 +34,8 @@ export const Cart = {
     const variant = getVariantForSize(product, size);
     const variantId = _validVariantId(variant?.variant_id);
     const stock = _selectedVariantStock(variant);
+    const availableMl = sharedAvailableMl(product);
+    const productKey = physicalProductKey(product);
     if (price === null) {
       showToast('Precio no disponible para esa variante');
       return;
@@ -40,6 +49,13 @@ export const Cart = {
     const key      = `${product.id}-${size}`;
     const existing = _items.find(i => i.key === key);
 
+    _syncSharedAvailability(productKey, availableMl);
+
+    if (!canConsumeSharedMl(_items, productKey, availableMl, size)) {
+      showToast(_sharedAvailabilityMessage(product.name, availableMl));
+      return;
+    }
+
     if (existing) {
       if (existing.qty >= stock) {
         showToast(`Solo quedan ${stock} de ${product.name}`);
@@ -51,6 +67,7 @@ export const Cart = {
       existing.sku = product.sku ?? existing.sku;
       existing.variant_id = variantId;
       existing.image = product.image ?? existing.image;
+      existing.available_ml = availableMl;
     } else {
       if (stock <= 0 || variant?.soldOut) {
         showToast(`${product.name} está agotado`);
@@ -69,6 +86,7 @@ export const Cart = {
         price,
         qty:      1,
         stock,
+        available_ml: availableMl,
         image:    product.image,
       });
     }
@@ -140,10 +158,15 @@ export const Cart = {
       const size = variant?.size;
       const variantId = _validVariantId(variant?.variant_id);
       const stock = _selectedVariantStock(variant);
+      const availableMl = sharedAvailableMl(product);
+      const productKey = physicalProductKey(product);
       const originalPrice = Number(variant?.price);
       const price = Math.max(1, Math.round(originalPrice * ratio));
 
       if (!size || !variantId || !Number.isFinite(originalPrice) || stock <= 0 || variant?.soldOut) continue;
+
+      _syncSharedAvailability(productKey, availableMl);
+      if (!canConsumeSharedMl(_items, productKey, availableMl, size)) continue;
 
       const key = `${product.id}-${size}-bundle-${bundle.id}`;
       const existing = _items.find(i => i.key === key);
@@ -152,6 +175,7 @@ export const Cart = {
         if (existing.qty >= stock) continue;
         existing.qty++;
         existing.stock = stock;
+        existing.available_ml = availableMl;
       } else {
         _items.push({
           key,
@@ -169,6 +193,7 @@ export const Cart = {
           original_price: originalPrice,
           qty: 1,
           stock,
+          available_ml: availableMl,
           image: product.image,
         });
       }
@@ -193,10 +218,22 @@ export const Cart = {
     const item = _items[idx];
 
     if (delta > 0) {
-      const stock = await _getStock(item);
+      const availability = await _getAvailability(item);
+      const stock = availability.stock;
       item.stock = stock;
+      item.available_ml = availability.availableMl;
+      _syncSharedAvailability(physicalProductKey(item), availability.availableMl);
       if (item.qty >= stock) {
         showToast(`Solo quedan ${stock} de ${item.name}`);
+        return;
+      }
+      if (!canConsumeSharedMl(
+        _items,
+        physicalProductKey(item),
+        availability.availableMl,
+        item.size,
+      )) {
+        showToast(_sharedAvailabilityMessage(item.name, availability.availableMl));
         return;
       }
     }
@@ -227,6 +264,24 @@ export const Cart = {
 
   count() {
     return _items.reduce((sum, i) => sum + i.qty, 0);
+  },
+
+  canIncrement(key) {
+    const item = _items.find(candidate => candidate.key === key);
+    if (!item) return false;
+    if (item.qty >= item.stock) return false;
+    if (item.type === 'pack') return true;
+
+    return canConsumeSharedMl(
+      _items,
+      physicalProductKey(item),
+      item.available_ml,
+      item.size,
+    );
+  },
+
+  availabilityError() {
+    return findSharedAvailabilityViolation(_items);
   },
 
   clear() {
@@ -267,12 +322,21 @@ export const Cart = {
         original_price: item.bundle_id ? (item.original_price ?? variant.price) : item.original_price,
         qty: Math.min(Math.max(1, Number(item.qty) || 1), stock),
         stock,
+        available_ml: sharedAvailableMl(product),
         image: product.image ?? item.image ?? null,
       };
 
       changed = changed || _cartItemChanged(item, updated);
       reconciled.push(updated);
     }
+
+    const limited = clampToSharedAvailability(reconciled);
+    if (limited.adjusted.length || limited.removed.length) {
+      changed = true;
+      removed.push(...limited.removed);
+    }
+    reconciled.length = 0;
+    reconciled.push(...limited.items);
 
     if (changed) {
       _items = reconciled;
@@ -305,6 +369,7 @@ function _load() {
         variant_id: i.variant_id ?? null,
         image: i.image ?? null,
         stock: Math.max(0, Number(i.stock) || 0),
+        available_ml: _optionalNonNegativeNumber(i.available_ml),
         qty: Math.max(1, Number(i.qty) || 1),
       }));
   } catch {
@@ -312,14 +377,14 @@ function _load() {
   }
 }
 
-async function _getStock(item) {
+async function _getAvailability(item) {
   if (item.type === 'pack') {
     const pack = await CatalogProvider.getPackById(item.sourceId);
-    return pack?.stock ?? item.stock ?? 1;
+    return { stock: pack?.stock ?? item.stock ?? 1, availableMl: null };
   }
   const product = await CatalogProvider.getProductById(item.sourceId);
   const variant = getVariantForSize(product, item.size);
-  return _selectedVariantStock(variant);
+  return { stock: _selectedVariantStock(variant), availableMl: sharedAvailableMl(product) };
 }
 
 function _selectedVariantStock(variant) {
@@ -341,5 +406,26 @@ function _cartItemChanged(prev, next) {
     prev.price !== next.price ||
     prev.qty !== next.qty ||
     prev.stock !== next.stock ||
+    prev.available_ml !== next.available_ml ||
     prev.image !== next.image;
+}
+
+function _syncSharedAvailability(productKey, availableMl) {
+  if (!productKey || availableMl === null) return;
+  _items.forEach(item => {
+    if (item.type !== 'pack' && physicalProductKey(item) === productKey) {
+      item.available_ml = availableMl;
+    }
+  });
+}
+
+function _sharedAvailabilityMessage(name, availableMl) {
+  const amount = Number.isInteger(availableMl) ? availableMl : Number(availableMl).toFixed(2).replace(/\.00$/, '');
+  return `Solo hay ${amount}ml disponibles en total para ${name}`;
+}
+
+function _optionalNonNegativeNumber(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0 ? number : null;
 }

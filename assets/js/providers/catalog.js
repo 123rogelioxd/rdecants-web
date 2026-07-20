@@ -194,6 +194,7 @@ function _mapProduct(p) {
     notes,
     image: _productImage(p),
     stock: variants.length ? Math.max(...variants.map(v => v.availability)) : _safeStock(p.stock),
+    available_ml: _sharedAvailableMl(p, variants),
     badge: p.badge ?? p.label ?? 'Disponible',
     active: p.active ?? p.is_active,
     status: p.status ?? p.state ?? null,
@@ -273,6 +274,20 @@ function _productImage(p, fallback = '') {
 function _safeStock(value) {
   const n = Number(value);
   return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function _sharedAvailableMl(product, variants) {
+  const explicit = product?.available_ml ?? product?.availableMl;
+  if (explicit !== null && explicit !== undefined && explicit !== '') {
+    const value = Number(explicit);
+    if (Number.isFinite(value) && value >= 0) return value;
+  }
+
+  const candidates = variants
+    .map(variant => Number(variant.size) * Number(variant.stock))
+    .filter(value => Number.isFinite(value) && value >= 0);
+
+  return candidates.length ? Math.max(...candidates) : null;
 }
 
 function _mapPack(p) {

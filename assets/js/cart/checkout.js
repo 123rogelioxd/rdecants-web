@@ -101,6 +101,15 @@ function _performCheckout(phoneNumber) {
     return;
   }
 
+  const availabilityError = Cart.availabilityError();
+  if (availabilityError) {
+    const available = _formatMl(availabilityError.availableMl);
+    const message = `Ajusta tu carrito: esta fragancia tiene ${available}ml disponibles en total.`;
+    _showMessage(message, 'error');
+    showToast(message);
+    return;
+  }
+
   const data = readCheckoutData();
   saveCheckoutData(data);
   _clearError();
@@ -533,6 +542,12 @@ function _selectedVariantStock(variant) {
 function _money(value) {
   const n = Number(value);
   return Number.isFinite(n) && n > 0 ? Math.round(n) : 0;
+}
+
+function _formatMl(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '0';
+  return Number.isInteger(number) ? String(number) : number.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
 }
 
 /* Normalize the discount argument to a list of { code, amount, total } with a

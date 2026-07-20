@@ -59,7 +59,7 @@ export function renderCart() {
       <p class="cart-section-label">Productos agregados</p>
       <div class="cart-product-list">
         ${items.map(item => {
-    const isMaxed = item.qty >= item.stock;
+    const isMaxed = !Cart.canIncrement(item.key);
     const label   = item.type === 'pack' ? 'Pack' : `${item.size}ml`;
     const subtotal = isValidPrice(item.price) ? item.price * item.qty : null;
 

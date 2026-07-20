@@ -20,7 +20,8 @@
       "Bash(Select-Object -ExpandProperty FullName)",
       "Bash(Sort-Object)",
       "Bash(git checkout *)",
-      "Bash(node --test)"
+      "Bash(node --test)",
+      "Bash(npm --version)"
     ]
   }
 }
