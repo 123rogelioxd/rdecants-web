@@ -11,6 +11,18 @@
 # /perfume/{slug} → product.html rewrite below).
 Options -MultiViews
 
+# ── MIME types the server does not know out of the box ──────
+# Hostinger/LiteSpeed served .avif as `text/plain`, which also meant it
+# fell outside the image cache rule and was re-downloaded on every visit.
+# <picture> selects a <source> from its `type` attribute BEFORE the fetch,
+# so the browser commits to the AVIF and then has to content-sniff a
+# text/plain response to render it — fragile, and fatal the moment a
+# nosniff policy is added. Declared explicitly instead.
+<IfModule mod_mime.c>
+    AddType image/avif .avif
+    AddType image/webp .webp
+</IfModule>
+
 <IfModule mod_headers.c>
     <FilesMatch "\.html$">
         Header set Cache-Control "no-cache, no-store, must-revalidate"
@@ -20,6 +32,12 @@ Options -MultiViews
 
     <FilesMatch "\.js$">
         Header set Cache-Control "no-cache"
+    </FilesMatch>
+
+    # The hero photograph is content-addressed by filename (the crop and the
+    # width are in the name), so it can be cached as hard as the CSS.
+    <FilesMatch "\.(avif|webp)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
     </FilesMatch>
 </IfModule>
 

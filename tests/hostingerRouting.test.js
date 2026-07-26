@@ -86,3 +86,37 @@ test('productPageUrl returns /perfume/{slug} that the rewrite handles', async ()
   const re = new RegExp('^/perfume/([^/]+)/?$');
   assert.ok(re.test('/perfume/sauvage-edt-dior'));
 });
+
+/* ── MIME types the hero depends on ───────────────────────────────
+   Caught on the live site, not locally: Hostinger/LiteSpeed served .avif as
+   `text/plain`, which also excluded it from the image cache rule so it was
+   re-downloaded on every visit. <picture> commits to a <source> from its
+   `type` attribute BEFORE fetching, so the browser then has to content-sniff
+   a text/plain response to render the hero — fragile today and broken the
+   moment a nosniff policy is added. */
+test('the server is told what an .avif is, and caches it like the other images', () => {
+  const ht = readFileSync(join(root, '.htaccess'), 'utf8');
+
+  assert.match(ht, /AddType\s+image\/avif\s+\.avif/, '.avif MIME type declared');
+  assert.match(ht, /AddType\s+image\/webp\s+\.webp/, '.webp MIME type declared');
+  assert.match(ht, /FilesMatch\s+"\\.\(avif\|webp\)\$"/, 'modern formats get a cache rule');
+  assert.match(ht, /max-age=31536000, immutable/, 'and it is the immutable one');
+});
+
+test('every hero format referenced by the markup is a format the server can name', () => {
+  const ht = readFileSync(join(root, '.htaccess'), 'utf8');
+  const html = readFileSync(join(root, 'index.html'), 'utf8');
+
+  const extensions = [...new Set(
+    [...html.matchAll(/\/assets\/hero\/[\w.-]+\.(\w+)/g)].map(m => m[1].toLowerCase()),
+  )];
+  assert.ok(extensions.length >= 3, `expected avif/webp/jpg, got ${extensions}`);
+
+  /* Apache/LiteSpeed knows jpg/png natively; anything newer must be declared. */
+  const nativelyKnown = new Set(['jpg', 'jpeg', 'png', 'gif']);
+  for (const ext of extensions) {
+    if (nativelyKnown.has(ext)) continue;
+    assert.match(ht, new RegExp(String.raw`AddType\s+image/${ext}\s+\.${ext}`),
+      `index.html serves .${ext} from /assets/hero but .htaccess never declares it`);
+  }
+});
