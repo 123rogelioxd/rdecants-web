@@ -217,9 +217,6 @@ function _buildCard(p, absoluteIndex, { guided, recById } = {}) {
   const guidanceBadge = getDisplayBadges(p, { context: 'catalog_card' })[0];
   const isUrgent = stockState.state === 'sold_out' || stockState.state === 'last_units';
   const genderHtml = _genderBadge(p);
-  const guidanceHtml = guidanceBadge
-    ? `<div class="card-guidance" aria-label="Ideal para"><span class="guidance-chip guidance-chip--${guidanceBadge.key}">${guidanceBadge.label}</span></div>`
-    : '';
   /* In guided mode the first three cards carry their numbered rank and
      their own reason, so the grid reads in the same order — and with the
      same labels — as the three picks on the finder page. Beyond the top
@@ -230,6 +227,14 @@ function _buildCard(p, absoluteIndex, { guided, recById } = {}) {
     : '';
   const whyHtml = rank >= 1 && rank <= 3 && rec?.reason
     ? `<p class="card-why">${rec.reason}</p>`
+    : '';
+  /* The guidance chip is derived from the product alone and knows nothing
+     about what was asked, so on a card that already carries the recommender's
+     reason it can contradict it ("Diario" under "la mejor coincidencia para la
+     noche"). The reason wins on those cards; the chip stays everywhere else. */
+  const showGuidanceChip = !whyHtml;
+  const guidanceHtml = guidanceBadge && showGuidanceChip
+    ? `<div class="card-guidance" aria-label="Ideal para"><span class="guidance-chip guidance-chip--${guidanceBadge.key}">${guidanceBadge.label}</span></div>`
     : '';
 
   const card = document.createElement('div');
@@ -357,8 +362,14 @@ function _syncKitPrompt(guided) {
     anchor.insertAdjacentElement('afterend', slot);
   }
 
+  /* The engine's own ranked rows go in — NOT the answers. The kit is built
+     from the recommendations themselves, so it cannot contain a product the
+     ranking excluded. Passing `answers` was how a themed kit got picked by
+     intent and filled with incompatible products. */
   import('../ui/discoverySets.js')
-    .then(({ renderContextualKit }) => renderContextualKit?.(slot, guided.answers))
+    .then(({ renderContextualKit }) => renderContextualKit?.(slot, {
+      recommendations: guided.recommendations ?? [],
+    }))
     .catch(() => { slot.remove(); });
 }
 

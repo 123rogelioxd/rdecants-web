@@ -26,7 +26,8 @@ import {
   productSignals,
   scoreProfileMatch,
 } from '../recommendations/taxonomy.js';
-import { getPriceForSize, formatPrice } from '../utils/prices.js';
+import { HIGH_MATCH_THRESHOLD, MIN_CONFIDENCE } from '../recommendations/engine.js';
+import { getPriceForSize, getVariantForSize, formatPrice } from '../utils/prices.js';
 import { Tracker } from '../tracking/tracker.js';
 import { primeImageStates } from './images.js';
 
@@ -145,6 +146,82 @@ function _scoreForTemplate(signals, template) {
     if (profile) score += scoreProfileMatch(profile, signals);
   });
   return score;
+}
+
+/* ── The personalized set ───────────────────────────────────────────
+   The templates above are EDITORIAL: hand-maintained themes scored against a
+   legacy taxonomy, with no idea who the customer is. That is fine on the home
+   page and on a PDP, where nobody has answered anything.
+
+   Inside the personalized catalog it was a defect. "Set Noches" was chosen by
+   a hardcoded intent map (occasion 'noche' → the 'noches' template) and filled
+   with the top 3 by keyword score — so a customer who answered Mujer was
+   offered Naxos, 9PM and Stronger With You Intensely, three products the
+   engine had just excluded for being masculine, with a button that added them
+   to the cart. A recommendation surface cannot contain a shortcut around its
+   own rules.
+
+   So in personalized mode there is no template at all. The set IS the top
+   three recommendations — the same rows the grid ranks, which have already
+   passed eligibility, gender, stock, the compatibility threshold and the
+   confidence gate — and it only exists when three of them can actually be
+   bought in the starter size. Fewer than three: no set.
+
+   The total is the sum of the SAME variants Cart.addBundle will resolve
+   (`getVariantForSize(product, itemSize)` at ratio 1), so the price shown is
+   the price charged. */
+
+export const PERSONALIZED_SET_SIZE_ML = 3;
+export const PERSONALIZED_SET_COUNT = 3;
+
+export function buildPersonalizedSet(recommendations = [], {
+  sizeMl = PERSONALIZED_SET_SIZE_ML,
+  count = PERSONALIZED_SET_COUNT,
+} = {}) {
+  if (!Array.isArray(recommendations)) return null;
+
+  const members = [];
+  for (const rec of recommendations) {
+    const product = rec?.product;
+    if (!product) continue;
+
+    /* Re-verify rather than trust the caller: this function must be safe to
+       call from any surface, and the whole point is that nothing reaches a
+       cart button without passing the same gates twice. */
+    const compatibility = Number(rec.compatibility ?? rec.matchScore);
+    const confidence = Number(rec.confidence);
+    if (!(compatibility >= HIGH_MATCH_THRESHOLD)) continue;
+    if (!(confidence >= MIN_CONFIDENCE)) continue;
+    if (!isSellable(product)) continue;
+
+    const variant = getVariantForSize(product, sizeMl);
+    if (!_isOrderableVariant(variant)) continue;
+    if (members.some(m => String(m.product.id) === String(product.id))) continue;
+
+    members.push({ product, variant });
+    if (members.length === count) break;
+  }
+
+  if (members.length < count) return null;
+
+  return {
+    id: 'recomendado',
+    name: `Tus ${count} recomendaciones`,
+    theme: 'Tus coincidencias más altas',
+    copy: `Las ${count} fragancias con mayor compatibilidad según tus respuestas, en ${sizeMl} ml.`,
+    products: members.map(m => m.product),
+    variants: members.map(m => m.variant),
+    total: members.reduce((sum, m) => sum + Number(m.variant.price), 0),
+    itemSize: sizeMl,
+    personalized: true,
+  };
+}
+
+function _isOrderableVariant(variant) {
+  if (!variant || variant.soldOut || !(Number(variant.availability) > 0)) return false;
+  if (!Number.isFinite(Number(variant.price)) || Number(variant.price) <= 0) return false;
+  const id = String(variant.variant_id ?? '').trim();
+  return Boolean(id) && id !== 'null' && id !== 'undefined';
 }
 
 /* ── Pure HTML builder ──────────────────────────────────────────── */
@@ -319,23 +396,16 @@ function _bindSetActions(root, sets) {
 /* ── Contextual kit prompt (post-recommendation only) ───────────── */
 
 /* Rendered by the catalog AFTER a guided recommendation — never as a standing
-   homepage section. Picks the ONE kit most relevant to the finder answers so
-   "prefer to try a few?" is offered exactly when that thought is live. */
-export async function renderContextualKit(slot, answers = {}) {
+   homepage section, and never from an editorial template.
+
+   `recommendations` are the engine's own ranked rows for the answers on
+   screen. If three of them cannot be bought in the starter size, nothing is
+   rendered: there is deliberately NO fallback to a themed kit here, because a
+   fallback is exactly how a masculine set ended up under a "Mujer" result. */
+export async function renderContextualKit(slot, { recommendations = [] } = {}) {
   if (!slot) return;
 
-  let products = [];
-  try {
-    const { CatalogProvider } = await import('../providers/catalog.js');
-    products = await CatalogProvider.getProducts();
-  } catch {
-    products = [];
-  }
-
-  const taste = Personalization.getTaste();
-  const eligible = filterDisliked(products, taste, { minCount: 3 });
-  const sets = resolveDiscoverySets(eligible);
-  const set = sets.length ? _pickSetForAnswers(sets, answers) : null;
+  const set = buildPersonalizedSet(recommendations);
 
   if (!set) { slot.hidden = true; slot.innerHTML = ''; return; }
 
@@ -374,12 +444,12 @@ function _bindCompactKitActions(root, set) {
   });
 }
 
-function _pickSetForAnswers(sets, answers = {}) {
-  const byId = id => sets.find(s => s.id === id);
-  const byOccasion = { cita: 'citas', noche: 'noches', oficina: 'oficina', dia: 'frescos' }[answers.occasion];
-  const byFamily = { fresco: 'frescos', dulce: 'citas', intenso: 'noches' }[answers.family];
-  return byId(byOccasion) || byId(byFamily) || byId('bestsellers') || sets[0];
-}
+/* `_pickSetForAnswers` used to live here: a hardcoded intent map
+   (occasion 'noche' → the 'noches' template, family 'dulce' → 'citas', …)
+   that chose an editorial kit from an answer and then ignored every other
+   answer the customer had given. Deleted — the personalized surface builds
+   its set from the ranking, and the editorial kits stay on the surfaces
+   where nobody has answered anything. */
 
 /* "Ver más kits" — reveal the kits hidden on mobile beyond MOBILE_VISIBLE_SETS. */
 function _bindShowMore(root) {

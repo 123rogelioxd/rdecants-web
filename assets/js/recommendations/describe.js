@@ -113,12 +113,41 @@ export function describeProduct(product) {
   return `${head} y ${words[words.length - 1]}`;
 }
 
-/* A two-sentence version for the finder results: what it smells like,
-   then when to wear it. Same data, more room. */
+/* A two-sentence version: what it smells like, then when to wear it.
+   Same data, more room.
+
+   NOT for personalized surfaces — see describeScent. The use-case sentence is
+   derived from the product's own notes and copy with no knowledge of what the
+   customer asked for, so on a screen that already answers "why this one" it
+   can flatly contradict it: Cloud was recommended for the night and then read
+   "Buena opción para el día a día" directly underneath. */
 export function describeForBeginner(product) {
   const base = describeProduct(product);
   const useCase = dominantUseCase(product);
   if (!base) return '';
   if (!useCase) return `${base}.`;
   return `${base}. Buena opción para ${useCase.short}.`;
+}
+
+/* Scent only — what it smells like and how it performs, never when to wear it.
+   This is the description personalized surfaces use: the recommender's own
+   explanation owns the context, and nothing here can disagree with it because
+   nothing here makes a context claim. Returns '' when the scores and notes
+   support no adjective at all, rather than falling back to a use case. */
+export function describeScent(product) {
+  const words = [];
+
+  const family = dominantFamily(product);
+  if (family && FAMILY_ADJECTIVE[family]) words.push(FAMILY_ADJECTIVE[family]);
+
+  const scores = _scores(product);
+  const character = CHARACTER_RULES.find(rule => _num(scores[rule.key]) >= rule.min);
+  if (character) words.push(character.word);
+
+  const performance = PERFORMANCE_RULES.find(rule => _num(scores[rule.key]) >= rule.min);
+  if (performance) words.push(performance.word);
+
+  if (!words.length) return '';
+  if (words.length === 1) return `${words[0]}.`;
+  return `${words.slice(0, -1).join(', ')} y ${words[words.length - 1]}.`;
 }

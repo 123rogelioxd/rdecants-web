@@ -265,5 +265,15 @@ test('kits are rendered contextually after a guided recommendation', () => {
   const kits = read('assets/js/ui/discoverySets.js');
   assert.ok(render.includes('renderContextualKit'), 'catalog renders the contextual kit after guided results');
   assert.ok(kits.includes('export async function renderContextualKit'), 'kits module exposes the contextual entry');
-  assert.ok(kits.includes('_pickSetForAnswers'), 'the kit shown matches the finder answers');
+
+  /* The kit is built from the RANKING, not from an intent map. `_pickSetForAnswers`
+     chose an editorial template from a single answer (occasion 'noche' → the
+     'noches' kit) and ignored the rest, which is how a "Mujer" result ended up
+     offering three masculine fragrances with an add-to-cart button. */
+  const executable = kits.replace(/\/\*[\s\S]*?\*\//g, ' ');
+  assert.ok(!executable.includes('_pickSetForAnswers'),
+    'the intent→template map must not come back');
+  assert.ok(kits.includes('buildPersonalizedSet'), 'the contextual kit is built from the recommendations');
+  assert.match(render, /renderContextualKit\?\.\(slot, \{\s*recommendations:/s,
+    'the catalog passes the ranked rows, not the raw answers');
 });

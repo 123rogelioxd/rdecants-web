@@ -40,7 +40,7 @@ import {
   MAX_RESULTS,
 } from './engine.js';
 import { getMatchTier } from './reasoning.js';
-import { describeForBeginner } from './describe.js';
+import { describeScent } from './describe.js';
 import { getVariantForSize } from '../utils/prices.js';
 import { getGenderDisplay } from '../utils/gender.js';
 
@@ -250,7 +250,13 @@ export function getFinderResult(answers = {}, products = []) {
            different jobs and let the second and third card be chosen by a
            different rule than the first. It is now just the position. */
         role: `rank${pick.rank}`,
-        blurb: describeForBeginner(pick.product),
+        /* Scent only, never a use case. describeForBeginner appends "Buena
+           opción para {use case}" derived from the product's own notes with no
+           knowledge of the answers, so under a card that says "la mejor
+           coincidencia para la noche" it printed "Buena opción para el día a
+           día". On this surface the reason owns the context and the
+           description says what it smells like. */
+        blurb: describeScent(pick.product),
         reasons: [pick.reason],
         matchScore: pick.compatibility,
         matchTier: getMatchTier(pick.compatibility, 100),
