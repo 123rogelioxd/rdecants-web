@@ -293,7 +293,11 @@ function _syncGuideState(guided, count = 0) {
 
   el.querySelector('#cgs-clear')?.addEventListener('click', () => window.__rd?.ui?.clearGuide?.());
   el.querySelector('#cgs-adjust')?.addEventListener('click', () => {
-    document.getElementById('guide')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    /* The questions live on their own page now; only scroll in place if a
+       guide bar happens to be mounted on this page. */
+    const inPage = document.getElementById('guide');
+    if (inPage) inPage.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    else window.location.href = '/elegir.html';
   });
 }
 

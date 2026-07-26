@@ -14,6 +14,13 @@
   box-sizing: border-box;
 }
 
+/* The [hidden] attribute is how every module here toggles visibility, but a
+   component that sets `display: flex/grid/block` outranks the UA rule and
+   silently un-hides the element. This sheet has collected scoped guards for
+   that same bug three times (cart drawer, filter bar, filter drawer); state
+   this once, globally, instead of patching the next occurrence. */
+[hidden] { display: none !important; }
+
 /* ── Base ────────────────────────────────────────────────────── */
 html {
   scroll-behavior: smooth;
@@ -22,17 +29,18 @@ html {
 }
 
 body {
-  background: var(--black);
-  color: var(--white);
+  background: var(--bg);
+  color: var(--ink);
   font-family: var(--font-sans);
-  font-size: var(--text-md);
+  font-size: 16px;
   line-height: 1.6;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   scroll-behavior: smooth;
-  scroll-padding-top: 80px;
   min-width: 0;
 }
+
+html { scroll-padding-top: calc(var(--header-h) + 16px); }
 
 body.cart-open {
   overflow: hidden;

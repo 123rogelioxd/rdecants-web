@@ -1,117 +1,249 @@
 /* =============================================================
-   Guided-catalog information architecture (Phase 1).
+   Progressive-disclosure information architecture (2026-07 redesign).
 
-   The home page is ONE guided catalog: a compact hero, a guide bar
-   (intent chips + opt-in stepper finder) that re-ranks the SAME catalog
-   grid in place directly below it, then a concrete how-it-works/trust
-   strip, and the FAQ. The standalone finder, mood rails and kit
-   sections are gone; their engines are reused contextually (finder
-   ranking drives the grid; kits appear only after a recommendation;
-   mood pages survive as /mood/{slug} landing pages).
+   The old home was one page that tried to do everything at once:
+   brand, guided search, six intents, a questionnaire, the full 73-SKU
+   catalog with search/sort/filters, four trust blocks and a six-item
+   FAQ. The problem was never the amount of information — it was that
+   every decision arrived on the same screen.
 
-   Static source assertions (pattern mirrors cacheFreshness/mobileCro).
+   The storefront is now three surfaces:
+     • /                discovery: hero, best sellers, four intents,
+                        how it works, authenticity, four questions
+     • /catalogo.html   the store: search, filters, sort, all products
+     • /elegir.html     the guided three-question finder
+
+   These are static source assertions (same pattern as
+   cacheFreshness / mobileCro): cheap guards that the split holds.
    ============================================================= */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = path => readFileSync(join(root, path), 'utf8');
 
-/* ── A. Removed competing discovery surfaces ─────────────────── */
+/* ── A. The three surfaces exist and are separate ────────────── */
 
-test('home no longer contains standalone finder / mood-rails / kit sections', () => {
-  const html = read('index.html');
-  assert.doesNotMatch(html, /id="assistant"/, 'standalone finder section removed');
-  assert.doesNotMatch(html, /id="recommendation-rails"/, 'mood rails section removed');
-  assert.doesNotMatch(html, /id="discovery-sets"/, 'standalone kits section removed');
-  assert.doesNotMatch(html, /id="discovery"/, 'anchor discovery section removed');
-  assert.doesNotMatch(html, /id="taste-builder"/, 'taste-builder section removed');
-  assert.doesNotMatch(html, /id="smart-bundles"/, 'smart-bundles section removed');
+test('the storefront is split into home, catalog and finder pages', () => {
+  for (const page of ['index.html', 'catalogo.html', 'elegir.html']) {
+    assert.ok(existsSync(join(root, page)), `${page} exists`);
+  }
 });
 
-test('home no longer contains the separate how-it-works / authenticity sections', () => {
+test('the home carries no catalog grid and none of its controls', () => {
   const html = read('index.html');
-  /* Their concrete content is folded into the trust strip + FAQ, near the
-     first commercial decision. */
-  assert.doesNotMatch(html, /id="how-it-works"/, 'standalone how-it-works removed');
-  assert.doesNotMatch(html, /id="authenticity"/, 'standalone authenticity removed');
+  assert.doesNotMatch(html, /id="products-grid"/, 'catalog grid is not on the home');
+  assert.doesNotMatch(html, /id="sf-bar"/, 'filter bar is not on the home');
+  assert.doesNotMatch(html, /id="sf-sort"/, 'sort control is not on the home');
+  assert.doesNotMatch(html, /id="sf-filter-btn"/, 'filter button is not on the home');
 });
 
-/* ── B. Surviving guided-catalog surfaces + order ────────────── */
+test('the catalog page owns the grid, and the finder page owns the questions', () => {
+  const catalog = read('catalogo.html');
+  assert.match(catalog, /id="products-grid"/, 'catalog page has the grid');
+  assert.match(catalog, /id="catalog"/, 'catalog page has the scroll target');
 
-test('home has the guide bar, trust strip, catalog and FAQ', () => {
-  const html = read('index.html');
-  assert.match(html, /id="guide"/, 'guide bar present');
-  assert.match(html, /class="trust-strip"/, 'trust strip present');
-  assert.match(html, /id="catalog"/, 'catalog present');
-  assert.match(html, /id="faq"/, 'FAQ present');
+  const finder = read('elegir.html');
+  assert.match(finder, /id="finder-root"/, 'finder page has the stepper mount');
+  assert.doesNotMatch(finder, /id="products-grid"/, 'finder page is not a second catalog');
 });
 
-test('order is hero -> guide bar -> catalog -> trust strip -> faq', () => {
+/* ── B. Home section order and content ───────────────────────── */
+
+test('home order is hero -> bestsellers -> intents -> how it works -> authenticity -> faq', () => {
   const html = read('index.html');
-  /* Guidance and browsing must read as ONE surface, so the guide bar sits
-     DIRECTLY above the catalog with nothing between them. The trust/how-it-works
-     strip moves below the collection (reassurance is also placed at the actual
-     decision points — cart and product detail). */
-  const hero = html.indexOf('class="hero"');
-  const guide = html.indexOf('id="guide"');
-  const catalog = html.indexOf('id="catalog"');
-  const trust = html.indexOf('class="trust-strip"');
-  const faq = html.indexOf('id="faq"');
-  assert.ok(hero > -1 && guide > -1 && trust > -1 && catalog > -1 && faq > -1, 'all present');
-  assert.ok(hero < guide, 'hero before guide bar');
-  assert.ok(guide < catalog, 'guide bar directly before catalog');
-  assert.ok(catalog < trust, 'catalog before trust strip');
-  assert.ok(trust < faq, 'trust strip before faq');
+  const at = needle => html.indexOf(needle);
+
+  const hero          = at('class="hero"');
+  const bestsellers   = at('id="mas-vendidos"');
+  const intents       = at('id="intenciones"');
+  const howItWorks    = at('id="como-funciona"');
+  const authenticity  = at('id="autenticidad"');
+  const faq           = at('id="faq"');
+
+  for (const [name, index] of Object.entries({ hero, bestsellers, intents, howItWorks, authenticity, faq })) {
+    assert.ok(index > -1, `${name} present`);
+  }
+
+  assert.ok(hero < bestsellers, 'hero before best sellers');
+  assert.ok(bestsellers < intents, 'best sellers is the first commercial section');
+  assert.ok(intents < howItWorks, 'intents before how it works');
+  assert.ok(howItWorks < authenticity, 'how it works before authenticity');
+  assert.ok(authenticity < faq, 'authenticity before the FAQ');
 });
 
-test('trust strip makes concrete, process-backed claims (not a generic icon strip)', () => {
+test('the hero states the promise, one primary action and three trust signals', () => {
   const html = read('index.html');
-  assert.match(html, /frascos? originales/i, 'authenticity claim');
-  assert.match(html, /momento/i, 'prepared-to-order claim');
-  assert.match(html, /5 ml/i, 'try-then-upgrade claim');
-  assert.match(html, /WhatsApp/i, 'payment/shipping via WhatsApp claim');
+  assert.match(html, /Prueba perfumes originales antes de comprar la botella\./);
+  assert.match(html, /Descubre tu fragancia en decants de 3, 5 y 10 ml\./);
+  assert.match(html, /Ver los más vendidos/, 'primary action');
+  assert.match(html, /Ayúdame a elegir/, 'secondary action');
+
+  const trust = html.slice(html.indexOf('hero-trust'), html.indexOf('</ul>', html.indexOf('hero-trust')));
+  assert.match(trust, /100% originales/);
+  assert.match(trust, /Preparados al momento/);
+  assert.match(trust, /Envíos a todo México/);
 });
 
-/* ── C. Footer no longer points at removed sections ──────────── */
-
-test('footer links point to live sections only (no dead #assistant / #discovery-sets)', () => {
+test('the best-seller rail links to the full catalog instead of inlining it', () => {
   const html = read('index.html');
-  assert.doesNotMatch(html, /href="#assistant"/, 'no dead #assistant anchor');
-  assert.doesNotMatch(html, /href="#discovery-sets"/, 'no dead #discovery-sets anchor');
-  assert.doesNotMatch(html, /href="#smart-bundles"/, 'no dead #smart-bundles anchor');
-  assert.match(html, /href="#guide"/, 'footer/nav points to the guide bar');
-  assert.match(html, /href="#catalog"/, 'footer points to the catalog');
+  assert.match(html, /id="bestsellers-grid"/, 'rail mount present');
+  assert.match(html, /Ver catálogo completo/, 'explicit path to the whole catalog');
+  assert.match(html, /href="\/catalogo\.html"/, 'the link is a real route');
 });
 
-/* ── D. app.js mounts the guided catalog, not the removed modules ─ */
+test('exactly four shopping intents are offered, each with a destination', () => {
+  const html = read('index.html');
+  const grid = html.slice(html.indexOf('id="intent-grid"'), html.indexOf('</ul>', html.indexOf('id="intent-grid"')));
 
-test('app.js mounts the guide bar and no longer mounts removed home modules', () => {
+  assert.equal((grid.match(/class="intent-tile"/g) ?? []).length, 4, 'four tiles, no more');
+  assert.match(grid, /Para diario/);
+  assert.match(grid, /Para citas/);
+  assert.match(grid, /Para la noche/);
+  assert.match(grid, /Para regalar/);
+
+  /* Every tile leads somewhere real: a pre-filtered catalog or the finder. */
+  const hrefs = [...grid.matchAll(/href="([^"]+)"/g)].map(m => m[1]);
+  assert.equal(hrefs.length, 4, 'every tile is a link');
+  for (const href of hrefs) {
+    assert.ok(
+      href.startsWith('/catalogo.html?') || href === '/elegir.html',
+      `intent destination "${href}" is filtered results or the guided flow`,
+    );
+  }
+});
+
+test('the guided flow is offered once more, as a quiet secondary prompt', () => {
+  const html = read('index.html');
+  assert.match(html, /¿No sabes cuál elegir\? Responde tres preguntas\./);
+});
+
+test('how it works is three short steps', () => {
+  const html = read('index.html');
+  const steps = html.slice(html.indexOf('steps-grid'), html.indexOf('</ol>', html.indexOf('steps-grid')));
+  assert.equal((steps.match(/class="step-card"/g) ?? []).length, 3, 'exactly three steps');
+  assert.match(steps, /Elige tu perfume/);
+  assert.match(steps, /Selecciona 3, 5 o 10 ml/);
+  assert.match(steps, /Envía tu pedido por WhatsApp/);
+});
+
+test('authenticity is stated once, in one compact section', () => {
+  const html = read('index.html');
+  assert.equal((html.match(/id="autenticidad"/g) ?? []).length, 1);
+  assert.match(html, /frasco original/i, 'the actual claim');
+  assert.match(html, /lote/i, 'the customer can ask for lot evidence');
+  /* The old page repeated the same promise in a four-item trust strip
+     as well as a separate authenticity block. */
+  assert.doesNotMatch(html, /class="trust-strip"/, 'no duplicate trust strip on the home');
+});
+
+test('the home FAQ keeps only the four questions that block a first order', () => {
+  const html = read('index.html');
+  const list = html.slice(html.indexOf('class="faq-list'), html.indexOf('</div>', html.indexOf('class="faq-list')));
+  assert.equal((list.match(/class="faq-item"/g) ?? []).length, 4, 'four questions, no more');
+  assert.match(list, /¿Los perfumes son originales\?/);
+  assert.match(list, /¿Qué tamaño me conviene\?/);
+  assert.match(list, /¿Cómo pago y recibo mi pedido\?/);
+  assert.match(list, /¿Qué pasa si algo llega mal\?/);
+
+  /* The rest moved to a dedicated help page rather than disappearing. */
+  assert.ok(existsSync(join(root, 'ayuda.html')), 'help page exists');
+  assert.match(html, /href="\/ayuda\.html"/, 'the home points at it');
+});
+
+/* ── C. Header and footer ────────────────────────────────────── */
+
+test('the header holds only logo, two destinations, search and cart', () => {
+  const html = read('index.html');
+  const header = html.slice(html.indexOf('<header class="header">'), html.indexOf('</header>'));
+
+  assert.match(header, /class="header-logo"/);
+  assert.match(header, /href="\/catalogo\.html"/);
+  assert.match(header, /href="\/elegir\.html"/);
+  assert.match(header, /id="btn-hs-mobile"/, 'search is an icon');
+  assert.match(header, /id="cart-count"/, 'cart shows a quantity');
+  assert.equal((header.match(/class="header-nav-link"/g) ?? []).length, 2, 'exactly two nav links');
+
+  /* The permanently visible search field is gone; the input lives in the
+     overlay panel outside the header. */
+  assert.doesNotMatch(header, /id="hs-input"/, 'no always-on search field in the header');
+  assert.match(html, /class="hs-wrap"[^>]*id="hs-wrap"/, 'search overlay exists');
+});
+
+test('footer links point to live routes only', () => {
+  const html = read('index.html');
+  const footer = html.slice(html.indexOf('<footer class="footer">'));
+
+  assert.match(footer, /wa\.me\/5219516513018/, 'WhatsApp');
+  assert.match(footer, /href="\/catalogo\.html"/, 'Catálogo');
+  assert.match(footer, /href="\/elegir\.html"/, 'Ayúdame a elegir');
+  assert.match(footer, /R Supply/, 'legal line kept');
+
+  for (const dead of ['#assistant', '#discovery-sets', '#smart-bundles', '#taste-builder', '#guide']) {
+    assert.ok(!footer.includes(`href="${dead}"`), `no dead ${dead} anchor`);
+  }
+});
+
+/* ── D. Entry points mount the right things ──────────────────── */
+
+test('app.js is the discovery entry point and mounts no catalog machinery', () => {
   const app = read('assets/js/app.js');
-  assert.ok(app.includes("setupGuide('guide')"), 'guide bar mounted');
-  assert.ok(!app.includes('setupAssistant('), 'standalone finder not mounted');
-  assert.ok(!app.includes("Recommendations.render('recommendation-rails')"), 'mood rails not mounted');
-  assert.ok(!app.includes("setupDiscoverySets('discovery-sets')"), 'standalone kits not mounted');
+  assert.ok(app.includes('renderBestsellers'), 'home renders the best-seller rail');
+  assert.ok(!app.includes('renderProducts'), 'home does not render the catalog grid');
+  assert.ok(!app.includes('setupGuide('), 'the guide bar is gone with the merged page');
   assert.ok(!app.includes('./ui/tasteBuilder.js'), 'taste builder not imported');
   assert.ok(!app.includes('./ui/bundles.js'), 'smart bundles not imported');
 });
 
-test('section_viewed tracking targets the guided-catalog sections, no dead ids', () => {
-  const app = read('assets/js/app.js');
-  const start = app.indexOf('const SECTIONS = [');
-  const block = app.slice(start, app.indexOf(']', start));
-  assert.ok(start > -1, 'SECTIONS array present');
-  assert.ok(block.includes("'guide'"), 'guide bar tracked');
-  assert.ok(block.includes("'catalog'"), 'catalog tracked');
-  assert.ok(!block.includes("'recommendation-rails'"), 'no dead mood-rails id');
-  assert.ok(!block.includes("'discovery-sets'"), 'no dead kit-section id');
-  assert.ok(!block.includes("'taste-builder'"), 'no dead taste-builder id');
+test('the catalog page mounts the full catalog and honours URL guidance', () => {
+  const page = read('assets/js/pages/catalog.js');
+  assert.ok(page.includes('renderProducts'), 'grid rendered');
+  assert.ok(page.includes('readGuideFromQuery'), 'intent / answers read from the URL');
+  assert.ok(page.includes('SearchBar.applyGuide'), 'guidance re-ranks the grid in place');
+  assert.ok(page.includes('SearchBar.applyQuery'), 'a shared search link lands filtered');
 });
 
-/* ── E. Kits are contextual (post-recommendation), never a standing section ─ */
+test('the finder page reuses the shared questions and hands off to the catalog', () => {
+  const page = read('assets/js/pages/finder.js');
+  assert.ok(page.includes('ASSISTANT_QUESTIONS'), 'reuses the one question set');
+  assert.ok(page.includes('buildCatalogUrl'), 'results are the re-ranked catalog, not a third view');
+  assert.ok(!page.includes('rankCatalogForAnswers'), 'no second ranking implementation');
+});
+
+test('section_viewed tracking targets the sections that actually exist', () => {
+  const app = read('assets/js/app.js');
+  const start = app.indexOf('const SECTIONS = [');
+  assert.ok(start > -1, 'SECTIONS array present');
+  const block = app.slice(start, app.indexOf(']', start));
+  const html = read('index.html');
+
+  for (const id of [...block.matchAll(/'([a-z-]+)'/g)].map(m => m[1])) {
+    assert.match(html, new RegExp(`id="${id}"`), `tracked section #${id} exists on the home`);
+  }
+});
+
+/* ── E. Old deep links still resolve ─────────────────────────── */
+
+test('legacy #catalog / #guide links are routed to the pages that replaced them', () => {
+  const app = read('assets/js/app.js');
+  assert.ok(app.includes("'#catalog': '/catalogo.html'"), '#catalog goes to the catalog page');
+  assert.ok(app.includes("'#guide': '/elegir.html'"), '#guide goes to the finder page');
+});
+
+test('clean URLs for the new pages are routed by every host config', () => {
+  const htaccess = read('.htaccess');
+  assert.match(htaccess, /RewriteRule\s+\^catalogo\/\?\$\s+catalogo\.html/);
+  assert.match(htaccess, /RewriteRule\s+\^elegir\/\?\$\s+elegir\.html/);
+
+  const redirects = read('_redirects');
+  assert.match(redirects, /\/catalogo\s+\/catalogo\.html\s+200/);
+  assert.match(redirects, /\/elegir\s+\/elegir\.html\s+200/);
+});
+
+/* ── F. Kits stay contextual (unchanged behaviour) ───────────── */
 
 test('kits are rendered contextually after a guided recommendation', () => {
   const render = read('assets/js/catalog/render.js');

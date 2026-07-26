@@ -266,22 +266,64 @@ test('secondary filters (gender/house/price/scent) live behind one Filtrar panel
   assert.match(s, /key:\s*'price'/);
 });
 
-/* ── D. Guided catalog: the guide bar drives the catalog in place ──
-   The standalone finder/rails/kits sections are gone; the guide bar (intent
-   chips + compact finder) sits ABOVE the catalog and re-ranks it via
-   SearchBar.applyGuide. */
+/* ── D. Guided catalog: guidance arrives from its own page ────────
+   The finder now lives at /elegir.html and the home's intent tiles deep-link
+   into the catalog. Both hand a preset answer set to the SAME ranking engine,
+   which re-ranks the grid in place — there is no separate results view. */
 
-test('the guide bar precedes and drives the catalog (no standalone finder section)', () => {
-  const html = read('index.html');
-  const guide = html.indexOf('id="guide"');
-  const catalog = html.indexOf('id="catalog"');
-  assert.ok(guide > -1 && catalog > -1, 'guide bar and catalog both present');
-  assert.ok(guide < catalog, 'guide bar comes before the catalog it controls');
-  assert.equal(html.indexOf('id="assistant"'), -1, 'no standalone finder section on the home page');
+test('the catalog page accepts guidance from the URL and ranks in place', () => {
+  const page = read('assets/js/pages/catalog.js');
+  assert.ok(page.includes('readGuideFromQuery'), 'intent / answers are read from the URL');
+  assert.ok(page.includes('SearchBar.applyGuide'), 'guidance re-ranks the grid in place');
 
   const s = read('assets/js/ui/searchbar.js');
   assert.ok(/applyGuide\(answers\)/.test(s), 'SearchBar exposes applyGuide for the finder ranking');
+});
 
-  const g = read('assets/js/ui/guide.js');
-  assert.ok(g.includes('SearchBar.applyGuide'), 'the guide bar drives the catalog in place');
+test('intents are one preset answer set shared by the tiles, the URL and the finder', async () => {
+  const { getIntentAnswers, getIntentHref, readGuideFromQuery, buildCatalogUrl } =
+    await import('../assets/js/catalog/intents.js');
+
+  /* An intent is nothing but preset finder answers — never a second taxonomy. */
+  assert.deepEqual(getIntentAnswers('noche'), { occasion: 'noche' });
+  assert.deepEqual(getIntentAnswers('diario'), { occasion: 'dia' });
+
+  /* "Para regalar" carries no scent signal of its own, so it must open the
+     guided flow instead of pretending to filter. */
+  assert.equal(getIntentAnswers('regalo'), null);
+  assert.equal(getIntentHref('regalo'), '/elegir.html');
+  assert.equal(getIntentHref('noche'), '/catalogo.html?intent=noche');
+
+  /* The URL contract round-trips through the same answer shape. */
+  assert.deepEqual(readGuideFromQuery('?intent=citas'), { occasion: 'cita' });
+  assert.deepEqual(
+    readGuideFromQuery('?family=fresco&occasion=dia&gender=hombre'),
+    { family: 'fresco', occasion: 'dia', gender: 'hombre' },
+  );
+  assert.equal(readGuideFromQuery('?utm_source=ig'), null, 'unrelated params never fabricate guidance');
+  assert.equal(readGuideFromQuery(''), null);
+
+  assert.equal(
+    buildCatalogUrl({ family: 'dulce', occasion: 'noche' }),
+    '/catalogo.html?family=dulce&occasion=noche',
+  );
+  assert.equal(buildCatalogUrl({}), '/catalogo.html');
+});
+
+test('the home rail never advertises a sold-out product', async () => {
+  const { selectBestsellers, BESTSELLER_LIMIT } =
+    await import('../assets/js/ui/bestsellers.js');
+
+  const list = [
+    P('out', { stock: 0, featured: true }),
+    P('live', { stock: 5, featured: true }),
+    P('plain'),
+  ];
+  const picks = selectBestsellers(list).map(p => p.id);
+  assert.ok(!picks.includes('out'), 'sold-out SKUs are excluded, not shown as dead cards');
+  assert.equal(picks[0], 'live', 'the commercial order still applies to what remains');
+
+  const many = Array.from({ length: 30 }, (_, i) => P(`p${i}`));
+  assert.equal(selectBestsellers(many).length, BESTSELLER_LIMIT, 'the home caps at eight');
+  assert.deepEqual(selectBestsellers(undefined), []);
 });

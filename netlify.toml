@@ -47,10 +47,36 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
+# ── Clean URLs for the three top-level experiences ──────────────────────────
+[[redirects]]
+  from   = "/catalogo"
+  to     = "/catalogo.html"
+  status = 200
+
+[[redirects]]
+  from   = "/elegir"
+  to     = "/elegir.html"
+  status = 200
+
+[[redirects]]
+  from   = "/ayudame-a-elegir"
+  to     = "/elegir.html"
+  status = 200
+
+[[redirects]]
+  from   = "/ayuda"
+  to     = "/ayuda.html"
+  status = 200
+
 # ── Slug routes for product detail pages ────────────────────────────────────
 [[redirects]]
   from   = "/perfume/*"
   to     = "/product.html"
+  status = 200
+
+[[redirects]]
+  from   = "/mood/*"
+  to     = "/mood.html"
   status = 200
 
 # ── Redirects — SPA-safe (not needed for MPA but future-proof) ───────────────

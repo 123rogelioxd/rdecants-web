@@ -1,47 +1,90 @@
 /* =============================================================
    RDECANTS — DESIGN TOKENS
    Single source of truth for all CSS custom properties.
+
+   Editorial light system: warm ivory paper, ink type, one deep-wine
+   accent. The accent is deliberately scarce — primary actions, active
+   states and small marks only; it must never paint whole sections.
+   Dark ink surfaces (--dark) are reserved for the footer and the odd
+   contrast band, never for the page as a whole.
+
+   Legacy aliases (--black / --white / --accent / --muted …) are kept
+   and REPOINTED at the new system so the existing component sheet
+   inherits the theme instead of being rewritten selector by selector.
+   Their names describe their ROLE in the old dark theme (--white was
+   the strong foreground, --black the text sitting on an accent fill),
+   so the mapping is an inversion, not a rename.
    ============================================================= */
 
 :root {
 
-  /* ── Colors ─────────────────────────────────────────── */
-  --black:  #030303;
-  --deep:   #070707;
-  --card:   #0c0c0c;
+  /* ── Core palette ───────────────────────────────────── */
+  --bg:          #f4f1ea;   /* warm ivory page */
+  /* The recessed band is only two steps darker than the page: any deeper and
+     --ink-soft (the brief's #6f6b64) drops below 4.5:1 on top of it. */
+  --bg-sunk:     #f1ede4;   /* recessed band / alternating section */
+  --surface:     #fffefa;   /* card + panel */
+  --surface-hi:  #ffffff;   /* raised / hovered card */
 
-  --white:  #ffffff;
-  --muted:  rgba(255, 255, 255, 0.65);
-  --soft:   rgba(255, 255, 255, 0.45);
+  --ink:         #191816;   /* primary text */
+  --ink-soft:    #6f6b64;   /* secondary text */
+  /* Captions sit at 11–12px, so this is set by the 4.5:1 floor on --surface
+     rather than by taste — a lighter grey fails on the card face. */
+  --ink-faint:   #767168;   /* captions, meta */
 
-  --accent: #c9a96e;   /* luxury gold */
-  --accent-strong: #d9bd85; /* brighter gold for hover/emphasis */
-  --accent-soft:   rgba(201, 169, 110, 0.14); /* gold tint fill */
-  --accent-line:   rgba(201, 169, 110, 0.32); /* gold hairline border */
+  --line:        #dcd6cc;   /* soft border */
+  --line-soft:   #e8e3da;   /* hairline inside cards */
 
-  --danger:      #ff4d4f;
-  --danger-soft: rgba(255, 77, 79, 0.15);
+  --wine:        #7a2432;   /* identifiable accent */
+  --wine-hover:  #5c1823;
+  --wine-tint:   #f3e9e9;   /* faint accent wash — chips, active fills */
+  --wine-line:   #e0c8cb;   /* accent hairline */
 
-  /* ── Surfaces (layered dark system) ─────────────────── */
-  --surface-0: #030303;   /* page base (=black) */
-  --surface-1: #070707;   /* raised section (=deep) */
-  --surface-2: #0c0c0c;   /* card (=card) */
-  --surface-raised: #111111; /* hover / elevated card */
-  --overlay-scrim: rgba(3, 3, 3, 0.72); /* modal/drawer backdrop */
+  --dark:        #171614;   /* dark sections + footer */
+  --dark-soft:   #2a2825;   /* borders inside dark sections */
+  --on-dark:     #f4f1ea;   /* text on dark sections */
+  --on-dark-soft: rgba(244, 241, 234, 0.62);
+
+  --pure-white:  #ffffff;
+
+  /* ── Legacy aliases (repointed — see header note) ───── */
+  --black:  var(--bg);          /* old page base  → ivory page */
+  --deep:   var(--bg-sunk);     /* old raised bg  → sunk band  */
+  --card:   var(--surface);
+  --card-bg: var(--surface);
+
+  --white:  var(--ink);         /* old strong foreground → ink   */
+  --muted:  var(--ink-soft);
+  --soft:   var(--ink-faint);
+
+  --accent:        var(--wine);
+  --accent-strong: var(--wine-hover);
+  --accent-soft:   var(--wine-tint);
+  --accent-line:   var(--wine-line);
+
+  --danger:      #b3261e;
+  --danger-soft: rgba(179, 38, 30, 0.10);
+
+  /* ── Surfaces (layered light system) ────────────────── */
+  --surface-0: var(--bg);
+  --surface-1: var(--bg-sunk);
+  --surface-2: var(--surface);
+  --surface-raised: var(--surface-hi);
+  --overlay-scrim: rgba(23, 22, 20, 0.42);
 
   /* ── Text hierarchy (semantic aliases) ──────────────── */
-  --text-strong: #ffffff;                 /* headings, key values */
-  --text:        rgba(255, 255, 255, 0.65); /* body (=muted) */
-  --text-soft:   rgba(255, 255, 255, 0.45); /* captions (=soft) */
-  --text-on-gold: #030303;                /* text over gold fills */
+  --text-strong:  var(--ink);
+  --text:         var(--ink-soft);
+  --text-soft:    var(--ink-faint);
+  --text-on-gold: var(--pure-white);   /* text sitting on an accent fill */
 
   /* ── State: WhatsApp / success / low-stock warning ──── */
-  --wa:          #25d366;
-  --wa-strong:   #1ebe5b;
-  --success:     #4ade80;
-  --success-soft: rgba(74, 222, 128, 0.14);
-  --warn:        #e0a53d;   /* low-stock amber (not neon) */
-  --warn-soft:   rgba(224, 165, 61, 0.14);
+  --wa:          #1f9d55;
+  --wa-strong:   #17814a;
+  --success:     #1f7a4d;
+  --success-soft: rgba(31, 122, 77, 0.10);
+  --warn:        #9a6410;   /* readable amber on ivory */
+  --warn-soft:   rgba(154, 100, 16, 0.10);
 
   /* ── Typography scale ───────────────────────────────── */
   --text-xs:  12px;
@@ -49,13 +92,13 @@
   --text-md:  15px;
   --text-lg:  18px;
   --text-xl:  24px;
-  --text-2xl: 36px;
-  --text-3xl: 56px;
-  --text-4xl: 80px;
+  --text-2xl: 34px;
+  --text-3xl: 48px;
+  --text-4xl: 64px;
 
   /* ── Font families ──────────────────────────────────── */
-  --font-serif: 'Cormorant Garamond', serif;
-  --font-sans:  'DM Sans', system-ui, sans-serif;
+  --font-serif: 'Cormorant Garamond', 'Iowan Old Style', Georgia, serif;
+  --font-sans:  'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
   /* ── Spacing system ─────────────────────────────────── */
   --space-1: 8px;
@@ -63,38 +106,51 @@
   --space-3: 20px;
   --space-4: 32px;
   --space-5: 48px;
-  --space-6: 80px;
+  --space-6: 64px;
+
+  /* ── Layout rhythm ──────────────────────────────────── */
+  --container:  1280px;
+  --gutter:     20px;   /* mobile — stepped up in the media queries below */
+  --section-y:  64px;   /* space between sections */
+  --header-h:   60px;   /* sticky header — anchors and sticky bars derive from it */
 
   /* ── Borders ────────────────────────────────────────── */
-  --border:    rgba(255, 255, 255, 0.08);
-  --border-hl: rgba(255, 255, 255, 0.14);
+  --border:    var(--line);
+  --border-hl: #cfc7ba;
 
-  /* ── Border radius ──────────────────────────────────── */
+  /* ── Border radius (moderate — 10–14px) ─────────────── */
   --radius-sm: 10px;
-  --radius-md: 18px;
-  --radius-lg: 28px;
+  --radius-md: 12px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
 
-  /* ── Shadows ────────────────────────────────────────── */
-  --shadow-sm: 0 10px 30px rgba(0, 0, 0, 0.35);
-  --shadow-md: 0 20px 60px rgba(0, 0, 0, 0.55);
-  --shadow-lg: 0 40px 90px rgba(0, 0, 0, 0.75);
+  /* ── Shadows (light, never heavy) ───────────────────── */
+  --shadow-sm: 0 1px 2px rgba(25, 24, 22, 0.04);
+  --shadow-md: 0 4px 16px rgba(25, 24, 22, 0.07);
+  --shadow-lg: 0 12px 36px rgba(25, 24, 22, 0.11);
 
-  /* ── Transitions ────────────────────────────────────── */
-  --transition: all 0.45s cubic-bezier(0.19, 1, 0.22, 1);
-
-  /* ── Motion scale (duration + easing) ───────────────── */
-  --dur-fast:  140ms;
-  --dur:       240ms;
-  --dur-slow:  420ms;
-  --ease-out:      cubic-bezier(0.19, 1, 0.22, 1);
+  /* ── Transitions (150–220ms) ────────────────────────── */
+  --dur-fast:  150ms;
+  --dur:       180ms;
+  --dur-slow:  220ms;
+  --ease-out:      cubic-bezier(0.22, 0.61, 0.36, 1);
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --transition: all var(--dur) var(--ease-standard);
+
+  /* ── Focus ring (visible, never color-only) ─────────── */
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--wine);
 
   /* ── Safe areas (iPhone notch / home indicator) ─────── */
   --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-t: env(safe-area-inset-top, 0px);
+}
 
-  /* ── Aliases (card-bg kept for readability) ─────────── */
-  --card-bg: #0c0c0c;
+/* ── Responsive rhythm: gutters 20 / 32 / 48, sections 64 → 96 ── */
+@media (min-width: 768px) {
+  :root { --gutter: 32px; --section-y: 88px; --header-h: 68px; }
+}
+@media (min-width: 1024px) {
+  :root { --gutter: 48px; --section-y: 96px; }
 }
 
 /* Honor the user's motion preference across every token-driven animation. */

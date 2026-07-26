@@ -72,6 +72,7 @@ test('typing Sauvage in the open mobile search does not prevent window scroll', 
     constructor() {
       this.classList = new FakeClassList();
       this.listeners = new Map();
+      this.attributes = new Map();
       this.style = {};
       this.value = '';
       this.hidden = false;
@@ -79,6 +80,8 @@ test('typing Sauvage in the open mobile search does not prevent window scroll', 
     addEventListener(type, handler) { this.listeners.set(type, handler); }
     dispatch(type, event = {}) { this.listeners.get(type)?.({ target: this, ...event }); }
     focus() { this.focused = true; }
+    setAttribute(name, value) { this.attributes.set(name, String(value)); }
+    getAttribute(name) { return this.attributes.get(name) ?? null; }
   }
 
   const previousDocument = globalThis.document;

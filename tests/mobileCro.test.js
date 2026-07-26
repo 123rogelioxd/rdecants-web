@@ -41,13 +41,31 @@ test('previously corrupted strings now read correctly', () => {
 
 /* ── C. Cart title ──────────────────────────────────────────── */
 
+/* The drawer markup lives in one module now (assets/js/ui/cartDrawer.js) and
+   every entry point mounts it, so these guards check the single source. */
+const CART_DRAWER_SRC = 'assets/js/ui/cartDrawer.js';
+
 test('cart drawer title says "Tu carrito" (not "Tu Colección") with a subtitle', () => {
-  for (const file of ['index.html', 'product.html', 'mood.html']) {
-    const html = read(file);
-    assert.match(html, /class="cart-title">Tu carrito</, `${file} cart title`);
-    assert.doesNotMatch(html, /class="cart-title">Tu Colección</, `${file} old title gone`);
-    assert.match(html, /class="cart-subtitle"/, `${file} subtitle present`);
-    assert.match(html, /Revisa tu pedido antes de enviarlo por WhatsApp/, `${file} subtitle copy`);
+  const drawer = read(CART_DRAWER_SRC);
+  assert.match(drawer, /class="cart-title">Tu carrito</, 'cart title');
+  assert.doesNotMatch(drawer, /class="cart-title">Tu Colección</, 'old title gone');
+  assert.match(drawer, /class="cart-subtitle"/, 'subtitle present');
+  assert.match(drawer, /Revisa tu pedido antes de enviarlo por WhatsApp/, 'subtitle copy');
+});
+
+test('every entry point mounts the shared drawer through the page shell', () => {
+  const shell = read('assets/js/core/shell.js');
+  assert.match(shell, /mountCartDrawer\(\)/, 'the shell mounts the drawer');
+
+  for (const entry of [
+    'assets/js/app.js',
+    'assets/js/pages/catalog.js',
+    'assets/js/pages/finder.js',
+    'assets/js/pages/help.js',
+    'assets/js/pages/product.js',
+    'assets/js/pages/mood.js',
+  ]) {
+    assert.match(read(entry), /bootstrapShell/, `${entry} boots through the shared shell`);
   }
 });
 
@@ -58,20 +76,18 @@ test('cart upsell copy says "Completa tu pedido", not "Completa tu colección"',
 });
 
 test('customer name is optional and there are zero required fields before WhatsApp', () => {
-  for (const file of ['index.html', 'product.html', 'mood.html']) {
-    const html = read(file);
-    assert.ok(html.includes('id="checkout-name"'), `${file} name input present`);
-    assert.ok(html.includes('Tu nombre (opcional)'), `${file} name marked optional`);
-    assert.ok(html.includes('id="checkout-name-error"'), `${file} name-local error slot`);
-    assert.ok(!html.includes('aria-required="true"'), `${file} no required field`);
-    assert.ok(!html.includes('id="checkout-phone"'), `${file} phone field removed`);
-    assert.ok(html.includes('id="checkout-notes-toggle"'), `${file} notes collapsed behind a toggle`);
-    assert.ok(html.includes('En WhatsApp confirmamos envío, pago y disponibilidad'), `${file} explains the next step`);
-    assert.ok(html.includes('class="cart-trust"'), `${file} trust strip present`);
-    assert.ok(html.includes('id="shipping-status"'), `${file} shipping eligibility status present`);
-    assert.ok(html.includes('id="checkout-fallback"'), `${file} popup-blocked fallback slot present`);
-    assert.ok(!html.includes('id="checkout-momentum"'), `${file} old momentum line removed`);
-  }
+  const drawer = read(CART_DRAWER_SRC);
+  assert.ok(drawer.includes('id="checkout-name"'), 'name input present');
+  assert.ok(drawer.includes('Tu nombre (opcional)'), 'name marked optional');
+  assert.ok(drawer.includes('id="checkout-name-error"'), 'name-local error slot');
+  assert.ok(!drawer.includes('aria-required="true"'), 'no required field');
+  assert.ok(!drawer.includes('id="checkout-phone"'), 'phone field removed');
+  assert.ok(drawer.includes('id="checkout-notes-toggle"'), 'notes collapsed behind a toggle');
+  assert.ok(drawer.includes('En WhatsApp confirmamos envío, pago y disponibilidad'), 'explains the next step');
+  assert.ok(drawer.includes('class="cart-trust"'), 'trust strip present');
+  assert.ok(drawer.includes('id="shipping-status"'), 'shipping eligibility status present');
+  assert.ok(drawer.includes('id="checkout-fallback"'), 'popup-blocked fallback slot present');
+  assert.ok(!drawer.includes('id="checkout-momentum"'), 'old momentum line removed');
 });
 
 /* ── B. Honest PDP entry price (no misleading 2ml "Desde") ───── */

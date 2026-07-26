@@ -294,6 +294,19 @@ export const Cart = {
     const removed = [];
     const reconciled = [];
 
+    /* Reconciliation drops any line it cannot resolve against the catalog. That
+       is right when a variant really went away — and badly wrong when the
+       catalog itself failed to load: the API being down would silently empty a
+       customer's cart on the next page view. "No catalog" is not evidence that
+       a product disappeared, so with nothing to check against, leave the cart
+       exactly as the customer left it and try again on the next load. */
+    if (_items.length) {
+      let catalog = [];
+      try { catalog = await CatalogProvider.getProducts(); }
+      catch { catalog = []; }
+      if (!catalog.length) return;
+    }
+
     for (const item of _items) {
       if (item.type === 'pack') {
         reconciled.push(item);

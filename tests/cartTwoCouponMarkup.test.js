@@ -9,11 +9,13 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const render = fs.readFileSync('assets/js/cart/render.js', 'utf8');
-const pages = {
-  'index.html': fs.readFileSync('index.html', 'utf8'),
-  'mood.html': fs.readFileSync('mood.html', 'utf8'),
-  'product.html': fs.readFileSync('product.html', 'utf8'),
-};
+
+/* The drawer markup used to be copy-pasted into every HTML entry point, which
+   is exactly how the second-coupon UI once shipped dead on two of three pages.
+   It now lives in one module that every page mounts, so this guards the single
+   source instead of chasing N copies. */
+const drawer = fs.readFileSync('assets/js/ui/cartDrawer.js', 'utf8');
+const entryPoints = ['index.html', 'catalogo.html', 'elegir.html', 'ayuda.html', 'product.html', 'mood.html'];
 
 test('render.js uses the exact spec copy for the second-coupon flow', () => {
   assert.match(render, /'¿Tienes un código de descuento\?'/);
@@ -22,14 +24,20 @@ test('render.js uses the exact spec copy for the second-coupon flow', () => {
   assert.match(render, /'Aplicar otro cupón'/);
 });
 
-test('every cart drawer (index/mood/product) carries the discount-rows and max-message elements', () => {
-  for (const [name, html] of Object.entries(pages)) {
-    assert.match(html, /id="cart-discount-rows"/, `${name} has the per-coupon summary row container`);
-    assert.match(html, /id="cart-discount-max-msg"/, `${name} has the max-coupon message`);
-    assert.match(html, /Máximo 2 cupones por pedido\./, `${name} has the exact max-coupon copy`);
-    assert.match(html, /id="cart-discount-applied-list"/, `${name} has the applied-coupon card list`);
-    /* The old single combined discount row must be gone, not just supplemented. */
-    assert.doesNotMatch(html, /id="cart-discount-row"/, `${name} no longer has the old single-row markup`);
+test('the shared cart drawer carries the discount-rows and max-message elements', () => {
+  assert.match(drawer, /id="cart-discount-rows"/, 'per-coupon summary row container');
+  assert.match(drawer, /id="cart-discount-max-msg"/, 'max-coupon message');
+  assert.match(drawer, /Máximo 2 cupones por pedido\./, 'exact max-coupon copy');
+  assert.match(drawer, /id="cart-discount-applied-list"/, 'applied-coupon card list');
+  /* The old single combined discount row must be gone, not just supplemented. */
+  assert.doesNotMatch(drawer, /id="cart-discount-row"/, 'old single-row markup removed');
+});
+
+test('no HTML entry point keeps its own copy of the drawer markup', () => {
+  for (const name of entryPoints) {
+    const html = fs.readFileSync(name, 'utf8');
+    assert.doesNotMatch(html, /id="cart-drawer"/, `${name} must not inline the drawer`);
+    assert.doesNotMatch(html, /id="cart-discount-toggle"/, `${name} must not inline the coupon controls`);
   }
 });
 

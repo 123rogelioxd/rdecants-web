@@ -27,6 +27,15 @@ Options -MultiViews
     RewriteEngine On
     RewriteBase /
 
+    # ── Clean URLs for the top-level experiences ─────────────
+    # The storefront is three separate pages after the redesign:
+    # discovery (/), the catalog, and the guided finder. These give
+    # each one a short, shareable URL without a .html suffix.
+    RewriteRule ^catalogo/?$          catalogo.html [L,QSA]
+    RewriteRule ^elegir/?$            elegir.html   [L,QSA]
+    RewriteRule ^ayudame-a-elegir/?$  elegir.html   [L,QSA]
+    RewriteRule ^ayuda/?$             ayuda.html    [L,QSA]
+
     # ── Slug routes for product detail pages ─────────────────
     # /perfume/{slug}      → product.html
     # /perfume/{slug}/     → product.html

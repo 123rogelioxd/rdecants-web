@@ -9,12 +9,15 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const renderSrc = fs.readFileSync('assets/js/cart/render.js', 'utf8');
-const css = fs.readFileSync('assets/css/components.css', 'utf8');
+/* Line endings are normalised: the repo churns between LF and CRLF, and a
+   marker pinned to one of them fails for reasons that have nothing to do
+   with the cart layout this file is guarding. */
+const css = fs.readFileSync('assets/css/components.css', 'utf8').replace(/\r\n/g, '\n');
 
 /* components.css has more than one `@media (max-width: 768px)` block (the
    header's is much earlier in the file), so anchor on the mobile cart
    drawer's own unique override instead of the bare media-query string. */
-const MOBILE_CART_MARKER = '.cart-drawer {\r\n    inset: 0;';
+const MOBILE_CART_MARKER = '.cart-drawer {\n    inset: 0;';
 const mobileCartStart = css.indexOf(MOBILE_CART_MARKER);
 assert.ok(mobileCartStart > -1, 'mobile cart-drawer override block found');
 const baseBlock = css.slice(0, mobileCartStart);
@@ -87,6 +90,10 @@ test('desktop upsell list is still a plain vertical stack (base rule untouched)'
   assert.match(baseBlock, /\.cart-upsell-list\s*\{\s*display:\s*flex;\s*flex-direction:\s*column;/);
 });
 
-test('desktop cart-item card styling (background/border/radius) is untouched', () => {
-  assert.match(baseBlock, /\.cart-item\s*\{[^}]*border:\s*1px solid rgba\(255, 255, 255, 0\.075\);[^}]*border-radius:\s*12px;/s);
+/* The guard is about the desktop cart item staying a single hairline card —
+   not about a specific colour. The 2026-07 redesign repainted the palette
+   (white-on-dark → ink-on-ivory), so pinning the old rgba literal would only
+   assert that the theme never changes. */
+test('desktop cart-item card styling (single hairline border + radius) is untouched', () => {
+  assert.match(baseBlock, /\.cart-item\s*\{[^}]*border:\s*1px solid [^;]+;[^}]*border-radius:\s*12px;/s);
 });

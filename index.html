@@ -29,27 +29,28 @@
   })();
 </script>
 
-<title>RDecants — Encuentra el perfume que sí usarías | Decants originales</title>
-<meta name="description" content="Prueba fragancias originales en decants de 5 ml y sube a 10 ml cuando ya sabes que es para ti. Envíos a todo México; pago y asesoría por WhatsApp.">
-<meta name="theme-color" content="#030303">
+<title>RDecants — Prueba perfumes originales antes de comprar la botella</title>
+<meta name="description" content="Decants de perfumes originales en 3, 5 y 10 ml. Prueba una fragancia antes de invertir en la botella completa. Envíos a todo México y pedidos por WhatsApp.">
+<meta name="theme-color" content="#f4f1ea">
 <link rel="canonical" href="https://rdecants.com/">
 
 <!-- Local demo catalog is dev-only; this flag keeps demo SKUs out of production. -->
 <meta name="DECANTS_HIDE_DEMO_PRODUCTS" content="true">
 
 <meta property="og:site_name"   content="RDecants">
-<meta property="og:title"       content="Encuentra el perfume que sí usarías — RDecants">
-<meta property="og:description" content="Prueba fragancias originales en 5 ml y sube a 10 ml cuando ya sabes que es para ti.">
+<meta property="og:title"       content="Prueba perfumes originales antes de comprar la botella — RDecants">
+<meta property="og:description" content="Decants de 3, 5 y 10 ml. Explora los favoritos o recibe una recomendación según lo que buscas.">
 <meta property="og:type"        content="website">
 <meta property="og:url"         content="https://rdecants.com/">
 <meta property="og:image"       content="https://rdecants.com/assets/featured/jpg-le-male-elixir-hero.webp">
 <meta property="og:locale"      content="es_MX">
 <meta name="twitter:card"        content="summary_large_image">
-<meta name="twitter:title"       content="Encuentra el perfume que sí usarías — RDecants">
-<meta name="twitter:description" content="Prueba fragancias originales en 5 ml y sube a 10 ml cuando ya sabes que es para ti.">
+<meta name="twitter:title"       content="Prueba perfumes originales antes de comprar la botella — RDecants">
+<meta name="twitter:description" content="Decants de 3, 5 y 10 ml. Explora los favoritos o recibe una recomendación según lo que buscas.">
 <meta name="twitter:image"       content="https://rdecants.com/assets/featured/jpg-le-male-elixir-hero.webp">
 
-<!-- Fonts -->
+<!-- Fonts — two families only: a serif with character for headings,
+     a highly legible sans for interface and content. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
@@ -67,19 +68,19 @@
     HTML itself is served no-cache so browsers always get
     the latest version string.
 
-  Current version: 2026.07.19.2 - update all ?v= values on deploy.
+  Current version: 2026.07.26.1 - update all ?v= values on deploy.
 -->
-<link rel="stylesheet" href="assets/css/tokens.css?v=2026.07.19.2">
-<link rel="stylesheet" href="assets/css/animations.css?v=2026.07.19.2">
-<link rel="stylesheet" href="assets/css/components.css?v=2026.07.19.2">
-<link rel="stylesheet" href="assets/css/styles.css?v=2026.07.19.2">
+<link rel="stylesheet" href="/assets/css/tokens.css?v=2026.07.26.1">
+<link rel="stylesheet" href="/assets/css/animations.css?v=2026.07.26.1">
+<link rel="stylesheet" href="/assets/css/components.css?v=2026.07.26.1">
+<link rel="stylesheet" href="/assets/css/styles.css?v=2026.07.26.1">
 
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "Store",
   "name": "RDecants",
-  "description": "Fragancias originales en decants para probar antes de comprar la botella completa. Envíos a todo México.",
+  "description": "Decants de perfumes originales en 3, 5 y 10 ml para probar antes de comprar la botella completa. Envíos a todo México.",
   "url": "https://rdecants.com/",
   "image": "https://rdecants.com/assets/featured/jpg-le-male-elixir-hero.webp",
   "areaServed": "MX",
@@ -97,303 +98,334 @@
 
 <body>
 
-<!-- HEADER -->
+<!-- INFO BAR -->
+<p class="infobar">Decants de perfumes originales · Envíos a todo México</p>
+
+<!-- HEADER — logo, two destinations, search, cart. Nothing else. -->
 <header class="header">
+  <button class="nav-toggle" id="nav-toggle" type="button"
+    aria-label="Abrir menú" aria-expanded="false" aria-controls="nav-drawer">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="22" height="22" aria-hidden="true">
+      <path d="M3 6h18M3 12h18M3 18h18" stroke-linecap="round"/>
+    </svg>
+  </button>
+
   <a href="/" class="header-logo" aria-label="RDecants — inicio">
-    <span class="logo-text">R<span>D</span>ECANTS</span>
+    <span class="logo-text">RDECANTS</span>
   </a>
 
-  <!-- Primary navigation (desktop) -->
   <nav class="header-nav" aria-label="Navegación principal">
-    <a href="#catalog" class="header-nav-link" data-scroll="catalog">Catálogo</a>
-    <a href="#guide" class="header-nav-link" data-scroll="guide" data-focus-finder>Encuentra tu fragancia</a>
-    <a href="#faq" class="header-nav-link" data-scroll="faq">Ayuda</a>
+    <a class="header-nav-link" href="/catalogo.html">Catálogo</a>
+    <a class="header-nav-link" href="/elegir.html">Ayúdame a elegir</a>
   </nav>
 
-  <!-- Global search — desktop inline / mobile overlay -->
-  <div class="hs-wrap" id="hs-wrap" role="search" aria-label="Buscar fragancias">
-    <svg class="hs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-      <circle cx="11" cy="11" r="8"/>
-      <path d="m21 21-4.35-4.35"/>
+  <div class="header-actions">
+    <button class="btn-hs-mobile" id="btn-hs-mobile" type="button"
+      aria-label="Buscar fragancias" aria-expanded="false" aria-controls="hs-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="20" height="20" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"/>
+        <path d="m20 20-3.5-3.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+
+    <button class="icon-btn" type="button" onclick="toggleCart()" aria-label="Abrir carrito">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="20" height="20" aria-hidden="true">
+        <path d="M6 8h12l-1 12H7L6 8Z" stroke-linejoin="round"/>
+        <path d="M9 8V6a3 3 0 0 1 6 0v2"/>
+      </svg>
+      <span class="cart-badge" id="cart-count">0</span>
+    </button>
+  </div>
+</header>
+
+<!-- SEARCH — hidden until the icon is used; never a permanent field. -->
+<div class="hs-wrap" id="hs-wrap" role="search" aria-label="Buscar fragancias">
+  <svg class="hs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+    <circle cx="11" cy="11" r="7"/>
+    <path d="m20 20-3.5-3.5" stroke-linecap="round"/>
+  </svg>
+  <input
+    id="hs-input"
+    class="hs-input"
+    type="search"
+    placeholder="Buscar fragancia, marca o nota…"
+    autocomplete="off"
+    spellcheck="false"
+    aria-label="Buscar fragancias"
+  >
+  <button class="hs-x" id="hs-x" type="button" aria-label="Limpiar búsqueda" hidden>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" aria-hidden="true">
+      <path d="M18 6 6 18M6 6l12 12"/>
     </svg>
-    <input
-      id="hs-input"
-      class="hs-input"
-      type="search"
-      placeholder="Buscar fragancia, marca o nota…"
-      autocomplete="off"
-      spellcheck="false"
-      aria-label="Buscar fragancias"
-    >
-    <button class="hs-x" id="hs-x" aria-label="Limpiar búsqueda" hidden>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10" aria-hidden="true">
+  </button>
+  <button class="hs-cancel" id="hs-cancel" type="button" aria-label="Cancelar búsqueda">Cancelar</button>
+</div>
+
+<!-- MOBILE NAV -->
+<div class="nav-scrim" id="nav-scrim"></div>
+<nav class="nav-drawer" id="nav-drawer" aria-label="Menú" aria-hidden="true">
+  <div class="nav-drawer-head">
+    <span class="logo-text">RDECANTS</span>
+    <button class="icon-btn" id="nav-close" type="button" aria-label="Cerrar menú">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20" aria-hidden="true">
         <path d="M18 6 6 18M6 6l12 12"/>
       </svg>
     </button>
-    <button class="hs-cancel" id="hs-cancel" aria-label="Cancelar búsqueda">Cancelar</button>
   </div>
+  <a href="/catalogo.html">Catálogo</a>
+  <a href="/elegir.html">Ayúdame a elegir</a>
+  <a href="/ayuda.html">Ayuda</a>
+  <a href="https://wa.me/5219516513018" target="_blank" rel="noopener">WhatsApp</a>
+</nav>
 
-  <nav class="header-actions">
-    <button class="btn-hs-mobile" id="btn-hs-mobile" aria-label="Buscar fragancias">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="17" height="17" aria-hidden="true">
-        <circle cx="11" cy="11" r="8"/>
-        <path d="m21 21-4.35-4.35"/>
-      </svg>
-    </button>
-    <button class="btn-cart" onclick="toggleCart()" aria-label="Abrir carrito">
-      <span class="cart-dot" id="cart-dot"></span>
-      CARRITO (<span id="cart-count">0</span>)
-    </button>
-  </nav>
-</header>
+<main>
 
-<!-- HERO -->
+<!-- HERO — the promise, one primary action, one quiet secondary. -->
 <section class="hero">
-  <div class="hero-bg"></div>
+  <div class="hero-inner">
+    <div class="hero-content">
+      <h1 class="hero-title">Prueba perfumes originales antes de comprar la botella.</h1>
 
-  <div class="hero-img-wrap" aria-hidden="true">
-    <img src="assets/featured/jpg-le-male-elixir-hero.webp" alt="" loading="eager" decoding="async" fetchpriority="high">
-  </div>
+      <p class="hero-desc">
+        Descubre tu fragancia en decants de 3, 5 y 10 ml. Explora los favoritos
+        o recibe una recomendación según lo que buscas.
+      </p>
 
-  <div class="hero-content">
-    <p class="hero-eyebrow">Decants originales · Envíos a todo México</p>
+      <div class="hero-actions">
+        <a class="btn-primary" href="#mas-vendidos">Ver los más vendidos</a>
+        <a class="btn-ghost" href="/elegir.html">Ayúdame a elegir</a>
+      </div>
 
-    <h1 class="hero-title">
-      Encuentra el perfume<br>
-      <em>que sí usarías</em>
-    </h1>
-
-    <p class="hero-desc">
-      Prueba fragancias originales en 5 ml y sube a 10 ml cuando ya sabes que es para ti.
-      Descúbrelo sin gastar miles en la botella completa.
-    </p>
-
-    <div class="hero-actions">
-      <button class="btn-primary" data-scroll="guide" data-focus-finder aria-label="Encontrar mi fragancia con el buscador guiado">
-        Encontrar mi fragancia
-      </button>
-      <button class="btn-ghost" data-scroll="catalog" aria-label="Ver el catálogo completo">
-        Ver catálogo
-      </button>
+      <ul class="hero-trust">
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <path d="M12 3l7 3v5c0 4.4-3 8.3-7 10-4-1.7-7-5.6-7-10V6l7-3Z" stroke-linejoin="round"/>
+            <path d="m9 12 2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          100% originales
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <path d="M10 2h4v3h-4z"/>
+            <path d="M9 5h6v3l1 2v11a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V10l1-2V5Z" stroke-linejoin="round"/>
+          </svg>
+          Preparados al momento
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z" stroke-linejoin="round"/>
+            <circle cx="7" cy="18" r="1.6"/><circle cx="17.5" cy="18" r="1.6"/>
+          </svg>
+          Envíos a todo México
+        </li>
+      </ul>
     </div>
+
+    <!-- Real product photograph from the catalog, framed. -->
+    <figure class="hero-figure">
+      <img src="/assets/featured/jpg-le-male-elixir-hero.webp"
+           alt="Frasco original de Jean Paul Gaultier Le Male Elixir fotografiado en estudio"
+           width="1536" height="2048" loading="eager" decoding="async" fetchpriority="high">
+      <figcaption>Decants servidos de frascos originales</figcaption>
+    </figure>
   </div>
 </section>
 
-<!-- GUIDE BAR — the catalog's control layer: intent chips + compact finder.
-     Both drive the SAME catalog grid in place (ui/guide.js → SearchBar.applyGuide). -->
-<section class="guide-section" id="guide" aria-labelledby="guide-title">
-  <!-- Rendered by ui/guide.js -->
-</section>
-
-<!-- CATALOG — the single commercial surface; the guide bar re-ranks it in place.
-     Placed directly after the guide so guidance and browsing read as one flow. -->
-<section class="section section--catalog" id="catalog">
+<!-- MÁS VENDIDOS — the first commercial section; the catalog lives on its own page. -->
+<section class="section" id="mas-vendidos" aria-labelledby="mas-vendidos-title">
   <div class="container">
-
     <div class="section-header fade-up">
       <div>
-        <p class="section-label">Catálogo</p>
-        <h2 class="section-title">Nuestra colección</h2>
+        <p class="section-label">Los favoritos</p>
+        <h2 class="section-title" id="mas-vendidos-title">Los más vendidos</h2>
       </div>
-      <p class="catalog-intro">
-        Fragancias originales seleccionadas para todos los gustos — masculinas, femeninas y unisex — en decants para probar con calma.
-      </p>
+      <a class="section-link" href="/catalogo.html">Ver catálogo completo</a>
     </div>
 
-    <div class="products-grid" id="products-grid">
-      <!-- Rendered by catalog/render.js -->
-    </div>
+    <ul class="rail-grid" id="bestsellers-grid" aria-label="Fragancias más vendidas">
+      <li><div class="rail-skeleton" aria-hidden="true"></div></li>
+      <li><div class="rail-skeleton" aria-hidden="true"></div></li>
+      <li><div class="rail-skeleton" aria-hidden="true"></div></li>
+      <li><div class="rail-skeleton" aria-hidden="true"></div></li>
+    </ul>
 
+    <div class="rail-foot">
+      <a class="btn-outline" href="/catalogo.html">Ver catálogo completo</a>
+    </div>
   </div>
 </section>
 
-<!-- HOW IT WORKS / TRUST — concrete, supportable process claims after the
-     collection and before Help. Reassurance is also placed at the actual
-     decision points (cart, product detail), not only here. -->
-<section class="trust-strip" aria-label="Cómo funciona comprar en RDecants">
+<!-- COMPRA SEGÚN LO QUE BUSCAS — four entry points, nothing more. -->
+<section class="section section--sunk" id="intenciones" aria-labelledby="intenciones-title">
   <div class="container">
-    <ul class="trust-strip-list">
+    <div class="section-header fade-up">
+      <div>
+        <p class="section-label">Empieza por aquí</p>
+        <h2 class="section-title" id="intenciones-title">Compra según lo que buscas</h2>
+      </div>
+    </div>
+
+    <ul class="intent-grid" id="intent-grid">
       <li>
-        <strong>De frascos originales</strong>
-        <span>Cada decant se sirve de un frasco auténtico de la casa — sin clones. Pregúntanos por el lote.</span>
+        <a class="intent-tile" href="/catalogo.html?intent=diario">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19" stroke-linecap="round"/>
+          </svg>
+          <span class="intent-tile-label">Para diario
+            <span class="intent-tile-hint">Ligero y fácil de usar</span>
+          </span>
+        </a>
       </li>
       <li>
-        <strong>Preparados al momento</strong>
-        <span>Llenamos y sellamos tu decant cuando haces el pedido, para que llegue fresco.</span>
+        <a class="intent-tile" href="/catalogo.html?intent=citas">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <path d="M12 20s-7-4.4-7-9a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 4.6-7 9-7 9Z" stroke-linejoin="round"/>
+          </svg>
+          <span class="intent-tile-label">Para citas
+            <span class="intent-tile-hint">Cercano y memorable</span>
+          </span>
+        </a>
       </li>
       <li>
-        <strong>Pruebas 5 ml, subes a 10 ml</strong>
-        <span>Confirma que es para ti antes de invertir en la botella completa.</span>
+        <a class="intent-tile" href="/catalogo.html?intent=noche">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" stroke-linejoin="round"/>
+          </svg>
+          <span class="intent-tile-label">Para la noche
+            <span class="intent-tile-hint">Con más presencia</span>
+          </span>
+        </a>
       </li>
       <li>
-        <strong>Pago y envío por WhatsApp</strong>
-        <span>Coordinas todo por chat y envían a todo México; nada se cobra en la web.</span>
+        <a class="intent-tile" href="/elegir.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <path d="M4 10h16v10H4zM3 6h18v4H3zM12 6v14" stroke-linejoin="round"/>
+            <path d="M12 6S10.5 3 8.5 3a2 2 0 0 0 0 4M12 6s1.5-3 3.5-3a2 2 0 0 1 0 4" stroke-linejoin="round"/>
+          </svg>
+          <span class="intent-tile-label">Para regalar
+            <span class="intent-tile-hint">Te ayudamos a elegir</span>
+          </span>
+        </a>
       </li>
     </ul>
+
+    <div class="finder-prompt">
+      <p>¿No sabes cuál elegir? Responde tres preguntas.</p>
+      <a class="btn-primary" href="/elegir.html">Ayúdame a elegir</a>
+    </div>
   </div>
 </section>
 
-<div class="divider"></div>
+<!-- CÓMO FUNCIONA -->
+<section class="section" id="como-funciona" aria-labelledby="como-funciona-title">
+  <div class="container">
+    <div class="section-header fade-up">
+      <div>
+        <p class="section-label">Cómo funciona</p>
+        <h2 class="section-title" id="como-funciona-title">Tres pasos</h2>
+      </div>
+    </div>
 
-<!-- SHIPPING / PAYMENT / ORDER FAQ -->
+    <ol class="steps-grid fade-up">
+      <li class="step-card">
+        <p class="step-num" aria-hidden="true">1</p>
+        <h3 class="step-title">Elige tu perfume</h3>
+        <p class="step-desc">Explora el catálogo o deja que te recomendemos según lo que buscas.</p>
+      </li>
+      <li class="step-card">
+        <p class="step-num" aria-hidden="true">2</p>
+        <h3 class="step-title">Selecciona 3, 5 o 10 ml</h3>
+        <p class="step-desc">Prueba en 3 o 5 ml y sube a 10 ml cuando ya sabes que es para ti.</p>
+      </li>
+      <li class="step-card">
+        <p class="step-num" aria-hidden="true">3</p>
+        <h3 class="step-title">Envía tu pedido por WhatsApp</h3>
+        <p class="step-desc">Ahí confirmamos disponibilidad, envío y forma de pago.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- AUTENTICIDAD — said once, in one place. -->
+<section class="section section--sunk" id="autenticidad" aria-labelledby="autenticidad-title">
+  <div class="container">
+    <div class="authenticity-panel fade-up">
+      <h2 id="autenticidad-title">Cada decant sale de un frasco original.</h2>
+      <div>
+        <p>
+          Compramos los frascos completos en la casa o en distribuidores autorizados y
+          servimos cada decant al momento de tu pedido, sin clones ni reformulaciones.
+          Si quieres verificarlo, pídenos por WhatsApp evidencia del lote de la fragancia
+          que vas a comprar y te la mandamos antes de que pagues.
+        </p>
+        <a class="btn-ghost" href="https://wa.me/5219516513018" target="_blank" rel="noopener">
+          Solicitar evidencia del lote
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ — the four questions that actually block a first order. -->
 <section class="section" id="faq" aria-labelledby="faq-title">
   <div class="container">
     <div class="section-header fade-up">
       <div>
-        <p class="section-label">Ayuda</p>
-        <h2 class="section-title" id="faq-title">Envíos, pago<br>y pedidos</h2>
+        <p class="section-label">Preguntas frecuentes</p>
+        <h2 class="section-title" id="faq-title">Antes de tu primer pedido</h2>
       </div>
     </div>
 
     <div class="faq-list fade-up">
       <details class="faq-item">
-        <summary class="faq-q">¿Cómo pago mi pedido?</summary>
-        <p class="faq-a">Coordinamos el pago por WhatsApp una vez que confirmamos disponibilidad y envío. No se cobra nada automáticamente en la web.</p>
-      </details>
-      <details class="faq-item">
-        <summary class="faq-q">¿Cómo se calcula el envío?</summary>
-        <p class="faq-a">Enviamos a todo México. El costo y el tiempo se confirman por WhatsApp según tu ciudad. Los pedidos desde $170 son ideales para envío; montos menores se pueden coordinar como entrega local.</p>
-      </details>
-      <details class="faq-item">
         <summary class="faq-q">¿Los perfumes son originales?</summary>
-        <p class="faq-a">Sí. Todos los decants provienen de frascos originales y auténticos. Puedes preguntarnos por el lote de cualquier fragancia.</p>
+        <p class="faq-a">Sí. Todos los decants provienen de frascos originales y auténticos. Puedes pedirnos evidencia del lote de cualquier fragancia antes de pagar.</p>
       </details>
       <details class="faq-item">
         <summary class="faq-q">¿Qué tamaño me conviene?</summary>
-        <p class="faq-a">5 ml para probar con calma y 10 ml si ya sabes que te gusta. También hay 3 ml para una prueba corta.</p>
+        <p class="faq-a">3 ml para una prueba corta, 5 ml para usarlo varios días con calma y 10 ml cuando ya sabes que la fragancia es para ti.</p>
       </details>
       <details class="faq-item">
-        <summary class="faq-q">¿Y si algo llega mal?</summary>
-        <p class="faq-a">Escríbenos por WhatsApp y lo resolvemos. Revisamos cada incidencia de forma personal.</p>
+        <summary class="faq-q">¿Cómo pago y recibo mi pedido?</summary>
+        <p class="faq-a">Armas tu pedido aquí y lo envías por WhatsApp. Ahí confirmamos disponibilidad, costo de envío y forma de pago. No se cobra nada automáticamente en la web y enviamos a todo México.</p>
       </details>
       <details class="faq-item">
-        <summary class="faq-q">¿Qué pasa después de enviar mi pedido por WhatsApp?</summary>
-        <p class="faq-a">Recibimos tu pedido con lo que agregaste al carrito y te contestamos por ese mismo chat para confirmar disponibilidad, costo de envío y forma de pago antes de prepararlo.</p>
+        <summary class="faq-q">¿Qué pasa si algo llega mal?</summary>
+        <p class="faq-a">Escríbenos por WhatsApp con una foto y lo resolvemos. Revisamos cada incidencia de forma personal.</p>
       </details>
     </div>
+
+    <p class="faq-more">¿Tienes otra duda? <a href="/ayuda.html">Ver todas las preguntas</a> o <a href="https://wa.me/5219516513018" target="_blank" rel="noopener">escríbenos por WhatsApp</a>.</p>
   </div>
 </section>
+
+</main>
 
 <!-- FOOTER -->
 <footer class="footer">
   <div class="container">
-    <p class="footer-logo">R DECANTS</p>
-    <p class="footer-tagline">FRAGRANCE EDITION — MÉXICO</p>
+    <div>
+      <p class="footer-logo">RDECANTS</p>
+      <p class="footer-tagline">Decants de perfumes originales · Envíos a todo México</p>
+    </div>
 
-    <nav class="footer-links">
+    <nav class="footer-links" aria-label="Enlaces del pie de página">
       <a href="https://wa.me/5219516513018" target="_blank" rel="noopener">WhatsApp</a>
-      <a href="#catalog" data-scroll="catalog">Catálogo</a>
-      <a href="#guide" data-scroll="guide" data-focus-finder>Encuentra tu fragancia</a>
-      <a href="#faq" data-scroll="faq">Ayuda</a>
+      <a href="/catalogo.html">Catálogo</a>
+      <a href="/elegir.html">Ayúdame a elegir</a>
+      <a href="/ayuda.html">Ayuda</a>
     </nav>
 
-    <p class="footer-copy">
-      © 2026 R Supply — Marca administradora de RDecants · Todos los derechos reservados
-    </p>
+    <div class="footer-legal">
+      <span class="footer-copy">© 2026 R Supply — Marca administradora de RDecants · Todos los derechos reservados</span>
+      <span>Precios en MXN</span>
+    </div>
   </div>
 </footer>
 
-<!-- CART OVERLAY -->
-<div id="cart-overlay" class="cart-overlay" onclick="closeCart()"></div>
-
-<!-- CART DRAWER -->
-<aside id="cart-drawer" class="cart-drawer" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Carrito de compras">
-
-  <div class="cart-header">
-    <div class="cart-header-text">
-      <h2 class="cart-title">Tu carrito</h2>
-      <p class="cart-subtitle">Revisa tu pedido antes de enviarlo por WhatsApp.</p>
-    </div>
-    <button class="cart-close" onclick="closeCart()" aria-label="Cerrar carrito">×</button>
-  </div>
-
-  <div class="cart-scroll" id="cart-scroll">
-    <div class="cart-items" id="cart-items">
-      <!-- Rendered by cart/render.js -->
-    </div>
-
-    <div class="cart-static">
-      <div class="checkout-panel" id="checkout-form" aria-label="Datos de checkout">
-        <label class="checkout-control checkout-control--primary" for="checkout-name">
-          <span>Tu nombre (opcional)</span>
-          <input class="checkout-field" id="checkout-name" type="text" autocomplete="name" placeholder="Ej. Roger Díaz">
-          <small class="checkout-name-error" id="checkout-name-error" aria-live="polite"></small>
-        </label>
-
-        <button type="button" class="checkout-notes-toggle" id="checkout-notes-toggle" aria-expanded="false" aria-controls="checkout-notes">
-          Agregar comentario
-        </button>
-        <textarea class="checkout-field checkout-textarea" id="checkout-notes" rows="3" placeholder="Horario, referencia o detalle especial" hidden></textarea>
-
-        <p class="checkout-error" id="checkout-error" aria-live="polite"></p>
-      </div>
-
-      <div class="cart-discount" id="cart-discount">
-        <button type="button" class="cart-discount-toggle" id="cart-discount-toggle"
-          aria-expanded="false" aria-controls="cart-discount-form">
-          ¿Tienes un código de descuento?
-        </button>
-        <div class="cart-discount-applied-list" id="cart-discount-applied-list" hidden><!-- applied coupon chips rendered by cart/render.js --></div>
-        <form class="cart-discount-form" id="cart-discount-form" hidden>
-          <input class="cart-discount-input" id="cart-discount-input" type="text"
-                 placeholder="Código de descuento" autocomplete="off"
-                 autocapitalize="characters" spellcheck="false"
-                 aria-label="Código de descuento">
-          <button class="cart-discount-apply" id="cart-discount-apply" type="submit">Aplicar</button>
-        </form>
-        <p class="cart-discount-msg" id="cart-discount-msg" data-tone="neutral" aria-live="polite" hidden></p>
-        <p class="cart-campaign-hint" id="cart-campaign-hint" aria-live="polite" hidden></p>
-        <p class="cart-discount-max-msg" id="cart-discount-max-msg" aria-live="polite" hidden>Máximo 2 cupones por pedido.</p>
-      </div>
-
-      <ul class="cart-trust" aria-label="Garantías del pedido">
-        <li>✓ Perfumes originales</li>
-        <li>✓ Decants preparados al momento</li>
-        <li>✓ Envíos a todo México</li>
-      </ul>
-
-      <!-- Optional add-ons — secondary, after the customer has seen products,
-           the checkout form and the trust list. Populated by cart/render.js. -->
-      <section class="cart-upsells" id="cart-upsells" aria-label="Completa tu pedido" hidden></section>
-    </div>
-  </div>
-
-  <div class="cart-footer">
-    <div class="cart-action-panel">
-      <div class="cart-summary" aria-label="Resumen del pedido">
-        <div class="cart-summary-head">
-          <span class="cart-summary-title">Resumen</span>
-          <span class="cart-summary-count" id="cart-summary-count">0 artículos</span>
-        </div>
-        <div class="cart-summary-row">
-          <span class="cart-summary-row-label">Subtotal</span>
-          <span class="cart-summary-row-value" id="cart-subtotal-value">$0 MXN</span>
-        </div>
-        <div class="cart-discount-rows" id="cart-discount-rows" hidden><!-- one row per applied coupon, rendered by cart/render.js --></div>
-        <div class="cart-total-row">
-          <span class="cart-total-label">Total</span>
-          <span class="cart-total-amount">$<span id="cart-total">0</span> <small>MXN</small></span>
-        </div>
-        <div class="shipping-status" id="shipping-status" hidden>
-          <span class="shipping-badge" id="shipping-badge"></span>
-          <span class="shipping-note" id="shipping-note"></span>
-        </div>
-      </div>
-
-      <button class="btn-whatsapp" id="checkout-whatsapp" onclick="sendWhatsApp()" aria-label="Enviar pedido por WhatsApp">
-        📲 Enviar pedido por WhatsApp
-      </button>
-
-      <p class="checkout-fallback" id="checkout-fallback" hidden></p>
-
-      <p class="checkout-next">En WhatsApp confirmamos envío, pago y disponibilidad.</p>
-
-      <button class="btn-continue" onclick="closeCart()" aria-label="Cerrar carrito y seguir explorando">
-        Seguir comprando
-      </button>
-    </div>
-  </div>
-</aside>
+<!-- The cart overlay + drawer are mounted from assets/js/ui/cartDrawer.js
+     so every entry point shares one copy of that markup. -->
 
 <!-- WHATSAPP FLOAT -->
 <a class="whatsapp-float" href="https://wa.me/5219516513018" target="_blank" rel="noopener" aria-label="Contactar por WhatsApp">
@@ -410,7 +442,7 @@
   ?v= must match the version in CSS links above.
   Update on every deploy: increment VERSION file + all ?v= strings.
 -->
-<script type="module" src="assets/js/app.js?v=2026.07.19.3"></script>
+<script type="module" src="/assets/js/app.js?v=2026.07.26.1"></script>
 
 </body>
 </html>

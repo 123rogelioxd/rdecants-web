@@ -7,9 +7,6 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 
-<!-- Scroll-reveal gate: arms entrance animation only when motion can run
-     (JS + IntersectionObserver + motion allowed + foreground tab); otherwise
-     content stays visible. Fallback reveals anything still pending. -->
 <script>
   (function () {
     var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -25,15 +22,22 @@
   })();
 </script>
 
-<title>Fragancia — RDecants</title>
-<meta name="description" content="Detalle de fragancia: perfil olfativo, score, recomendaciones y compra rápida por decant.">
+<title>Ayúdame a elegir — RDecants</title>
+<meta name="description" content="Responde tres preguntas y te recomendamos la fragancia que mejor encaja con lo que buscas, en decants de 3, 5 y 10 ml.">
 <meta name="theme-color" content="#f4f1ea">
+<link rel="canonical" href="https://rdecants.com/elegir.html">
 
-<meta property="og:title"       content="RDecants — Detalle de fragancia">
-<meta property="og:description" content="Perfil olfativo, score y recomendaciones inteligentes.">
-<meta property="og:type"        content="product">
+<meta name="DECANTS_HIDE_DEMO_PRODUCTS" content="true">
 
-<!-- Fonts -->
+<meta property="og:site_name"   content="RDecants">
+<meta property="og:title"       content="Ayúdame a elegir — RDecants">
+<meta property="og:description" content="Tres preguntas y te decimos por dónde empezar.">
+<meta property="og:type"        content="website">
+<meta property="og:url"         content="https://rdecants.com/elegir.html">
+<meta property="og:image"       content="https://rdecants.com/assets/featured/jpg-le-male-elixir-hero.webp">
+<meta property="og:locale"      content="es_MX">
+<meta name="twitter:card"       content="summary_large_image">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
@@ -44,13 +48,10 @@
 <link rel="stylesheet" href="/assets/css/styles.css?v=2026.07.26.1">
 </head>
 
-<body class="pdp-body">
+<body class="finder-body">
 
-<!-- HEADER -->
-<!-- INFO BAR -->
 <p class="infobar">Decants de perfumes originales · Envíos a todo México</p>
 
-<!-- HEADER -->
 <header class="header">
   <button class="nav-toggle" id="nav-toggle" type="button"
     aria-label="Abrir menú" aria-expanded="false" aria-controls="nav-drawer">
@@ -65,7 +66,7 @@
 
   <nav class="header-nav" aria-label="Navegación principal">
     <a class="header-nav-link" href="/catalogo.html">Catálogo</a>
-    <a class="header-nav-link" href="/elegir.html">Ayúdame a elegir</a>
+    <a class="header-nav-link" href="/elegir.html" aria-current="page">Ayúdame a elegir</a>
   </nav>
 
   <div class="header-actions">
@@ -87,7 +88,6 @@
   </div>
 </header>
 
-<!-- SEARCH OVERLAY -->
 <div class="hs-wrap" id="hs-wrap" role="search" aria-label="Buscar fragancias">
   <svg class="hs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
     <circle cx="11" cy="11" r="7"/>
@@ -104,7 +104,6 @@
   <button class="hs-cancel" id="hs-cancel" type="button" aria-label="Cancelar búsqueda">Cancelar</button>
 </div>
 
-<!-- MOBILE NAV -->
 <div class="nav-scrim" id="nav-scrim"></div>
 <nav class="nav-drawer" id="nav-drawer" aria-label="Menú" aria-hidden="true">
   <div class="nav-drawer-head">
@@ -121,13 +120,38 @@
   <a href="https://wa.me/5219516513018" target="_blank" rel="noopener">WhatsApp</a>
 </nav>
 
-<!-- PRODUCT DETAIL PAGE ROOT -->
-<main id="pdp-root" class="pdp-root">
-  <p class="catalog-loading" style="text-align:center;padding:80px 16px;">Cargando fragancia...</p>
+<main>
+
+<section class="page-head">
+  <div class="container">
+    <nav class="breadcrumb" aria-label="Ruta de navegación">
+      <a href="/">Inicio</a> <span aria-hidden="true">/</span> <span aria-current="page">Ayúdame a elegir</span>
+    </nav>
+    <h1 class="page-title">Ayúdame a elegir</h1>
+    <p class="page-lede">
+      Tres preguntas rápidas y abrimos el catálogo ordenado por lo que mejor
+      encaja contigo. Puedes cambiar de opinión en cualquier momento.
+    </p>
+  </div>
+</section>
+
+<section class="finder-page">
+  <div class="container">
+    <!-- Rendered by assets/js/pages/finder.js — one question per screen. -->
+    <div class="finder-card" id="finder-root" aria-live="polite">
+      <noscript>
+        <p class="page-lede">
+          El buscador guiado necesita JavaScript.
+          <a href="/catalogo.html">Explora el catálogo completo</a> o
+          <a href="https://wa.me/5219516513018">escríbenos por WhatsApp</a> y te ayudamos a elegir.
+        </p>
+      </noscript>
+    </div>
+  </div>
+</section>
+
 </main>
 
-<!-- FOOTER -->
-<!-- FOOTER -->
 <footer class="footer">
   <div class="container">
     <div>
@@ -149,20 +173,14 @@
   </div>
 </footer>
 
-
-<!-- The cart overlay + drawer are mounted from assets/js/ui/cartDrawer.js
-     so every entry point shares one copy of that markup. -->
-
-<!-- WHATSAPP FLOAT -->
-<a class="whatsapp-float" href="https://wa.me/5219516513018" target="_blank" aria-label="Contactar por WhatsApp">
+<a class="whatsapp-float" href="https://wa.me/5219516513018" target="_blank" rel="noopener" aria-label="Contactar por WhatsApp">
   <svg viewBox="0 0 24 24" fill="white" aria-hidden="true">
     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
   </svg>
 </a>
 
-<!-- TOAST -->
 <div id="toast" class="toast" aria-live="polite"></div>
 
-<script type="module" src="/assets/js/pages/product.js?v=2026.07.26.1"></script>
+<script type="module" src="/assets/js/pages/finder.js?v=2026.07.26.1"></script>
 </body>
 </html>

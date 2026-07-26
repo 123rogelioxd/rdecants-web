@@ -3,18 +3,9 @@
    Mirrors app.js's bootstrap but renders a single product page.
    ============================================================= */
 
-import { Cart } from '../cart/cart.js';
-import { setupCheckout } from '../cart/checkout.js';
-import {
-  renderCart, updateCartCount,
-  openCart, closeCart, toggleCart, sendWhatsApp,
-  setupDiscountControls, setupCampaignAttribution,
-} from '../cart/render.js';
+import { bootstrapShell } from '../core/shell.js';
 import { CatalogProvider } from '../providers/catalog.js';
-import { setupHeader } from '../ui/header.js';
-import { setupImageStates } from '../ui/images.js';
 import { Tracker } from '../tracking/tracker.js';
-import { installBackendTracking } from '../tracking/backend.js';
 import { AppState } from '../core/state.js';
 import {
   buildProductPageHtml,
@@ -25,37 +16,9 @@ import {
   findProductBySlug,
 } from '../ui/productPage.js';
 
-/* ── Global bridge (shared with rest of the app) ─────────────── */
-window.__rd = window.__rd || {};
-window.__rd.cart = {
-  add:       (id, size) => Cart.add(id, size),
-  addPack:   (id)       => Cart.addPack(id),
-  addBundle: (bundle)   => Cart.addBundle(bundle),
-  remove:    (key)      => Cart.remove(key),
-  changeQty: (key, d)   => Cart.changeQty(key, d),
-};
-window.__rd.ui = {
-  openCart, closeCart, toggleCart, sendWhatsApp,
-  scrollToCatalog: () => { window.location.href = '/#catalog'; },
-};
-
-window.toggleCart   = toggleCart;
-window.openCart     = openCart;
-window.closeCart    = closeCart;
-window.sendWhatsApp = sendWhatsApp;
-
-installBackendTracking(Tracker);
-
 /* ── Bootstrap ──────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', async () => {
-  setupImageStates();
-  setupCheckout();
-  setupDiscountControls();
-  await Cart.reconcile({ silent: true });
-  renderCart();
-  updateCartCount();
-  setupCampaignAttribution();
-  setupHeader();
+  await bootstrapShell();
 
   const root = document.getElementById('pdp-root');
   if (!root) return;
