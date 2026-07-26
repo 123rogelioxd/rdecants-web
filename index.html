@@ -29,31 +29,37 @@
   })();
 </script>
 
-<title>RDecants — Prueba perfumes originales antes de comprar la botella</title>
-<meta name="description" content="Decants de perfumes originales en 3, 5 y 10 ml. Prueba una fragancia antes de invertir en la botella completa. Envíos a todo México y pedidos por WhatsApp.">
+<title>RDecants — Perfumes originales en frascos de 3, 5 y 10 ml</title>
+<meta name="description" content="Prueba perfumes originales sin comprar la botella completa. Frascos pequeños (decants) de 3, 5 y 10 ml desde $100. Envíos a todo México y pedidos por WhatsApp.">
 <meta name="theme-color" content="#f4f1ea">
+
+<link rel="icon" href="/favicon.ico?v=2026.07.26.2" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/favicon-32.png?v=2026.07.26.2">
+<link rel="icon" type="image/png" sizes="16x16" href="/assets/brand/favicon-16.png?v=2026.07.26.2">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/brand/apple-touch-icon.png?v=2026.07.26.2">
+<link rel="manifest" href="/site.webmanifest?v=2026.07.26.2">
 <link rel="canonical" href="https://rdecants.com/">
 
 <!-- Local demo catalog is dev-only; this flag keeps demo SKUs out of production. -->
 <meta name="DECANTS_HIDE_DEMO_PRODUCTS" content="true">
 
 <meta property="og:site_name"   content="RDecants">
-<meta property="og:title"       content="Prueba perfumes originales antes de comprar la botella — RDecants">
-<meta property="og:description" content="Decants de 3, 5 y 10 ml. Explora los favoritos o recibe una recomendación según lo que buscas.">
+<meta property="og:title"       content="Perfumes originales en frascos de 3, 5 y 10 ml — RDecants">
+<meta property="og:description" content="Frascos pequeños de 3, 5 y 10 ml. Responde 3 preguntas y te recomendamos, o explora el catálogo.">
 <meta property="og:type"        content="website">
 <meta property="og:url"         content="https://rdecants.com/">
 <meta property="og:image"       content="https://rdecants.com/assets/featured/jpg-le-male-elixir-hero.webp">
 <meta property="og:locale"      content="es_MX">
 <meta name="twitter:card"        content="summary_large_image">
-<meta name="twitter:title"       content="Prueba perfumes originales antes de comprar la botella — RDecants">
-<meta name="twitter:description" content="Decants de 3, 5 y 10 ml. Explora los favoritos o recibe una recomendación según lo que buscas.">
+<meta name="twitter:title"       content="Perfumes originales en frascos de 3, 5 y 10 ml — RDecants">
+<meta name="twitter:description" content="Frascos pequeños de 3, 5 y 10 ml. Responde 3 preguntas y te recomendamos, o explora el catálogo.">
 <meta name="twitter:image"       content="https://rdecants.com/assets/featured/jpg-le-male-elixir-hero.webp">
 
-<!-- Fonts — two families only: a serif with character for headings,
-     a highly legible sans for interface and content. -->
+<!-- Fonts — one sans for everything the customer reads and acts on,
+     plus the serif used only in the wordmark so it matches the logo. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
 
 <!--
   CSS load order:
@@ -68,12 +74,12 @@
     HTML itself is served no-cache so browsers always get
     the latest version string.
 
-  Current version: 2026.07.26.1 - update all ?v= values on deploy.
+  Current version: 2026.07.26.2 - update all ?v= values on deploy.
 -->
-<link rel="stylesheet" href="/assets/css/tokens.css?v=2026.07.26.1">
-<link rel="stylesheet" href="/assets/css/animations.css?v=2026.07.26.1">
-<link rel="stylesheet" href="/assets/css/components.css?v=2026.07.26.1">
-<link rel="stylesheet" href="/assets/css/styles.css?v=2026.07.26.1">
+<link rel="stylesheet" href="/assets/css/tokens.css?v=2026.07.26.2">
+<link rel="stylesheet" href="/assets/css/animations.css?v=2026.07.26.2">
+<link rel="stylesheet" href="/assets/css/components.css?v=2026.07.26.2">
+<link rel="stylesheet" href="/assets/css/styles.css?v=2026.07.26.2">
 
 <script type="application/ld+json">
 {
@@ -111,12 +117,14 @@
   </button>
 
   <a href="/" class="header-logo" aria-label="RDecants — inicio">
+    <img class="logo-mark" src="/assets/brand/rdecants-monogram.png?v=2026.07.26.2"
+         alt="RDecants" width="391" height="279" decoding="async">
     <span class="logo-text">RDECANTS</span>
   </a>
 
   <nav class="header-nav" aria-label="Navegación principal">
     <a class="header-nav-link" href="/catalogo.html">Catálogo</a>
-    <a class="header-nav-link" href="/elegir.html">Ayúdame a elegir</a>
+    <a class="nav-cta" href="/elegir.html"><span class="hero-cta-spark" aria-hidden="true">✦</span>Ayúdame a elegir</a>
   </nav>
 
   <div class="header-actions">
@@ -180,73 +188,120 @@
 
 <main>
 
-<!-- HERO — the promise, one primary action, one quiet secondary. -->
+<!-- HERO — what we sell, in one sentence, with one dominant action.
+     Deliberately short: the top of "Más vendidos" has to be reachable on a
+     phone without scrolling past a full screen of introduction. -->
 <section class="hero">
   <div class="hero-inner">
     <div class="hero-content">
-      <h1 class="hero-title">Prueba perfumes originales antes de comprar la botella.</h1>
+      <h1 class="hero-title">Prueba perfumes originales sin comprar la botella completa.</h1>
 
       <p class="hero-desc">
-        Descubre tu fragancia en decants de 3, 5 y 10 ml. Explora los favoritos
-        o recibe una recomendación según lo que buscas.
+        Frascos pequeños de 3, 5 y 10 ml desde <span data-entry-price>$100</span>.
       </p>
 
       <div class="hero-actions">
-        <a class="btn-primary" href="#mas-vendidos">Ver los más vendidos</a>
-        <a class="btn-ghost" href="/elegir.html">Ayúdame a elegir</a>
+        <a class="hero-cta" href="/elegir.html">
+          <span class="hero-cta-main">
+            Ayúdame a elegir
+            <span class="hero-cta-spark" aria-hidden="true">✦</span>
+          </span>
+          <span class="hero-cta-note">3 preguntas · menos de 1 min</span>
+        </a>
+        <a class="btn-outline" href="/catalogo.html">Ver catálogo</a>
       </div>
 
-      <ul class="hero-trust">
-        <li>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-            <path d="M12 3l7 3v5c0 4.4-3 8.3-7 10-4-1.7-7-5.6-7-10V6l7-3Z" stroke-linejoin="round"/>
-            <path d="m9 12 2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          100% originales
-        </li>
-        <li>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-            <path d="M10 2h4v3h-4z"/>
-            <path d="M9 5h6v3l1 2v11a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V10l1-2V5Z" stroke-linejoin="round"/>
-          </svg>
-          Preparados al momento
-        </li>
-        <li>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-            <path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z" stroke-linejoin="round"/>
-            <circle cx="7" cy="18" r="1.6"/><circle cx="17.5" cy="18" r="1.6"/>
-          </svg>
-          Envíos a todo México
-        </li>
-      </ul>
     </div>
 
-    <!-- Real product photograph from the catalog, framed. -->
+    <!-- Real studio photograph of an original bottle — the only product
+         photography this project owns. See the note in the deploy summary:
+         a photo of the actual RDecants decant vials next to a bottle still
+         needs to be produced; this container takes it unchanged. -->
     <figure class="hero-figure">
       <img src="/assets/featured/jpg-le-male-elixir-hero.webp"
            alt="Frasco original de Jean Paul Gaultier Le Male Elixir fotografiado en estudio"
            width="1536" height="2048" loading="eager" decoding="async" fetchpriority="high">
-      <figcaption>Decants servidos de frascos originales</figcaption>
+      <figcaption>De este frasco original sale tu decant</figcaption>
     </figure>
+
+    <!-- Full width under both columns: the three sizes are the product. -->
+    <ul class="hero-sizes" aria-label="Presentaciones disponibles">
+      <li class="hero-size"><b>3 ml</b><span>Prueba corta</span></li>
+      <li class="hero-size"><b>5 ml</b><span>Lo más pedido</span></li>
+      <li class="hero-size"><b>10 ml</b><span>Ya te gustó</span></li>
+    </ul>
   </div>
 </section>
 
-<!-- MÁS VENDIDOS — the first commercial section; the catalog lives on its own page. -->
+<!-- WHAT A DECANT IS — the one explanation someone who has never heard the
+     word needs, before any product is offered. -->
+<section class="howto-strip" aria-label="Cómo se prepara tu decant">
+  <div class="container">
+    <ol class="howto-list">
+      <li class="howto-step">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="M10 2h4v3h-4z"/>
+          <path d="M8.5 5h7v3.2l1.5 2.6V21a1 1 0 0 1-1 1h-8a1 1 0 0 1-1-1V10.8L8.5 8.2V5Z" stroke-linejoin="round"/>
+        </svg>
+        <span>Botella original</span>
+      </li>
+      <li class="howto-step">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="M11 2h2v2.5h-2z"/>
+          <path d="M10 4.5h4v2.2l1 1.8V21a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V8.5l1-1.8V4.5Z" stroke-linejoin="round"/>
+          <path d="M10 14h4" stroke-linecap="round"/>
+        </svg>
+        <span>Tu decant de 3, 5 o 10 ml</span>
+      </li>
+      <li class="howto-step">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/>
+          <path d="m8.5 12.2 2.4 2.4 4.6-5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Listo para usar</span>
+      </li>
+    </ol>
+
+    <ul class="trust-line" aria-label="Nuestras garantías">
+      <li>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+          <path d="M12 3l7 3v5c0 4.4-3 8.3-7 10-4-1.7-7-5.6-7-10V6l7-3Z" stroke-linejoin="round"/>
+          <path d="m9 12 2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        100% originales
+      </li>
+      <li>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round"/>
+        </svg>
+        Preparados al momento
+      </li>
+      <li>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+          <path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z" stroke-linejoin="round"/>
+          <circle cx="7" cy="18" r="1.6"/><circle cx="17.5" cy="18" r="1.6"/>
+        </svg>
+        Envíos a todo México
+      </li>
+    </ul>
+  </div>
+</section>
+
+<!-- MÁS VENDIDOS — four, then the catalog. -->
 <section class="section" id="mas-vendidos" aria-labelledby="mas-vendidos-title">
   <div class="container">
     <div class="section-header fade-up">
       <div>
-        <p class="section-label">Los favoritos</p>
-        <h2 class="section-title" id="mas-vendidos-title">Los más vendidos</h2>
+        <h2 class="section-title" id="mas-vendidos-title">Más vendidos</h2>
       </div>
-      <a class="section-link" href="/catalogo.html">Ver catálogo completo</a>
+      <a class="section-link" href="/catalogo.html">Ver todos</a>
     </div>
 
-    <ul class="rail-grid" id="bestsellers-grid" aria-label="Fragancias más vendidas">
-      <li><div class="rail-skeleton" aria-hidden="true"></div></li>
-      <li><div class="rail-skeleton" aria-hidden="true"></div></li>
-      <li><div class="rail-skeleton" aria-hidden="true"></div></li>
-      <li><div class="rail-skeleton" aria-hidden="true"></div></li>
+    <ul class="rail-grid rail-grid--four" id="bestsellers-grid" aria-label="Fragancias más vendidas" aria-busy="true">
+      <li><div class="card-skeleton" aria-hidden="true"><div class="card-skeleton-body"><div class="card-skeleton-line card-skeleton-line--short"></div><div class="card-skeleton-line card-skeleton-line--wide"></div><div class="card-skeleton-line"></div></div></div></li>
+      <li><div class="card-skeleton" aria-hidden="true"><div class="card-skeleton-body"><div class="card-skeleton-line card-skeleton-line--short"></div><div class="card-skeleton-line card-skeleton-line--wide"></div><div class="card-skeleton-line"></div></div></div></li>
+      <li><div class="card-skeleton" aria-hidden="true"><div class="card-skeleton-body"><div class="card-skeleton-line card-skeleton-line--short"></div><div class="card-skeleton-line card-skeleton-line--wide"></div><div class="card-skeleton-line"></div></div></div></li>
+      <li><div class="card-skeleton" aria-hidden="true"><div class="card-skeleton-body"><div class="card-skeleton-line card-skeleton-line--short"></div><div class="card-skeleton-line card-skeleton-line--wide"></div><div class="card-skeleton-line"></div></div></div></li>
     </ul>
 
     <div class="rail-foot">
@@ -260,8 +315,7 @@
   <div class="container">
     <div class="section-header fade-up">
       <div>
-        <p class="section-label">Empieza por aquí</p>
-        <h2 class="section-title" id="intenciones-title">Compra según lo que buscas</h2>
+        <h2 class="section-title" id="intenciones-title">¿Para qué lo quieres?</h2>
       </div>
     </div>
 
@@ -442,7 +496,7 @@
   ?v= must match the version in CSS links above.
   Update on every deploy: increment VERSION file + all ?v= strings.
 -->
-<script type="module" src="/assets/js/app.js?v=2026.07.26.1"></script>
+<script type="module" src="/assets/js/app.js?v=2026.07.26.2"></script>
 
 </body>
 </html>

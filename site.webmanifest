@@ -1,0 +1,15 @@
+{
+  "name": "RDecants",
+  "short_name": "RDecants",
+  "description": "Perfumes originales en frascos pequeños de 3, 5 y 10 ml. Envíos a todo México.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f1ea",
+  "theme_color": "#f4f1ea",
+  "lang": "es-MX",
+  "icons": [
+    { "src": "/assets/brand/favicon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/assets/brand/favicon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/assets/brand/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

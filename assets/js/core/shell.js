@@ -123,4 +123,23 @@ export async function bootstrapShell() {
 
   setupHeader();
   setupNav();
+  setupWhatsAppFloat();
+}
+
+/* The floating WhatsApp button used to sit on top of the first product card
+   and, on a phone, next to the hero's primary action — two competing green
+   and black circles in the same corner of the first screen. It now appears
+   only once the visitor has scrolled past that first screen. WhatsApp is
+   still one tap away in the cart, the FAQ and the footer, so nothing is
+   lost by keeping it out of the opening view. */
+export function setupWhatsAppFloat() {
+  const float = document.querySelector('.whatsapp-float');
+  if (!float) return;
+
+  const reveal = () => {
+    float.classList.toggle('is-visible', window.scrollY > window.innerHeight * 0.6);
+  };
+
+  window.addEventListener('scroll', reveal, { passive: true });
+  reveal();
 }

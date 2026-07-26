@@ -58,7 +58,18 @@ export async function renderProducts() {
   _productsContainer = document.getElementById('products-grid');
   if (!_productsContainer) return;
 
-  _productsContainer.innerHTML = '<p class="catalog-loading">Cargando coleccion...</p>';
+  /* Skeleton cards, not a line of text: an empty grid with a caption reads
+     as a broken page, while placeholder cards in the exact shape of the real
+     ones read as "loading" and reserve the layout so nothing jumps. */
+  _productsContainer.setAttribute('aria-busy', 'true');
+  _productsContainer.innerHTML = Array.from({ length: 8 }, () => `
+    <div class="card-skeleton" aria-hidden="true">
+      <div class="card-skeleton-body">
+        <div class="card-skeleton-line card-skeleton-line--short"></div>
+        <div class="card-skeleton-line card-skeleton-line--wide"></div>
+        <div class="card-skeleton-line"></div>
+      </div>
+    </div>`).join('');
 
   const products = await CatalogProvider.getProducts();
 
@@ -106,6 +117,7 @@ function _renderGrid(products, { rememberProducts = true, guided = null, preserv
   _syncGuideState(guided, products.length);
 
   _productsContainer.innerHTML = '';
+  _productsContainer.setAttribute('aria-busy', 'false');
   const catalogProducts = normalizeCatalogProducts(products);
   if (rememberProducts) _lastCatalogProducts = catalogProducts;
 

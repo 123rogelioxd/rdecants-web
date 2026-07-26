@@ -75,17 +75,28 @@ test('home order is hero -> bestsellers -> intents -> how it works -> authentici
   assert.ok(authenticity < faq, 'authenticity before the FAQ');
 });
 
-test('the hero states the promise, one primary action and three trust signals', () => {
+test('the hero states what is sold, the sizes and the entry price', () => {
   const html = read('index.html');
-  assert.match(html, /Prueba perfumes originales antes de comprar la botella\./);
-  assert.match(html, /Descubre tu fragancia en decants de 3, 5 y 10 ml\./);
-  assert.match(html, /Ver los más vendidos/, 'primary action');
-  assert.match(html, /Ayúdame a elegir/, 'secondary action');
+  assert.match(html, /Prueba perfumes originales sin comprar la botella completa\./);
+  assert.match(html, /Frascos pequeños de 3, 5 y 10 ml desde/);
+  assert.match(html, /data-entry-price/, 'the entry price is a live value, not a frozen string');
+});
 
-  const trust = html.slice(html.indexOf('hero-trust'), html.indexOf('</ul>', html.indexOf('hero-trust')));
-  assert.match(trust, /100% originales/);
-  assert.match(trust, /Preparados al momento/);
-  assert.match(trust, /Envíos a todo México/);
+test('the trust line is stated once, with the explanation strip', () => {
+  const html = read('index.html');
+  const strip = html.slice(html.indexOf('class="trust-line"'), html.indexOf('</ul>', html.indexOf('class="trust-line"')));
+  assert.match(strip, /100% originales/);
+  assert.match(strip, /Preparados al momento/);
+  assert.match(strip, /Envíos a todo México/);
+
+  /* Repeating the same three promises in four places is what made the old
+     page feel padded. One occurrence each. */
+  for (const promise of ['100% originales', 'Preparados al momento']) {
+    assert.equal(
+      (html.match(new RegExp(promise, 'g')) ?? []).length, 1,
+      `"${promise}" is claimed exactly once on the home`,
+    );
+  }
 });
 
 test('the best-seller rail links to the full catalog instead of inlining it', () => {
@@ -156,7 +167,7 @@ test('the home FAQ keeps only the four questions that block a first order', () =
 
 /* ── C. Header and footer ────────────────────────────────────── */
 
-test('the header holds only logo, two destinations, search and cart', () => {
+test('the header holds only the logo, two destinations, search and cart', () => {
   const html = read('index.html');
   const header = html.slice(html.indexOf('<header class="header">'), html.indexOf('</header>'));
 
@@ -165,7 +176,11 @@ test('the header holds only logo, two destinations, search and cart', () => {
   assert.match(header, /href="\/elegir\.html"/);
   assert.match(header, /id="btn-hs-mobile"/, 'search is an icon');
   assert.match(header, /id="cart-count"/, 'cart shows a quantity');
-  assert.equal((header.match(/class="header-nav-link"/g) ?? []).length, 2, 'exactly two nav links');
+
+  /* Two destinations: the catalog as a plain link, the finder as the
+     highlighted action. */
+  assert.equal((header.match(/class="header-nav-link"/g) ?? []).length, 1, 'one plain nav link');
+  assert.equal((header.match(/class="nav-cta"/g) ?? []).length, 1, 'one highlighted action');
 
   /* The permanently visible search field is gone; the input lives in the
      overlay panel outside the header. */

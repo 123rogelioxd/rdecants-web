@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
      products) before any URL-driven guidance can be applied. */
   await renderProducts();
 
+  _setupInlineSearch();
   _applyUrlState(window.location.search);
 
   observeFadeUp();
@@ -41,6 +42,32 @@ document.addEventListener('DOMContentLoaded', async () => {
   AppState.set('initialized', true);
   Tracker.emit('page_view', { path: window.location.pathname });
 });
+
+/* The catalog owns a visible search field. It delegates to the same
+   SearchBar engine the header icon uses, and keeps the two inputs in sync so
+   a query typed in either place is reflected in both. */
+function _setupInlineSearch() {
+  const input = document.getElementById('catalog-search-input');
+  if (!input) return;
+
+  const header = document.getElementById('hs-input');
+  let timer = null;
+
+  input.addEventListener('input', () => {
+    const query = input.value;
+    if (header) header.value = query;
+    clearTimeout(timer);
+    timer = setTimeout(() => SearchBar.applyQuery(query), 250);
+  });
+
+  input.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+      input.value = '';
+      if (header) header.value = '';
+      SearchBar.applyQuery('');
+    }
+  });
+}
 
 /* Apply whatever the URL asked for, in priority order: an explicit search
    beats guidance, guidance beats a bare mood filter. Anything unrecognised

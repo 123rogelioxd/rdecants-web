@@ -13,8 +13,9 @@ import {
 } from './taxonomy.js';
 import { getMatchTier } from './reasoning.js';
 import { isSellable, getOperationalScore } from './scoring.js';
-import { getDefaultVariant, getOrderableVariants } from '../utils/prices.js';
+import { getDefaultVariant, getOrderableVariants, getVariantForSize } from '../utils/prices.js';
 import { getGenderEligibility } from '../utils/gender.js';
+import { describeForBeginner } from './describe.js';
 
 const MIN_RESULTS = 2;
 const MAX_RESULTS = 4;
@@ -37,37 +38,110 @@ const MAX_POPULARITY_SCORE = 10;
    every result card, so a price question adds friction without adding signal.
    The engine still honours an explicit `budget` answer when provided (used by
    tests and any future surface); the finder UI simply leaves it unset ('any'). */
+/* Three beginner questions, in customer language.
+
+   The old first question was "¿Qué tipo de aroma buscas? Fresco / Dulce /
+   Intenso". Someone who has never bought a fragrance cannot answer that —
+   and "intenso" is not even the same axis as "fresco" and "dulce" (it
+   describes strength, not scent). Asking it first turned the finder into a
+   quiz you had to already know perfume to pass. The scent family is still
+   available, but as an OPTIONAL refinement after the results, never as the
+   entry barrier.
+
+   What we ask instead is what a beginner does know: who it is for, where
+   they will wear it, and whether they want to blend in or be noticed. */
 export const ASSISTANT_QUESTIONS = [
   {
-    id: 'family',
-    label: '¿Qué tipo de aroma buscas?',
-    options: [
-      { value: 'fresco', label: 'Fresco' },
-      { value: 'dulce', label: 'Dulce' },
-      { value: 'intenso', label: 'Intenso' },
+    id: 'audience',
+    label: '¿Para quién es y qué edad tiene?',
+    /* One screen, two choices — they are a single thought for the customer. */
+    groups: [
+      {
+        id: 'gender',
+        label: 'Para quién',
+        options: [
+          { value: 'hombre', label: 'Hombre' },
+          { value: 'mujer', label: 'Mujer' },
+          { value: 'any', label: 'Me da igual' },
+        ],
+      },
+      {
+        id: 'age',
+        label: 'Edad aproximada',
+        options: [
+          { value: '15-18', label: '15–18' },
+          { value: '19-24', label: '19–24' },
+          { value: '25-34', label: '25–34' },
+          { value: '35+', label: '35+' },
+        ],
+      },
     ],
   },
   {
     id: 'occasion',
-    label: '¿Para qué momento?',
+    label: '¿Dónde lo usarás principalmente?',
     options: [
-      { value: 'dia', label: 'Diario' },
-      { value: 'noche', label: 'Noche' },
+      { value: 'dia', label: 'Diario o escuela' },
       { value: 'oficina', label: 'Oficina' },
-      { value: 'cita', label: 'Cita' },
+      { value: 'cita', label: 'Citas' },
+      { value: 'noche', label: 'Noche o fiesta' },
+      { value: 'regalo', label: 'Regalo' },
     ],
   },
   {
-    id: 'gender',
-    label: '¿Para quién es?',
+    id: 'preference',
+    label: '¿Qué prefieres?',
     options: [
-      { value: 'any', label: 'Me da igual' },
-      { value: 'hombre', label: 'Hombre' },
-      { value: 'mujer', label: 'Mujer' },
-      { value: 'unisex', label: 'Unisex' },
+      { value: 'versatil',  label: 'Algo fácil de gustar y versátil' },
+      { value: 'destacar',  label: 'Algo que destaque y reciba cumplidos' },
     ],
   },
 ];
+
+/* ── Age: an explicit, checkable rule for metadata we do NOT have ──────
+   The catalog carries no age-appropriateness field, and inventing one
+   ("this is a teenager's fragrance") would be fabricating a compatibility
+   the data cannot support. So age never filters or reorders products.
+   What it legitimately informs is how much to suggest buying first — a
+   15-year-old testing a first fragrance should be pointed at the smallest
+   decant, not the 10 ml. If the backend ever exposes an audience field,
+   this is the single place to widen the rule. */
+export const AGE_RULES = {
+  '15-18': { starterMl: 3 },
+  '19-24': { starterMl: 5 },
+  '25-34': { starterMl: 5 },
+  '35+':   { starterMl: 5 },
+};
+
+export function suggestedStarterMl(age) {
+  return AGE_RULES[String(age ?? '')]?.starterMl ?? 5;
+}
+
+/* ── Preference: versatile vs. standout ───────────────────────────────
+   Scored off the fragrance scores the backend already sends plus the
+   product's own tags. "regalo" has no scent context of its own, so a gift
+   is treated as wanting the safe, widely-liked option — stated here rather
+   than hidden in the ranking. */
+const PREFERENCE_RULES = {
+  versatil: {
+    scores: ['versatility', 'crowdpleaser'],
+    tags: ['versatil', 'versatile', 'diario', 'daily', 'facil de usar', 'easy wear', 'limpio', 'crowdpleaser'],
+    reason: 'Fácil de usar y agrada a casi todos',
+  },
+  destacar: {
+    scores: ['projection', 'longevity'],
+    tags: ['alto rendimiento', 'beast mode', 'proyeccion', 'llamativo', 'hype', 'cumplidos', 'compliment'],
+    reason: 'Proyecta y suele recibir cumplidos',
+  },
+};
+
+const MAX_PREFERENCE_SCORE = 14;
+
+export function resolvePreference(answers = {}) {
+  if (answers.preference === 'versatil' || answers.preference === 'destacar') return answers.preference;
+  /* A gift should be a safe bet unless the buyer said otherwise. */
+  return answers.occasion === 'regalo' ? 'versatil' : null;
+}
 
 const OCCASION_USE_CASES = {
   dia: ['diario'],
@@ -253,6 +327,63 @@ export function rankCatalogForAnswers(answers = {}, products = []) {
   }));
 }
 
+/* ── The three answers a beginner can actually act on ─────────────────
+   Handing someone 28 "matches" is not a recommendation, it is the catalog
+   with extra steps. The finder shows exactly three, each answering a
+   different worry: the best overall fit, the one hardest to dislike, and
+   the one that gets noticed. The rest stay one click away behind
+   "Ver más opciones". */
+export const PICK_LABELS = {
+  best:     'La mejor para ti',
+  safe:     'La opción más segura',
+  standout: 'La que más destaca',
+};
+
+export const PICK_ORDER = ['best', 'safe', 'standout'];
+
+export function getBeginnerPicks(answers = {}, products = []) {
+  const ranked = rankCatalogForAnswers(answers, products);
+  if (!ranked.length) return [];
+
+  const starterMl = suggestedStarterMl(answers.age);
+  const used = new Set();
+  const picks = [];
+
+  const take = (rec, role) => {
+    if (!rec || used.has(String(rec.product.id))) return;
+    used.add(String(rec.product.id));
+    picks.push({
+      ...rec,
+      role,
+      label: PICK_LABELS[role],
+      blurb: describeForBeginner(rec.product),
+      /* What to buy first, per the age rule — falling back to whatever
+         presentation is actually orderable. */
+      suggestedVariant: getVariantForSize(rec.product, starterMl) ?? rec.variant,
+      suggestedMl: getVariantForSize(rec.product, starterMl)?.size ?? rec.variant?.size ?? starterMl,
+    });
+  };
+
+  take(ranked[0], 'best');
+  take(_pickByScores(ranked.filter(r => !used.has(String(r.product.id))), ['versatility', 'crowdpleaser']), 'safe');
+  take(_pickByScores(ranked.filter(r => !used.has(String(r.product.id))), ['projection', 'longevity']), 'standout');
+
+  return picks.slice(0, 3);
+}
+
+/* Highest average of the given fragrance scores. Ties keep the earlier
+   (better-fitting) candidate, so the result is fully deterministic. */
+function _pickByScores(list, keys) {
+  let best = null;
+  let bestValue = -1;
+  for (const rec of list) {
+    const scores = rec.product?.fragrance?.scores ?? {};
+    const value = keys.reduce((sum, key) => sum + _num(scores[key]), 0) / keys.length;
+    if (value > bestValue + 1e-9) { bestValue = value; best = rec; }
+  }
+  return best ?? list[0] ?? null;
+}
+
 /* Beginner-safe ranking (see FIT_BAND). Ordering priority:
      1. Gender fit tier — primary before secondary before fallback.
      2. FIT, bucketed into bands — a clearly better match always wins; price
@@ -286,6 +417,7 @@ function _matchBreakdown(product, signals, answers) {
   const commercial = _commercialScore(product);
   const popularity = _popularityScore(product);
   const performance = _performanceScore(product, answers);
+  const preference = _preferenceScore(product, signals, answers);
   const levelAdjust = _levelAdjust(product, signals, answers.level);
   const genderBoost = _genderScore(product, answers.gender);
 
@@ -295,7 +427,7 @@ function _matchBreakdown(product, signals, answers) {
      EXCLUDES commercial appeal, operational health, popularity and price so that
      match quality is the sole ranking input; the excluded signals act only as
      near-tie breakers in _rankBeginnerSafe. */
-  const fit = Math.max(0, context.score + olfactive.score + performance.score + levelAdjust - context.penalty);
+  const fit = Math.max(0, context.score + olfactive.score + performance.score + preference.score + levelAdjust - context.penalty);
 
   return {
     context: context.score,
@@ -303,11 +435,40 @@ function _matchBreakdown(product, signals, answers) {
     commercial,
     popularity,
     performance: performance.score,
+    preference: preference.score,
     penalty: context.penalty,
     fit,
     warnings: context.warnings,
-    positives: [...context.positives, ...olfactive.positives, ...performance.positives],
-    total: context.score + olfactive.score + commercial + popularity + performance.score + levelAdjust + genderBoost - context.penalty,
+    positives: [...context.positives, ...olfactive.positives, ...performance.positives, ...preference.positives],
+    total: context.score + olfactive.score + commercial + popularity + performance.score
+         + preference.score + levelAdjust + genderBoost - context.penalty,
+  };
+}
+
+/* "Fácil de gustar" vs "que destaque" — the third beginner question.
+   Reads the fragrance scores the backend already provides and the product's
+   own tags; contributes nothing when neither is present, so a thin product
+   record can never be ranked on a preference it has no data for. */
+function _preferenceScore(product, signals, answers) {
+  const preference = resolvePreference(answers);
+  const rule = PREFERENCE_RULES[preference];
+  if (!rule) return { score: 0, positives: [] };
+
+  const scores = product?.fragrance?.scores ?? {};
+  const values = rule.scores.map(key => _num(scores[key])).filter(v => v > 0);
+  const average = values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+
+  const f = product?.fragrance ?? {};
+  const tags = _normalizedList([
+    ...(f.style_tags ?? []), ...(f.recommendation_tags ?? []),
+    ...(f.mood_tags ?? []), ...(f.commercial_roles ?? []),
+  ]);
+  const tagHits = _countTagHits(tags, rule.tags);
+
+  const score = Math.min(MAX_PREFERENCE_SCORE, average * 10 + Math.min(4, tagHits * 2));
+  return {
+    score,
+    positives: score >= 5 ? [rule.reason] : [],
   };
 }
 

@@ -40,20 +40,39 @@
 .header-logo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   color: var(--ink);
   text-decoration: none;
   flex: 0 0 auto;
+  /* Reserved box: the monogram is a real image and must not reflow the
+     header while it decodes. */
+  height: 30px;
+}
+
+.logo-mark {
+  display: block;
+  height: 30px;
+  width: auto;
+  flex: 0 0 auto;
+}
+
+@media (min-width: 768px) {
+  .header-logo { height: 34px; gap: 11px; }
+  .logo-mark { height: 34px; }
+  .logo-text, .header-logo .logo-text { font-size: 20px; }
 }
 
 .header-logo span { color: inherit; }
 
+/* The only serif left in the interface: the wordmark, so the typed half of
+   the lockup matches the drawn half in the logo file. Tracking is moderate —
+   the wide magazine tracking is what made this read as editorial. */
 .logo-text,
 .header-logo .logo-text {
   font-family: var(--font-serif);
-  font-size: 21px;
+  font-size: 18px;
   font-weight: 600;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.14em;
   line-height: 1;
   white-space: nowrap;
 }
@@ -302,10 +321,9 @@
    the darkness. */
 .hero {
   background: var(--bg);
-  /* Bottom padding is deliberately smaller than the top: it stacks with the
-     next section's own padding, and together they should land on the ~96px
-     section rhythm rather than doubling it into an empty band. */
-  padding: clamp(28px, 5vw, 56px) 0 clamp(24px, 3vw, 40px);
+  /* Deliberately short on a phone: the top of "Más vendidos" has to be
+     reachable without scrolling past a full screen of introduction. */
+  padding: clamp(20px, 4vw, 48px) 0 clamp(20px, 3vw, 36px);
 }
 
 .hero-inner {
@@ -320,30 +338,66 @@
 .hero-content { max-width: 30rem; }
 
 .hero-title {
-  font-family: var(--font-serif);
-  font-size: clamp(34px, 5.2vw, 56px);
-  font-weight: 600;
-  line-height: 1.06;
-  letter-spacing: -0.015em;
+  font-family: var(--font-display);
+  font-size: clamp(34px, 4.2vw, 48px);
+  font-weight: 700;
+  line-height: 1.14;
+  letter-spacing: -0.02em;
   color: var(--ink);
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   text-wrap: balance;
 }
 
 .hero-desc {
   font-size: 16px;
-  line-height: 1.6;
+  line-height: 1.55;
   color: var(--ink-soft);
-  margin-bottom: 28px;
-  max-width: 32rem;
+  margin-bottom: 20px;
+  max-width: 30rem;
 }
 
 .hero-actions {
   display: flex;
-  align-items: center;
-  gap: 20px;
+  align-items: stretch;
+  gap: 10px;
   flex-wrap: wrap;
-  margin-bottom: 32px;
+  margin-bottom: 20px;
+}
+
+/* Primary CTA carries its own reassurance line, so the promise and the
+   cost of acting on it arrive together. */
+.hero-cta {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 56px;
+  padding: 10px 26px;
+  background: var(--action);
+  color: var(--on-action);
+  border: 1px solid var(--action);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease-standard);
+}
+
+.hero-cta:hover { background: var(--action-hover); }
+
+.hero-cta-main { display: inline-flex; align-items: center; gap: 7px; }
+
+/* The one flash of accent on the whole hero. */
+.hero-cta-spark { color: #e9a4ae; font-size: 13px; line-height: 1; }
+
+.hero-cta-note {
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0.78;
+  letter-spacing: 0.01em;
 }
 
 /* Real photograph inside a light editorial frame. Dimensions are
@@ -412,21 +466,21 @@
   justify-content: center;
   min-height: 48px;
   padding: 12px 26px;
-  background: var(--wine);
-  color: var(--pure-white);
+  background: var(--action);
+  color: var(--on-action);
   font-family: var(--font-sans);
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 16px;
+  font-weight: 600;
   letter-spacing: 0;
   text-transform: none;
-  border: 1px solid var(--wine);
+  border: 1px solid var(--action);
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background var(--dur) var(--ease-standard),
               border-color var(--dur) var(--ease-standard);
 }
 
-.btn-primary:hover { background: var(--wine-hover); border-color: var(--wine-hover); }
+.btn-primary:hover { background: var(--action-hover); border-color: var(--action-hover); }
 .btn-primary:disabled,
 .btn-primary[aria-disabled="true"] {
   background: var(--bg-sunk);
@@ -447,6 +501,7 @@
   color: var(--ink);
   font-family: var(--font-sans);
   font-size: 15px;
+  font-weight: 500;
   letter-spacing: 0;
   text-transform: none;
   text-decoration: underline;
@@ -468,19 +523,21 @@
   padding: 12px 24px;
   background: var(--surface);
   color: var(--ink);
-  font-size: 15px;
-  border: 1px solid var(--line);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 600;
+  border: 1.5px solid var(--ink);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: border-color var(--dur) var(--ease-standard),
+  transition: background var(--dur) var(--ease-standard),
               color var(--dur) var(--ease-standard);
 }
 
-.btn-outline:hover { border-color: var(--wine); color: var(--wine); }
+.btn-outline:hover { background: var(--ink); color: var(--on-action); }
 
 .btn-gold {
-  background: var(--wine);
-  color: var(--pure-white);
+  background: var(--action);
+  color: var(--on-action);
   font-size: 14px;
   font-weight: 500;
   letter-spacing: 0;
@@ -491,7 +548,7 @@
   transition: background var(--dur) var(--ease-standard);
 }
 
-.btn-gold:hover { background: var(--wine-hover); }
+.btn-gold:hover { background: var(--action-hover); }
 
 /* Keyboard focus is always visible and never colour-only. */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
@@ -531,7 +588,7 @@
 .section-label::before { content: none; }
 
 .section-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: clamp(26px, 3.4vw, 36px);
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -1051,7 +1108,7 @@
 }
 
 .pdm-related-name {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 20px;
   line-height: 1.1;
   color: var(--ink);
@@ -1157,12 +1214,12 @@
 }
 
 .pdp-name {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 36px;
   line-height: 1.05;
   color: var(--ink);
   margin: 0;
-  font-weight: 400;
+  font-weight: 600;
 }
 
 .pdp-concentration,
@@ -1260,7 +1317,7 @@
   margin-bottom: 12px;
 }
 .pdp-price {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 26px;
   color: var(--ink);
 }
@@ -1304,11 +1361,11 @@
 .pdp-intelligence { margin-bottom: 32px; }
 
 .pdp-section-h {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 22px;
   color: var(--ink);
   margin: 0 0 16px;
-  font-weight: 400;
+  font-weight: 600;
 }
 
 .pdp-related-row {
@@ -1355,7 +1412,7 @@
   color: var(--muted);
 }
 .pdp-related-name {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 18px;
   line-height: 1.1;
   color: var(--ink);
@@ -1500,7 +1557,7 @@
 .pdp-tech[open] .pdp-tech-summary::after { content: "–"; }
 .pdp-tech-summary { position: relative; }
 .pdp-tech-summary-t {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 17px;
   color: var(--ink);
 }
@@ -1592,9 +1649,9 @@
   margin: 0;
 }
 .ds-card-name {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 20px;
-  font-weight: 400;
+  font-weight: 600;
   color: var(--ink);
   margin: 0;
 }
@@ -1665,7 +1722,7 @@
   color: var(--muted);
 }
 .ds-card-price-total {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 18px;
   color: var(--ink);
 }
@@ -1783,7 +1840,7 @@
 .pdp-pair-img img { width: 100%; height: 100%; object-fit: cover; }
 .pdp-pair-img--fallback::after {
   content: "R";
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 16px;
   color: rgba(25, 24, 22, 0.15);
 }
@@ -1880,7 +1937,7 @@
 .tb-card-img img { width: 100%; height: 100%; object-fit: cover; }
 .tb-card-img--fallback::after {
   content: "R";
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 72px;
   color: rgba(25, 24, 22, 0.07);
 }
@@ -1900,9 +1957,9 @@
   margin: 0;
 }
 .tb-card-name {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 22px;
-  font-weight: 400;
+  font-weight: 600;
   color: var(--ink);
   margin: 0;
   line-height: 1.25;
@@ -1993,7 +2050,7 @@
   margin: 0;
 }
 .tb-done-h {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 22px;
   color: var(--ink);
   margin: 0;
@@ -2073,7 +2130,7 @@ body.pdp-cta-visible .whatsapp-float {
   min-width: 0;
 }
 .pdp-sticky-cta-name {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 14px;
   color: var(--ink);
   overflow: hidden;
@@ -2271,9 +2328,9 @@ body.pdp-cta-visible .whatsapp-float {
 
 .cart-minimum-head strong {
   color: var(--accent);
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 16px;
-  font-weight: 400;
+  font-weight: 600;
 }
 
 .cart-minimum-bar,
@@ -2493,9 +2550,9 @@ body.pdp-cta-visible .whatsapp-float {
 }
 
 .featured-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: clamp(36px, 5vw, 60px);
-  font-weight: 300;
+  font-weight: 600;
   line-height: 1.1;
   margin-bottom: 16px;
 }
@@ -2508,9 +2565,9 @@ body.pdp-cta-visible .whatsapp-float {
 }
 
 .featured-price {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 36px;
-  font-weight: 300;
+  font-weight: 600;
   color: var(--accent);
   margin-bottom: 32px;
 }
@@ -2573,9 +2630,9 @@ body.pdp-cta-visible .whatsapp-float {
 }
 
 .pack-name {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: clamp(42px, 3vw, 54px);
-  font-weight: 400;
+  font-weight: 600;
   line-height: 0.9;
   margin-bottom: 14px;
 }
@@ -2600,9 +2657,9 @@ body.pdp-cta-visible .whatsapp-float {
 }
 
 .pack-price-now {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 46px;
-  font-weight: 300;
+  font-weight: 600;
   color: var(--accent);
 }
 
@@ -2639,9 +2696,9 @@ body.pdp-cta-visible .whatsapp-float {
 .trust-icon  { font-size: 28px; margin-bottom: 14px; }
 
 .trust-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 16px;
-  font-weight: 400;
+  font-weight: 600;
   margin-bottom: 8px;
 }
 
@@ -2676,9 +2733,9 @@ body.pdp-cta-visible .whatsapp-float {
 }
 
 .review-text {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 20px;
-  font-weight: 300;
+  font-weight: 600;
   font-style: italic;
   line-height: 1.7;
   margin-bottom: 16px;
@@ -2745,9 +2802,9 @@ body.pdp-cta-visible .whatsapp-float {
 }
 
 .cart-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 22px;
-  font-weight: 300;
+  font-weight: 600;
 }
 
 .cart-subtitle {
@@ -2846,12 +2903,12 @@ body.pdp-cta-visible .whatsapp-float {
   color: var(--accent);
   display: grid;
   place-items: center;
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 24px;
 }
 
 .cart-empty-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 20px;
 }
 
@@ -2926,7 +2983,7 @@ body.pdp-cta-visible .whatsapp-float {
 }
 
 .cart-item-price {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 16px;
   color: var(--accent);
   line-height: 1;
@@ -3463,9 +3520,9 @@ body.pdp-cta-visible .whatsapp-float {
 }
 
 .cart-total-amount {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 36px;
-  font-weight: 300;
+  font-weight: 600;
   color: var(--accent);
   line-height: 0.95;
 }
@@ -3782,7 +3839,7 @@ body.pdp-cta-visible .whatsapp-float {
 }
 
 .footer-logo {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 24px;
   font-weight: 600;
   letter-spacing: 0.18em;
@@ -3953,9 +4010,9 @@ body.pdp-cta-visible .whatsapp-float {
 }
 
 .fc-name {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 23px;
-  font-weight: 300;
+  font-weight: 600;
   line-height: 1.15;
   color: var(--white);
   margin-bottom: 12px;
@@ -4502,9 +4559,9 @@ body.pdp-cta-visible .whatsapp-float {
 }
 
 .pdm-name {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: clamp(30px, 3.5vw, 46px);
-  font-weight: 300;
+  font-weight: 600;
   line-height: 1.05;
   letter-spacing: -0.02em;
   margin-bottom: 16px;
@@ -4648,9 +4705,9 @@ body.pdp-cta-visible .whatsapp-float {
 }
 
 .pdm-price {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: clamp(36px, 4vw, 48px);
-  font-weight: 300;
+  font-weight: 600;
   color: var(--accent);
   transition: all 0.25s ease;
   white-space: nowrap;
@@ -5567,9 +5624,9 @@ input[type="search"]::-webkit-search-decoration,
 }
 
 .sf-empty-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 30px;
-  font-weight: 300;
+  font-weight: 600;
   color: rgba(25, 24, 22, 0.45);
 }
 
@@ -5644,9 +5701,9 @@ input[type="search"]::-webkit-search-decoration,
 }
 
 .sf-drawer-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 20px;
-  font-weight: 300;
+  font-weight: 600;
   letter-spacing: 0.02em;
 }
 
@@ -5902,9 +5959,9 @@ input[type="search"]::-webkit-search-decoration,
 
 .rr-collection h3 {
   max-width: 330px;
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: clamp(30px, 4vw, 56px);
-  font-weight: 300;
+  font-weight: 600;
   line-height: 0.98;
   margin-bottom: 12px;
 }
@@ -5932,9 +5989,9 @@ input[type="search"]::-webkit-search-decoration,
 
 .rr-collection-feature strong {
   color: var(--white);
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 20px;
-  font-weight: 300;
+  font-weight: 600;
 }
 
 .rr-collection-support {
@@ -6101,7 +6158,7 @@ input[type="search"]::-webkit-search-decoration,
   place-items: center;
   height: 100%;
   color: rgba(122, 36, 50, 0.3);
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 64px;
 }
 
@@ -6121,9 +6178,9 @@ input[type="search"]::-webkit-search-decoration,
 .rr-name {
   min-height: 46px;
   color: var(--white);
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 22px;
-  font-weight: 300;
+  font-weight: 600;
   line-height: 1.05;
   margin-bottom: 12px;
 }
@@ -6158,7 +6215,7 @@ input[type="search"]::-webkit-search-decoration,
 
 .rr-price {
   color: var(--accent);
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 21px;
 }
 
@@ -6362,8 +6419,8 @@ input[type="search"]::-webkit-search-decoration,
   display: grid;
   place-items: center;
   color: rgba(122, 36, 50, 0.30);
-  font-family: var(--font-serif);
-  font-weight: 300;
+  font-family: var(--font-display);
+  font-weight: 600;
   font-size: clamp(32px, 6vw, 54px);
   letter-spacing: 0.06em;
   pointer-events: none;
@@ -6851,7 +6908,7 @@ textarea:focus-visible {
 }
 
 .asst-card-name {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 22px;
   line-height: 1.05;
   margin: 4px 0 6px;
@@ -6905,7 +6962,7 @@ textarea:focus-visible {
 }
 
 .asst-card-price {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 19px;
   color: var(--accent);
   white-space: nowrap;
@@ -6964,7 +7021,7 @@ textarea:focus-visible {
 }
 
 .asst-empty-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 22px;
   margin-bottom: 6px;
 }
@@ -7053,7 +7110,7 @@ textarea:focus-visible {
 }
 
 .bundle-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 26px;
   line-height: 1.05;
   margin-bottom: 6px;
@@ -7173,7 +7230,7 @@ textarea:focus-visible {
 }
 
 .bundle-total-amount {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 24px;
   color: var(--accent);
 }
@@ -7298,9 +7355,9 @@ textarea:focus-visible {
 
 .bundle-savings-badge strong {
   color: var(--white);
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 23px;
-  font-weight: 300;
+  font-weight: 600;
 }
 
 .bundle-copy {
@@ -7353,9 +7410,9 @@ textarea:focus-visible {
 
 .bundle-feature strong {
   color: var(--white);
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 24px;
-  font-weight: 300;
+  font-weight: 600;
 }
 
 .bundle-card .bundle-items {
@@ -7381,7 +7438,7 @@ textarea:focus-visible {
 .bundle-total-original {
   width: max-content;
   color: rgba(25, 24, 22, 0.38);
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 24px;
   line-height: 1;
   text-decoration: line-through;
@@ -7496,12 +7553,12 @@ textarea:focus-visible {
   margin: 0 0 12px;
 }
 .mood-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: clamp(38px, 7vw, 64px);
   line-height: 1.02;
   color: var(--ink);
   margin: 0 0 14px;
-  font-weight: 400;
+  font-weight: 600;
   letter-spacing: -0.01em;
 }
 .mood-tagline {
@@ -7550,11 +7607,11 @@ textarea:focus-visible {
 }
 
 .mood-section-h {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 22px;
   color: var(--ink);
   margin: 0 0 16px;
-  font-weight: 400;
+  font-weight: 600;
 }
 
 .mood-why { margin-bottom: 32px; }
@@ -7645,12 +7702,12 @@ textarea:focus-visible {
   margin: 0;
 }
 .mood-feature-name {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 20px;
   line-height: 1.1;
   color: var(--ink);
   margin: 0;
-  font-weight: 400;
+  font-weight: 600;
 }
 .mood-feature-conc {
   font-size: 9px;
@@ -7711,7 +7768,7 @@ textarea:focus-visible {
   color: var(--muted);
 }
 .mood-grid-name {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 16px;
   line-height: 1.1;
   color: var(--ink);
@@ -7751,7 +7808,7 @@ textarea:focus-visible {
 }
 .mood-discover-title {
   grid-column: 1 / 2;
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 22px;
   color: var(--ink);
   line-height: 1.05;
@@ -7984,9 +8041,9 @@ textarea:focus-visible {
 }
 .shortcuts-head { margin-bottom: 18px; }
 .shortcuts-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: clamp(24px, 4vw, 34px);
-  font-weight: 300;
+  font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.1;
 }
@@ -8048,7 +8105,7 @@ textarea:focus-visible {
   border-radius: 999px;
   border: 1px solid var(--accent-line);
   color: var(--accent);
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 18px;
   margin-bottom: 18px;
 }
@@ -8078,9 +8135,9 @@ textarea:focus-visible {
   background: linear-gradient(180deg, var(--surface-1), var(--surface-2));
 }
 .proof-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 20px;
-  font-weight: 400;
+  font-weight: 600;
   color: var(--text-strong);
   margin-bottom: 10px;
 }
@@ -8190,9 +8247,9 @@ textarea:focus-visible {
 .guide-section { padding: clamp(28px, 4vw, 44px) 0 clamp(20px, 3vw, 30px); }
 .guide-head { margin-bottom: 16px; }
 .guide-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: clamp(22px, 3.4vw, 30px);
-  font-weight: 300;
+  font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.1;
 }
@@ -8274,9 +8331,9 @@ textarea:focus-visible {
 }
 
 .gs-q {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: clamp(20px, 3vw, 24px);
-  font-weight: 400;
+  font-weight: 600;
   color: var(--text-strong);
   line-height: 1.15;
   margin-bottom: 16px;
@@ -8375,7 +8432,7 @@ textarea:focus-visible {
   color: var(--accent);
   font-weight: 600;
 }
-.cgs-answers { font-family: var(--font-serif); font-size: 19px; font-weight: 400; color: var(--text-strong); }
+.cgs-answers { font-family: var(--font-display); font-size: 19px; font-weight: 400; color: var(--text-strong); }
 .cgs-count { font-size: 12px; color: var(--text-soft); }
 .cgs-actions { display: flex; gap: 8px; }
 .cgs-adjust, .cgs-clear {
@@ -8431,9 +8488,9 @@ textarea:focus-visible {
   background: var(--surface-1);
 }
 .ck-kicker {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 16px;
-  font-weight: 400;
+  font-weight: 600;
   color: var(--text-strong);
   margin-bottom: 10px;
 }
@@ -8495,7 +8552,7 @@ textarea:focus-visible {
   min-width: 0;
 }
 .ck-compact-price {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 16px;
   color: var(--accent);
   white-space: nowrap;
@@ -8639,7 +8696,7 @@ textarea:focus-visible {
 }
 
 .intent-tile-label {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 20px;
   font-weight: 600;
   line-height: 1.2;
@@ -8710,7 +8767,7 @@ textarea:focus-visible {
 }
 
 .authenticity-panel h2 {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: clamp(24px, 3vw, 32px);
   font-weight: 600;
   line-height: 1.2;
@@ -8789,7 +8846,7 @@ textarea:focus-visible {
 .breadcrumb a:hover { color: var(--wine); }
 
 .page-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: clamp(30px, 4.2vw, 44px);
   font-weight: 600;
   line-height: 1.1;
@@ -8843,7 +8900,7 @@ textarea:focus-visible {
 }
 
 .finder-q {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: clamp(22px, 3vw, 30px);
   font-weight: 600;
   line-height: 1.2;
@@ -8932,4 +8989,539 @@ textarea:focus-visible {
 
 @media (min-width: 1024px) {
   .nav-drawer, .nav-scrim { display: none; }
+}
+
+/* =============================================================
+   ITERATION 2 — beginner-first storefront
+   Explaining the product before selling it, one obvious primary
+   action per screen, and the accent kept under 5% of the surface.
+   ============================================================= */
+
+/* ── Hero: what a decant physically is ───────────────────────────
+   The hero photograph is a full bottle (the only real photography this
+   project owns). These chips sit beside it and carry the part the photo
+   cannot yet show: the three sizes you can actually buy. Replace with a
+   real decant photo when one exists — the container is unchanged. */
+.hero-sizes {
+  display: flex;
+  gap: 8px;
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+}
+
+.hero-size {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+  padding: 10px 6px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.hero-size b {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+.hero-size span {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+/* ── "Botella original → Tu decant → Listo para usar" ────────────
+   The single most important explanation on the page: it says what the
+   business actually does, for someone who has never heard the word
+   "decant". Compact, iconographic, directly under the hero. */
+.howto-strip {
+  background: var(--surface);
+  border-block: 1px solid var(--line);
+}
+
+.howto-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 14px 0;
+}
+
+.howto-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  position: relative;
+  padding: 0 6px;
+  min-width: 0;
+}
+
+/* The arrow between steps is the whole point — it reads as a process. */
+.howto-step + .howto-step::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: 22px;
+  width: 6px;
+  height: 6px;
+  border-top: 1.5px solid var(--line);
+  border-right: 1.5px solid var(--line);
+  transform: rotate(45deg);
+}
+
+.howto-step svg {
+  width: 26px;
+  height: 26px;
+  color: var(--ink);
+  flex: 0 0 auto;
+}
+
+.howto-step span {
+  font-size: 12.5px;
+  line-height: 1.3;
+  color: var(--ink-soft);
+}
+
+@media (min-width: 768px) {
+  .howto-list { padding: 18px 0; gap: 12px; }
+  .howto-step { flex-direction: row; gap: 12px; justify-content: center; }
+  .howto-step svg { width: 30px; height: 30px; }
+  .howto-step span { font-size: 14px; text-align: left; }
+  .howto-step + .howto-step::before { top: 50%; margin-top: -3px; left: -6px; }
+}
+
+/* Compact trust line — stated once, right after the explanation. */
+.trust-line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 20px;
+  list-style: none;
+  margin: 0;
+  padding: 12px 0 0;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.trust-line li { display: flex; align-items: center; gap: 6px; }
+.trust-line svg { width: 15px; height: 15px; color: var(--ink-soft); }
+
+/* ── Home cards: a human sentence, then the price and one action ── */
+.card-blurb {
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+}
+
+/* On the home rail the action is the row, not a chip beside the price:
+   "Probar 5 ml" is the whole point of the card. */
+.rail-grid .card-purchase {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.rail-grid .card-price {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.rail-grid .card-action,
+.rail-grid .product-card .card-action.btn-primary {
+  width: 100%;
+  min-height: 44px;
+  justify-content: center;
+  background: var(--action);
+  color: var(--on-action);
+  border-color: var(--action);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.rail-grid .card-action:hover,
+.rail-grid .product-card .card-action.btn-primary:hover {
+  background: var(--action-hover);
+  border-color: var(--action-hover);
+  color: var(--on-action);
+}
+
+.rail-grid .card-action:disabled {
+  background: var(--bg-sunk);
+  border-color: var(--line);
+  color: var(--ink-faint);
+}
+
+/* Only four on the home, at every viewport. */
+.rail-grid--four > li:nth-child(n + 5) { display: none; }
+@media (min-width: 600px) { .rail-grid--four > li:nth-child(n + 5) { display: none; } }
+@media (min-width: 1024px) {
+  .rail-grid--four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .rail-grid--four > li:nth-child(n + 5) { display: none; }
+}
+
+/* ── "Ayúdame a elegir" — impossible to miss ─────────────────────
+   Header action (desktop), hero primary, and a band inside the catalog. */
+.nav-cta {
+  display: none;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--action);
+  color: var(--on-action);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.nav-cta:hover { background: var(--action-hover); color: var(--on-action); }
+.nav-cta .hero-cta-spark { color: #e9a4ae; }
+
+@media (min-width: 1024px) { .nav-cta { display: inline-flex; } }
+
+.helper-band {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  margin: clamp(20px, 3vw, 28px) 0;
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+.helper-band p {
+  margin: 0;
+  font-size: 15px;
+  color: var(--ink);
+  max-width: 46ch;
+}
+
+.helper-band .btn-primary { flex: 0 0 auto; }
+
+/* ── Finder results: three picks, then everything else ───────────── */
+.picks-grid {
+  display: grid;
+  gap: 14px;
+  list-style: none;
+  margin: 0 0 clamp(20px, 3vw, 28px);
+  padding: 0;
+}
+
+@media (min-width: 860px) {
+  .picks-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.pick-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+/* The best match is the only card that carries the accent. */
+.pick-card--best { border-color: var(--ink); }
+
+.pick-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ink-soft);
+  background: var(--bg-sunk);
+  border-bottom: 1px solid var(--line);
+}
+
+.pick-card--best .pick-label { color: var(--wine); }
+
+.pick-media {
+  aspect-ratio: 4 / 3;
+  background: var(--bg-sunk);
+  overflow: hidden;
+}
+
+.pick-media img { width: 100%; height: 100%; object-fit: cover; }
+
+.pick-body { display: flex; flex-direction: column; flex: 1; padding: 14px; }
+
+.pick-house {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 3px;
+}
+
+.pick-name {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+
+.pick-blurb {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+}
+
+.pick-why {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin-bottom: 12px;
+  padding-left: 14px;
+  position: relative;
+}
+
+.pick-why::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 7px;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--line);
+}
+
+.pick-buy {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.pick-price { font-size: 15px; font-weight: 600; color: var(--ink); }
+.pick-price small { font-weight: 400; color: var(--ink-soft); }
+
+.pick-action {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 10px 16px;
+  background: var(--action);
+  color: var(--on-action);
+  border: 1px solid var(--action);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pick-action:hover { background: var(--action-hover); }
+.pick-action:disabled { background: var(--bg-sunk); border-color: var(--line); color: var(--ink-faint); cursor: not-allowed; }
+
+/* The three-decant set, offered before the long list — not after it. */
+.pick-set {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  padding: 18px;
+  background: var(--bg-sunk);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  margin-bottom: 18px;
+}
+
+.pick-set-copy { min-width: 0; }
+.pick-set-title { font-size: 16px; font-weight: 600; color: var(--ink); margin-bottom: 2px; }
+.pick-set-note { font-size: 13.5px; color: var(--ink-soft); }
+
+.picks-more { text-align: center; }
+
+.picks-empty {
+  padding: clamp(24px, 4vw, 36px);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  color: var(--ink-soft);
+}
+
+/* Step-one asks two things; each gets its own labelled group. */
+.finder-group { margin-bottom: 18px; }
+
+.finder-group-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  margin-bottom: 8px;
+}
+
+.finder-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.finder-chip {
+  min-height: 44px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease-standard),
+              background var(--dur) var(--ease-standard);
+}
+
+.finder-chip:hover { border-color: var(--ink); }
+
+.finder-chip[aria-pressed="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--on-action);
+  font-weight: 600;
+}
+
+.finder-chip[aria-pressed="true"]::after { content: ' ✓'; }
+
+.finder-next { width: 100%; }
+.finder-next:disabled { background: var(--bg-sunk); border-color: var(--line); color: var(--ink-faint); cursor: not-allowed; }
+
+/* ── Catalog: search on the page, not only behind an icon ────────── */
+.catalog-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  margin-bottom: 12px;
+}
+
+.catalog-search svg { width: 18px; height: 18px; color: var(--ink-faint); flex: 0 0 auto; }
+
+.catalog-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: none;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  color: var(--ink);
+  min-height: 24px;
+}
+
+.catalog-search input::placeholder { color: var(--ink-faint); }
+.catalog-search:focus-within { border-color: var(--ink); }
+
+/* ── Loading skeletons that read as loading, not as breakage ─────── */
+.card-skeleton {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.card-skeleton::before {
+  content: '';
+  display: block;
+  aspect-ratio: 4 / 5;
+  background: var(--bg-sunk);
+}
+
+.card-skeleton-body { padding: 14px; display: grid; gap: 8px; }
+.card-skeleton-line { height: 11px; border-radius: 4px; background: var(--bg-sunk); }
+.card-skeleton-line--short { width: 45%; }
+.card-skeleton-line--wide { width: 80%; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .card-skeleton-line,
+  .card-skeleton::before { animation: rdSkeleton 1.4s ease-in-out infinite; }
+}
+
+/* ── WhatsApp float must not cover the primary action ────────────
+   Hidden until the visitor has scrolled past the first screen, so it can
+   never sit on top of "Ayúdame a elegir" or the first product. WhatsApp
+   is still reachable in the cart, the FAQ and the footer. */
+.whatsapp-float {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+  transition: opacity var(--dur-slow) var(--ease-standard),
+              transform var(--dur-slow) var(--ease-standard),
+              visibility var(--dur-slow);
+}
+
+.whatsapp-float.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+
+/* ── Mobile hero: short enough that the rail is the next thing ────
+   The photograph is the least load-bearing part of the hero on a phone —
+   the promise, the action and the sizes all rank above it — so it gets
+   the shallowest crop and the section ends right after. */
+@media (max-width: 899px) {
+  /* Same composition as the desktop and the mockup — promise on the left,
+     product photograph on the right — because stacking a full-width photo
+     under the copy pushed the first product a whole screen down. */
+  .hero-inner {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.62fr);
+    align-items: start;
+    gap: 14px;
+  }
+  .hero-content { grid-column: 1; }
+  .hero-figure { grid-column: 2; aspect-ratio: 3 / 4; }
+  .hero-sizes { grid-column: 1 / -1; margin-top: 4px; }
+  .hero-actions { flex-direction: column; align-items: stretch; gap: 8px; }
+  .hero-actions .hero-cta,
+  .hero-actions .btn-outline { width: 100%; }
+  .hero-figure figcaption { display: none; }
+}
+
+/* Below ~400px the two columns would squeeze the headline to three words a
+   line, so the photo drops to a short banner under the copy instead. */
+@media (max-width: 399px) {
+  .hero-inner { grid-template-columns: minmax(0, 1fr); }
+  .hero-content, .hero-figure, .hero-sizes { grid-column: 1; }
+  .hero-figure { aspect-ratio: 16 / 9; }
+}
+
+@media (max-width: 380px) {
+  .hero-size b { font-size: 14px; }
+  .hero-size span { font-size: 11px; }
+}
+
+
+/* The first screen must end on product, not on introduction: trim the hero
+   just enough that the "Más vendidos" heading clears an 844px viewport. */
+@media (max-width: 399px) {
+  .hero { padding-bottom: 14px; }
+  .hero-inner { gap: 12px; }
+  .hero-figure { aspect-ratio: 2 / 1; }
+  .hero-sizes { margin-top: 0; }
+  .howto-list { padding: 11px 0; }
+  .howto-step svg { width: 24px; height: 24px; }
+  .trust-line { padding-top: 10px; font-size: 12.5px; }
 }

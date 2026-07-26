@@ -27,18 +27,28 @@
   --surface-hi:  #ffffff;   /* raised / hovered card */
 
   --ink:         #191816;   /* primary text */
-  --ink-soft:    #6f6b64;   /* secondary text */
+  --ink-soft:    #68645e;   /* secondary text */
   /* Captions sit at 11–12px, so this is set by the 4.5:1 floor on --surface
      rather than by taste — a lighter grey fails on the card face. */
   --ink-faint:   #767168;   /* captions, meta */
 
-  --line:        #dcd6cc;   /* soft border */
+  --line:        #ded9d0;   /* soft border */
   --line-soft:   #e8e3da;   /* hairline inside cards */
 
-  --wine:        #7a2432;   /* identifiable accent */
+  /* Primary action is INK, not the accent. A shop's main button should read
+     as "the button", not as a brand statement — and it keeps the accent
+     scarce enough to still mean something where it does appear. */
+  --action:       #191816;
+  --action-hover: #30302d;
+  --on-action:    #fffefa;
+
+  /* The accent earns under 5% of the interface: the cart count, active
+     states, the "Ayúdame a elegir" spark and the recommendation label.
+     Nothing else. */
+  --wine:        #7a2432;
   --wine-hover:  #5c1823;
-  --wine-tint:   #f3e9e9;   /* faint accent wash — chips, active fills */
-  --wine-line:   #e0c8cb;   /* accent hairline */
+  --wine-tint:   #f6eeee;   /* faint accent wash — active fills only */
+  --wine-line:   #e3ced1;   /* accent hairline */
 
   --dark:        #171614;   /* dark sections + footer */
   --dark-soft:   #2a2825;   /* borders inside dark sections */
@@ -96,9 +106,15 @@
   --text-3xl: 48px;
   --text-4xl: 64px;
 
-  /* ── Font families ──────────────────────────────────── */
+  /* ── Font families ──────────────────────────────────────
+     Sans for everything the customer has to read and act on. The serif
+     is a brand detail only — the wordmark, which mirrors the logo — and
+     is deliberately NOT used for headings: large serif headlines are the
+     single biggest reason the previous pass read as a magazine article
+     about perfume rather than a shop that sells it. */
   --font-serif: 'Cormorant Garamond', 'Iowan Old Style', Georgia, serif;
   --font-sans:  'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: var(--font-sans);
 
   /* ── Spacing system ─────────────────────────────────── */
   --space-1: 8px;

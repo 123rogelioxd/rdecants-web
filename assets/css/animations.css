@@ -43,3 +43,11 @@
     transform: none;
   }
 }
+
+/* ── Loading skeleton shimmer ─────────────────────────────────
+   A flat grey block is indistinguishable from a broken card; a slow
+   pulse says 'still loading'. Gated on the motion preference. */
+@keyframes rdSkeleton {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}

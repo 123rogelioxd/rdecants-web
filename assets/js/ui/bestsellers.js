@@ -13,13 +13,20 @@
 import { CatalogProvider }   from '../providers/catalog.js';
 import { filterProducts }    from '../catalog/search.js';
 import { isSellable }        from '../recommendations/scoring.js';
+import { describeProduct }   from '../recommendations/describe.js';
 import { openProductModal }  from './modal.js';
 import { primeImageStates }  from './images.js';
 import { Tracker }           from '../tracking/tracker.js';
-import { getDisplayVariant, formatPrice } from '../utils/prices.js';
+import { getDisplayVariant, getVariantForSize, getPrimaryVariants, formatPrice } from '../utils/prices.js';
 import { getScarcityDisplay } from '../utils/scarcity.js';
 
-export const BESTSELLER_LIMIT = 8;
+/* Four on the home. More than that and the page becomes the catalog again;
+   the whole catalog is one tap away under "Ver todos". */
+export const BESTSELLER_LIMIT = 4;
+
+/* The presentation the home leads with. 5 ml is the size the copy promises
+   ("Probar 5 ml") and the one the price quotes. */
+export const TRY_SIZE_ML = 5;
 
 /* Pure: the products the rail should show, in order. Sold-out SKUs are
    excluded rather than shown as dead cards. */
@@ -41,6 +48,7 @@ export async function renderBestsellers(containerId = 'bestsellers-grid') {
   }
 
   const picks = selectBestsellers(products);
+  grid.setAttribute('aria-busy', 'false');
 
   if (!picks.length) {
     grid.innerHTML = `
@@ -57,20 +65,59 @@ export async function renderBestsellers(containerId = 'bestsellers-grid') {
   grid.appendChild(frag);
   primeImageStates(grid);
 
+  syncEntryPrice(products);
   picks.forEach(p => Tracker.productView(p));
 }
 
-/* Card face: photo · house · name · entry price + presentation · one action.
-   Deliberately no scent chips, no stock chatter, no story — that detail
-   belongs to the product view, not to a discovery rail. */
+/* The hero prints an entry price ("desde $100"). A hardcoded number drifts
+   the moment pricing changes, and a promise the catalog no longer honours is
+   worse than no promise — so the real floor across every orderable
+   presentation replaces it whenever the two disagree. */
+export function lowestOrderablePrice(products) {
+  const prices = (Array.isArray(products) ? products : [])
+    .filter(Boolean)
+    .filter(isSellable)
+    /* PRIMARY_SIZES only. The 2 ml exists as a cart completer, not as a
+       presentation anyone browses to — quoting it in the hero would
+       advertise an entry price the customer cannot actually pick, the same
+       trap the PDP already guards against. */
+    .flatMap(product => getPrimaryVariants(product)
+      .filter(v => !v.soldOut && v.availability > 0 && Number(v.price) > 0)
+      .map(v => Number(v.price)));
+  return prices.length ? Math.min(...prices) : null;
+}
+
+export function syncEntryPrice(products, doc = document) {
+  const target = doc.querySelector('[data-entry-price]');
+  if (!target) return;
+  const lowest = lowestOrderablePrice(products);
+  if (!Number.isFinite(lowest)) return;
+  const printed = Number(String(target.textContent).replace(/[^0-9.]/g, ''));
+  if (printed === lowest) return;
+  target.textContent = formatPrice(lowest).replace(/\s*MXN$/, '');
+}
+
+/* Card face: photo · brand · name · one plain-language line · 5 ml price ·
+   one action. No size selector here — three toggles on every card is how
+   the home became a control panel last time; the sizes live in the product
+   view, one tap away. */
 function _buildRailCard(product, index) {
-  const variant = getDisplayVariant(product);
+  const tryVariant = getVariantForSize(product, TRY_SIZE_ML);
+  const variant = tryVariant ?? getDisplayVariant(product);
   const stock = getScarcityDisplay(product);
   const canQuickAdd = Boolean(variant && !variant.soldOut && variant.availability > 0 && _validVariantId(variant.variant_id));
 
+  /* Quote the size the button offers. If 5 ml is not stocked for this
+     product, say which size the price refers to instead of implying 5 ml. */
   const priceHtml = variant
-    ? `Desde ${formatPrice(variant.price)} <small>· ${variant.size} ml</small>`
+    ? `${formatPrice(variant.price)} <small>· ${variant.size} ml</small>`
     : 'Consultar precio';
+
+  const actionLabel = tryVariant && canQuickAdd
+    ? `Probar ${TRY_SIZE_ML} ml`
+    : canQuickAdd ? `Probar ${variant.size} ml` : 'Ver tamaños';
+
+  const blurb = describeProduct(product);
 
   const li = document.createElement('li');
   const card = document.createElement('article');
@@ -94,11 +141,12 @@ function _buildRailCard(product, index) {
     <div class="card-body">
       <p class="card-house">${product.house}</p>
       <h3 class="card-name">${product.name}</h3>
+      ${blurb ? `<p class="card-blurb">${blurb}</p>` : ''}
       <div class="card-purchase">
         <p class="card-price">${priceHtml}</p>
         <button type="button" class="card-action"
-          aria-label="${canQuickAdd ? `Agregar ${product.name} al carrito` : `Ver opciones de ${product.name}`}">
-          ${canQuickAdd ? 'Agregar' : 'Ver'}
+          aria-label="${canQuickAdd ? `Agregar ${product.name} en ${variant.size} ml al carrito` : `Ver tamaños de ${product.name}`}">
+          ${actionLabel}
         </button>
       </div>
     </div>`;
@@ -107,8 +155,10 @@ function _buildRailCard(product, index) {
     event.stopPropagation();
     if (canQuickAdd) {
       window.__rd?.cart?.add(product.id, variant.size);
-      Tracker.productClicked(product, 'home_rail_quick_add');
+      Tracker.productClicked(product, 'home_rail_try_size');
     } else {
+      /* No orderable variant to add — open the product so the customer can
+         see the real presentations instead of hitting a dead button. */
       openProductModal(product);
       Tracker.productClicked(product, 'home_rail_action');
     }

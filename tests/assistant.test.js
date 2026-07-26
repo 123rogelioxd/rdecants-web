@@ -37,20 +37,54 @@ const catalog = [freshOffice, sweetNight, intenseOud, soldOut];
 
 const ids = (list) => list.map(r => r.product.id);
 
-test('exposes exactly three guided questions including gender', () => {
+test('asks three beginner questions, and never opens on a scent-family quiz', () => {
   assert.equal(ASSISTANT_QUESTIONS.length, 3, 'finder asks no more than three questions');
-  for (const q of ASSISTANT_QUESTIONS) {
-    assert.ok(q.id && q.label && Array.isArray(q.options) && q.options.length >= 2);
-  }
+
   assert.deepEqual(
     ASSISTANT_QUESTIONS.map(q => q.id),
-    ['family', 'occasion', 'gender'],
-    'budget question dropped; family/occasion/gender remain',
+    ['audience', 'occasion', 'preference'],
+    'who it is for → where it is worn → blend in or stand out',
   );
-  const genderQ = ASSISTANT_QUESTIONS.find(q => q.id === 'gender');
-  assert.ok(genderQ, 'has a gender question');
-  assert.equal(genderQ.options.length, 4, 'gender question has 4 options');
-  assert.equal(genderQ.options[0].value, 'any', 'defaults to "Me da igual"');
+
+  /* The old opener ("Fresco / Dulce / Intenso") assumed the customer already
+     knew perfume vocabulary. It must not be the first thing asked. */
+  assert.notEqual(ASSISTANT_QUESTIONS[0].id, 'family');
+
+  for (const q of ASSISTANT_QUESTIONS) {
+    assert.ok(q.id && q.label, 'every question is identified and labelled');
+    const groups = q.groups ?? [{ options: q.options }];
+    for (const group of groups) {
+      assert.ok(Array.isArray(group.options) && group.options.length >= 2, `${q.id} offers a real choice`);
+      for (const option of group.options) {
+        assert.ok(option.value && option.label, `${q.id} options are complete`);
+      }
+    }
+  }
+});
+
+test('step one collects who it is for and an age range on one screen', () => {
+  const audience = ASSISTANT_QUESTIONS[0];
+  assert.deepEqual(audience.groups.map(g => g.id), ['gender', 'age']);
+
+  const gender = audience.groups.find(g => g.id === 'gender');
+  assert.deepEqual(gender.options.map(o => o.value), ['hombre', 'mujer', 'any']);
+
+  const age = audience.groups.find(g => g.id === 'age');
+  assert.deepEqual(age.options.map(o => o.value), ['15-18', '19-24', '25-34', '35+']);
+});
+
+test('step two asks where it will be worn, in plain language', () => {
+  const occasion = ASSISTANT_QUESTIONS[1];
+  assert.deepEqual(
+    occasion.options.map(o => o.value),
+    ['dia', 'oficina', 'cita', 'noche', 'regalo'],
+  );
+  assert.match(occasion.options[0].label, /escuela/i, 'daily is phrased for a student too');
+});
+
+test('step three is the versatile-vs-standout choice', () => {
+  const preference = ASSISTANT_QUESTIONS[2];
+  assert.deepEqual(preference.options.map(o => o.value), ['versatil', 'destacar']);
 });
 
 test('finder result cap honors a limit of three (customer-facing contract)', () => {

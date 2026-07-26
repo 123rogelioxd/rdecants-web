@@ -21,7 +21,7 @@ test('catalog API GET requests bypass browser caches', () => {
    real device when this query string moves. Keep it in lockstep with the
    VERSION file and every entry point — a page left behind serves last year's
    CSS against this year's markup. */
-const ASSET_VERSION = '2026.07.26.1';
+const ASSET_VERSION = '2026.07.26.2';
 
 const ENTRY_POINTS = [
   'index.html', 'catalogo.html', 'elegir.html', 'ayuda.html',
@@ -43,9 +43,11 @@ test('HTML entry points declare no-cache metadata and current asset version', ()
       );
     }
 
+    /* Derived from ASSET_VERSION rather than hardcoded: a literal here is
+       how the version pin silently rots one bump behind the real one. */
     assert.doesNotMatch(
       html,
-      /\?v=(?!2026\.07\.26\.1)[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.[0-9]+/,
+      new RegExp(`\\?v=(?!${ASSET_VERSION.replace(/\./g, '\\.')})[0-9]{4}\\.[0-9]{2}\\.[0-9]{2}\\.[0-9]+`),
       `${filename} still references a stale asset version`,
     );
   }

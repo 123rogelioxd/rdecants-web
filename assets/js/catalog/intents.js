@@ -50,7 +50,11 @@ export function getIntentHref(key) {
    Both forms are readable and shareable; `intent` is just shorthand for
    a known answer set. Unknown values are ignored rather than guessed. */
 
-const ANSWER_KEYS = ['family', 'occasion', 'gender', 'climate', 'budget'];
+/* Every answer the ranking engine reads. `preference` and `age` belong here
+   too: leaving them out meant "Ver más opciones" handed the catalog a
+   different question than the one the three picks answered, so the wider
+   list was ranked differently from the recommendations above it. */
+const ANSWER_KEYS = ['family', 'occasion', 'gender', 'climate', 'budget', 'preference', 'age'];
 
 /* Pure: turn a query string into the answers the ranking engine accepts.
    Returns null when the URL asks for no guidance at all. */
