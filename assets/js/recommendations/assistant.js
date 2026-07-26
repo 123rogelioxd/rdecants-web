@@ -1,55 +1,87 @@
 /* =============================================================
-   RDECANTS - GUIDED SHOPPING ASSISTANT (logic)
-   Context-first recommendations: usage fit beats raw scent overlap.
+   RDECANTS — GUIDED SHOPPING ASSISTANT (questions + presentation)
+
+   All ranking now lives in recommendations/engine.js. This file owns two
+   things only:
+     • the question set the finder renders
+     • the shape the surfaces consume (finder picks, guided catalog rows)
+
+   It used to own the scoring too, and that is where the bugs were:
+     • `knownHeavyNight` — a hardcoded list of seven fragrance NAMES used
+       to fake contradictions the metadata could have expressed. Deleted;
+       every one of those cases is now a rule over a real field.
+     • `_pickByScores` — chose the "safe" and "standout" cards by scanning
+       the whole ranked list for the highest projection/longevity, ignoring
+       both the ranking and the gender tier. A masculine-leaning product
+       could therefore be presented as a woman's third recommendation even
+       though it sat last in the order. Deleted; the three cards are now
+       ranks #1, #2 and #3 of one order, nothing else.
+     • `FIT_BAND` — bucketed scores 6 points wide and then sorted by PRICE
+       inside a bucket, so a 6-point-worse match could lead because it was
+       cheaper. Deleted; price is a tie-break after score, confidence,
+       every priority dimension and stock health.
+     • age did nothing but pick a bottle size. It is now a real (small,
+       never disqualifying) affinity signal — see AGE_RULES in engine.js.
    ============================================================= */
 
 import {
-  USE_CASE_PROFILES,
-  SCENT_FAMILIES,
-  CLIMATES,
-  productSignals,
-  scoreProfileMatch,
-  normalizeText,
-} from './taxonomy.js';
+  rankCatalog,
+  getRecommendations,
+  evaluateProduct,
+  explain,
+  readAnswers,
+  suggestedStarterMl,
+  describeAnswers,
+  AGE_RULES,
+  ANSWER_LABELS,
+  ANSWER_VALUES,
+  HIGH_MATCH_THRESHOLD,
+  MIN_CONFIDENCE,
+  MAX_RESULTS,
+} from './engine.js';
 import { getMatchTier } from './reasoning.js';
-import { isSellable, getOperationalScore } from './scoring.js';
-import { getDefaultVariant, getOrderableVariants, getVariantForSize } from '../utils/prices.js';
-import { getGenderEligibility } from '../utils/gender.js';
 import { describeForBeginner } from './describe.js';
+import { getVariantForSize } from '../utils/prices.js';
+import { getGenderDisplay } from '../utils/gender.js';
 
-const MIN_RESULTS = 2;
-const MAX_RESULTS = 4;
-const LEVEL_BOOST = 2;
-const GENDER_BOOST = 3;
+export {
+  suggestedStarterMl,
+  describeAnswers,
+  readAnswers,
+  evaluateProduct,
+  AGE_RULES,
+  ANSWER_LABELS,
+  ANSWER_VALUES,
+  HIGH_MATCH_THRESHOLD,
+  MIN_CONFIDENCE,
+  MAX_RESULTS,
+};
 
-/* Two candidates whose FIT scores fall within this many points are treated as
-   "equally suitable" — a near-tie the accessible-price and operational signals
-   are allowed to break. A larger gap means one is a genuinely better match and
-   fit alone decides, so price can never bury a superior recommendation. */
-const FIT_BAND = 6;
+/* ── The questions ────────────────────────────────────────────────
+   Four one-tap questions, in customer language, and EVERY one of them
+   changes eligibility, score, order or the reason shown — that is what
+   tests/answerMatrix.test.js proves for all 540 combinations.
 
-const MAX_CONTEXT_SCORE = 40;
-const MAX_OLFACTIVE_SCORE = 30;
-const MAX_COMMERCIAL_SCORE = 20;
-const MAX_POPULARITY_SCORE = 10;
+   What each one buys, in R Supply OS fields:
+     gender   → fragrance.gender_profile  (hard constraint + 22/100)
+     age      → fragrance.moods + beginner_friendly / luxury / exclusivity
+                (8/100, plus the size suggested first)
+     occasion → fragrance.occasions + night_out / office_safe / date_night /
+                versatility / mass_appeal  (26/100, the heaviest)
+     goal     → projection / intensity / longevity / office_safe /
+                versatility / blind_buy_safe  (22/100)
+     climate  → fragrance.climates + summer / cold_weather  (16/100)
 
-/* Three high-value questions only (customer language, not internal taxonomy).
-   Budget is intentionally NOT asked — the real 5 ml price is always shown on
-   every result card, so a price question adds friction without adding signal.
-   The engine still honours an explicit `budget` answer when provided (used by
-   tests and any future surface); the finder UI simply leaves it unset ('any'). */
-/* Three beginner questions, in customer language.
+   Climate is the question this iteration added. It is not decoration:
+   69 of 73 products carry climate metadata and 51 carry summer /
+   cold_weather scores, and Mexico spans genuinely different climates, so
+   it separates products that the other three questions rank identically.
 
-   The old first question was "¿Qué tipo de aroma buscas? Fresco / Dulce /
-   Intenso". Someone who has never bought a fragrance cannot answer that —
-   and "intenso" is not even the same axis as "fresco" and "dulce" (it
-   describes strength, not scent). Asking it first turned the finder into a
-   quiz you had to already know perfume to pass. The scent family is still
-   available, but as an OPTIONAL refinement after the results, never as the
-   entry barrier.
-
-   What we ask instead is what a beginner does know: who it is for, where
-   they will wear it, and whether they want to blend in or be noticed. */
+   Scent family is deliberately NOT asked. A first-time buyer cannot answer
+   "fresco / dulce / intenso" before smelling anything, and asking it first
+   is what turned the old finder into a quiz you had to already know
+   perfume to pass. It stays available as an optional refinement carried in
+   the URL (?family=dulce) and it is fully scored when present. */
 export const ASSISTANT_QUESTIONS = [
   {
     id: 'audience',
@@ -62,7 +94,7 @@ export const ASSISTANT_QUESTIONS = [
         options: [
           { value: 'hombre', label: 'Hombre' },
           { value: 'mujer', label: 'Mujer' },
-          { value: 'any', label: 'Me da igual' },
+          { value: 'unisex', label: 'Unisex' },
         ],
       },
       {
@@ -85,632 +117,161 @@ export const ASSISTANT_QUESTIONS = [
       { value: 'oficina', label: 'Oficina' },
       { value: 'cita', label: 'Citas' },
       { value: 'noche', label: 'Noche o fiesta' },
-      { value: 'regalo', label: 'Regalo' },
+      { value: 'regalo', label: 'Es un regalo' },
     ],
   },
   {
-    id: 'preference',
-    label: '¿Qué prefieres?',
+    id: 'goal',
+    label: '¿Qué quieres que pase cuando lo uses?',
     options: [
-      { value: 'versatil',  label: 'Algo fácil de gustar y versátil' },
-      { value: 'destacar',  label: 'Algo que destaque y reciba cumplidos' },
+      { value: 'versatil', label: 'Que sea fácil de gustar y versátil' },
+      { value: 'destacar', label: 'Que destaque y reciba cumplidos' },
+      { value: 'discreto', label: 'Que se note poco y no incomode' },
+    ],
+  },
+  {
+    id: 'climate',
+    label: '¿Cómo es el clima donde lo vas a usar?',
+    options: [
+      { value: 'calido', label: 'Caluroso la mayor parte del año' },
+      { value: 'templado', label: 'Templado, lo usaré todo el año' },
+      { value: 'frio', label: 'Frío o de noche fresca' },
     ],
   },
 ];
 
-/* ── Age: an explicit, checkable rule for metadata we do NOT have ──────
-   The catalog carries no age-appropriateness field, and inventing one
-   ("this is a teenager's fragrance") would be fabricating a compatibility
-   the data cannot support. So age never filters or reorders products.
-   What it legitimately informs is how much to suggest buying first — a
-   15-year-old testing a first fragrance should be pointed at the smallest
-   decant, not the 10 ml. If the backend ever exposes an audience field,
-   this is the single place to widen the rule. */
-export const AGE_RULES = {
-  '15-18': { starterMl: 3 },
-  '19-24': { starterMl: 5 },
-  '25-34': { starterMl: 5 },
-  '35+':   { starterMl: 5 },
-};
-
-export function suggestedStarterMl(age) {
-  return AGE_RULES[String(age ?? '')]?.starterMl ?? 5;
+/** The answer id each step writes (a grouped step writes one per group). */
+export function questionAnswerIds(question) {
+  return question.groups ? question.groups.map(group => group.id) : [question.id];
 }
 
-/* ── Preference: versatile vs. standout ───────────────────────────────
-   Scored off the fragrance scores the backend already sends plus the
-   product's own tags. "regalo" has no scent context of its own, so a gift
-   is treated as wanting the safe, widely-liked option — stated here rather
-   than hidden in the ranking. */
-const PREFERENCE_RULES = {
-  versatil: {
-    scores: ['versatility', 'crowdpleaser'],
-    tags: ['versatil', 'versatile', 'diario', 'daily', 'facil de usar', 'easy wear', 'limpio', 'crowdpleaser'],
-    reason: 'Fácil de usar y agrada a casi todos',
-  },
-  destacar: {
-    scores: ['projection', 'longevity'],
-    tags: ['alto rendimiento', 'beast mode', 'proyeccion', 'llamativo', 'hype', 'cumplidos', 'compliment'],
-    reason: 'Proyecta y suele recibir cumplidos',
-  },
-};
-
-const MAX_PREFERENCE_SCORE = 14;
-
+/* Legacy alias: the finder used to call the third question `preference`.
+   A gift with no stated goal is still treated as wanting a safe pick —
+   stated here rather than hidden in the ranking. */
 export function resolvePreference(answers = {}) {
-  if (answers.preference === 'versatil' || answers.preference === 'destacar') return answers.preference;
-  /* A gift should be a safe bet unless the buyer said otherwise. */
+  const goal = answers.goal ?? answers.preference;
+  if (ANSWER_VALUES.goal.includes(goal)) return goal;
   return answers.occasion === 'regalo' ? 'versatil' : null;
 }
 
-const OCCASION_USE_CASES = {
-  dia: ['diario'],
-  noche: ['seductor', 'fiesta'],
-  oficina: ['oficina'],
-  fiesta: ['fiesta'],
-  cita: ['seductor', 'elegante'],
-  formal: ['elegante'],
-  casual: ['diario'],
-};
+/* ── Result shapes ────────────────────────────────────────────────── */
 
-const OCCASION_LABEL = {
-  dia: 'Diario',
-  noche: 'Noche',
-  oficina: 'Oficina',
-  fiesta: 'Fiesta',
-  cita: 'Cita',
-  formal: 'Formal',
-  casual: 'Casual',
-};
-
-const BUDGET_RANGES = {
-  low: [0, 150],
-  mid: [150, 250],
-  high: [250, Infinity],
-  any: [0, Infinity],
-};
-
-const _profileByKey = new Map(USE_CASE_PROFILES.map(p => [p.key, p]));
-
-const CONTEXT_RULES = {
-  dia: {
-    wanted: ['dia', 'diario', 'daily', 'daytime', 'casual', 'versatil', 'versatile'],
-    contradictions: ['noche', 'night', 'nocturno', 'antro', 'club', 'fiesta', 'party'],
-    penalty: 40,
-    reason: 'Excelente para uso de día',
-    warning: 'Mejor para planes de noche',
-  },
-  noche: {
-    wanted: ['noche', 'night', 'nocturno', 'cita', 'date', 'fiesta', 'party', 'antro'],
-    contradictions: [],
-    penalty: 0,
-    reason: 'Encaja con planes de noche',
-  },
-  oficina: {
-    wanted: ['oficina', 'office', 'trabajo', 'work', 'formal', 'limpio', 'clean', 'discreto'],
-    contradictions: ['antro', 'club', 'fiesta', 'party', 'alto rendimiento', 'llamativo', 'intenso', 'beast mode'],
-    penalty: 30,
-    reason: 'Adecuada para oficina',
-    warning: 'Puede sentirse demasiado invasiva para oficina',
-  },
-  fiesta: {
-    wanted: ['fiesta', 'party', 'antro', 'club', 'noche', 'night', 'social', 'alto rendimiento'],
-    contradictions: [],
-    penalty: 0,
-    reason: 'Funciona para salidas y planes sociales',
-  },
-  cita: {
-    wanted: ['cita', 'date', 'date night', 'romantic', 'seductor', 'sensual', 'elegante'],
-    contradictions: ['oficina', 'office', 'gym', 'sport'],
-    penalty: 15,
-    reason: 'Encaja para una cita',
-    warning: 'Menos enfocado a citas',
-  },
-  formal: {
-    wanted: ['formal', 'evento formal', 'elegante', 'premium', 'lujo', 'sophisticated'],
-    contradictions: ['gym', 'sport', 'playa', 'beach', 'casual only'],
-    penalty: 20,
-    reason: 'Funciona para contexto formal',
-    warning: 'Mejor para planes casuales',
-  },
-  casual: {
-    wanted: ['casual', 'diario', 'daily', 'daytime', 'facil de usar', 'easy wear'],
-    contradictions: ['evento formal', 'formal only', 'black tie'],
-    penalty: 15,
-    reason: 'Fácil de usar en plan casual',
-    warning: 'Puede sentirse demasiado formal',
-  },
-  calido: {
-    wanted: ['calido', 'verano', 'summer', 'hot weather', 'warm-weather', 'tropical', 'fresco', 'fresh'],
-    contradictions: ['frio', 'cold', 'invierno', 'winter', 'heavy', 'pesado', 'denso', 'gourmand', 'tabaco', 'tobacco'],
-    penalty: 30,
-    reason: 'Funciona bien en clima cálido',
-    warning: 'Puede sentirse pesado en calor',
-  },
-  frio: {
-    wanted: ['frio', 'cold', 'invierno', 'winter', 'templado', 'ambar', 'vainilla', 'tabaco', 'tobacco'],
-    contradictions: [],
-    penalty: 0,
-    reason: 'Rinde mejor en clima fresco o frío',
-  },
-};
-
-const FAMILY_RULES = {
-  fresco: {
-    wanted: ['fresco', 'fresh', 'limpio', 'clean', 'citrico', 'citrus', 'acuatico', 'aquatic', 'aromatico', 'aromatic'],
-    reason: 'Perfil fresco y fácil de usar',
-  },
-  dulce: {
-    wanted: ['dulce', 'sweet', 'vainilla', 'vanilla', 'tonka', 'miel', 'honey', 'frutal', 'fruity', 'gourmand'],
-    reason: 'Toque dulce sin perder el contexto',
-  },
-  intenso: {
-    wanted: ['intenso', 'intense', 'oud', 'cuero', 'leather', 'tabaco', 'tobacco', 'ambar', 'amber', 'especiado', 'spicy'],
-    reason: 'Perfil intenso y con presencia',
-  },
-  elegante: {
-    wanted: ['elegante', 'elegant', 'formal', 'premium', 'lujo', 'luxury', 'nicho', 'iris', 'woody', 'madera'],
-    reason: 'Perfil elegante y pulido',
-  },
-};
-
-/* Build the sellable, gender-eligible, budget-fitting candidate set with a
-   FIT score for each. Shared by the capped finder (getAssistantRecommendations)
-   and the full guided-catalog ranking (rankCatalogForAnswers) so both surfaces
-   rank identically off one engine. */
-function _buildCandidates(answers, products) {
-  return products
-    .filter(isSellable)
-    .map(product => ({ product, genderEligibility: getGenderEligibility(product, answers.gender) }))
-    .filter(entry => entry.genderEligibility.eligible)
-    .map(entry => ({ ...entry, variant: _variantForBudget(entry.product, answers.budget) }))
-    .filter(entry => entry.variant)
-    .map(entry => {
-      const signals = productSignals(entry.product);
-      const breakdown = _matchBreakdown(entry.product, signals, answers);
-      return {
-        ...entry,
-        breakdown,
-        matchScore: breakdown.total,
-        /* FIT is suitability only (no commercial/operational/price). It ranks. */
-        fit: breakdown.fit,
-        operational: getOperationalScore(entry.product),
-        price: Number(entry.variant.price) || Infinity,
-      };
-    })
-    /* Require genuine suitability — a product that only scored on commercial
-       appeal (fit === 0) is never recommended. */
-    .filter(entry => entry.fit > 0);
-}
-
-function _toRecommendation(entry, maxFit, answers) {
-  const { product, variant, fit, breakdown } = entry;
+function _toRecommendation(evaluation, answers, rank) {
   return {
-    product,
-    variant,
-    matchScore: fit,
-    matchTier: getMatchTier(fit, maxFit),
-    reasons: _explainRecommendation(product, breakdown),
-    scoreBreakdown: breakdown,
-    useCase: OCCASION_LABEL[answers.occasion] ?? _topUseCaseLabel(product),
+    product: evaluation.product,
+    variant: evaluation.variant,
+    /* 0–100 compatibility. Kept under the old key so existing surfaces
+       keep working; it is a percentage of the answered weights now, not an
+       unbounded point total. */
+    matchScore: evaluation.compatibility,
+    compatibility: evaluation.compatibility,
+    confidence: evaluation.confidence,
+    matchTier: getMatchTier(evaluation.compatibility, 100),
+    genderDisplay: getGenderDisplay(evaluation.product),
+    reason: explain(evaluation, answers, { rank }),
+    reasons: [explain(evaluation, answers, { rank })],
+    scoreBreakdown: evaluation.breakdown,
+    useCase: ANSWER_LABELS.occasion?.[answers.occasion] ?? 'Versátil',
+    genderPriority: evaluation.genderPriority,
   };
 }
 
+/**
+ * Capped recommendations (the old finder API). Best first, never padded.
+ */
 export function getAssistantRecommendations(answers = {}, products = [], { limit = MAX_RESULTS } = {}) {
   if (!Array.isArray(products) || !products.length) return [];
-
-  const candidates = _buildCandidates(answers, products);
-  if (!candidates.length) return [];
-
-  const maxFit = Math.max(...candidates.map(c => c.fit));
-  const ranked = _rankBeginnerSafe(candidates);
-  const top = ranked.slice(0, Math.max(MIN_RESULTS, Math.min(limit, MAX_RESULTS)));
-
-  return top.map(entry => _toRecommendation(entry, maxFit, answers));
+  const ranked = rankCatalog(products, answers, { limit });
+  return ranked.results.map((evaluation, index) =>
+    _toRecommendation(evaluation, ranked.answers, index + 1));
 }
 
-/* Guided-catalog ranking: the SAME beginner-safe order as the finder, but
-   uncapped, so the finder's answers can re-rank the whole catalog grid in place
-   (top pick flagged) instead of rendering a separate results view. Returns only
-   genuinely-suitable matches; the caller offers "Ver todo" to exit guided mode
-   back to the full catalog. */
+/**
+ * Uncapped guided-catalog ranking — the SAME order as the finder, so the
+ * grid and the three picks can never disagree. Returns only matches that
+ * cleared every hard constraint and both gates; the caller offers
+ * "Ver todo el catálogo" to leave personalized mode.
+ */
 export function rankCatalogForAnswers(answers = {}, products = []) {
   if (!Array.isArray(products) || !products.length) return [];
-
-  const candidates = _buildCandidates(answers, products);
-  if (!candidates.length) return [];
-
-  const maxFit = Math.max(...candidates.map(c => c.fit));
-  return _rankBeginnerSafe(candidates).map((entry, index) => ({
-    ..._toRecommendation(entry, maxFit, answers),
+  const ranked = rankCatalog(products, answers);
+  return ranked.results.map((evaluation, index) => ({
+    ..._toRecommendation(evaluation, ranked.answers, index + 1),
+    rank: index + 1,
     isTop: index === 0,
   }));
 }
 
-/* ── The three answers a beginner can actually act on ─────────────────
-   Handing someone 28 "matches" is not a recommendation, it is the catalog
-   with extra steps. The finder shows exactly three, each answering a
-   different worry: the best overall fit, the one hardest to dislike, and
-   the one that gets noticed. The rest stay one click away behind
-   "Ver más opciones". */
+/**
+ * The guided catalog's full envelope: the same ranked rows plus the honest
+ * states the grid has to render (nothing found, only compatible profiles,
+ * and the single condition worth relaxing).
+ */
+export function rankGuidedCatalog(answers = {}, products = []) {
+  const ranked = rankCatalog(products, answers);
+  return {
+    answers: ranked.answers,
+    rows: ranked.results.map((evaluation, index) => ({
+      ..._toRecommendation(evaluation, ranked.answers, index + 1),
+      rank: index + 1,
+      isTop: index === 0,
+    })),
+    notices: ranked.notices,
+    relaxation: ranked.relaxation,
+    total: ranked.total,
+  };
+}
+
+/**
+ * The finder's three cards. Ranks #1, #2, #3 of ONE order — no roles, no
+ * second selection pass, so the card order is literally the score order.
+ *
+ * Returns the full result envelope so the page can render the honest
+ * states too: `notices` (e.g. only compatible-profile matches were found)
+ * and `relaxation` (the single condition whose removal would help most).
+ */
+export function getBeginnerPicks(answers = {}, products = []) {
+  const { picks } = getFinderResult(answers, products);
+  return picks;
+}
+
+export function getFinderResult(answers = {}, products = []) {
+  const result = getRecommendations(products, answers, { limit: MAX_RESULTS });
+  const starterMl = suggestedStarterMl(result.answers.age);
+
+  return {
+    ...result,
+    summary: describeAnswers(result.answers),
+    picks: result.picks.map(pick => {
+      const suggestedVariant = getVariantForSize(pick.product, starterMl) ?? pick.variant;
+      return {
+        ...pick,
+        /* `role` used to be best / safe / standout, which implied three
+           different jobs and let the second and third card be chosen by a
+           different rule than the first. It is now just the position. */
+        role: `rank${pick.rank}`,
+        blurb: describeForBeginner(pick.product),
+        reasons: [pick.reason],
+        matchScore: pick.compatibility,
+        matchTier: getMatchTier(pick.compatibility, 100),
+        scoreBreakdown: pick.breakdown,
+        suggestedVariant,
+        suggestedMl: suggestedVariant?.size ?? starterMl,
+      };
+    }),
+  };
+}
+
+/** Customer-facing label for the Nth card. Strict score order, no roles. */
+export function pickLabel(rank) {
+  return `Nuestra recomendación #${rank}`;
+}
+
+/* Kept as an object for the surfaces that render a static label list. */
 export const PICK_LABELS = {
-  best:     'La mejor para ti',
-  safe:     'La opción más segura',
-  standout: 'La que más destaca',
+  1: pickLabel(1),
+  2: pickLabel(2),
+  3: pickLabel(3),
 };
 
-export const PICK_ORDER = ['best', 'safe', 'standout'];
-
-export function getBeginnerPicks(answers = {}, products = []) {
-  const ranked = rankCatalogForAnswers(answers, products);
-  if (!ranked.length) return [];
-
-  const starterMl = suggestedStarterMl(answers.age);
-  const used = new Set();
-  const picks = [];
-
-  const take = (rec, role) => {
-    if (!rec || used.has(String(rec.product.id))) return;
-    used.add(String(rec.product.id));
-    picks.push({
-      ...rec,
-      role,
-      label: PICK_LABELS[role],
-      blurb: describeForBeginner(rec.product),
-      /* What to buy first, per the age rule — falling back to whatever
-         presentation is actually orderable. */
-      suggestedVariant: getVariantForSize(rec.product, starterMl) ?? rec.variant,
-      suggestedMl: getVariantForSize(rec.product, starterMl)?.size ?? rec.variant?.size ?? starterMl,
-    });
-  };
-
-  take(ranked[0], 'best');
-  take(_pickByScores(ranked.filter(r => !used.has(String(r.product.id))), ['versatility', 'crowdpleaser']), 'safe');
-  take(_pickByScores(ranked.filter(r => !used.has(String(r.product.id))), ['projection', 'longevity']), 'standout');
-
-  return picks.slice(0, 3);
-}
-
-/* Highest average of the given fragrance scores. Ties keep the earlier
-   (better-fitting) candidate, so the result is fully deterministic. */
-function _pickByScores(list, keys) {
-  let best = null;
-  let bestValue = -1;
-  for (const rec of list) {
-    const scores = rec.product?.fragrance?.scores ?? {};
-    const value = keys.reduce((sum, key) => sum + _num(scores[key]), 0) / keys.length;
-    if (value > bestValue + 1e-9) { bestValue = value; best = rec; }
-  }
-  return best ?? list[0] ?? null;
-}
-
-/* Beginner-safe ranking (see FIT_BAND). Ordering priority:
-     1. Gender fit tier — primary before secondary before fallback.
-     2. FIT, bucketed into bands — a clearly better match always wins; price
-        can never displace a genuinely superior recommendation.
-     3. Within a band (equally suitable) → the more ACCESSIBLE (cheaper) option
-        first, so a first-time buyer is never led with the most expensive of
-        equals.
-     4. Operational health — real stock/demand — a close tie-break only.
-     5. Product id — fully deterministic for tests.
-   Commercial appeal and raw price never enter fit; they only act here, and
-   only within a near-tie. */
-function _rankBeginnerSafe(candidates) {
-  return candidates
-    .map(entry => ({ entry, band: Math.round(entry.fit / FIT_BAND) }))
-    .sort((a, b) =>
-      _priorityRank(a.entry.genderEligibility.priority) - _priorityRank(b.entry.genderEligibility.priority) ||
-      b.band - a.band ||
-      a.entry.price - b.entry.price ||
-      b.entry.operational - a.entry.operational ||
-      String(a.entry.product.id).localeCompare(String(b.entry.product.id)))
-    .map(({ entry }) => entry);
-}
-
-function _matchScore(product, signals, answers) {
-  return _matchBreakdown(product, signals, answers).total;
-}
-
-function _matchBreakdown(product, signals, answers) {
-  const context = _contextScore(product, signals, answers);
-  const olfactive = _olfactiveScore(product, signals, answers);
-  const commercial = _commercialScore(product);
-  const popularity = _popularityScore(product);
-  const performance = _performanceScore(product, answers);
-  const preference = _preferenceScore(product, signals, answers);
-  const levelAdjust = _levelAdjust(product, signals, answers.level);
-  const genderBoost = _genderScore(product, answers.gender);
-
-  /* FIT = suitability only: how well the fragrance matches the customer's
-     answers (occasion/climate context + scent family + performance − any
-     contradiction penalty + a small beginner-safe level nudge). It deliberately
-     EXCLUDES commercial appeal, operational health, popularity and price so that
-     match quality is the sole ranking input; the excluded signals act only as
-     near-tie breakers in _rankBeginnerSafe. */
-  const fit = Math.max(0, context.score + olfactive.score + performance.score + preference.score + levelAdjust - context.penalty);
-
-  return {
-    context: context.score,
-    olfactive: olfactive.score,
-    commercial,
-    popularity,
-    performance: performance.score,
-    preference: preference.score,
-    penalty: context.penalty,
-    fit,
-    warnings: context.warnings,
-    positives: [...context.positives, ...olfactive.positives, ...performance.positives, ...preference.positives],
-    total: context.score + olfactive.score + commercial + popularity + performance.score
-         + preference.score + levelAdjust + genderBoost - context.penalty,
-  };
-}
-
-/* "Fácil de gustar" vs "que destaque" — the third beginner question.
-   Reads the fragrance scores the backend already provides and the product's
-   own tags; contributes nothing when neither is present, so a thin product
-   record can never be ranked on a preference it has no data for. */
-function _preferenceScore(product, signals, answers) {
-  const preference = resolvePreference(answers);
-  const rule = PREFERENCE_RULES[preference];
-  if (!rule) return { score: 0, positives: [] };
-
-  const scores = product?.fragrance?.scores ?? {};
-  const values = rule.scores.map(key => _num(scores[key])).filter(v => v > 0);
-  const average = values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
-
-  const f = product?.fragrance ?? {};
-  const tags = _normalizedList([
-    ...(f.style_tags ?? []), ...(f.recommendation_tags ?? []),
-    ...(f.mood_tags ?? []), ...(f.commercial_roles ?? []),
-  ]);
-  const tagHits = _countTagHits(tags, rule.tags);
-
-  const score = Math.min(MAX_PREFERENCE_SCORE, average * 10 + Math.min(4, tagHits * 2));
-  return {
-    score,
-    positives: score >= 5 ? [rule.reason] : [],
-  };
-}
-
-function _contextScore(product, signals, answers) {
-  const meta = _metadata(product);
-  const positives = [];
-  const warnings = [];
-  let score = 0;
-  let penalty = 0;
-
-  for (const key of [answers.occasion, answers.climate].filter(Boolean)) {
-    const rule = CONTEXT_RULES[key];
-    if (!rule) continue;
-
-    const wantedHits = _countTagHits(meta.context, rule.wanted);
-    const legacyScore = _legacyContextScore(key, signals);
-    if (wantedHits > 0 || legacyScore > 0) {
-      score += Math.min(16, wantedHits * 8 + Math.min(8, legacyScore));
-      if (rule.reason) positives.push(rule.reason);
-    }
-
-    if (_hasAny(meta.context, rule.contradictions) || _hasContextContradiction(product, key)) {
-      penalty += rule.penalty;
-      if (rule.warning) warnings.push(rule.warning);
-    }
-  }
-
-  const scores = product?.fragrance?.scores ?? {};
-  const versatility = _num(scores.versatility);
-  if (answers.occasion === 'dia' && versatility >= 0.75) {
-    score += 6;
-    positives.push('Alta versatilidad para el día a día');
-  }
-  if (answers.occasion === 'oficina' && _num(scores.projection) >= 0.85) {
-    penalty += 30;
-    warnings.push('Puede proyectar demasiado para oficina');
-  }
-  if (answers.climate === 'calido' && _num(scores.freshness) >= 0.65) {
-    score += 6;
-  }
-
-  return {
-    score: Math.min(MAX_CONTEXT_SCORE, score),
-    penalty,
-    positives: _dedupe(positives),
-    warnings: _dedupe(warnings),
-  };
-}
-
-function _olfactiveScore(product, signals, answers) {
-  const meta = _metadata(product);
-  const positives = [];
-  let score = 0;
-
-  const family = SCENT_FAMILIES[answers.family];
-  const legacyFamilyScore = family ? scoreProfileMatch(family, signals) : 0;
-  if (family) score += Math.min(12, legacyFamilyScore);
-
-  const familyRule = FAMILY_RULES[answers.family];
-  if (familyRule) {
-    const hits = _countTagHits(meta.olfactive, familyRule.wanted);
-    if (hits > 0 || legacyFamilyScore > 0) {
-      score += Math.min(14, hits * 5);
-      positives.push(familyRule.reason);
-    }
-  }
-
-  if (answers.family === 'dulce') {
-    const sweetness = _num(product?.fragrance?.scores?.sweetness);
-    if (sweetness >= 0.35) {
-      score += sweetness >= 0.75 ? 7 : 5;
-      positives.push(sweetness >= 0.75 ? 'Dulzor marcado' : 'Moderadamente dulce');
-    }
-  }
-
-  return {
-    score: Math.min(MAX_OLFACTIVE_SCORE, score),
-    positives: _dedupe(positives),
-  };
-}
-
-function _commercialScore(product) {
-  const f = product?.fragrance ?? {};
-  const scores = f.scores ?? {};
-  let score = 0;
-  score += Math.max(_num(scores.crowdpleaser), _num(scores.mass_appeal), _num(scores.compliment)) * 8;
-  score += _num(scores.versatility) * 8;
-
-  const tags = _normalizedList([...(f.recommendation_tags ?? []), ...(f.commercial_roles ?? []), product?.commercial_role]);
-  if (_hasAny(tags, ['fragancia firma', 'signature', 'versatil', 'versatile', 'diario', 'daily'])) score += 4;
-  if (_hasAny(tags, ['polarizing', 'experimental'])) score -= 8;
-
-  return Math.max(0, Math.min(MAX_COMMERCIAL_SCORE, score));
-}
-
-function _performanceScore(product, answers) {
-  if (!['long_lasting', 'long-lasting', 'longevity'].includes(normalizeText(answers.performance))) {
-    return { score: 0, positives: [] };
-  }
-
-  const f = product?.fragrance ?? {};
-  const tags = _normalizedList([...(f.recommendation_tags ?? []), ...(f.style_tags ?? []), ...(f.commercial_roles ?? [])]);
-  const longevity = _num(f.scores?.longevity);
-  const hasPerformanceTag = _hasAny(tags, ['alto rendimiento', 'long lasting', 'long-lasting', 'beast mode']);
-  const score = Math.min(10, longevity * 8 + (hasPerformanceTag ? 2 : 0));
-  return {
-    score,
-    positives: score > 0 ? ['Buena duración'] : [],
-  };
-}
-
-function _popularityScore(product) {
-  const operational = getOperationalScore(product);
-  if (!Number.isFinite(operational)) return 0;
-  return Math.max(0, Math.min(MAX_POPULARITY_SCORE, operational));
-}
-
-function _genderScore(product, genderPref) {
-  if (!genderPref || genderPref === 'any') return 0;
-  const eligibility = getGenderEligibility(product, genderPref);
-  return eligibility.priority === 'primary' ? GENDER_BOOST : 0;
-}
-
-function _priorityRank(priority) {
-  return { primary: 0, secondary: 1, fallback: 2 }[priority] ?? 3;
-}
-
-function _levelAdjust(product, signals, level) {
-  if (level === 'beginner') {
-    const diario = _profileByKey.get('diario');
-    const safe = product.featured || scoreProfileMatch(diario, signals) > 0;
-    return safe ? LEVEL_BOOST : 0;
-  }
-  if (level === 'enthusiast') {
-    const elegante = _profileByKey.get('elegante');
-    return scoreProfileMatch(elegante, signals) > 0 ? LEVEL_BOOST : 0;
-  }
-  return 0;
-}
-
-function _variantForBudget(product, budget) {
-  const [min, max] = BUDGET_RANGES[budget] ?? BUDGET_RANGES.any;
-  const defaultVariant = getDefaultVariant(product);
-
-  if (budget === 'any' || !budget) return defaultVariant;
-  if (defaultVariant && _priceInRange(defaultVariant.price, min, max)) return defaultVariant;
-
-  return getOrderableVariants(product)
-    .find(variant => _priceInRange(variant.price, min, max)) ?? null;
-}
-
-function _priceInRange(price, min, max) {
-  return Number.isFinite(price) && price >= min && price <= max;
-}
-
-function _topUseCaseLabel(product) {
-  const signals = productSignals(product);
-  const top = USE_CASE_PROFILES
-    .map(p => ({ label: p.label, score: scoreProfileMatch(p, signals) }))
-    .sort((a, b) => b.score - a.score)[0];
-  return top && top.score > 0 ? top.label : 'Versátil';
-}
-
-function _metadata(product) {
-  const f = product?.fragrance ?? {};
-  return {
-    context: _normalizedList([
-      ...(f.recommendation_tags ?? []),
-      ...(f.recommended_context_tags ?? []),
-      ...(f.occasions ?? []),
-      ...(f.climates ?? f.climate_tags ?? []),
-      ...(f.seasons ?? f.season_tags ?? []),
-      ...(f.mood_tags ?? []),
-    ]),
-    olfactive: _normalizedList([
-      f.scent_family_normalized,
-      ...(f.accords ?? []),
-      ...(f.style_tags ?? []),
-      ...(f.mood_tags ?? []),
-    ]),
-  };
-}
-
-function _legacyContextScore(key, signals) {
-  if (key === 'calido' || key === 'frio') {
-    const climate = CLIMATES[key];
-    return climate ? Math.min(8, scoreProfileMatch(climate, signals)) : 0;
-  }
-
-  const keys = OCCASION_USE_CASES[key] ?? [];
-  return keys.reduce((best, profileKey) => {
-    const profile = _profileByKey.get(profileKey);
-    return profile ? Math.max(best, Math.min(8, scoreProfileMatch(profile, signals))) : best;
-  }, 0);
-}
-
-function _hasContextContradiction(product, key) {
-  const f = product?.fragrance ?? {};
-  const scores = f.scores ?? {};
-  const family = normalizeText(f.scent_family_normalized);
-  const name = normalizeText(`${product?.house ?? ''} ${product?.name ?? ''}`);
-  const knownHeavyNight = [
-    'le male elixir',
-    'stronger with you intensely',
-    'spicebomb extreme',
-    'one million elixir',
-    '1 million elixir',
-    'afnan 9pm',
-    '9pm',
-    'invictus victory elixir',
-  ];
-
-  if (key === 'dia' && knownHeavyNight.some(term => name.includes(term))) return true;
-  if (key === 'calido' && (knownHeavyNight.some(term => name.includes(term)) || (_num(scores.sweetness) >= 0.8 && _num(scores.freshness) <= 0.35))) return true;
-  if (key === 'oficina' && (_num(scores.projection) >= 0.85 || family === 'gourmand')) return true;
-  return false;
-}
-
-function _explainRecommendation(product, breakdown) {
-  const warnings = (breakdown?.warnings ?? []).map(reason => `! ${reason}`);
-  const positives = (breakdown?.positives ?? []).slice(0, 4);
-  return _dedupe([...positives, ...warnings]).slice(0, 5);
-}
-
-function _normalizedList(values = []) {
-  return values.flat().map(normalizeText).filter(Boolean);
-}
-
-function _hasAny(values, terms = []) {
-  return terms.some(term => values.some(value => value.includes(normalizeText(term))));
-}
-
-function _countTagHits(values, terms = []) {
-  return terms.reduce((sum, term) => sum + (values.some(value => value.includes(normalizeText(term))) ? 1 : 0), 0);
-}
-
-function _num(value) {
-  const n = Number(value);
-  const normalized = n > 1 ? n / 100 : n;
-  return Number.isFinite(normalized) ? Math.max(0, Math.min(1, normalized)) : 0;
-}
-
-function _dedupe(list) {
-  return [...new Set(list.filter(Boolean))];
-}
+export const PICK_ORDER = [1, 2, 3];

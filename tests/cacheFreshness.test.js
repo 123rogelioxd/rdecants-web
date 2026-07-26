@@ -21,7 +21,7 @@ test('catalog API GET requests bypass browser caches', () => {
    real device when this query string moves. Keep it in lockstep with the
    VERSION file and every entry point — a page left behind serves last year's
    CSS against this year's markup. */
-const ASSET_VERSION = '2026.07.26.2';
+const ASSET_VERSION = '2026.07.26.4';
 
 const ENTRY_POINTS = [
   'index.html', 'catalogo.html', 'elegir.html', 'ayuda.html',
@@ -55,6 +55,15 @@ test('HTML entry points declare no-cache metadata and current asset version', ()
 
 test('the VERSION file matches the version stamped into the pages', () => {
   assert.equal(read('VERSION').trim(), ASSET_VERSION);
+});
+
+/* The API client stamps BUILD_VERSION onto every catalog request, so a stale
+   value there is a second, quieter way to serve last release's data. */
+test('the API client build version tracks the asset version', () => {
+  assert.match(
+    read('assets/js/api/config.js'),
+    new RegExp(`BUILD_VERSION = '${ASSET_VERSION.replace(/\./g, '\\.')}'`),
+  );
 });
 
 test('Hostinger headers prevent stale HTML and revalidate JS', () => {

@@ -35,7 +35,7 @@ test('previously corrupted strings now read correctly', () => {
     'broken "?" arrow replaced');
 
   const catalog = read('assets/js/catalog/render.js');
-  assert.ok(catalog.includes('explora toda la colección'), 'colección restored');
+  assert.ok(catalog.includes('Nuestra recomendación'), 'recomendación restored');
   assert.ok(catalog.includes('el catálogo tenga'), 'catálogo restored');
 });
 

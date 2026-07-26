@@ -10,17 +10,19 @@
    the questions do.
    ============================================================= */
 
+import { readAnswers } from '../recommendations/engine.js';
+
 /* `answers: null` means the intent carries no scent/occasion signal on
    its own — "para regalar" depends entirely on who receives it — so it
    routes to the guided finder instead of pretending to filter. */
 export const INTENT_PRESETS = [
-  { key: 'diario', label: 'Para diario', hint: 'Ligero y fácil de usar',   answers: { occasion: 'dia' } },
+  { key: 'diario', label: 'Para diario', hint: 'Ligero y fácil de usar',   answers: { occasion: 'dia', goal: 'versatil' } },
   { key: 'citas',  label: 'Para citas',  hint: 'Cercano y memorable',      answers: { occasion: 'cita' } },
-  { key: 'noche',  label: 'Para la noche', hint: 'Con más presencia',      answers: { occasion: 'noche' } },
+  { key: 'noche',  label: 'Para la noche', hint: 'Con más presencia',      answers: { occasion: 'noche', goal: 'destacar' } },
   { key: 'regalo', label: 'Para regalar', hint: 'Te ayudamos a elegir',    answers: null },
   /* Kept for existing surfaces (guide bar chips, campaign links). */
   { key: 'calor',   label: 'Calor',   hint: 'Fresco para clima cálido', answers: { family: 'fresco', climate: 'calido' } },
-  { key: 'oficina', label: 'Oficina', hint: 'Discreto y correcto',      answers: { occasion: 'oficina' } },
+  { key: 'oficina', label: 'Oficina', hint: 'Discreto y correcto',      answers: { occasion: 'oficina', goal: 'discreto' } },
 ];
 
 /* The four entry points the home surfaces, in order. */
@@ -45,16 +47,22 @@ export function getIntentHref(key) {
 
 /* ── URL contract ─────────────────────────────────────────────────
    /catalogo.html?intent=noche
-   /catalogo.html?family=fresco&occasion=dia&gender=hombre
+   /catalogo.html?gender=mujer&age=15-18&occasion=noche&goal=destacar&climate=frio
    /catalogo.html?q=sauvage
    Both forms are readable and shareable; `intent` is just shorthand for
-   a known answer set. Unknown values are ignored rather than guessed. */
+   a known answer set. Unknown values are ignored rather than guessed.
 
-/* Every answer the ranking engine reads. `preference` and `age` belong here
-   too: leaving them out meant "Ver más opciones" handed the catalog a
-   different question than the one the three picks answered, so the wider
-   list was ranked differently from the recommendations above it. */
-const ANSWER_KEYS = ['family', 'occasion', 'gender', 'climate', 'budget', 'preference', 'age'];
+   EVERY answer the engine reads is serialized. This is the fix for the
+   original complaint: the handoff used to be a single `?intent=noche`,
+   which threw away who it was for, the age, the goal and the climate, so
+   "Ver más opciones" ranked the catalog against a different question than
+   the three picks above it had answered. `goal` is the current name for
+   what the third question used to call `preference`; both are read so old
+   links keep working, and `goal` is what gets written. */
+const ANSWER_KEYS = ['gender', 'age', 'occasion', 'goal', 'climate', 'family', 'budget'];
+
+/* Read-only aliases: accepted from a URL, never written back. */
+const ANSWER_ALIASES = { preference: 'goal', diario: 'dia' };
 
 /* Pure: turn a query string into the answers the ranking engine accepts.
    Returns null when the URL asks for no guidance at all. */
@@ -67,10 +75,29 @@ export function readGuideFromQuery(search = '') {
     const value = params.get(key);
     if (value) explicit[key] = value;
   }
+  /* Legacy `?preference=` still lands on `goal` if `goal` was not given. */
+  for (const [alias, key] of Object.entries(ANSWER_ALIASES)) {
+    const value = params.get(alias);
+    if (value && !explicit[key]) explicit[key] = value;
+  }
 
-  const answers = { ...(intentAnswers ?? {}), ...explicit };
+  /* Validated at the boundary. A URL is untrusted input: `?gender=martian`
+     used to enter guided mode with a garbage answer that the engine then
+     ignored but the "Para ti" header still printed as a chip. readAnswers
+     is the single contract — unknown values are dropped, never guessed. */
+  const answers = _valid({ ...(intentAnswers ?? {}), ...explicit });
   return Object.keys(answers).length ? answers : null;
 }
+
+function _valid(raw) {
+  const answers = readAnswers(raw);
+  /* Budget is a price band, not a compatibility answer, so readAnswers
+     passes it through untouched; validate the value here. */
+  if (answers.budget && !BUDGET_VALUES.includes(answers.budget)) delete answers.budget;
+  return answers;
+}
+
+const BUDGET_VALUES = ['low', 'mid', 'high', 'any'];
 
 /* Pure: the search query a URL asks the catalog to run, if any. */
 export function readQueryFromQuery(search = '') {
@@ -115,7 +142,11 @@ export function takeGuideHandoff(storage = globalThis.sessionStorage) {
     for (const key of ANSWER_KEYS) {
       if (parsed?.[key]) answers[key] = String(parsed[key]);
     }
-    return Object.keys(answers).length ? answers : null;
+    for (const [alias, key] of Object.entries(ANSWER_ALIASES)) {
+      if (parsed?.[alias] && !answers[key]) answers[key] = String(parsed[alias]);
+    }
+    const valid = _valid(answers);
+    return Object.keys(valid).length ? valid : null;
   } catch {
     return null;
   }

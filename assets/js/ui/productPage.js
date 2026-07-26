@@ -22,6 +22,7 @@
    ============================================================= */
 
 import { primeImageStates } from './images.js';
+import { genderBadgeHtml } from './genderBadge.js';
 import { Tracker } from '../tracking/tracker.js';
 import {
   getDefaultVariant,
@@ -79,7 +80,7 @@ export function buildProductPageHtml(product) {
   const concentrationHtml = product.concentration
     ? `<span class="pdp-concentration">${_escape(product.concentration)}</span>`
     : '';
-  const genderHtml = _genderBadgeHtml(product.gender, 'pdp-gender');
+  const genderHtml = genderBadgeHtml(product, { compact: false, className: 'pdp-gender' });
 
   const guidanceHtml = getDisplayBadges(product, { context: 'product_detail' })
     .map(g => `<span class="guidance-chip guidance-chip--${_escape(g.key)}">${_escape(g.label)}</span>`)
@@ -584,26 +585,6 @@ function _stockHtml(scarcity) {
   return `<p class="card-stock pdp-stock card-stock--${scarcity.key}">
     <span class="stock-dot"></span>${_escape(scarcity.label)}
   </p>`;
-}
-
-function _genderLabel(gender) {
-  const labels = {
-    masculine: 'Hombre',
-    hombre: 'Hombre',
-    male: 'Hombre',
-    feminine: 'Mujer',
-    mujer: 'Mujer',
-    female: 'Mujer',
-    unisex: 'Unisex',
-    unisex_masculine: 'Unisex masc.',
-    unisex_feminine: 'Unisex fem.',
-  };
-  return labels[String(gender ?? '').toLowerCase()] ?? '';
-}
-
-function _genderBadgeHtml(gender, className = 'gender-badge') {
-  const label = _genderLabel(gender);
-  return label ? `<span class="${className}">${_escape(label)}</span>` : '';
 }
 
 function _isOrderableVariant(variant) {

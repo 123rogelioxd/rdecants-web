@@ -19,6 +19,10 @@ import { getDisplayVariant,
          formatPrice }      from '../utils/prices.js';
 import { getScarcityDisplay } from '../utils/scarcity.js';
 import { getDisplayBadges }  from '../utils/guidance.js';
+import { genderBadgeHtml as _genderBadge } from '../ui/genderBadge.js';
+import { describeAnswers }   from '../recommendations/engine.js';
+import { buildCatalogUrl }   from './intents.js';
+import { showToast }         from '../ui/toast.js';
 
 /* module-level ref kept for SearchBar callback */
 let _productsContainer = null;
@@ -129,8 +133,18 @@ function _renderGrid(products, { rememberProducts = true, guided = null, preserv
     empty.innerHTML = guided
       ? `
         <div class="sf-empty-icon" aria-hidden="true">R</div>
-        <h3 class="sf-empty-title">Aún no hay un match exacto</h3>
-        <p class="sf-empty-desc">Ajusta tus respuestas o explora toda la colección.</p>
+        <h3 class="sf-empty-title">Con estas respuestas no hay una coincidencia que podamos recomendarte</h3>
+        <p class="sf-empty-desc">
+          No vamos a presentarte una fragancia incompatible como si fuera perfecta.
+          ${guided.relaxation
+            ? `Si dejamos ${guided.relaxation.label} de lado aparecen ${guided.relaxation.gained} ${guided.relaxation.gained === 1 ? 'opción' : 'opciones'}.`
+            : 'Cambia una respuesta o abre el catálogo completo.'}
+        </p>
+        ${guided.relaxation
+          ? `<button class="btn-primary sf-empty-relax" type="button" data-relax="${guided.relaxation.dimension}">
+               Buscar sin filtrar ${guided.relaxation.label}
+             </button>`
+          : ''}
         <button class="btn-ghost sf-empty-clear" onclick="window.__rd?.ui?.clearGuide?.()">
           Ver todo el catálogo
         </button>`
@@ -141,6 +155,9 @@ function _renderGrid(products, { rememberProducts = true, guided = null, preserv
         <button class="btn-ghost sf-empty-clear" onclick="window.__rd?.ui?.clearSearch?.()">
           Limpiar filtros →
         </button>`;
+    empty.querySelector('[data-relax]')?.addEventListener('click', event => {
+      window.__rd?.ui?.relaxGuide?.(event.currentTarget.dataset.relax);
+    });
     _productsContainer.appendChild(empty);
     return;
   }
@@ -187,23 +204,32 @@ function _buildCard(p, absoluteIndex, { guided, recById } = {}) {
   const isSoldOut = stockState.state === 'sold_out';
   const canQuickAdd = !isSoldOut && _isOrderableVariant(displayVariant);
 
-  /* Card face reduced to essentials (image · house · name · one fit signal ·
-     price · action). Concentration lives in the display name and gender is a
-     filter, so neither clutters the card. Exactly one signal is shown:
-       • the guided reason line for the top pick, or
-       • one guidance chip (scent/occasion) describing fit.
-     Availability is deliberately NOT shown inline — only a genuinely urgent
-     state (sold out / last units) earns the corner badge, so scarcity stays
-     rare and honest instead of firing on every low-stock SKU. */
+  /* Card face reduced to essentials (image · who it is for · house · name ·
+     one fit signal · price · action). Concentration lives in the display
+     name. "Para quién" IS on the card now: it is the first thing a shopper
+     checks and the one attribute they cannot infer from a photo, and
+     leaving it to the filter meant a customer browsing unfiltered had no
+     way to tell. Availability is deliberately NOT shown inline — only a
+     genuinely urgent state (sold out / last units) earns the corner badge,
+     so scarcity stays rare and honest instead of firing on every SKU. */
   const rec = recById?.get(String(p.id));
   const isTop = Boolean(guided && rec?.isTop);
   const guidanceBadge = getDisplayBadges(p, { context: 'catalog_card' })[0];
   const isUrgent = stockState.state === 'sold_out' || stockState.state === 'last_units';
+  const genderHtml = _genderBadge(p);
   const guidanceHtml = guidanceBadge
     ? `<div class="card-guidance" aria-label="Ideal para"><span class="guidance-chip guidance-chip--${guidanceBadge.key}">${guidanceBadge.label}</span></div>`
     : '';
-  const whyHtml = isTop && rec?.reasons?.length
-    ? `<p class="card-why">${rec.reasons[0]}</p>`
+  /* In guided mode the first three cards carry their numbered rank and
+     their own reason, so the grid reads in the same order — and with the
+     same labels — as the three picks on the finder page. Beyond the top
+     three the list is still ranked, it just stops shouting about it. */
+  const rank = guided ? rec?.rank ?? 0 : 0;
+  const rankHtml = rank >= 1 && rank <= 3
+    ? `<span class="card-top-flag">Nuestra recomendación #${rank}</span>`
+    : '';
+  const whyHtml = rank >= 1 && rank <= 3 && rec?.reason
+    ? `<p class="card-why">${rec.reason}</p>`
     : '';
 
   const card = document.createElement('div');
@@ -215,13 +241,16 @@ function _buildCard(p, absoluteIndex, { guided, recById } = {}) {
   card.setAttribute('aria-label', `Ver detalle de ${p.name}`);
 
   card.innerHTML = `
-    ${isTop ? '<span class="card-top-flag">Nuestra recomendación</span>' : ''}
-    ${!isTop && isUrgent ? `<span class="card-badge ${stockState.badgeClass}">${stockState.label}</span>` : ''}
+    ${rankHtml}
+    ${!rankHtml && isUrgent ? `<span class="card-badge ${stockState.badgeClass}">${stockState.label}</span>` : ''}
     <div class="card-img-wrap${p.image ? '' : ' img-shell img-failed'}" style="--img-initial:${_brandInitialCss(p)}">
       ${p.image ? `<img src="${p.image}" alt="${p.name}" loading="lazy" decoding="async">` : ''}
     </div>
     <div class="card-body">
-      <p class="card-house">${p.house}</p>
+      <div class="card-topline">
+        <p class="card-house">${p.house}</p>
+        ${genderHtml}
+      </div>
       <h3 class="card-name">${p.name}</h3>
       ${whyHtml}
       ${guidanceHtml}
@@ -268,26 +297,18 @@ function _buildCard(p, absoluteIndex, { guided, recById } = {}) {
 
 /* ── Guided-mode chrome ──────────────────────────────────────── */
 
-const _FAMILY_LABELS = { fresco: 'Fresco', dulce: 'Dulce', intenso: 'Intenso', elegante: 'Elegante' };
-const _OCCASION_LABELS = { dia: 'Diario', diario: 'Diario', noche: 'Noche', oficina: 'Oficina', cita: 'Cita', fiesta: 'Fiesta' };
-const _GENDER_LABELS = { hombre: 'Hombre', mujer: 'Mujer', unisex: 'Unisex' };
-
-function _guideAnswerLabels(answers = {}) {
-  return [
-    _FAMILY_LABELS[answers.family],
-    _OCCASION_LABELS[answers.occasion],
-    _GENDER_LABELS[answers.gender],
-  ].filter(Boolean);
-}
-
-/* Editorial state header above the grid: "Para ti · Fresco · Diario · N
-   fragancias" with Ajustar (reopen the finder) and Ver todo (exit guided). */
+/* Editorial state header above the grid. It lists EVERY answer that shaped
+   the ranking — not just three of them, which is how a customer used to
+   arrive from the finder and see "Para ti · Diario" while their gender, age,
+   goal and climate were also filtering the grid invisibly.
+   describeAnswers() is the same function the finder's own summary uses, so
+   the two screens can never disagree about what was asked. */
 function _syncGuideState(guided, count = 0) {
   document.getElementById('catalog-guide-state')?.remove();
   if (!guided) return;
 
-  const labels = _guideAnswerLabels(guided.answers);
-  const noun = count === 1 ? 'fragancia' : 'fragancias';
+  const labels = describeAnswers(guided.answers ?? {});
+  const noun = count === 1 ? 'fragancia compatible' : 'fragancias compatibles';
   const el = document.createElement('div');
   el.id = 'catalog-guide-state';
   el.className = 'catalog-guide-state';
@@ -298,18 +319,26 @@ function _syncGuideState(guided, count = 0) {
       <span class="cgs-count">${count} ${noun}</span>
     </div>
     <div class="cgs-actions">
-      <button type="button" class="cgs-adjust" id="cgs-adjust">Ajustar</button>
-      <button type="button" class="cgs-clear" id="cgs-clear">Ver todo</button>
+      <button type="button" class="cgs-adjust" id="cgs-adjust">Cambiar respuestas</button>
+      <button type="button" class="cgs-clear" id="cgs-clear">Ver todo el catálogo</button>
     </div>`;
   _productsContainer.insertAdjacentElement('beforebegin', el);
 
-  el.querySelector('#cgs-clear')?.addEventListener('click', () => window.__rd?.ui?.clearGuide?.());
+  /* "Ver todo" leaves personalized mode, and says so before it does —
+     otherwise the grid silently stops being ranked for you. */
+  el.querySelector('#cgs-clear')?.addEventListener('click', () => {
+    window.__rd?.ui?.clearGuide?.();
+    showToast('Saliste de las recomendaciones personalizadas: ahora ves todo el catálogo.');
+  });
+
   el.querySelector('#cgs-adjust')?.addEventListener('click', () => {
-    /* The questions live on their own page now; only scroll in place if a
-       guide bar happens to be mounted on this page. */
+    /* Carry the answers back into the finder so nothing has to be retyped.
+       The questions live on their own page; only scroll in place if a guide
+       bar happens to be mounted here. */
     const inPage = document.getElementById('guide');
-    if (inPage) inPage.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    else window.location.href = '/elegir.html';
+    if (inPage) { inPage.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+    const query = buildCatalogUrl(guided.answers ?? {}).split('?')[1] ?? '';
+    window.location.href = query ? `/elegir.html?${query}` : '/elegir.html';
   });
 }
 
@@ -459,25 +488,12 @@ function _brandInitialCss(p) {
 }
 
 
-export function genderLabel(gender) {
-  const labels = {
-    masculine: 'Hombre',
-    hombre: 'Hombre',
-    male: 'Hombre',
-    feminine: 'Mujer',
-    mujer: 'Mujer',
-    female: 'Mujer',
-    unisex: 'Unisex',
-    unisex_masculine: 'Unisex masc.',
-    unisex_feminine: 'Unisex fem.',
-  };
-  return labels[String(gender ?? '').toLowerCase()] ?? '';
-}
-
-export function genderBadgeHtml(gender, className = 'gender-badge') {
-  const label = genderLabel(gender);
-  return label ? `<span class="${className}">${label}</span>` : '';
-}
+/* The "para quién" badge lives in ui/genderBadge.js — one implementation
+   for the card, the modal, the PDP and the finder. It used to be copied
+   three times with three different label maps, none of which knew about
+   `lean_masculine` / `lean_feminine`, so the badge silently rendered EMPTY
+   for the eight leaning products in the catalog. */
+export { genderBadgeHtml, genderBadgeLabel as genderLabel } from '../ui/genderBadge.js';
 
 function _isOrderableVariant(variant) {
   return Boolean(variant && !variant.soldOut && variant.availability > 0 && _validVariantId(variant.variant_id));

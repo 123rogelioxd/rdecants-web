@@ -148,12 +148,47 @@ test('PDP renders gender only when product metadata includes it', () => {
   assert.ok(!withoutGender.includes('Unisex'), 'does not invent gender');
 });
 
-test('catalog gender badge helper renders known labels and hides missing metadata', async () => {
-  const { genderBadgeHtml } = await import('../assets/js/catalog/render.js');
-  assert.equal(genderBadgeHtml('female', 'card-gender'), '<span class="card-gender">Mujer</span>');
-  assert.equal(genderBadgeHtml('male', 'card-gender'), '<span class="card-gender">Hombre</span>');
-  assert.equal(genderBadgeHtml('unisex', 'card-gender'), '<span class="card-gender">Unisex</span>');
-  assert.equal(genderBadgeHtml(null, 'card-gender'), '');
+/* One badge implementation, shared by the card, the modal, the PDP and the
+   finder. It used to be copied three times with three different label maps,
+   none of which knew `lean_masculine` / `lean_feminine` — so the badge
+   rendered EMPTY for the eight leaning products in the live catalog. */
+test('the gender badge is icon + text, covers every canonical value, and never guesses', async () => {
+  const { genderBadgeHtml, genderBadgeLabel } = await import('../assets/js/ui/genderBadge.js');
+  const { genderBadgeHtml: reExported } = await import('../assets/js/catalog/render.js');
+  assert.equal(reExported, genderBadgeHtml, 'the catalog renderer re-exports the one implementation');
+
+  const EXPECTED = {
+    masculine: 'Hombre',
+    lean_masculine: 'Hombre',
+    feminine: 'Mujer',
+    lean_feminine: 'Mujer',
+    unisex: 'Unisex',
+    unisex_masculine: 'Unisex',
+    unisex_feminine: 'Unisex',
+  };
+
+  for (const [gender, label] of Object.entries(EXPECTED)) {
+    const html = genderBadgeHtml({ gender });
+    assert.match(html, /class="gender-badge/, `${gender}: badge rendered`);
+    assert.match(html, /<svg /, `${gender}: has an icon`);
+    assert.ok(html.includes(label), `${gender}: the label is VISIBLE text, not icon-only`);
+    assert.match(html, /<span class="sf-sr-only">Para <\/span>/, `${gender}: announced as "Para X"`);
+    assert.equal(genderBadgeLabel({ gender }), label);
+  }
+
+  /* Spanish and English aliases resolve to the same badge. */
+  for (const alias of ['hombre', 'male', 'MASCULINO']) {
+    assert.ok(genderBadgeHtml({ gender: alias }).includes('Hombre'), alias);
+  }
+
+  /* No metadata → no badge. Never a default "Unisex". */
+  for (const missing of [null, undefined, '', 'sin asignar', 'garbage-value']) {
+    assert.equal(genderBadgeHtml({ gender: missing }), '', String(missing));
+    assert.equal(genderBadgeLabel({ gender: missing }), '');
+  }
+
+  /* Emoji would break the line-icon set and render as colour glyphs. */
+  assert.doesNotMatch(genderBadgeHtml({ gender: 'unisex' }), /[♀♂◐]/);
 });
 
 test('PDP module imports getSizeLabel from versioned prices module', async () => {

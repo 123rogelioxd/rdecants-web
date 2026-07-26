@@ -98,7 +98,7 @@ test('the finder is the dominant action of the hero, with its cost stated', () =
   const hero = html.slice(html.indexOf('<section class="hero">'), html.indexOf('</section>', html.indexOf('<section class="hero">')));
 
   assert.match(hero, /class="hero-cta"[^>]*href="\/elegir\.html"/s, 'the finder is the hero CTA');
-  assert.match(hero, /3 preguntas · menos de 1 min/, 'the effort is stated up front');
+  assert.match(hero, /4 preguntas · menos de 1 min/, 'the effort is stated up front');
   assert.match(hero, /class="btn-outline"[^>]*href="\/catalogo\.html"/s, 'the catalog is the outline secondary');
 
   /* Exactly one filled action in the hero: two equal buttons is no hierarchy. */
@@ -210,7 +210,7 @@ test('product descriptions are derived, never invented', async () => {
 
 /* ── F. Three recommendations, not the catalog ───────────────── */
 
-test('the finder returns at most three labelled picks', async () => {
+test('the finder returns at most three picks, numbered in score order', async () => {
   const { getBeginnerPicks, PICK_LABELS } = await import('../assets/js/recommendations/assistant.js');
 
   const make = (id, scores) => ({
@@ -220,12 +220,14 @@ test('the finder returns at most three labelled picks', async () => {
     story: 'Versátil y fácil de usar',
     badge: 'Disponible', stock: 10, gender: 'unisex',
     fragrance: {
-      scent_family_normalized: 'fresh',
-      mood_tags: ['diario', 'versatil'],
-      recommendation_tags: ['diario', 'versatil'],
-      occasions: ['dia'],
+      scent_family_normalized: 'citrico',
+      moods: ['limpio', 'moderno', 'juvenil'],
+      mood_tags: ['limpio', 'moderno', 'juvenil'],
+      recommendation_tags: ['diario', 'versatil', 'facil_de_usar'],
+      occasions: ['diario', 'escuela'],
+      climates: ['calido', 'templado'],
       style_tags: ['fresco', 'limpio', 'versatil'],
-      accords: ['citrus'],
+      accords: ['citrico', 'acuatico'],
       scores,
     },
     variants: [3, 5, 10].map((size, i) => ({
@@ -234,25 +236,47 @@ test('the finder returns at most three labelled picks', async () => {
     })),
   });
 
+  const base = {
+    office_safe: 0.8, freshness: 0.8, summer: 0.85, cold_weather: 0.45,
+    intensity: 0.4, longevity: 0.6, night_out: 0.35, date_night: 0.55,
+    compliment: 0.65, elegance: 0.6, sweetness: 0.25,
+  };
   const products = [
-    make('safe-one',   { versatility: 0.95, crowdpleaser: 0.95, projection: 0.3, longevity: 0.4 }),
-    make('loud-one',   { versatility: 0.3,  crowdpleaser: 0.4,  projection: 0.95, longevity: 0.95 }),
-    make('middle-one', { versatility: 0.6,  crowdpleaser: 0.6,  projection: 0.6,  longevity: 0.6 }),
-    make('extra-one',  { versatility: 0.5,  crowdpleaser: 0.5,  projection: 0.5,  longevity: 0.5 }),
+    make('safe-one',   { ...base, versatility: 0.95, mass_appeal: 0.95, blind_buy_safe: 0.9, beginner_friendly: 0.92, projection: 0.3 }),
+    make('middle-one', { ...base, versatility: 0.8,  mass_appeal: 0.8,  blind_buy_safe: 0.78, beginner_friendly: 0.8, projection: 0.5 }),
+    make('extra-one',  { ...base, versatility: 0.74, mass_appeal: 0.74, blind_buy_safe: 0.72, beginner_friendly: 0.74, projection: 0.5 }),
+    make('fourth-one', { ...base, versatility: 0.7,  mass_appeal: 0.7,  blind_buy_safe: 0.68, beginner_friendly: 0.7, projection: 0.5 }),
   ];
 
-  const answers = { gender: 'any', age: '19-24', occasion: 'dia', preference: 'versatil' };
+  const answers = { gender: 'unisex', age: '19-24', occasion: 'dia', goal: 'versatil', climate: 'calido' };
   const picks = getBeginnerPicks(answers, products);
 
   assert.ok(picks.length > 0 && picks.length <= 3, 'never more than three');
-  assert.deepEqual(picks.map(p => p.role), ['best', 'safe', 'standout'].slice(0, picks.length));
-  assert.equal(picks[0].label, PICK_LABELS.best);
+
+  /* The three cards ARE ranks 1–3 of one order. They used to be
+     "best / safe / standout", where cards two and three were chosen by a
+     second pass that ignored the ranking — so the third card could be a
+     product the engine had placed last. */
+  assert.deepEqual(picks.map(p => p.rank), [1, 2, 3].slice(0, picks.length));
+  assert.deepEqual(picks.map(p => p.label), [
+    'Nuestra recomendación #1', 'Nuestra recomendación #2', 'Nuestra recomendación #3',
+  ].slice(0, picks.length));
+  assert.equal(picks[0].label, PICK_LABELS[1]);
+
+  /* Literally descending by score — no re-shuffling for variety. */
+  for (let i = 1; i < picks.length; i++) {
+    assert.ok(picks[i - 1].compatibility >= picks[i].compatibility,
+      `#${i} (${picks[i - 1].compatibility}) must not rank below #${i + 1} (${picks[i].compatibility})`);
+  }
+  assert.equal(picks[0].product.id, 'safe-one', 'the best versatility fit leads');
 
   /* Each pick is a distinct product and explains itself in plain words. */
   assert.equal(new Set(picks.map(p => String(p.product.id))).size, picks.length);
   for (const pick of picks) {
-    assert.ok(pick.blurb.length > 0, `${pick.role} has a human description`);
-    assert.ok(pick.suggestedMl > 0, `${pick.role} suggests a size to try`);
+    assert.ok(pick.blurb.length > 0, `#${pick.rank} has a human description`);
+    assert.ok(pick.reason.length > 0, `#${pick.rank} says why it is there`);
+    assert.ok(pick.suggestedMl > 0, `#${pick.rank} suggests a size to try`);
+    assert.ok(pick.genderDisplay?.label, `#${pick.rank} states who it is for`);
   }
 
   /* Deterministic: the same answers always produce the same three. */
@@ -262,17 +286,51 @@ test('the finder returns at most three labelled picks', async () => {
   );
 });
 
-test('age never filters the catalog — it only sets the size to try first', async () => {
-  const { suggestedStarterMl, AGE_RULES } = await import('../assets/js/recommendations/assistant.js');
+test('age sets the size to try first AND is a real (never disqualifying) affinity signal', async () => {
+  const { suggestedStarterMl, AGE_RULES, getAssistantRecommendations } =
+    await import('../assets/js/recommendations/assistant.js');
 
   assert.equal(suggestedStarterMl('15-18'), 3, 'a first fragrance starts small');
   assert.equal(suggestedStarterMl('19-24'), 5);
   assert.equal(suggestedStarterMl('35+'), 5);
   assert.equal(suggestedStarterMl(undefined), 5, 'unanswered falls back to the common size');
 
-  /* The rule exists in exactly one place so the missing metadata stays
+  /* The rule exists in exactly one place so the missing age metadata stays
      documented rather than being reinvented per surface. */
   assert.deepEqual(Object.keys(AGE_RULES), ['15-18', '19-24', '25-34', '35+']);
+
+  /* R Supply OS sends no age field, but it does send a mood vocabulary that
+     carries real audience signal. Age therefore MOVES the score — it used to
+     do nothing at all beyond picking a bottle size. */
+  const make = (id, moods, scores) => ({
+    id, name: id, house: 'House', gender: 'unisex', notes: [], desc: '', story: '',
+    badge: 'Disponible', stock: 10,
+    fragrance: {
+      occasions: ['diario'], climates: ['templado'], moods, mood_tags: moods,
+      style_tags: ['limpio'], recommendation_tags: ['diario'],
+      accords: ['citrico'], scent_family_normalized: 'citrico', scores,
+    },
+    variants: [{ size: 5, price: 180, stock: 10, availability: 10, available: true, soldOut: false, variant_id: `${id}-5` }],
+  });
+
+  const shared = {
+    versatility: 0.8, mass_appeal: 0.8, blind_buy_safe: 0.78, beginner_friendly: 0.8,
+    office_safe: 0.8, intensity: 0.4, projection: 0.45, longevity: 0.6,
+    freshness: 0.7, summer: 0.6, cold_weather: 0.6, elegance: 0.6,
+    luxury: 0.5, exclusivity: 0.45, compliment: 0.6,
+  };
+  const young = make('young', ['juvenil', 'social'], shared);
+  const mature = make('mature', ['maduro', 'elegante', 'serio'], shared);
+  const answers = { occasion: 'dia', goal: 'versatil', climate: 'templado' };
+
+  assert.equal(getAssistantRecommendations({ ...answers, age: '15-18' }, [young, mature])[0].product.id, 'young');
+  assert.equal(getAssistantRecommendations({ ...answers, age: '35+' }, [young, mature])[0].product.id, 'mature');
+
+  /* But age is never a ban: both remain eligible at every age. */
+  for (const age of Object.keys(AGE_RULES)) {
+    assert.equal(getAssistantRecommendations({ ...answers, age }, [young, mature]).length, 2,
+      `age ${age} must not disqualify a fragrance`);
+  }
 });
 
 test('a gift with no stated preference is treated as the safe option', async () => {
@@ -283,16 +341,25 @@ test('a gift with no stated preference is treated as the safe option', async () 
   assert.equal(resolvePreference({ occasion: 'dia' }), null, 'no preference is not a preference');
 });
 
-test('the finder page renders three picks and offers the set before the long list', () => {
+test('the finder page renders numbered picks and offers the set before the long list', () => {
   const page = read('assets/js/pages/finder.js');
-  assert.match(page, /getBeginnerPicks/, 'uses the shared engine');
-  assert.match(page, /¿No quieres elegir sólo uno\? Prueba tus tres recomendaciones\./);
-  assert.match(page, /Ver más opciones/);
+  assert.match(page, /getFinderResult/, 'uses the shared engine');
+  assert.match(page, /¿No quieres elegir sólo uno\? Prueba tus/);
+  assert.match(page, /Ver más opciones compatibles/);
 
   const setIndex = page.indexOf('_setOffer');
   const moreIndex = page.indexOf('picks-more');
   assert.ok(setIndex > -1 && moreIndex > -1 && setIndex < moreIndex,
     'the set is rendered above the link to everything else');
+
+  /* The editable answer summary and the honest empty/partial states are part
+     of the page contract, not optional polish. */
+  assert.match(page, /Cambiar respuestas/, 'the answers stay editable above the results');
+  assert.match(page, /data-edit-step=/, 'each answer links back to the step that set it');
+  assert.match(page, /data-relax=/, 'one condition can be relaxed, explicitly');
+  assert.match(page, /_renderNoMatch/, 'a no-match state exists instead of padding');
+  assert.match(page, /stashGuideHandoff/, 'every answer survives the trip to the catalog');
+  assert.match(page, /genderBadgeHtml/, 'each pick states who it is for');
 });
 
 /* ── G. Typography: a shop, not a magazine ───────────────────── */

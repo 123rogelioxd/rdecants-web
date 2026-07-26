@@ -315,10 +315,10 @@
 .btn-hs-mobile:hover { color: var(--wine); background: rgba(25, 24, 22, 0.05); }
 
 /* ── Hero ────────────────────────────────────────────────────────
-   Compact and editorial: promise + two actions on the left, one real
-   product photograph framed on the right. The photographs in this
-   project are dark studio shots, so the frame — not the page — carries
-   the darkness. */
+   Compact and editorial: promise + two actions on the left, the real
+   product photograph framed on the right. The photograph is a warm,
+   light studio shot on stone, so the frame is a hairline on ivory and the
+   page keeps one continuous light surface — no dark panel to work around. */
 .hero {
   background: var(--bg);
   /* Deliberately short on a phone: the top of "Más vendidos" has to be
@@ -400,8 +400,12 @@
   letter-spacing: 0.01em;
 }
 
-/* Real photograph inside a light editorial frame. Dimensions are
-   reserved via aspect-ratio so nothing shifts while it loads. */
+/* Real photograph inside a light editorial frame. The box is reserved via
+   aspect-ratio, so the image can never shift the layout while it loads —
+   and the ratio here is the SAME 4:3 the mobile crop is cut to, so
+   object-fit has nothing left to trim (see the 5:4 desktop override at
+   900px, which matches the desktop crop). Change one and you must
+   re-cut the other. */
 .hero-figure {
   position: relative;
   border-radius: var(--radius-lg);
@@ -411,11 +415,14 @@
   aspect-ratio: 4 / 3;
 }
 
+.hero-figure picture { display: block; height: 100%; }
+
 .hero-figure img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 42%;
+  object-position: center;
 }
 
 .hero-figure figcaption {
@@ -8998,10 +9005,10 @@ textarea:focus-visible {
    ============================================================= */
 
 /* ── Hero: what a decant physically is ───────────────────────────
-   The hero photograph is a full bottle (the only real photography this
-   project owns). These chips sit beside it and carry the part the photo
-   cannot yet show: the three sizes you can actually buy. Replace with a
-   real decant photo when one exists — the container is unchanged. */
+   The photograph now shows the real thing — an original bottle beside the
+   3, 5 and 10 ml RDecants decants — so these chips no longer stand in for
+   missing photography. They carry what the photo cannot: which size is for
+   what. They sit directly under the image, in that order. */
 .hero-sizes {
   display: flex;
   gap: 8px;
@@ -9286,22 +9293,14 @@ textarea:focus-visible {
   margin-bottom: 10px;
 }
 
+/* The reason is now THE explanation for the card, not one bullet among
+   several, so it reads as ink-weight prose rather than a list item. */
 .pick-why {
-  font-size: 13px;
+  font-size: 13.5px;
   line-height: 1.5;
-  color: var(--ink-soft);
-  margin-bottom: 12px;
-  padding-left: 14px;
-  position: relative;
-}
-
-.pick-why::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 7px;
-  width: 5px; height: 5px;
-  border-radius: 50%;
-  background: var(--line);
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 8px;
 }
 
 .pick-buy {
@@ -9314,8 +9313,8 @@ textarea:focus-visible {
   border-top: 1px solid var(--line-soft);
 }
 
-.pick-price { font-size: 15px; font-weight: 600; color: var(--ink); }
-.pick-price small { font-weight: 400; color: var(--ink-soft); }
+.pick-price { font-size: 15px; font-weight: 600; color: var(--ink); white-space: nowrap; }
+.pick-price small { font-weight: 400; color: var(--ink-soft); white-space: nowrap; }
 
 .pick-action {
   flex: 0 0 auto;
@@ -9478,34 +9477,28 @@ textarea:focus-visible {
   transform: none;
 }
 
-/* ── Mobile hero: short enough that the rail is the next thing ────
-   The photograph is the least load-bearing part of the hero on a phone —
-   the promise, the action and the sizes all rank above it — so it gets
-   the shallowest crop and the section ends right after. */
+/* ── Mobile hero: one column, in the order a beginner needs it ────
+   promise → "Ayúdame a elegir" → "Ver catálogo" → the photograph →
+   the three sizes. The photo used to sit in a narrow second column
+   beside the copy, which squeezed both: at 360px the headline broke to
+   three words a line and the bottle rendered ~120px wide. Full-bleed
+   below the two actions gives the product real size without pushing the
+   rail off the first screen, because the crop is a shallow 4:3. */
 @media (max-width: 899px) {
-  /* Same composition as the desktop and the mockup — promise on the left,
-     product photograph on the right — because stacking a full-width photo
-     under the copy pushed the first product a whole screen down. */
   .hero-inner {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 0.62fr);
+    grid-template-columns: minmax(0, 1fr);
     align-items: start;
     gap: 14px;
   }
-  .hero-content { grid-column: 1; }
-  .hero-figure { grid-column: 2; aspect-ratio: 3 / 4; }
-  .hero-sizes { grid-column: 1 / -1; margin-top: 4px; }
+  .hero-content,
+  .hero-figure,
+  .hero-sizes { grid-column: 1; }
+  .hero-content { max-width: none; }
+  .hero-sizes { margin-top: 2px; }
   .hero-actions { flex-direction: column; align-items: stretch; gap: 8px; }
   .hero-actions .hero-cta,
   .hero-actions .btn-outline { width: 100%; }
   .hero-figure figcaption { display: none; }
-}
-
-/* Below ~400px the two columns would squeeze the headline to three words a
-   line, so the photo drops to a short banner under the copy instead. */
-@media (max-width: 399px) {
-  .hero-inner { grid-template-columns: minmax(0, 1fr); }
-  .hero-content, .hero-figure, .hero-sizes { grid-column: 1; }
-  .hero-figure { aspect-ratio: 16 / 9; }
 }
 
 @media (max-width: 380px) {
@@ -9515,13 +9508,222 @@ textarea:focus-visible {
 
 
 /* The first screen must end on product, not on introduction: trim the hero
-   just enough that the "Más vendidos" heading clears an 844px viewport. */
+   just enough that the "Más vendidos" heading clears an 844px viewport.
+   The figure keeps its 4:3 crop here — squeezing it to 2:1 would re-crop
+   the served image and cut the bottle, which is the one thing the photo
+   exists to show. Vertical rhythm absorbs the trim instead. */
 @media (max-width: 399px) {
   .hero { padding-bottom: 14px; }
-  .hero-inner { gap: 12px; }
-  .hero-figure { aspect-ratio: 2 / 1; }
+  .hero-inner { gap: 11px; }
   .hero-sizes { margin-top: 0; }
   .howto-list { padding: 11px 0; }
   .howto-step svg { width: 24px; height: 24px; }
   .trust-line { padding-top: 10px; font-size: 12.5px; }
 }
+
+
+/* =============================================================
+   ITERATION 3 — trustworthy recommendations
+   The gender badge every product surface shares, the numbered picks,
+   the editable answer summary and the honest empty states.
+   ============================================================= */
+
+/* ── "Para quién" badge ──────────────────────────────────────────
+   Icon PLUS text, on every surface that shows a product. An icon alone is
+   not a label. Rendered from the normalized gender_profile only — when
+   there is no gender metadata the badge is absent rather than guessed. */
+.gender-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  padding: 3px 8px 3px 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg-sunk);
+  /* --ink-soft on --bg-sunk is 6.1:1 — comfortably past AA for this size. */
+  color: var(--ink-soft);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.gender-badge svg { width: 13px; height: 13px; flex: 0 0 auto; }
+
+.gender-badge--compact { font-size: 11px; padding: 2px 7px 2px 5px; }
+.gender-badge--compact svg { width: 12px; height: 12px; }
+
+/* The badge is information, not an accent: only the unisex mark borrows a
+   hint of wine, because "either" is the state worth noticing. */
+.gender-badge--unisex {
+  color: var(--wine);
+  border-color: var(--wine-line);
+  background: var(--wine-tint);
+}
+
+/* House + badge on one line above the product name. */
+.card-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.card-topline .card-house,
+.card-topline .pick-house { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+/* Larger, non-compact variant used in the quick-view modal and the PDP. */
+.pdm-gender,
+.pdp-gender { font-size: 12px; }
+
+/* ── Editable answer summary above the picks ─────────────────────
+   "Para ti: Mujer · 15–18 · Noche · Que destaque" — every answer that
+   shaped the ranking, each one a button back to the step that set it. */
+.picks-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 12px 14px;
+  margin-bottom: clamp(16px, 2.5vw, 22px);
+  background: var(--bg-sunk);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.picks-summary-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  min-width: 0;
+}
+
+.picks-summary-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-right: 4px;
+}
+
+.picks-chip {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  padding: 0;
+}
+
+.picks-chip--edit {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--wine-line);
+  text-underline-offset: 3px;
+  font-family: inherit;
+}
+
+.picks-chip--edit:hover { color: var(--wine); text-decoration-color: var(--wine); }
+
+.picks-chip-sep { color: var(--ink-faint); }
+
+.picks-summary-edit {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 7px 14px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--ink);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.picks-summary-edit:hover { background: var(--ink); color: var(--on-action); }
+
+/* ── Honest states ──────────────────────────────────────────────
+   A notice explains a real data limitation; a note explains why there are
+   fewer than three cards. Neither is styled as an error. */
+.picks-notice,
+.picks-note {
+  margin: 0 0 clamp(16px, 2.5vw, 22px);
+  padding: 12px 14px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--wine-line);
+  border-radius: var(--radius-sm);
+}
+
+.picks-note { border-left-color: var(--line); }
+
+.pick-set-note--tight { margin-top: 8px; font-size: 12.5px; }
+
+.finder-nav--center {
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+}
+
+.sf-empty-relax { margin-bottom: 10px; }
+
+/* The numbered pick label: rank #1 carries the accent, #2 and #3 do not,
+   because the order IS the ranking and nothing else needs emphasis. */
+.pick-card--best .pick-label { font-weight: 700; }
+
+@media (max-width: 420px) {
+  .picks-summary { flex-direction: column; align-items: flex-start; }
+  .picks-summary-edit { width: 100%; }
+  .card-topline { gap: 6px; }
+  .gender-badge--compact { font-size: 10.5px; }
+}
+
+
+/* ── Finder results: a wider frame than the questions ────────────
+   The question card is deliberately narrow (one question, one decision).
+   The results are three product cards side by side, and at 640px each got
+   ~180px — enough to wrap a one-line reason over five lines. The modifier
+   is applied by pages/finder.js only while results are on screen. */
+.finder-card--results { max-width: 1040px; }
+
+@media (min-width: 860px) {
+  .finder-card--results .picks-grid { gap: 18px; }
+}
+
+
+/* ── Keyboard focus on the guided-finder controls ────────────────
+   The global :focus-visible ring is a 1px 72%-opacity hairline, which is
+   easy to lose on the ivory surface. Every control the finder introduces —
+   the answer chips, the option rows, the editable answer chips, the pick
+   media and the buy button — gets a deliberate 2px wine ring with an
+   offset, so a keyboard-only path through all four questions and the three
+   results is always traceable. Colour is never the only signal: the ring
+   is a shape change, and the selected state additionally carries a ✓. */
+.finder-chip:focus-visible,
+.finder-option:focus-visible,
+.finder-next:focus-visible,
+.picks-chip--edit:focus-visible,
+.picks-summary-edit:focus-visible,
+.pick-action:focus-visible,
+.pick-media:focus-visible,
+.sf-empty-relax:focus-visible,
+.gender-badge:focus-visible {
+  outline: 2px solid var(--wine);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+/* The media tile is the card's photo: keep the ring outside its rounded
+   corners rather than clipped by the overflow that crops the image. */
+.pick-media:focus-visible { outline-offset: -3px; }

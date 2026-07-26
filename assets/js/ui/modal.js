@@ -16,6 +16,7 @@
 import { showToast } from './toast.js';
 import { primeImageStates } from './images.js';
 import { lockBodyScroll, unlockBodyScroll } from './scrollLock.js';
+import { genderBadgeHtml } from './genderBadge.js';
 import { Tracker } from '../tracking/tracker.js';
 import { getDefaultVariant,
          getPriceForSize,
@@ -122,7 +123,7 @@ function _render() {
   const concentrationHtml = p.concentration
     ? `<span class="pdm-concentration">${p.concentration}</span>`
     : '';
-  const genderHtml = _genderBadgeHtml(p.gender, 'pdm-gender');
+  const genderHtml = genderBadgeHtml(p, { compact: false, className: 'pdm-gender' });
   const badgeHtml = scarcity.key === 'ok'
     ? ''
     : `<span class="pdm-badge ${scarcity.badgeClass}">${scarcity.label}</span>`;
@@ -431,26 +432,6 @@ function _setButtonLoading(btn, isLoading, label = '') {
     if (btn.dataset.label) btn.innerHTML = btn.dataset.label;
     delete btn.dataset.label;
   }
-}
-
-function _genderLabel(gender) {
-  const labels = {
-    masculine: 'Hombre',
-    hombre: 'Hombre',
-    male: 'Hombre',
-    feminine: 'Mujer',
-    mujer: 'Mujer',
-    female: 'Mujer',
-    unisex: 'Unisex',
-    unisex_masculine: 'Unisex masc.',
-    unisex_feminine: 'Unisex fem.',
-  };
-  return labels[String(gender ?? '').toLowerCase()] ?? '';
-}
-
-function _genderBadgeHtml(gender, className = 'gender-badge') {
-  const label = _genderLabel(gender);
-  return label ? `<span class="${className}">${label}</span>` : '';
 }
 
 function _isOrderableVariant(variant) {

@@ -149,15 +149,54 @@ test('a product with no valid priced variant is never recommended', () => {
 
 /* ── Reasons differentiate the result set ───────────────────────── */
 
-test('reasons are not identical across all top results', () => {
-  const a = product('ReasonA', STRONG_FIT, { price: 130 });
-  const b = product('ReasonB', WEAK_FIT, { price: 150 });
-  const c = product('ReasonC', { ...WEAK_FIT, scores: { freshness: 0.5, versatility: 0.6, projection: 0.4 } }, { price: 170 });
-  const res = getAssistantRecommendations(ANSWERS, [a, b, c]);
-  assert.ok(res.length >= 2, 'need at least 2 results to compare reasons');
-  const reasonSets = res.map(r => JSON.stringify(r.reasons));
-  assert.ok(new Set(reasonSets).size > 1, 'not every result shares the exact same reason list');
-  assert.ok(res[0].reasons.length > 0, 'the top pick always has at least one concrete reason');
+/* The old version of this test asserted the top results never share a reason
+   string. That is the wrong contract: two fragrances with genuinely the same
+   affinity on the same dimensions SHOULD read the same, and forcing variety
+   would mean writing copy the metadata does not support. What must hold is
+   that a reason names the dimensions that actually scored, and that changing
+   which dimensions score changes the reason. */
+test('a reason names only the dimensions that actually contributed points', () => {
+  const officeFresh = product('OfficeFresh', STRONG_FIT, { price: 130 });
+  const res = getAssistantRecommendations(ANSWERS, [officeFresh]);
+  assert.equal(res.length, 1);
+
+  const reason = res[0].reason;
+  const contributed = Object.entries(res[0].scoreBreakdown)
+    .filter(([, entry]) => entry.contribution > 0)
+    .map(([key]) => key);
+
+  assert.ok(contributed.includes('occasion') && contributed.includes('climate'),
+    'the answered dimensions with metadata contributed');
+  assert.match(reason, /oficina/i, 'and the reason says so');
+  assert.doesNotMatch(reason, /noche|fiesta|cita/i, 'never a dimension that scored nothing');
+  assert.doesNotMatch(reason, /\d+\s?%/, 'no false-precision percentage on the card');
+  assert.ok(reason.length <= 120, `one line, got ${reason.length} chars: ${reason}`);
+});
+
+test('a different set of contributing dimensions produces a different reason', () => {
+  const office = product('OfficeOnly', STRONG_FIT, { price: 130 });
+  const res = getAssistantRecommendations(ANSWERS, [office]);
+
+  /* Same product, a different question: the reason must follow the answers,
+     not the product. */
+  const nightAnswers = { occasion: 'noche', goal: 'destacar' };
+  const nightReady = product('NightReady', {
+    ...STRONG_FIT,
+    occasions: ['noche', 'fiesta'],
+    scores: { night_out: 0.9, projection: 0.85, intensity: 0.8, longevity: 0.85, compliment: 0.8 },
+  }, { price: 130 });
+  const nightRes = getAssistantRecommendations(nightAnswers, [nightReady]);
+
+  assert.equal(nightRes.length, 1);
+  assert.notEqual(res[0].reason, nightRes[0].reason);
+  assert.match(nightRes[0].reason, /noche/i);
+  assert.match(nightRes[0].reason, /destacar/i);
+});
+
+test('a product with no usable metadata is excluded rather than given filler copy', () => {
+  const bare = product('NoMetadata', null, { price: 100 });
+  const res = getAssistantRecommendations(ANSWERS, [bare, product('Real', STRONG_FIT)]);
+  assert.deepEqual(ids(res), ['Real']);
 });
 
 /* ── The full guided-catalog re-rank (rankCatalogForAnswers) shares the

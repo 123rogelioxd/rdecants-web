@@ -129,7 +129,7 @@ test('exactly four shopping intents are offered, each with a destination', () =>
 
 test('the guided flow is offered once more, as a quiet secondary prompt', () => {
   const html = read('index.html');
-  assert.match(html, /¿No sabes cuál elegir\? Responde tres preguntas\./);
+  assert.match(html, /¿No sabes cuál elegir\? Responde cuatro preguntas\./);
 });
 
 test('how it works is three short steps', () => {

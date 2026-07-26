@@ -24,7 +24,7 @@ import {
   Personalization,
   personalizeProducts,
 } from '../recommendations/personalization.js';
-import { rankCatalogForAnswers } from '../recommendations/assistant.js';
+import { rankGuidedCatalog } from '../recommendations/assistant.js';
 import { lockBodyScroll, unlockBodyScroll } from './scrollLock.js';
 
 /* ── State ──────────────────────────────────────────────────── */
@@ -122,6 +122,18 @@ export const SearchBar = {
   clearGuide() {
     if (!_onFilter) return;
     _state.guide = null;
+    _syncBarFromState();
+    _run();
+  },
+
+  /* Drop exactly ONE answer, by explicit request. The engine names which
+     dimension is worth relaxing; the customer decides. Nothing is ever
+     loosened automatically, and the remaining answers keep filtering. */
+  relaxGuide(dimension) {
+    if (!_onFilter || !_state.guide || !dimension) return;
+    const next = { ..._state.guide };
+    delete next[dimension];
+    _state.guide = Object.keys(next).length ? next : null;
     _syncBarFromState();
     _run();
   },
@@ -442,10 +454,21 @@ function _run() {
      place (top pick pinned). Manual filters/sort are bypassed — using any of
      them exits guided mode (handlers null _state.guide). */
   if (_state.guide) {
-    const recommendations = rankCatalogForAnswers(_state.guide, _allProducts);
-    const products = recommendations.map(r => r.product);
+    /* One engine, one order: this is the exact ranking the finder's three
+       picks came from, uncapped. Only high-compatibility matches are in it,
+       which is why the grid can honestly call the first three "Nuestra
+       recomendación #1–#3" and why "Ver todo el catálogo" is a separate,
+       announced action rather than a silent widening. */
+    const guided = rankGuidedCatalog(_state.guide, _allProducts);
+    const products = guided.rows.map(r => r.product);
     _lastResultCount = products.length;
-    _onFilter?.(products, { guided: true, answers: _state.guide, recommendations });
+    _onFilter?.(products, {
+      guided: true,
+      answers: guided.answers,
+      recommendations: guided.rows,
+      notices: guided.notices,
+      relaxation: guided.relaxation,
+    });
     _updateActiveChips(products.length);
     _updateBadge();
     _updateForYouBanner(0);

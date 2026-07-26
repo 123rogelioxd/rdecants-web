@@ -117,6 +117,14 @@ export const CatalogProvider = {
   },
 };
 
+/* Exported so tests can run the recommendation engine and the auditor over a
+   real R Supply OS response through the EXACT mapping production uses,
+   instead of a hand-written approximation that quietly agrees with the code.
+   See tests/fixtures/rsupplyos-catalog.json. */
+export function mapApiProduct(raw) {
+  return _mapProduct(raw);
+}
+
 function _mapProduct(p) {
   if (!p) return null;
 
@@ -178,19 +186,12 @@ function _mapProduct(p) {
     desc: sentenceCase(p.desc ?? p.description ?? p.descripcion ?? ''),
     story: sentenceCase(p.story ?? p.tagline ?? p.desc ?? p.description ?? p.descripcion ?? 'Fragancia original en decant premium.'),
     concentration,
-    gender: normalizeGender(
-      p.gender ??
-      p.gender_positioning ??
-      p.gender_profile ??
-      p.perfil_genero ??
-      p.genero_orientado ??
-      p.genero ??
-      p.fragrance?.gender_positioning ??
-      p.fragrance?.gender_profile ??
-      p.fragrance?.gender ??
-      p.fragrance?.perfil_genero ??
-      null
-    ),
+    /* Canonical for the app, raw for the auditor. `gender` is one of the
+       seven values in utils/gender.js (or 'unknown'); `gender_raw` is
+       whatever R Supply OS actually said, so a value we cannot map is
+       reportable instead of invisible. */
+    gender: normalizeGender(_rawGender(p)),
+    gender_raw: _rawGender(p),
     notes,
     image: _productImage(p),
     stock: variants.length ? Math.max(...variants.map(v => v.availability)) : _safeStock(p.stock),
@@ -207,24 +208,90 @@ function _mapProduct(p) {
   };
 }
 
+/* Fragrance metadata is the entire input to the recommendation engine and
+   the catalog auditor, so this mapper is deliberately LOSSLESS for every
+   field R Supply OS sends. The previous version silently dropped `gender`,
+   `gender_profile`, `moods`, `family` and `summary` — which is why the
+   gender chain in utils/gender.js appeared to have fallbacks that could
+   never fire, and why the auditor had nothing raw to compare against.
+
+   Two shapes are kept side by side on purpose:
+     • the canonical arrays the app reads
+     • `*_raw` copies of the values the audit report has to quote verbatim
+   Nothing is invented and no empty array replaces a populated alias — the
+   union happens in recommendations/normalize.js, which owns the rules. */
 function _mapFragrance(f) {
   if (!f || typeof f !== 'object') return null;
   const arr = (v) => Array.isArray(v) ? v.filter(Boolean) : [];
+  const first = (...values) => values.find(v => v !== null && v !== undefined && v !== '') ?? null;
+
   return {
     canonical_name: f.canonical_name ?? null,
     aliases: arr(f.aliases),
+
+    /* Gender — the field the whole engine gates on. Preserved verbatim so
+       the auditor can report exactly which value needs fixing upstream. */
+    gender_raw: first(f.gender_positioning, f.gender_profile, f.gender, f.perfil_genero),
+    gender: f.gender ?? null,
+    gender_profile: f.gender_profile ?? null,
+
+    /* Olfactive identity. `family` / `fragrance_family` are free text and
+       `scent_family_normalized` is a single token; the normalizer reads
+       all three because only 55 of 73 products carry the normalized one. */
     scent_family_normalized: f.scent_family_normalized ?? null,
-    mood_tags: arr(f.mood_tags),
-    recommendation_tags: arr(f.recommendation_tags),
-    recommended_context_tags: arr(f.recommended_context_tags),
-    occasions: arr(f.occasions ?? f.occasion_tags),
-    style_tags: arr(f.style_tags),
-    climates: arr(f.climates ?? f.climate_tags),
-    seasons: arr(f.seasons ?? f.season_tags),
+    family: f.family ?? null,
+    fragrance_family: f.fragrance_family ?? null,
     accords: arr(f.accords),
+
+    /* Context. `occasions` and `climates` are the authored fields;
+       the *_tags variants are the same data under older names. */
+    occasions: arr(f.occasions ?? f.occasion_tags),
+    occasion_tags: arr(f.occasion_tags),
+    recommended_context_tags: arr(f.recommended_context_tags),
+    climates: arr(f.climates ?? f.climate_tags),
+    climate_tags: arr(f.climate_tags),
+    seasons: arr(f.seasons ?? f.season_tags),
+    season_tags: arr(f.season_tags),
+
+    /* Descriptive tag lists — no controlled vocabulary, corroboration only. */
+    moods: arr(f.moods ?? f.mood_tags),
+    mood_tags: arr(f.mood_tags ?? f.moods),
+    style_tags: arr(f.style_tags),
+    recommendation_tags: arr(f.recommendation_tags),
     commercial_roles: arr(f.commercial_roles ?? f.commercial_role_tags),
+    signature_keywords: arr(f.signature_keywords),
+    search_terms: arr(f.search_terms ?? f.metadata_keywords),
+
+    /* Notes, in both the nested and flattened shapes the backend sends. */
+    notes: f.notes && typeof f.notes === 'object' && !Array.isArray(f.notes)
+      ? { top: arr(f.notes.top), heart: arr(f.notes.heart), base: arr(f.notes.base) }
+      : null,
+    notes_top: arr(f.notes_top ?? f.notes?.top),
+    notes_middle: arr(f.notes_middle ?? f.notes?.heart),
+    notes_base: arr(f.notes_base ?? f.notes?.base),
+
+    summary: f.summary ?? f.scent_profile_short ?? null,
+
+    /* 0–1 for the app; the untouched 0–100 payload for the audit report. */
     scores: _mapScores(f.scores),
+    scores_raw: f.scores && typeof f.scores === 'object' ? { ...f.scores } : null,
   };
+}
+
+function _rawGender(p) {
+  return (
+    p.gender ??
+    p.gender_positioning ??
+    p.gender_profile ??
+    p.perfil_genero ??
+    p.genero_orientado ??
+    p.genero ??
+    p.fragrance?.gender_positioning ??
+    p.fragrance?.gender_profile ??
+    p.fragrance?.gender ??
+    p.fragrance?.perfil_genero ??
+    null
+  );
 }
 
 function _mapScores(scores) {

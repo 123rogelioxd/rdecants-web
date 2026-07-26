@@ -19,6 +19,7 @@ import { primeImageStates }  from './images.js';
 import { Tracker }           from '../tracking/tracker.js';
 import { getDisplayVariant, getVariantForSize, getPrimaryVariants, formatPrice } from '../utils/prices.js';
 import { getScarcityDisplay } from '../utils/scarcity.js';
+import { genderBadgeHtml }   from './genderBadge.js';
 
 /* Four on the home. More than that and the page becomes the catalog again;
    the whole catalog is one tap away under "Ver todos". */
@@ -139,7 +140,10 @@ function _buildRailCard(product, index) {
         : ''}
     </div>
     <div class="card-body">
-      <p class="card-house">${product.house}</p>
+      <div class="card-topline">
+        <p class="card-house">${product.house}</p>
+        ${genderBadgeHtml(product)}
+      </div>
       <h3 class="card-name">${product.name}</h3>
       ${blurb ? `<p class="card-blurb">${blurb}</p>` : ''}
       <div class="card-purchase">

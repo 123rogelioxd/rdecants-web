@@ -33,11 +33,11 @@
 <meta name="description" content="Prueba perfumes originales sin comprar la botella completa. Frascos pequeños (decants) de 3, 5 y 10 ml desde $100. Envíos a todo México y pedidos por WhatsApp.">
 <meta name="theme-color" content="#f4f1ea">
 
-<link rel="icon" href="/favicon.ico?v=2026.07.26.2" sizes="any">
-<link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/favicon-32.png?v=2026.07.26.2">
-<link rel="icon" type="image/png" sizes="16x16" href="/assets/brand/favicon-16.png?v=2026.07.26.2">
-<link rel="apple-touch-icon" sizes="180x180" href="/assets/brand/apple-touch-icon.png?v=2026.07.26.2">
-<link rel="manifest" href="/site.webmanifest?v=2026.07.26.2">
+<link rel="icon" href="/favicon.ico?v=2026.07.26.4" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/favicon-32.png?v=2026.07.26.4">
+<link rel="icon" type="image/png" sizes="16x16" href="/assets/brand/favicon-16.png?v=2026.07.26.4">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/brand/apple-touch-icon.png?v=2026.07.26.4">
+<link rel="manifest" href="/site.webmanifest?v=2026.07.26.4">
 <link rel="canonical" href="https://rdecants.com/">
 
 <!-- Local demo catalog is dev-only; this flag keeps demo SKUs out of production. -->
@@ -45,15 +45,18 @@
 
 <meta property="og:site_name"   content="RDecants">
 <meta property="og:title"       content="Perfumes originales en frascos de 3, 5 y 10 ml — RDecants">
-<meta property="og:description" content="Frascos pequeños de 3, 5 y 10 ml. Responde 3 preguntas y te recomendamos, o explora el catálogo.">
+<meta property="og:description" content="Frascos pequeños de 3, 5 y 10 ml. Responde 4 preguntas y te recomendamos, o explora el catálogo.">
 <meta property="og:type"        content="website">
 <meta property="og:url"         content="https://rdecants.com/">
-<meta property="og:image"       content="https://rdecants.com/assets/featured/jpg-le-male-elixir-hero.webp">
+<meta property="og:image"       content="https://rdecants.com/assets/hero/sauvage-decants-social-1200.jpg">
+<meta property="og:image:width"  content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt"    content="Frasco original de Dior Sauvage Eau de Parfum junto a tres decants RDecants de 3, 5 y 10 ml sobre piedra clara">
 <meta property="og:locale"      content="es_MX">
 <meta name="twitter:card"        content="summary_large_image">
 <meta name="twitter:title"       content="Perfumes originales en frascos de 3, 5 y 10 ml — RDecants">
-<meta name="twitter:description" content="Frascos pequeños de 3, 5 y 10 ml. Responde 3 preguntas y te recomendamos, o explora el catálogo.">
-<meta name="twitter:image"       content="https://rdecants.com/assets/featured/jpg-le-male-elixir-hero.webp">
+<meta name="twitter:description" content="Frascos pequeños de 3, 5 y 10 ml. Responde 4 preguntas y te recomendamos, o explora el catálogo.">
+<meta name="twitter:image"       content="https://rdecants.com/assets/hero/sauvage-decants-social-1200.jpg">
 
 <!-- Fonts — one sans for everything the customer reads and acts on,
      plus the serif used only in the wordmark so it matches the logo. -->
@@ -74,12 +77,31 @@
     HTML itself is served no-cache so browsers always get
     the latest version string.
 
-  Current version: 2026.07.26.2 - update all ?v= values on deploy.
+  Current version: 2026.07.26.4 - update all ?v= values on deploy.
 -->
-<link rel="stylesheet" href="/assets/css/tokens.css?v=2026.07.26.2">
-<link rel="stylesheet" href="/assets/css/animations.css?v=2026.07.26.2">
-<link rel="stylesheet" href="/assets/css/components.css?v=2026.07.26.2">
-<link rel="stylesheet" href="/assets/css/styles.css?v=2026.07.26.2">
+<link rel="stylesheet" href="/assets/css/tokens.css?v=2026.07.26.4">
+<link rel="stylesheet" href="/assets/css/animations.css?v=2026.07.26.4">
+<link rel="stylesheet" href="/assets/css/components.css?v=2026.07.26.4">
+<link rel="stylesheet" href="/assets/css/styles.css?v=2026.07.26.4">
+
+<!-- LCP preload — the hero photograph.
+     Two hints, each scoped with `media` to exactly one of the two
+     art-directed crops, so a phone never preloads the desktop frame and
+     vice-versa. `type="image/avif"` means a browser without AVIF support
+     skips the hint entirely instead of fetching a file <picture> will not
+     use, and a browser with AVIF support preloads the same candidate the
+     <source> below resolves to. Nothing else on the page is preloaded. -->
+<link rel="preload" as="image" type="image/avif" media="(max-width: 899px)"
+      imagesrcset="/assets/hero/sauvage-decants-mobile-420.avif 420w,
+                   /assets/hero/sauvage-decants-mobile-640.avif 640w,
+                   /assets/hero/sauvage-decants-mobile-840.avif 840w,
+                   /assets/hero/sauvage-decants-mobile-1120.avif 1120w"
+      imagesizes="100vw" fetchpriority="high">
+<link rel="preload" as="image" type="image/avif" media="(min-width: 900px)"
+      imagesrcset="/assets/hero/sauvage-decants-desktop-600.avif 600w,
+                   /assets/hero/sauvage-decants-desktop-900.avif 900w,
+                   /assets/hero/sauvage-decants-desktop-1125.avif 1125w"
+      imagesizes="(min-width: 1300px) 580px, 47vw" fetchpriority="high">
 
 <script type="application/ld+json">
 {
@@ -88,7 +110,7 @@
   "name": "RDecants",
   "description": "Decants de perfumes originales en 3, 5 y 10 ml para probar antes de comprar la botella completa. Envíos a todo México.",
   "url": "https://rdecants.com/",
-  "image": "https://rdecants.com/assets/featured/jpg-le-male-elixir-hero.webp",
+  "image": "https://rdecants.com/assets/hero/sauvage-decants-social-1200.jpg",
   "areaServed": "MX",
   "currenciesAccepted": "MXN",
   "sameAs": ["https://wa.me/5219516513018"],
@@ -117,8 +139,8 @@
   </button>
 
   <a href="/" class="header-logo" aria-label="RDecants — inicio">
-    <img class="logo-mark" src="/assets/brand/rdecants-monogram.png?v=2026.07.26.2"
-         alt="RDecants" width="391" height="279" decoding="async">
+    <img class="logo-mark" src="/assets/brand/rdecants-monogram.png?v=2026.07.26.4"
+         alt="RDecants" width="240" height="171" decoding="async">
     <span class="logo-text">RDECANTS</span>
   </a>
 
@@ -206,22 +228,53 @@
             Ayúdame a elegir
             <span class="hero-cta-spark" aria-hidden="true">✦</span>
           </span>
-          <span class="hero-cta-note">3 preguntas · menos de 1 min</span>
+          <span class="hero-cta-note">4 preguntas · menos de 1 min</span>
         </a>
         <a class="btn-outline" href="/catalogo.html">Ver catálogo</a>
       </div>
 
     </div>
 
-    <!-- Real studio photograph of an original bottle — the only product
-         photography this project owns. See the note in the deploy summary:
-         a photo of the actual RDecants decant vials next to a bottle still
-         needs to be produced; this container takes it unchanged. -->
+    <!-- The product shot: an original bottle beside the actual RDecants
+         3 / 5 / 10 ml decants. Two purpose-built crops, not one frame
+         squeezed by object-fit — 5:4 for the desktop column, 4:3 full-bleed
+         for a phone, each matching the aspect-ratio its breakpoint reserves
+         so `cover` never has anything left to cut. AVIF first, WebP next,
+         progressive JPEG as the compatible fallback. -->
     <figure class="hero-figure">
-      <img src="/assets/featured/jpg-le-male-elixir-hero.webp"
-           alt="Frasco original de Jean Paul Gaultier Le Male Elixir fotografiado en estudio"
-           width="1536" height="2048" loading="eager" decoding="async" fetchpriority="high">
-      <figcaption>De este frasco original sale tu decant</figcaption>
+      <picture>
+        <source media="(max-width: 899px)" type="image/avif" sizes="100vw"
+                srcset="/assets/hero/sauvage-decants-mobile-420.avif 420w,
+                        /assets/hero/sauvage-decants-mobile-640.avif 640w,
+                        /assets/hero/sauvage-decants-mobile-840.avif 840w,
+                        /assets/hero/sauvage-decants-mobile-1120.avif 1120w">
+        <source media="(max-width: 899px)" type="image/webp" sizes="100vw"
+                srcset="/assets/hero/sauvage-decants-mobile-420.webp 420w,
+                        /assets/hero/sauvage-decants-mobile-640.webp 640w,
+                        /assets/hero/sauvage-decants-mobile-840.webp 840w,
+                        /assets/hero/sauvage-decants-mobile-1120.webp 1120w">
+        <source media="(max-width: 899px)" type="image/jpeg" sizes="100vw"
+                srcset="/assets/hero/sauvage-decants-mobile-420.jpg 420w,
+                        /assets/hero/sauvage-decants-mobile-640.jpg 640w,
+                        /assets/hero/sauvage-decants-mobile-840.jpg 840w,
+                        /assets/hero/sauvage-decants-mobile-1120.jpg 1120w">
+        <source type="image/avif" sizes="(min-width: 1300px) 580px, 47vw"
+                srcset="/assets/hero/sauvage-decants-desktop-600.avif 600w,
+                        /assets/hero/sauvage-decants-desktop-900.avif 900w,
+                        /assets/hero/sauvage-decants-desktop-1125.avif 1125w">
+        <source type="image/webp" sizes="(min-width: 1300px) 580px, 47vw"
+                srcset="/assets/hero/sauvage-decants-desktop-600.webp 600w,
+                        /assets/hero/sauvage-decants-desktop-900.webp 900w,
+                        /assets/hero/sauvage-decants-desktop-1125.webp 1125w">
+        <img src="/assets/hero/sauvage-decants-desktop-900.jpg"
+             srcset="/assets/hero/sauvage-decants-desktop-600.jpg 600w,
+                     /assets/hero/sauvage-decants-desktop-900.jpg 900w,
+                     /assets/hero/sauvage-decants-desktop-1125.jpg 1125w"
+             sizes="(min-width: 1300px) 580px, 47vw"
+             alt="Frasco original de Dior Sauvage Eau de Parfum junto a tres decants RDecants de 3, 5 y 10 ml sobre una superficie de piedra clara"
+             width="1125" height="900" loading="eager" decoding="async" fetchpriority="high">
+      </picture>
+      <figcaption>De este frasco original salen tus decants de 3, 5 y 10 ml</figcaption>
     </figure>
 
     <!-- Full width under both columns: the three sizes are the product. -->
@@ -365,7 +418,7 @@
     </ul>
 
     <div class="finder-prompt">
-      <p>¿No sabes cuál elegir? Responde tres preguntas.</p>
+      <p>¿No sabes cuál elegir? Responde cuatro preguntas.</p>
       <a class="btn-primary" href="/elegir.html">Ayúdame a elegir</a>
     </div>
   </div>
@@ -496,7 +549,7 @@
   ?v= must match the version in CSS links above.
   Update on every deploy: increment VERSION file + all ?v= strings.
 -->
-<script type="module" src="/assets/js/app.js?v=2026.07.26.2"></script>
+<script type="module" src="/assets/js/app.js?v=2026.07.26.4"></script>
 
 </body>
 </html>

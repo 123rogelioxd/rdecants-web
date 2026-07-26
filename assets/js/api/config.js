@@ -9,8 +9,9 @@ export const API_BASE =
     ? 'http://127.0.0.1:8000'
     : 'https://api.rdecants.com');
 
-// Keep this in sync with the asset query strings in the HTML entry points.
-export const BUILD_VERSION = '2026.07.19.3';
+// Keep this in sync with the asset query strings in the HTML entry points
+// and with the VERSION file (tests/cacheFreshness.test.js checks all three).
+export const BUILD_VERSION = '2026.07.26.4';
 
 export function normalizeApiImageUrl(value) {
   const url = String(value ?? '').trim();

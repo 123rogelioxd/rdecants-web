@@ -49,6 +49,7 @@ export function installBridge() {
     openProductModal, closeProductModal,
     clearSearch: () => SearchBar.clearAll(),
     clearGuide:  () => SearchBar.clearGuide(),
+    relaxGuide:  (dimension) => SearchBar.relaxGuide(dimension),
     applyForYouSort: (source = 'user') => {
       Tracker.forYouSortApplied(source);
       SearchBar.applySort('for_you');
@@ -73,6 +74,21 @@ export function installBridge() {
 
   /* Privacy: let the visitor wipe their local taste signal at will. */
   window.__rd.personalization = { reset: () => Personalization.reset() };
+
+  /* Catalog metadata auditor, on demand. Reads the live R Supply OS
+     response and reports what is missing, contradictory or suspicious, with
+     the field to fix upstream — see recommendations/audit.js. Diagnostics
+     only: it never changes what the storefront renders. */
+  window.__rd.audit = async () => {
+    const [{ auditCatalog, formatAuditMarkdown, formatAuditCsv }, products] = await Promise.all([
+      import('../recommendations/audit.js'),
+      CatalogProvider.getProducts(),
+    ]);
+    const report = auditCatalog(products);
+    console.table(report.summary.byClassification);
+    console.table(report.summary.byCode);
+    return { ...report, toMarkdown: () => formatAuditMarkdown(report), toCsv: () => formatAuditCsv(report) };
+  };
 
   /* Backwards-compat shims for the inline event attributes in the markup. */
   window.toggleCart      = toggleCart;

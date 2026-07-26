@@ -285,8 +285,8 @@ test('intents are one preset answer set shared by the tiles, the URL and the fin
     await import('../assets/js/catalog/intents.js');
 
   /* An intent is nothing but preset finder answers — never a second taxonomy. */
-  assert.deepEqual(getIntentAnswers('noche'), { occasion: 'noche' });
-  assert.deepEqual(getIntentAnswers('diario'), { occasion: 'dia' });
+  assert.deepEqual(getIntentAnswers('noche'), { occasion: 'noche', goal: 'destacar' });
+  assert.deepEqual(getIntentAnswers('diario'), { occasion: 'dia', goal: 'versatil' });
 
   /* "Para regalar" carries no scent signal of its own, so it must open the
      guided flow instead of pretending to filter. */
@@ -303,9 +303,21 @@ test('intents are one preset answer set shared by the tiles, the URL and the fin
   assert.equal(readGuideFromQuery('?utm_source=ig'), null, 'unrelated params never fabricate guidance');
   assert.equal(readGuideFromQuery(''), null);
 
+  /* Serialized in question order (gender, age, occasion, goal, climate,
+     family) so a shared link reads the way the finder asked. */
   assert.equal(
     buildCatalogUrl({ family: 'dulce', occasion: 'noche' }),
-    '/catalogo.html?family=dulce&occasion=noche',
+    '/catalogo.html?occasion=noche&family=dulce',
+  );
+  assert.equal(
+    buildCatalogUrl({ gender: 'mujer', age: '15-18', occasion: 'noche', goal: 'destacar', climate: 'frio' }),
+    '/catalogo.html?gender=mujer&age=15-18&occasion=noche&goal=destacar&climate=frio',
+    'every answer survives the handoff — not just one intent',
+  );
+  /* The third question used to be called `preference`; old links still work. */
+  assert.deepEqual(
+    readGuideFromQuery('?occasion=noche&preference=destacar'),
+    { occasion: 'noche', goal: 'destacar' },
   );
   assert.equal(buildCatalogUrl({}), '/catalogo.html');
 });
