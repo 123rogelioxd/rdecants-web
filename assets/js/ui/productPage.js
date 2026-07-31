@@ -61,7 +61,13 @@ export function buildProductPageHtml(product) {
   if (!product) return _notFoundHtml();
 
   const variants = getValidVariants(product);
+  /* One rule, one source: getDefaultVariant prefers the recommended 5 ml and
+     falls back to the first orderable presentation. The same variant is both
+     flagged "Recomendado" and pre-selected, so the page can never highlight
+     one size and price another. Nothing here is hardcoded — sizes, prices and
+     availability all come from the catalog variants. */
   const defaultVariant = getDefaultVariant(product) || getDisplayVariant(product);
+  const recommendedSize = getDefaultVariant(product)?.size ?? null;
   const defaultSize = defaultVariant?.size ?? null;
   const defaultPrice = defaultVariant?.price ?? null;
   /* Entry presentation for "Desde {size}ml" — always a selectable size
@@ -96,14 +102,16 @@ export function buildProductPageHtml(product) {
       <span aria-hidden="true">←</span> Volver
     </a>
 
-    <!-- A. Hero editorial — no buy controls here -->
+    <!-- A. Hero — identity AND the purchase on the same screen. The old
+         "Elige presentación" button only scrolled to a buy section further
+         down the page: an extra tap for something that fits right here. -->
     <section class="pdp-hero" id="pdp-hero" aria-labelledby="pdp-name">
       <div class="pdp-hero-img">
         ${badgeHtml}
         <div class="pdp-img-wrap">
           ${hasImage
             ? `<img src="${_escape(product.image)}" alt="${_escape(product.name)}"
-                   class="pdp-img" loading="eager" decoding="async"
+                   class="pdp-img" width="900" height="1125" loading="eager" decoding="async"
                    onerror="this.parentElement.classList.add('pdp-img-wrap--fallback');this.remove()">`
             : '<div class="pdp-img-wrap--fallback"></div>'}
         </div>
@@ -123,56 +131,48 @@ export function buildProductPageHtml(product) {
         ${product.story ? `<p class="pdp-story">${_escape(product.story)}</p>` : ''}
         ${guidanceHtml ? `<div class="pdp-guidance" aria-label="Recomendado para">${guidanceHtml}</div>` : ''}
 
-        <div class="pdp-hero-actions">
-          ${entryVariant
-            ? `<span class="pdp-hero-price">Desde ${entryVariant.size}ml · <strong>${formatPrice(entryVariant.price)}</strong></span>`
-            : ''}
-          <button class="pdp-jump-buy" type="button" data-jump="#pdp-buy">
-            Elige presentación
-          </button>
+        <!-- B. Buy — presentations, live price and Add, right here. No
+             intermediate step, no second modal. -->
+        <div class="pdp-buy" id="pdp-buy">
+          <div class="pdp-buybar" aria-label="Compra rápida">
+            ${variants.length
+              ? '<div class="pdp-sizes-label">Elige presentación</div>'
+              : '<div class="pdp-price-consult">Precio disponible por consulta personalizada.</div>'}
+
+            <div class="pdp-sizes" role="group" aria-label="Seleccionar presentación" ${variants.length ? '' : 'hidden'}>
+              ${_sizesHtml(variants, defaultSize, recommendedSize, product)}
+            </div>
+
+            <div class="pdp-price-row">
+              <span class="pdp-price" id="pdp-price">${formatPrice(defaultPrice, 'Consultar precio')}</span>
+              <span class="pdp-price-unit">${defaultSize ? `${defaultSize}ml` : 'WhatsApp'}</span>
+            </div>
+
+            ${stockHtml}
+
+            <div class="pdp-actions">
+              <button class="btn-primary pdp-btn-add" id="pdp-btn-add"
+                ${_isOrderableVariant(defaultVariant) ? '' : 'disabled aria-disabled="true"'}
+                aria-label="${defaultVariant ? `Agregar ${_escape(product.name)} ${defaultSize}ml al carrito` : 'Precio por consultar'}">
+                ${_isOrderableVariant(defaultVariant) ? 'Agregar al carrito' : 'Agotado'}
+              </button>
+              <button class="pdp-btn-wa" id="pdp-btn-wa"
+                aria-label="Consultar ${_escape(product.name)} por WhatsApp">
+                Consultar por WhatsApp
+              </button>
+            </div>
+
+            ${lowestPrice !== null ? `
+              <p class="pdp-value-prop">Una botella completa cuesta miles — pruébalo desde ${formatPrice(lowestPrice)}.</p>
+            ` : ''}
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- B. ¿Por qué te puede gustar? — fused sell/guide section -->
+    <!-- C. ¿Por qué te puede gustar? — fused sell/guide section, immediately
+         after the purchase so the first scroll lands on it. -->
     ${_whyYouMightLikeBlock(product)}
-
-    <!-- C. Buy section — el usuario compra primero, justo tras el "por qué" -->
-    <section class="pdp-buy" id="pdp-buy" aria-labelledby="pdp-buy-h">
-      <h2 class="pdp-section-h" id="pdp-buy-h">Lo quiero</h2>
-      <div class="pdp-buybar" aria-label="Compra rápida">
-        ${variants.length
-          ? '<div class="pdp-sizes-label">Elige presentación</div>'
-          : '<div class="pdp-price-consult">Precio disponible por consulta personalizada.</div>'}
-
-        <div class="pdp-sizes" role="group" aria-label="Seleccionar presentación" ${variants.length ? '' : 'hidden'}>
-          ${_sizesHtml(variants, defaultSize, product)}
-        </div>
-
-        ${lowestPrice !== null ? `
-          <p class="pdp-value-prop">Una botella completa cuesta miles — pruébalo desde ${formatPrice(lowestPrice)}.</p>
-        ` : ''}
-
-        <div class="pdp-price-row">
-          <span class="pdp-price" id="pdp-price">${formatPrice(defaultPrice, 'Consultar precio')}</span>
-          <span class="pdp-price-unit">${defaultSize ? `${defaultSize}ml` : 'WhatsApp'}</span>
-        </div>
-
-        ${stockHtml}
-
-        <div class="pdp-actions">
-          <button class="btn-primary pdp-btn-add" id="pdp-btn-add"
-            ${_isOrderableVariant(defaultVariant) ? '' : 'disabled aria-disabled="true"'}
-            aria-label="${defaultVariant ? `Agregar ${_escape(product.name)} ${defaultSize}ml al carrito` : 'Precio por consultar'}">
-            ${_isOrderableVariant(defaultVariant) ? 'Agregar' : 'Agotado'}
-          </button>
-          <button class="pdp-btn-wa" id="pdp-btn-wa"
-            aria-label="Consultar ${_escape(product.name)} por WhatsApp">
-            Consultar por WhatsApp
-          </button>
-        </div>
-      </div>
-    </section>
 
     <!-- D. Recomendaciones — una sola zona: "Combina bien con" + "Si te gusta esto" -->
     <section class="pdp-pairs" id="pdp-pairs" hidden aria-labelledby="pdp-pairs-h"></section>
@@ -497,13 +497,13 @@ function _setupStickyCta(root) {
 
 /* ── Pure rendering helpers ─────────────────────────────────── */
 
-function _sizesHtml(variants, defaultSize, product = null) {
+function _sizesHtml(variants, defaultSize, recommendedSize = null, product = null) {
   return PRIMARY_SIZES
     .map(ml => {
       const variant = variants.find(v => v.size === ml);
       if (!variant) return '';
       const disabled = variant.soldOut || variant.availability <= 0 || !_validVariantId(variant.variant_id);
-      const recommended = ml === 5;
+      const recommended = recommendedSize !== null && ml === recommendedSize;
       const label = getSizeLabel(ml, product);   /* 10 ml "Mejor valor" only when truly cheaper per ml */
       return `
         <button
@@ -544,7 +544,13 @@ function _updateBuyUI(root, product, selectedSize) {
     const disabled = !_isOrderableVariant(variant);
     addBtn.disabled = disabled;
     addBtn.setAttribute('aria-disabled', String(disabled));
-    addBtn.textContent = disabled ? 'Agotado' : 'Agregar';
+    /* Same label the initial render uses — switching size must not quietly
+       rename the button the customer was about to press. */
+    addBtn.textContent = disabled ? 'Agotado' : 'Agregar al carrito';
+    addBtn.setAttribute('aria-label',
+      disabled
+        ? `${product.name} ${selectedSize}ml agotado`
+        : `Agregar ${product.name} ${selectedSize}ml al carrito`);
   }
 
   /* Keep the sticky CTA price in sync as the user picks a size. */

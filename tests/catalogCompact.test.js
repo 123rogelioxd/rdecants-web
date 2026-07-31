@@ -234,19 +234,22 @@ test('catalog show-more control uses premium panel/count/button classes', () => 
   assert.ok(css.includes('-webkit-appearance: none'), 'native button appearance removed');
 });
 
-test('catalog bar has no duplicate search input — the header owns search', () => {
+test('there is exactly one search input, and it lives on the catalog page', () => {
   const css = read('assets/css/components.css');
   const s = read('assets/js/ui/searchbar.js');
   const header = read('assets/js/ui/header.js');
+  const catalogHtml = read('catalogo.html');
 
-  /* Native WebKit search cancel stays hidden for the (single) header input. */
+  /* Native WebKit search cancel stays hidden; the field ships its own. */
   assert.ok(css.includes('input[type="search"]::-webkit-search-cancel-button'),
     'native WebKit search cancel hidden');
-  /* The catalog bar no longer renders its own search box. */
+  /* The filter bar renders no search box of its own. */
   assert.ok(!s.includes('id="sf-input"'), 'catalog bar renders no duplicate search input');
-  /* The header delegates the one global search to SearchBar. */
-  assert.match(header, /SearchBar\.applyQuery/);
-  /* An active search is surfaced in the catalog as a removable chip instead. */
+  /* Neither does the header: the magnifier is a shortcut to the catalog field. */
+  assert.ok(!header.includes('hs-input'), 'the header overlay input is gone');
+  assert.match(header, /catalog-search-input/, 'the magnifier targets the catalog field');
+  assert.equal((catalogHtml.match(/type="search"/g) ?? []).length, 1, 'one input on the page');
+  /* An active search is ALSO surfaced in the filter bar as a removable chip. */
   assert.match(s, /key:\s*'query'/);
   assert.match(s, /data-clear="all"/);
 });

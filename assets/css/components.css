@@ -99,16 +99,16 @@
 }
 
 .header-nav-link:hover,
-.header-nav-link:focus-visible { color: var(--wine); }
+.header-nav-link:focus-visible { color: var(--bronze-ink); }
 
-.header-nav-link[aria-current="page"] { color: var(--wine); }
+.header-nav-link[aria-current="page"] { color: var(--ink); }
 
 .header-nav-link[aria-current="page"]::after {
   content: '';
   position: absolute;
   left: 0; right: 0; bottom: 0;
   height: 1.5px;
-  background: var(--wine);
+  background: var(--ink);
 }
 
 .header-actions {
@@ -135,7 +135,7 @@
               color var(--dur) var(--ease-standard);
 }
 
-.icon-btn:hover { background: rgba(25, 24, 22, 0.05); color: var(--wine); }
+.icon-btn:hover { background: rgba(25, 24, 22, 0.05); color: var(--bronze-ink); }
 
 .cart-badge {
   position: absolute;
@@ -143,8 +143,8 @@
   min-width: 17px; height: 17px;
   padding: 0 4px;
   border-radius: var(--radius-pill);
-  background: var(--wine);
-  color: var(--pure-white);
+  background: var(--action);
+  color: var(--on-action);
   font-size: 10px;
   font-weight: 500;
   line-height: 17px;
@@ -166,11 +166,11 @@
   display: flex; align-items: center; gap: 8px;
 }
 
-.btn-cart:hover { border-color: var(--wine); color: var(--wine); }
+.btn-cart:hover { border-color: var(--bronze-ink); color: var(--bronze-ink); }
 
 .cart-dot {
   width: 6px; height: 6px;
-  background: var(--wine);
+  background: var(--bronze);
   border-radius: 50%;
   display: none;
 }
@@ -229,75 +229,10 @@
 
 .nav-scrim--open { opacity: 1; visibility: visible; }
 
-/* ── Search overlay ──────────────────────────────────────────────
-   The header exposes an icon only; the input lives in an overlay
-   panel on every viewport (no permanently visible search field). */
-.hs-wrap {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  z-index: 800;
-  display: none;
-  align-items: center;
-  gap: 10px;
-  padding: 14px var(--gutter);
-  background: var(--surface);
-  border-bottom: 1px solid var(--line);
-  box-shadow: var(--shadow-md);
-}
-
-.hs-wrap.hs-wrap--open { display: flex; }
-
-.hs-icon {
-  width: 18px; height: 18px;
-  color: var(--ink-faint);
-  flex-shrink: 0;
-}
-
-.hs-input {
-  flex: 1;
-  min-width: 0;
-  background: none;
-  border: none;
-  outline: none;
-  color: var(--ink);
-  font-family: var(--font-sans);
-  font-size: 16px;   /* 16px avoids the iOS zoom-on-focus jump */
-  min-height: 32px;
-}
-
-.hs-input::placeholder { color: var(--ink-faint); }
-
-.hs-x {
-  background: none;
-  border: none;
-  color: var(--ink-soft);
-  cursor: pointer;
-  padding: 6px;
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  border-radius: var(--radius-sm);
-}
-
-.hs-x:hover { color: var(--ink); background: rgba(25, 24, 22, 0.05); }
-
-.hs-cancel {
-  display: block;
-  background: none;
-  border: none;
-  color: var(--wine);
-  font-family: var(--font-sans);
-  font-size: 14px;
-  cursor: pointer;
-  white-space: nowrap;
-  padding: 8px 4px;
-  min-height: 44px;
-  flex-shrink: 0;
-}
-
-.hs-cancel:hover { color: var(--wine-hover); text-decoration: underline; }
-
-/* The old inline mobile-only trigger is now the single search icon. */
+/* ── Search trigger ──────────────────────────────────────────────
+   There is no header search field and no overlay: the magnifier is a
+   shortcut to the catalog's own input (see .catalog-search), so the
+   storefront never shows two search boxes at once. */
 .btn-hs-mobile {
   display: inline-flex;
   align-items: center;
@@ -312,7 +247,7 @@
               color var(--dur) var(--ease-standard);
 }
 
-.btn-hs-mobile:hover { color: var(--wine); background: rgba(25, 24, 22, 0.05); }
+.btn-hs-mobile:hover { color: var(--bronze-ink); background: rgba(25, 24, 22, 0.05); }
 
 /* ── Hero ────────────────────────────────────────────────────────
    Compact and editorial: promise + two actions on the left, the real
@@ -391,7 +326,7 @@
 .hero-cta-main { display: inline-flex; align-items: center; gap: 7px; }
 
 /* The one flash of accent on the whole hero. */
-.hero-cta-spark { color: #e9a4ae; font-size: 13px; line-height: 1; }
+.hero-cta-spark { color: var(--bronze-soft); font-size: 13px; line-height: 1; }
 
 .hero-cta-note {
   font-size: 12px;
@@ -456,7 +391,7 @@
 
 .hero-trust svg {
   width: 17px; height: 17px;
-  color: var(--wine);
+  color: var(--bronze-ink);
   flex: 0 0 auto;
 }
 
@@ -520,7 +455,7 @@
 }
 
 .btn-ghost::after { content: none; }
-.btn-ghost:hover { color: var(--wine); text-decoration-color: var(--wine); }
+.btn-ghost:hover { color: var(--bronze-ink); text-decoration-color: var(--bronze-ink); }
 
 .btn-outline {
   display: inline-flex;
@@ -559,7 +494,7 @@
 
 /* Keyboard focus is always visible and never colour-only. */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
-  outline: 2px solid var(--wine);
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
@@ -605,14 +540,14 @@
 
 .section-link {
   font-size: 14px;
-  color: var(--wine);
+  color: var(--bronze-ink);
   text-decoration: underline;
   text-underline-offset: 4px;
-  text-decoration-color: var(--wine-line);
+  text-decoration-color: var(--bronze-line);
   white-space: nowrap;
 }
 
-.section-link:hover { color: var(--wine-hover); text-decoration-color: currentColor; }
+.section-link:hover { color: var(--bronze-ink); text-decoration-color: currentColor; }
 
 .catalog-intro {
   font-size: 14px;
@@ -684,7 +619,7 @@
 .catalog-more-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(122, 36, 50, 0.06);
+  background: rgba(var(--accent-rgb), 0.06);
 }
 
 @media (max-width: 768px) {
@@ -699,14 +634,14 @@
     text-align: center;
   }
   .catalog-more .catalog-count {
-    color: rgba(122, 36, 50, 0.72);
+    color: rgba(var(--accent-rgb), 0.72);
     font-size: 10px;
     letter-spacing: 0.16em;
   }
   .catalog-more .catalog-more-btn {
     width: min(100%, 300px);
     min-height: 48px;
-    border-color: rgba(122, 36, 50, 0.32);
+    border-color: rgba(var(--accent-rgb), 0.32);
     background: linear-gradient(180deg, rgba(25, 24, 22, 0.055), rgba(25, 24, 22, 0.018));
   }
 }
@@ -742,7 +677,7 @@
 .product-card--clickable { cursor: pointer; }
 
 .product-card:focus-visible {
-  outline: 2px solid var(--wine);
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
@@ -762,7 +697,7 @@
   border-radius: var(--radius-sm);
 }
 
-.card-badge.danger { background: var(--wine); color: var(--pure-white); border-color: var(--wine); }
+.card-badge.danger { background: var(--action); color: var(--on-action); border-color: var(--action); }
 .card-badge.trend  { background: var(--surface); color: var(--ink-soft); border-color: var(--line); }
 
 .card-img-wrap {
@@ -812,6 +747,9 @@
   min-width: 0;
 }
 
+/* Two lines are always reserved, whether the name uses one or two, so a
+   short name next to a long one leaves the price row of both cards on the
+   same baseline and nothing shifts as the grid fills. */
 .card-name {
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -820,6 +758,7 @@
   font-size: 15px;
   font-weight: 500;
   line-height: 1.3;
+  min-height: calc(2 * 1.3em);
   letter-spacing: 0;
   color: var(--ink);
   margin-bottom: 8px;
@@ -901,10 +840,10 @@
 .card-stock--ok .stock-dot { background: var(--ink-faint); animation: none; }
 .card-stock--low,
 .card-stock--few,
-.card-stock--demand { color: var(--wine); }
+.card-stock--demand { color: var(--bronze-ink); }
 .card-stock--low .stock-dot,
 .card-stock--few .stock-dot,
-.card-stock--demand .stock-dot { background: var(--wine); }
+.card-stock--demand .stock-dot { background: var(--bronze); }
 .card-stock--out    { color: var(--danger); }
 
 /* Price + action share the last row; the action is compact on purpose —
@@ -940,18 +879,21 @@
   font-weight: 500;
   letter-spacing: 0;
   text-transform: none;
-  background: var(--surface);
-  color: var(--wine);
-  border: 1px solid var(--wine-line);
+  /* The add action is a primary action, so it is black — the same button the
+     modal, the PDP and the cart use. Nothing on the card face competes with
+     it, and the accent stays out of controls entirely. */
+  background: var(--action);
+  color: var(--on-action);
+  border: 1px solid var(--action);
   border-radius: var(--radius-sm);
   flex: 0 0 auto;
 }
 
 .product-card .card-action.btn-primary:hover,
 .card-action:hover {
-  background: var(--wine-tint);
-  border-color: var(--wine);
-  color: var(--wine-hover);
+  background: var(--action-hover);
+  border-color: var(--action-hover);
+  color: var(--on-action);
 }
 
 .product-card .card-action.btn-primary:disabled,
@@ -967,8 +909,8 @@
   position: absolute;
   top: 10px; left: 10px;
   z-index: 2;
-  background: var(--wine);
-  color: var(--pure-white);
+  background: var(--action);
+  color: var(--on-action);
   font-size: 11px;
   font-weight: 500;
   padding: 4px 9px;
@@ -983,6 +925,11 @@
   gap: 6px;
   margin-bottom: 12px;
 }
+
+/* One chip row's worth of space is held open on every card, so a card that
+   earns a chip is exactly as tall as one that does not and the price row
+   never moves between them. */
+.card-guidance { min-height: 22px; }
 
 .pdm-guidance { margin-top: 6px; }
 
@@ -1012,7 +959,7 @@
   padding: 14px 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  background: rgba(122, 36, 50, 0.045);
+  background: rgba(var(--accent-rgb), 0.045);
 }
 
 .why-heading {
@@ -1173,15 +1120,20 @@
     var(--surface);
 }
 
+/* The tile reserves its own space (aspect-ratio + a hard height cap), so the
+   photo can never push the name, the presentations or the price down as it
+   loads. On a phone the cap is what keeps all six first-screen elements
+   above the fold instead of a single tall bottle. */
 .pdp-img-wrap {
   display: flex;
   align-items: center;
   justify-content: center;
   aspect-ratio: 4 / 5;
+  max-height: 300px;
   width: 100%;
 }
 .pdp-img-wrap--fallback {
-  background: linear-gradient(135deg, rgba(122, 36, 50, 0.18), rgba(25, 24, 22, 0.24));
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.18), rgba(25, 24, 22, 0.24));
 }
 .pdp-img {
   max-width: 78%;
@@ -1231,7 +1183,7 @@
 
 .pdp-concentration,
 .pdp-gender {
-  border: 1px solid rgba(122, 36, 50, 0.28);
+  border: 1px solid rgba(var(--accent-rgb), 0.28);
   border-radius: 999px;
   color: var(--accent);
   font-size: 10px;
@@ -1262,12 +1214,11 @@
 
 .pdp-buybar {
   margin-top: 18px;
-  padding: 20px;
-  border: 1px solid var(--border-hl);
-  border-radius: var(--radius-sm);
-  background:
-    linear-gradient(180deg, rgba(122, 36, 50, 0.07), rgba(25, 24, 22, 0.02));
-  box-shadow: 0 10px 34px rgba(25, 24, 22, 0.152);
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
 }
 
 .pdp-sizes-label,
@@ -1282,45 +1233,75 @@
 .pdp-sizes {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
   gap: 8px;
+  /* Room for the "Recomendado" flag that overhangs the tile above. */
+  padding-top: 9px;
   margin-bottom: 16px;
 }
 
+/* Identical tiles: same width (equal grid tracks), same height (reserved
+   label line), and a selected state that changes colour only — never size,
+   never position. */
 .pdp-size-btn {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 12px 8px;
-  background: transparent;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 2px;
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 12px 6px;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
-  color: rgba(25, 24, 22, 0.78);
+  color: var(--ink-soft);
   cursor: pointer;
-  transition: border-color 0.2s ease, background 0.2s ease;
+  transition: border-color var(--dur) var(--ease-standard),
+              background var(--dur) var(--ease-standard),
+              color var(--dur) var(--ease-standard);
   text-align: center;
 }
-.pdp-size-btn:hover { border-color: var(--border-hl); }
-.pdp-size-btn--active {
-  border-color: var(--accent);
-  background: rgba(122, 36, 50, 0.08);
+.pdp-size-btn:hover { border-color: var(--border-hl); background: var(--bg-sunk); }
+.pdp-size-btn--active,
+.pdp-size-btn--active:hover {
+  border-color: var(--action);
+  background: var(--action);
+  color: var(--on-action);
 }
-.pdp-size-btn--disabled {
-  opacity: 0.5;
+.pdp-size-btn--active .pdp-size-ml,
+.pdp-size-btn--active .pdp-size-price,
+.pdp-size-btn--active .pdp-size-label { color: var(--on-action); }
+.pdp-size-btn--disabled,
+.pdp-size-btn--disabled:hover {
+  opacity: 0.55;
   cursor: not-allowed;
+  background: var(--bg-sunk);
+  border-color: var(--border);
 }
-.pdp-size-ml { font-size: 12px; color: var(--ink); }
-.pdp-size-price { font-size: 13px; color: var(--accent); }
+.pdp-size-ml { font-size: 13px; font-weight: 600; color: var(--ink); }
+.pdp-size-price { font-size: 13px; color: var(--ink); }
+/* Reserved whether or not this size carries a label — a product where only
+   5 ml says "Uso frecuente" still shows three tiles of equal height. */
 .pdp-size-label {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
   font-size: 9px;
-  letter-spacing: 0.16em;
+  line-height: 1.25;
+  min-height: calc(2 * 1.25em);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--ink-faint);
 }
 
 .pdp-price-row {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
   margin-bottom: 12px;
 }
 .pdp-price {
@@ -1373,6 +1354,53 @@
   color: var(--ink);
   margin: 0 0 16px;
   font-weight: 600;
+}
+
+/* ── PDP on a phone ───────────────────────────────────────────────
+   The first screen has to carry photo · house · name · one line of
+   description · the presentations · the price · Agregar. That is only
+   possible if the photograph stops behaving like a hero image, so it is
+   capped at ~260px and the vertical rhythm between the blocks tightens.
+   "¿Por qué te puede gustar?" then starts immediately after the buy box
+   rather than after a screenful of empty space. */
+@media (max-width: 767px) {
+  .pdp-root { padding: 16px 16px 120px; }
+  .pdp-back { margin-bottom: 12px; }
+
+  .pdp-hero {
+    gap: 16px;
+    margin-bottom: 22px;
+  }
+
+  .pdp-img-wrap { max-height: 260px; }
+
+  .pdp-name { font-size: 27px; }
+  .pdp-house { margin-bottom: 6px; }
+  .pdp-title-row { gap: 8px; margin-bottom: 10px; }
+
+  .pdp-story {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+
+  .pdp-guidance { margin-bottom: 10px; }
+
+  .pdp-buybar {
+    margin-top: 12px;
+    padding: 14px 12px;
+  }
+
+  .pdp-sizes { gap: 6px; margin-bottom: 12px; }
+  .pdp-size-btn { padding: 10px 4px; }
+  .pdp-price { font-size: 23px; }
+  .pdp-stock { margin-bottom: 12px; }
+
+  .pdp-novice { margin-bottom: 22px; }
+  .pdp-section-h { font-size: 19px; margin-bottom: 12px; }
 }
 
 .pdp-related-row {
@@ -1441,39 +1469,11 @@
   padding-bottom: 140px;
 }
 
-.pdp-hero-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 14px;
-  margin-top: 18px;
-}
-.pdp-hero-price {
-  font-size: 13px;
-  letter-spacing: 0.04em;
-  color: rgba(25, 24, 22, 0.78);
-}
-.pdp-hero-price strong {
-  color: var(--ink);
-  font-weight: 500;
-}
-.pdp-jump-buy {
-  padding: 11px 22px;
-  font-size: 11px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  border-radius: 999px;
-  background: var(--accent);
-  color: var(--surface);
-  border: 1px solid var(--accent);
-  cursor: pointer;
-}
-.pdp-jump-buy:hover { filter: brightness(1.08); }
+/* The buy block lives inside the hero column now; the standalone section
+   (and the "Elige presentación" jump that led to it) is gone. */
+.pdp-buy { margin: 0; }
 
-.pdp-novice,
-.pdp-buy {
-  margin-bottom: 28px;
-}
+.pdp-novice { margin-bottom: 28px; }
 
 /* ── Novice-first guide (¿Por qué te puede gustar?) ─────────────── */
 .pdp-novice-lead {
@@ -1490,7 +1490,7 @@
   margin: 0 0 14px;
   padding: 10px 14px;
   border-left: 2px solid var(--accent);
-  background: rgba(122, 36, 50, 0.06);
+  background: rgba(var(--accent-rgb), 0.06);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 .pdp-returning[hidden] { display: none; }
@@ -1518,8 +1518,8 @@
 }
 .pdp-bestfor-chip--beginner {
   color: var(--accent);
-  border-color: rgba(122, 36, 50, 0.45);
-  background: rgba(122, 36, 50, 0.08);
+  border-color: rgba(var(--accent-rgb), 0.45);
+  background: rgba(var(--accent-rgb), 0.08);
 }
 
 .pdp-notfor-line {
@@ -1581,19 +1581,25 @@
   gap: 6px;
 }
 
-/* ── Recommended size emphasis ──────────────────────────────────── */
+/* ── Recommended size emphasis ────────────────────────────────────
+   The flag is absolutely positioned so a size that carries it is exactly
+   the same box as the two that do not. The row reserves room for it (see
+   .pdp-sizes padding-top) instead of the tile growing to fit. */
 .pdp-size-btn { position: relative; }
-.pdp-size-btn--recommended { border-color: rgba(122, 36, 50, 0.4); }
+.pdp-size-btn--recommended { border-color: var(--bronze); }
 .pdp-size-flag {
   position: absolute;
   top: -9px;
   left: 50%;
   transform: translateX(-50%);
+  max-width: calc(100% - 8px);
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 8px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--surface-hi);
-  background: var(--accent);
+  color: var(--on-action);
+  background: var(--bronze-ink);
   border-radius: 999px;
   padding: 3px 8px;
   white-space: nowrap;
@@ -1787,14 +1793,14 @@
   text-transform: uppercase;
   padding: 6px 14px;
   border-radius: 999px;
-  border: 1px solid rgba(122, 36, 50, 0.45);
-  background: rgba(122, 36, 50, 0.08);
+  border: 1px solid rgba(var(--accent-rgb), 0.45);
+  background: rgba(var(--accent-rgb), 0.08);
   color: var(--accent);
   width: fit-content;
   margin: 2px 0 10px;
 }
 .pdp-conf-badge--demand { border-color: rgba(154, 100, 16, 0.45); }
-.pdp-conf-badge--top    { border-color: rgba(122, 36, 50, 0.65); background: rgba(122, 36, 50, 0.13); }
+.pdp-conf-badge--top    { border-color: rgba(var(--accent-rgb), 0.65); background: rgba(var(--accent-rgb), 0.13); }
 
 /* Decant reassurance inside buy section */
 .pdp-decant-reassurance {
@@ -2020,9 +2026,9 @@
   background: rgba(25, 24, 22, 0.03);
   transition: border-color 0.2s ease, background 0.2s ease, transform 0.14s ease;
 }
-.tb-btn--like    { border-color: rgba(122, 36, 50, 0.35); background: rgba(122, 36, 50, 0.05); }
+.tb-btn--like    { border-color: rgba(var(--accent-rgb), 0.35); background: rgba(var(--accent-rgb), 0.05); }
 .tb-btn--dislike:hover { border-color: rgba(179, 38, 30, 0.45);  background: rgba(179, 38, 30, 0.07); }
-.tb-btn--like:hover    { border-color: var(--accent);             background: rgba(122, 36, 50, 0.14); }
+.tb-btn--like:hover    { border-color: var(--accent);             background: rgba(var(--accent-rgb), 0.14); }
 .tb-btn--skip {
   font-size: 11px;
   letter-spacing: 0.14em;
@@ -2169,7 +2175,11 @@ body.pdp-cta-visible .whatsapp-float {
     gap: 40px;
     align-items: start;
   }
-  .pdp-name { font-size: 44px; }
+  /* On desktop the photo column can be taller than a phone allows, but it
+     still stops well short of a full screen so the buy box beside it is
+     never the shorter of the two columns. */
+  .pdp-img-wrap { max-height: 440px; }
+  .pdp-name { font-size: 40px; }
   .pdp-related-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
@@ -2250,7 +2260,7 @@ body.pdp-cta-visible .whatsapp-float {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  border: 1px solid rgba(122, 36, 50, 0.42);
+  border: 1px solid rgba(var(--accent-rgb), 0.42);
   color: var(--accent);
   font-size: 10px;
   flex: 0 0 auto;
@@ -2293,7 +2303,7 @@ body.pdp-cta-visible .whatsapp-float {
   height: 100%;
   border-radius: 999px;
   background: linear-gradient(90deg,
-    rgba(122, 36, 50, 0.55) 0%,
+    rgba(var(--accent-rgb), 0.55) 0%,
     var(--accent) 100%);
   transition: width 0.4s ease;
 }
@@ -2315,10 +2325,10 @@ body.pdp-cta-visible .whatsapp-float {
 .cart-minimum {
   margin-bottom: 16px;
   padding: 14px;
-  border: 1px solid rgba(122, 36, 50, 0.3);
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
   border-radius: 12px;
   background:
-    linear-gradient(180deg, rgba(122, 36, 50, 0.13), rgba(122, 36, 50, 0.045));
+    linear-gradient(180deg, rgba(var(--accent-rgb), 0.13), rgba(var(--accent-rgb), 0.045));
   box-shadow: 0 16px 34px rgba(25, 24, 22, 0.096);
 }
 
@@ -2354,7 +2364,7 @@ body.pdp-cta-visible .whatsapp-float {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, rgba(122, 36, 50, 0.72), var(--accent));
+  background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.72), var(--accent));
   transition: width 0.3s ease;
 }
 
@@ -2495,7 +2505,7 @@ body.pdp-cta-visible .whatsapp-float {
 .size-btn--disabled,
 .size-btn--disabled:hover {
   background: rgba(25, 24, 22, 0.035);
-  border-color: rgba(122, 36, 50, 0.16);
+  border-color: rgba(var(--accent-rgb), 0.16);
   color: rgba(25, 24, 22, 0.45);
   cursor: not-allowed;
   transform: none;
@@ -2508,7 +2518,7 @@ body.pdp-cta-visible .whatsapp-float {
 .size-btn--disabled:hover .ml,
 .size-btn--disabled:hover .price,
 .size-btn--disabled:hover .cta {
-  color: rgba(122, 36, 50, 0.78);
+  color: rgba(var(--accent-rgb), 0.78);
 }
 
 /* ── Featured product ────────────────────────────────────────── */
@@ -2550,7 +2560,7 @@ body.pdp-cta-visible .whatsapp-float {
   letter-spacing: 0.4em;
   color: var(--accent);
   text-transform: uppercase;
-  border: 1px solid rgba(122, 36, 50, 0.3);
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
   padding: 6px 14px;
   border-radius: 999px;
   margin-bottom: 24px;
@@ -2625,7 +2635,7 @@ body.pdp-cta-visible .whatsapp-float {
   font-size: 9px;
   letter-spacing: 0.2em;
   color: var(--accent);
-  border: 1px solid rgba(122, 36, 50, 0.3);
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
   padding: 4px 12px;
   border-radius: 999px;
   margin-bottom: 20px;
@@ -2779,7 +2789,7 @@ body.pdp-cta-visible .whatsapp-float {
   width: min(440px, 100vw);
   max-width: 440px;
   background:
-    radial-gradient(circle at 50% 0%, rgba(122, 36, 50, 0.055), transparent 34%),
+    radial-gradient(circle at 50% 0%, rgba(var(--accent-rgb), 0.055), transparent 34%),
     var(--surface);
   border-left: 1px solid var(--border);
   z-index: 1210;
@@ -2880,7 +2890,7 @@ body.pdp-cta-visible .whatsapp-float {
   display: block;
   font-size: 9px;
   letter-spacing: 0.2em;
-  color: rgba(122, 36, 50, 0.9);
+  color: rgba(var(--accent-rgb), 0.9);
   text-transform: uppercase;
 }
 
@@ -2905,7 +2915,7 @@ body.pdp-cta-visible .whatsapp-float {
 .cart-empty-icon  {
   width: 46px;
   height: 46px;
-  border: 1px solid rgba(122, 36, 50, 0.22);
+  border: 1px solid rgba(var(--accent-rgb), 0.22);
   border-radius: 50%;
   color: var(--accent);
   display: grid;
@@ -2984,7 +2994,7 @@ body.pdp-cta-visible .whatsapp-float {
 }
 
 .cart-stock-note {
-  color: rgba(122, 36, 50, 0.9);
+  color: rgba(var(--accent-rgb), 0.9);
   font-size: 10.5px;
   line-height: 1.3;
 }
@@ -3123,8 +3133,8 @@ body.pdp-cta-visible .whatsapp-float {
 
 .checkout-field:focus {
   background: rgba(25, 24, 22, 0.065);
-  border-color: rgba(122, 36, 50, 0.45);
-  box-shadow: 0 0 0 1px rgba(122, 36, 50, 0.08);
+  border-color: rgba(var(--accent-rgb), 0.45);
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.08);
 }
 
 .checkout-field--error {
@@ -3142,8 +3152,8 @@ body.pdp-cta-visible .whatsapp-float {
    subtle accent so customers immediately see where to type their name. */
 .checkout-grid .checkout-control--primary {
   grid-column: 1 / -1;
-  border: 1px solid rgba(122, 36, 50, 0.42);
-  background: rgba(122, 36, 50, 0.075);
+  border: 1px solid rgba(var(--accent-rgb), 0.42);
+  background: rgba(var(--accent-rgb), 0.075);
   border-radius: 12px;
   padding: 12px 12px 0;
 }
@@ -3242,8 +3252,8 @@ body.pdp-cta-visible .whatsapp-float {
   align-items: stretch;
   flex-direction: column;
   gap: 8px;
-  border-color: rgba(122, 36, 50, 0.2);
-  background: rgba(122, 36, 50, 0.055);
+  border-color: rgba(var(--accent-rgb), 0.2);
+  background: rgba(var(--accent-rgb), 0.055);
 }
 
 .checkout-momentum[data-key="minimum"]::before {
@@ -3256,8 +3266,8 @@ body.pdp-cta-visible .whatsapp-float {
 
 .cart-summary {
   background:
-    linear-gradient(180deg, rgba(122, 36, 50, 0.07), rgba(25, 24, 22, 0.022));
-  border: 1px solid rgba(122, 36, 50, 0.16);
+    linear-gradient(180deg, rgba(var(--accent-rgb), 0.07), rgba(25, 24, 22, 0.022));
+  border: 1px solid rgba(var(--accent-rgb), 0.16);
   border-radius: 14px;
   margin-bottom: 12px;
   padding: 14px;
@@ -3321,8 +3331,8 @@ body.pdp-cta-visible .whatsapp-float {
 
 .cart-discount-input:focus {
   background: rgba(25, 24, 22, 0.065);
-  border-color: rgba(122, 36, 50, 0.45);
-  box-shadow: 0 0 0 1px rgba(122, 36, 50, 0.08);
+  border-color: rgba(var(--accent-rgb), 0.45);
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.08);
 }
 
 .cart-discount-apply {
@@ -3330,8 +3340,8 @@ body.pdp-cta-visible .whatsapp-float {
   min-height: 46px;
   padding: 0 18px;
   border-radius: 10px;
-  border: 1px solid rgba(122, 36, 50, 0.42);
-  background: rgba(122, 36, 50, 0.12);
+  border: 1px solid rgba(var(--accent-rgb), 0.42);
+  background: rgba(var(--accent-rgb), 0.12);
   color: var(--accent);
   font-family: var(--font-sans);
   font-size: 12px;
@@ -3427,7 +3437,7 @@ body.pdp-cta-visible .whatsapp-float {
 
 .cart-discount-msg[data-tone="neutral"] { color: rgba(25, 24, 22, 0.5); }
 .cart-discount-msg[data-tone="invalid"] { color: var(--danger); }
-.cart-discount-msg[data-tone="error"]   { color: rgba(122, 36, 50, 0.95); }
+.cart-discount-msg[data-tone="error"]   { color: rgba(var(--accent-rgb), 0.95); }
 
 /* Subtle "Promo detectada: VIP8" line for customers arriving from a campaign
    link. Quiet by design — no banner, no UTM jargon. */
@@ -3436,7 +3446,7 @@ body.pdp-cta-visible .whatsapp-float {
   font-size: 11.5px;
   line-height: 1.4;
   letter-spacing: 0.02em;
-  color: rgba(122, 36, 50, 0.9);
+  color: rgba(var(--accent-rgb), 0.9);
 }
 
 /* "Máximo 2 cupones por pedido." — shown once two codes are applied and the
@@ -3570,7 +3580,7 @@ body.pdp-cta-visible .whatsapp-float {
 .btn-whatsapp[data-state="minimum"],
 .btn-whatsapp[data-state="empty"] {
   background: rgba(25, 24, 22, 0.1);
-  border: 1px solid rgba(122, 36, 50, 0.22);
+  border: 1px solid rgba(var(--accent-rgb), 0.22);
   color: rgba(25, 24, 22, 0.72);
 }
 
@@ -3661,7 +3671,7 @@ body.pdp-cta-visible .whatsapp-float {
   padding: 4px 0;
   background: none;
   border: none;
-  color: rgba(122, 36, 50, 0.9);
+  color: rgba(var(--accent-rgb), 0.9);
   font-family: var(--font-sans);
   font-size: 12px;
   letter-spacing: 0.02em;
@@ -3679,8 +3689,8 @@ body.pdp-cta-visible .whatsapp-float {
 .checkout-notes-toggle:hover { color: var(--accent); }
 
 .checkout-momentum[data-key="nudge"] {
-  border-color: rgba(122, 36, 50, 0.18);
-  background: rgba(122, 36, 50, 0.05);
+  border-color: rgba(var(--accent-rgb), 0.18);
+  background: rgba(var(--accent-rgb), 0.05);
   color: rgba(25, 24, 22, 0.62);
 }
 
@@ -3739,8 +3749,8 @@ body.pdp-cta-visible .whatsapp-float {
 
 .shipping-status[data-state="local"] .shipping-badge {
   color: var(--accent);
-  background: rgba(122, 36, 50, 0.1);
-  border-color: rgba(122, 36, 50, 0.28);
+  background: rgba(var(--accent-rgb), 0.1);
+  border-color: rgba(var(--accent-rgb), 0.28);
 }
 
 .shipping-note {
@@ -3750,8 +3760,8 @@ body.pdp-cta-visible .whatsapp-float {
 }
 
 .cart-shipping-complete {
-  background: rgba(122, 36, 50, 0.06);
-  border: 1px solid rgba(122, 36, 50, 0.2);
+  background: rgba(var(--accent-rgb), 0.06);
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
   border-radius: 14px;
   padding: 12px;
 }
@@ -4040,10 +4050,10 @@ body.pdp-cta-visible .whatsapp-float {
 
 /* Hover — premium lift */
 .fc-card:hover {
-  border-color: rgba(122, 36, 50, 0.18);
+  border-color: rgba(var(--accent-rgb), 0.18);
   box-shadow:
     0 32px 72px rgba(25, 24, 22, 0.3),
-    0 0 0 1px rgba(122, 36, 50, 0.08);
+    0 0 0 1px rgba(var(--accent-rgb), 0.08);
 }
 
 .fc-card:hover .fc-img-wrap img {
@@ -4454,7 +4464,7 @@ body.pdp-cta-visible .whatsapp-float {
 .pdm-img-panel {
   position: relative;
   background:
-    radial-gradient(circle at 60% 40%, rgba(122, 36, 50, 0.07) 0%, transparent 65%),
+    radial-gradient(circle at 60% 40%, rgba(var(--accent-rgb), 0.07) 0%, transparent 65%),
     linear-gradient(160deg, var(--surface), var(--bg));
   display: flex;
   align-items: center;
@@ -4502,7 +4512,7 @@ body.pdp-cta-visible .whatsapp-float {
   width: 100%;
   max-height: 380px;
   object-fit: contain;
-  filter: drop-shadow(0 24px 56px rgba(122, 36, 50, 0.18));
+  filter: drop-shadow(0 24px 56px rgba(var(--accent-rgb), 0.18));
   transition: transform 0.7s cubic-bezier(0.19, 1, 0.22, 1);
 }
 
@@ -4516,7 +4526,7 @@ body.pdp-cta-visible .whatsapp-float {
   max-height: 380px;
   min-height: 200px;
   background:
-    radial-gradient(ellipse at center, rgba(122, 36, 50, 0.08) 0%, transparent 70%);
+    radial-gradient(ellipse at center, rgba(var(--accent-rgb), 0.08) 0%, transparent 70%);
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
@@ -4526,7 +4536,7 @@ body.pdp-cta-visible .whatsapp-float {
 .pdm-img-wrap--fallback::after {
   content: '✦';
   font-size: 48px;
-  color: rgba(122, 36, 50, 0.25);
+  color: rgba(var(--accent-rgb), 0.25);
 }
 
 /* Info panel */
@@ -4635,58 +4645,77 @@ body.pdp-cta-visible .whatsapp-float {
   margin-bottom: 10px;
 }
 
+/* Three equal columns at every viewport. A grid (not flex:1) is what makes
+   the options identical in width regardless of how long their labels are,
+   and the reserved label line keeps them identical in height even when a
+   size has no label to show. */
 .pdm-sizes {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
   gap: 8px;
-  flex-wrap: wrap;
   margin-bottom: 14px;
 }
 
 .pdm-size-btn {
-  flex: 1;
-  min-width: 72px;
-  background: rgba(25, 24, 22, 0.03);
+  min-width: 0;
+  box-sizing: border-box;
+  background: var(--surface);
   border: 1px solid var(--border);
-  color: rgba(25, 24, 22, 0.6);
-  padding: 13px 8px;
+  color: var(--ink-soft);
+  padding: 10px 6px;
   border-radius: var(--radius-sm);
   font-size: 10px;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   text-align: center;
-  line-height: 1.4;
-  transition: var(--transition);
+  line-height: 1.3;
+  /* Colour only. A selected option must not move, grow or cast a shadow —
+     the grid it sits in has to be perfectly still while the customer
+     compares 3 / 5 / 10 ml. */
+  transition: background var(--dur) var(--ease-standard),
+              border-color var(--dur) var(--ease-standard),
+              color var(--dur) var(--ease-standard);
   cursor: pointer;
 }
 
-.pdm-size-ml    { display: block; font-size: 14px; font-weight: 500; color: var(--white); }
-.pdm-size-price { display: block; font-size: 12px; color: var(--accent); margin-top: 2px; }
-.pdm-size-label { display: block; font-size: 10px; color: var(--muted); margin-top: 2px; }
+.pdm-size-ml    { display: block; font-size: 14px; font-weight: 600; color: var(--ink); }
+.pdm-size-price { display: block; font-size: 12px; color: var(--ink); margin-top: 2px; }
+/* Two lines are reserved whether or not this size carries a label, so a
+   product where only 5 ml says "Recomendado" still shows three equal tiles. */
+.pdm-size-label {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: 10px;
+  line-height: 1.2;
+  min-height: calc(2 * 1.2em);
+  color: var(--ink-faint);
+  margin-top: 3px;
+}
 
-.pdm-size-btn:hover,
-.pdm-size-btn--active {
-  background: var(--white);
-  border-color: var(--white);
-  color: var(--black);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-sm);
+.pdm-size-btn:hover { border-color: var(--border-hl); background: var(--bg-sunk); }
+
+.pdm-size-btn--active,
+.pdm-size-btn--active:hover {
+  background: var(--action);
+  border-color: var(--action);
+  color: var(--on-action);
 }
 
 .pdm-size-btn--active .pdm-size-ml,
 .pdm-size-btn--active .pdm-size-price,
-.pdm-size-btn--active .pdm-size-label,
-.pdm-size-btn:hover .pdm-size-ml,
-.pdm-size-btn:hover .pdm-size-price,
-.pdm-size-btn:hover .pdm-size-label {
-  color: var(--black);
+.pdm-size-btn--active .pdm-size-label {
+  color: var(--on-action);
 }
 
 .pdm-size-btn--disabled,
 .pdm-size-btn--disabled:hover {
-  opacity: 0.45;
+  opacity: 0.55;
   cursor: not-allowed;
-  background: rgba(25, 24, 22, 0.035);
+  background: var(--bg-sunk);
   border-color: var(--border);
-  color: rgba(25, 24, 22, 0.45);
+  color: var(--ink-faint);
   transform: none;
   box-shadow: none;
 }
@@ -4697,7 +4726,7 @@ body.pdp-cta-visible .whatsapp-float {
 .pdm-size-btn--disabled:hover .pdm-size-ml,
 .pdm-size-btn--disabled:hover .pdm-size-price,
 .pdm-size-btn--disabled:hover .pdm-size-label {
-  color: rgba(25, 24, 22, 0.45);
+  color: var(--ink-faint);
 }
 
 /* Price display — price and its unit read inline on one row, always in sync
@@ -4713,10 +4742,10 @@ body.pdp-cta-visible .whatsapp-float {
 
 .pdm-price {
   font-family: var(--font-display);
-  font-size: clamp(36px, 4vw, 48px);
+  font-size: clamp(28px, 3.2vw, 38px);
   font-weight: 600;
-  color: var(--accent);
-  transition: all 0.25s ease;
+  color: var(--ink);
+  transition: color 0.25s ease;
   white-space: nowrap;
 }
 
@@ -4726,14 +4755,14 @@ body.pdp-cta-visible .whatsapp-float {
 }
 
 .pdm-price-consult {
-  border: 1px solid rgba(122, 36, 50, 0.18);
+  border: 1px solid rgba(var(--accent-rgb), 0.18);
   border-radius: var(--radius-sm);
   color: rgba(25, 24, 22, 0.48);
   font-size: 13px;
   line-height: 1.6;
   padding: 13px 14px;
   margin-bottom: 22px;
-  background: rgba(122, 36, 50, 0.045);
+  background: rgba(var(--accent-rgb), 0.045);
 }
 
 /* Action buttons */
@@ -4823,7 +4852,13 @@ body.pdp-cta-visible .whatsapp-float {
    overlay on every hover is exactly the kind of decoration the redesign
    removes. The hover state is the card's own border and shadow. */
 
-/* ── Responsive: single column on mobile ─────────────────────── */
+/* ── Responsive: bottom sheet on mobile ───────────────────────────
+   Anchored to the bottom edge, full width up to 430px, at most 90dvh
+   tall and rounded only on top — a panel that belongs to the screen
+   instead of a card floating 60px above the home indicator (which is
+   what the previous `bottom: max(safe-area, 60px)` produced). One
+   scroll region only: the info body. The photo strip above it and the
+   buy bar below it are fixed, so there are no nested scrollers. */
 @media (max-width: 768px) {
   .pdm-overlay {
     align-items: flex-end;
@@ -4835,17 +4870,21 @@ body.pdp-cta-visible .whatsapp-float {
 
   .pdm-modal {
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    bottom: max(env(safe-area-inset-bottom), 60px);
+    bottom: 0;
     display: flex;
     flex-direction: column;
-    height: min(64dvh, 560px);
+    height: auto;
+    max-height: 90dvh;
     left: 0;
+    right: 0;
+    margin-inline: auto;
     min-height: 0;
     position: fixed;
-    right: 0;
     transform: scale(1) translateY(60px);
     width: 100%;
-    max-width: 100%;
+    max-width: 430px;
+    padding-bottom: var(--safe-b);
+    overflow: hidden;
   }
 
   .pdm-modal--open {
@@ -4853,18 +4892,18 @@ body.pdp-cta-visible .whatsapp-float {
   }
 
   .pdm-img-panel {
-    flex: 0 0 150px;
+    flex: 0 0 132px;
     min-height: 0;
-    max-height: 150px;
+    max-height: 132px;
   }
 
   .pdm-img-wrap {
-    padding: 12px 18px 8px;
+    padding: 10px 18px 6px;
     width: 68%;
   }
 
   .pdm-img {
-    max-height: 138px;
+    max-height: 118px;
   }
 
   .pdm-info {
@@ -4948,29 +4987,30 @@ body.pdp-cta-visible .whatsapp-float {
     font-size: 11px;
   }
 
+  /* The sheet already reserves the home-indicator inset via its own
+     padding-bottom, so this bar only carries its own spacing — adding the
+     safe area twice is what used to leave a dead band under the button. */
   .pdm-buybar {
-    box-shadow: 0 -18px 42px rgba(25, 24, 22, 0.232);
-    padding: 9px 14px calc(10px + env(safe-area-inset-bottom));
+    box-shadow: 0 -12px 28px rgba(25, 24, 22, 0.10);
+    padding: 10px 14px 12px;
     position: relative;
     z-index: 8;
   }
 
   .pdm-sizes-label {
-    font-size: 8px;
-    letter-spacing: 0.24em;
-    margin-bottom: 5px;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    margin-bottom: 6px;
   }
 
   .pdm-sizes {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 6px;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
   }
 
   .pdm-size-btn {
     min-width: 0;
-    padding: 6px 5px;
+    padding: 8px 4px;
   }
 
   .pdm-size-ml {
@@ -4979,13 +5019,14 @@ body.pdp-cta-visible .whatsapp-float {
 
   .pdm-size-price {
     font-size: 11px;
-    margin-top: 0;
+    margin-top: 1px;
   }
 
   .pdm-size-label {
-    font-size: 8px;
-    line-height: 1.25;
-    margin-top: 1px;
+    font-size: 9px;
+    line-height: 1.2;
+    min-height: calc(2 * 1.2em);
+    margin-top: 2px;
   }
 
   .pdm-buybar-bottom {
@@ -5019,8 +5060,8 @@ body.pdp-cta-visible .whatsapp-float {
   }
 
   .pdm-btn-add {
-    min-height: 44px;
-    padding: 10px 8px;
+    min-height: 48px;
+    padding: 12px 8px;
   }
 
   .pdm-related {
@@ -5067,7 +5108,7 @@ body.pdp-cta-visible .whatsapp-float {
 }
 
 .sf-bar:focus-within {
-  border-color: rgba(122, 36, 50, 0.2);
+  border-color: rgba(var(--accent-rgb), 0.2);
   box-shadow: var(--shadow-sm);
 }
 
@@ -5125,14 +5166,14 @@ body.pdp-cta-visible .whatsapp-float {
   transition: border-color var(--dur-fast) var(--ease-standard),
               background var(--dur-fast) var(--ease-standard);
 }
-.sf-chip:hover { border-color: var(--accent); background: rgba(122, 36, 50, 0.2); }
+.sf-chip:hover { border-color: var(--accent); background: rgba(var(--accent-rgb), 0.2); }
 .sf-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .sf-chip-x {
   display: grid;
   place-items: center;
   width: 17px; height: 17px;
   border-radius: 50%;
-  background: rgba(122, 36, 50, 0.24);
+  background: rgba(var(--accent-rgb), 0.24);
   color: var(--accent-strong);
   font-size: 13px;
   line-height: 1;
@@ -5177,7 +5218,7 @@ body.pdp-cta-visible .whatsapp-float {
 }
 .sf-filter-btn:hover { border-color: var(--accent-line); background: var(--surface-raised); }
 .sf-filter-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.sf-filter-btn--active { border-color: var(--accent); color: var(--accent); }
+.sf-filter-btn--active { border-color: var(--ink); color: var(--ink); }
 
 /* ── "Explorando: <mood>" banner ─────────────────────────────── */
 .sf-exploring {
@@ -5185,12 +5226,12 @@ body.pdp-cta-visible .whatsapp-float {
   align-items: center;
   gap: 12px;
   padding: 9px 14px;
-  border: 1px solid rgba(122, 36, 50, 0.35);
-  background: rgba(122, 36, 50, 0.08);
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
+  background: rgba(var(--accent-rgb), 0.08);
   border-radius: var(--radius-sm, 8px);
   font-size: 12px;
   letter-spacing: 0.04em;
-  color: var(--gold, var(--wine));
+  color: var(--gold, var(--bronze-ink));
 }
 .sf-exploring-kicker {
   text-transform: uppercase;
@@ -5238,8 +5279,8 @@ body.pdp-cta-visible .whatsapp-float {
   align-items: center;
   gap: 12px;
   padding: 9px 14px;
-  border: 1px solid rgba(122, 36, 50, 0.3);
-  background: rgba(122, 36, 50, 0.06);
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
+  background: rgba(var(--accent-rgb), 0.06);
   border-radius: var(--radius-sm, 8px);
   font-size: 12px;
   color: var(--accent);
@@ -5354,7 +5395,7 @@ body.pdp-cta-visible .whatsapp-float {
 .sf-gender-btn--on {
   color: var(--accent);
   border-color: var(--accent);
-  background: rgba(122, 36, 50, 0.08);
+  background: rgba(var(--accent-rgb), 0.08);
 }
 
 @media (max-width: 768px) {
@@ -5413,7 +5454,7 @@ body.pdp-cta-visible .whatsapp-float {
 }
 
 .sf-input:focus {
-  border-color: rgba(122, 36, 50, 0.4);
+  border-color: rgba(var(--accent-rgb), 0.4);
   background: rgba(25, 24, 22, 0.06);
 }
 
@@ -5489,7 +5530,7 @@ input[type="search"]::-webkit-search-decoration,
 
 .sf-sel:hover,
 .sf-sel:focus {
-  border-color: rgba(122, 36, 50, 0.35);
+  border-color: rgba(var(--accent-rgb), 0.35);
   color: var(--white);
 }
 
@@ -5557,12 +5598,12 @@ input[type="search"]::-webkit-search-decoration,
 }
 
 .sf-mood:hover {
-  border-color: rgba(122, 36, 50, 0.3);
+  border-color: rgba(var(--accent-rgb), 0.3);
   color: var(--white);
 }
 
 .sf-mood--on {
-  background: rgba(122, 36, 50, 0.1);
+  background: rgba(var(--accent-rgb), 0.1);
   border-color: var(--accent);
   color: var(--accent);
 }
@@ -5587,14 +5628,14 @@ input[type="search"]::-webkit-search-decoration,
 }
 
 .sf-mobile-btn:hover {
-  border-color: rgba(122, 36, 50, 0.3);
+  border-color: rgba(var(--accent-rgb), 0.3);
   color: var(--white);
 }
 
 .sf-mobile-btn--active {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(122, 36, 50, 0.07);
+  background: rgba(var(--accent-rgb), 0.07);
 }
 
 .sf-badge {
@@ -5625,7 +5666,7 @@ input[type="search"]::-webkit-search-decoration,
 
 .sf-empty-icon {
   font-size: 44px;
-  color: rgba(122, 36, 50, 0.18);
+  color: rgba(var(--accent-rgb), 0.18);
   margin-bottom: 6px;
   line-height: 1;
 }
@@ -5789,14 +5830,14 @@ input[type="search"]::-webkit-search-decoration,
 }
 
 .sf-dp:hover {
-  border-color: rgba(122, 36, 50, 0.3);
+  border-color: rgba(var(--accent-rgb), 0.3);
   color: var(--white);
 }
 
 .sf-dp--on {
-  background: rgba(122, 36, 50, 0.12);
-  border-color: var(--accent);
-  color: var(--accent);
+  background: var(--action);
+  border-color: var(--action);
+  color: var(--on-action);
 }
 
 /* Drawer footer */
@@ -5929,7 +5970,7 @@ input[type="search"]::-webkit-search-decoration,
   display: grid;
   place-items: center;
   background:
-    radial-gradient(circle at 62% 32%, rgba(122, 36, 50, 0.14), transparent 44%),
+    radial-gradient(circle at 62% 32%, rgba(var(--accent-rgb), 0.14), transparent 44%),
     linear-gradient(180deg, var(--surface-hi), var(--bg));
   z-index: -2;
 }
@@ -6114,10 +6155,10 @@ input[type="search"]::-webkit-search-decoration,
 
 .rr-card:hover,
 .rr-card:focus-visible {
-  border-color: rgba(122, 36, 50, 0.22);
+  border-color: rgba(var(--accent-rgb), 0.22);
   box-shadow:
     0 22px 54px rgba(25, 24, 22, 0.232),
-    0 0 0 1px rgba(122, 36, 50, 0.08);
+    0 0 0 1px rgba(var(--accent-rgb), 0.08);
   outline: none;
 }
 
@@ -6128,7 +6169,7 @@ input[type="search"]::-webkit-search-decoration,
   z-index: 2;
   max-width: calc(100% - 20px);
   background: rgba(25, 24, 22, 0.248);
-  border: 1px solid rgba(122, 36, 50, 0.22);
+  border: 1px solid rgba(var(--accent-rgb), 0.22);
   border-radius: 999px;
   color: var(--accent);
   font-size: 8px;
@@ -6144,7 +6185,7 @@ input[type="search"]::-webkit-search-decoration,
 .rr-img {
   height: 188px;
   background:
-    radial-gradient(circle at 50% 42%, rgba(122, 36, 50, 0.08), transparent 58%),
+    radial-gradient(circle at 50% 42%, rgba(var(--accent-rgb), 0.08), transparent 58%),
     linear-gradient(180deg, var(--surface-hi), var(--bg));
   overflow: hidden;
 }
@@ -6164,7 +6205,7 @@ input[type="search"]::-webkit-search-decoration,
   display: grid;
   place-items: center;
   height: 100%;
-  color: rgba(122, 36, 50, 0.3);
+  color: rgba(var(--accent-rgb), 0.3);
   font-family: var(--font-display);
   font-size: 64px;
 }
@@ -6202,9 +6243,9 @@ input[type="search"]::-webkit-search-decoration,
 
 .rr-notes span {
   max-width: 88px;
-  border: 1px solid rgba(122, 36, 50, 0.14);
+  border: 1px solid rgba(var(--accent-rgb), 0.14);
   border-radius: 999px;
-  color: rgba(122, 36, 50, 0.86);
+  color: rgba(var(--accent-rgb), 0.86);
   font-size: 9px;
   letter-spacing: 0.08em;
   padding: 4px 8px;
@@ -6372,7 +6413,7 @@ input[type="search"]::-webkit-search-decoration,
   inset: 0;
   z-index: 0;
   background:
-    radial-gradient(circle at 50% 42%, rgba(122, 36, 50, 0.08), transparent 58%),
+    radial-gradient(circle at 50% 42%, rgba(var(--accent-rgb), 0.08), transparent 58%),
     linear-gradient(90deg, rgba(25, 24, 22, 0.025), rgba(25, 24, 22, 0.07), rgba(25, 24, 22, 0.025));
   background-size: 100% 100%, 240% 100%;
   opacity: 1;
@@ -6414,7 +6455,7 @@ input[type="search"]::-webkit-search-decoration,
   opacity: 1;
   animation: none;
   background:
-    radial-gradient(circle at center, rgba(122, 36, 50, 0.1), transparent 58%),
+    radial-gradient(circle at center, rgba(var(--accent-rgb), 0.1), transparent 58%),
     linear-gradient(180deg, var(--surface-hi), var(--bg));
 }
 
@@ -6425,7 +6466,7 @@ input[type="search"]::-webkit-search-decoration,
   z-index: 1;
   display: grid;
   place-items: center;
-  color: rgba(122, 36, 50, 0.30);
+  color: rgba(var(--accent-rgb), 0.30);
   font-family: var(--font-display);
   font-weight: 600;
   font-size: clamp(32px, 6vw, 54px);
@@ -6502,7 +6543,7 @@ input[type="search"]::-webkit-search-decoration,
   justify-content: center;
   border: 1px solid rgba(25, 24, 22, 0.055);
   background:
-    radial-gradient(circle at 50% 0%, rgba(122, 36, 50, 0.06), transparent 46%),
+    radial-gradient(circle at 50% 0%, rgba(var(--accent-rgb), 0.06), transparent 46%),
     rgba(25, 24, 22, 0.018);
   border-radius: var(--radius-md);
 }
@@ -6541,15 +6582,22 @@ input[type="search"]::-webkit-search-decoration,
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-.pdm-modal {
-  max-width: min(920px, calc(100vw - 24px));
+/* Desktop only: the mobile sheet is edge-to-edge (capped at 430px) and must
+   not inherit this 12px-per-side inset, which is what left it floating as a
+   card instead of sitting on the bottom edge. */
+@media (min-width: 769px) {
+  .pdm-modal {
+    max-width: min(920px, calc(100vw - 24px));
+  }
 }
 
 .featured-img.img-loaded:hover img {
   transform: scale(1.05);
 }
 
-.pdm-size-btn:active,
+/* The presentation options are deliberately NOT in this press animation: a
+   size grid that flinches on every tap is the thing that made choosing 3 / 5
+   / 10 ml feel unstable. Only the quantity stepper keeps the press feedback. */
 .qty-btn:active {
   transform: scale(0.94);
 }
@@ -6560,7 +6608,7 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 1px solid rgba(122, 36, 50, 0.72);
+  outline: 2px solid var(--color-primary);
   outline-offset: 3px;
 }
 
@@ -7108,7 +7156,7 @@ textarea:focus-visible {
 }
 
 .bundle-card:hover {
-  border-color: rgba(122, 36, 50, 0.28);
+  border-color: rgba(var(--accent-rgb), 0.28);
   transform: translateY(-3px);
 }
 
@@ -7202,7 +7250,7 @@ textarea:focus-visible {
   color: rgba(25, 24, 22, 0.62);
   padding: 12px 14px;
   border-left: 2px solid var(--accent);
-  background: rgba(122, 36, 50, 0.05);
+  background: rgba(var(--accent-rgb), 0.05);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   margin-bottom: 18px;
 }
@@ -7288,7 +7336,7 @@ textarea:focus-visible {
   padding: clamp(18px, 3vw, 28px);
   border-radius: 18px;
   background:
-    radial-gradient(circle at 18% 22%, rgba(122, 36, 50, 0.09), transparent 34%),
+    radial-gradient(circle at 18% 22%, rgba(var(--accent-rgb), 0.09), transparent 34%),
     linear-gradient(135deg, rgba(25, 24, 22, 0.045), rgba(25, 24, 22, 0.012));
 }
 
@@ -7325,7 +7373,7 @@ textarea:focus-visible {
   border: 1px solid rgba(25, 24, 22, 0.07);
   border-radius: 14px;
   background:
-    radial-gradient(circle at 50% 38%, rgba(122, 36, 50, 0.14), transparent 52%),
+    radial-gradient(circle at 50% 38%, rgba(var(--accent-rgb), 0.14), transparent 52%),
     linear-gradient(180deg, var(--surface-hi), var(--bg));
 }
 
@@ -7346,7 +7394,7 @@ textarea:focus-visible {
   min-width: 92px;
   padding: 10px 12px;
   text-align: center;
-  border: 1px solid rgba(122, 36, 50, 0.34);
+  border: 1px solid rgba(var(--accent-rgb), 0.34);
   border-radius: 12px;
   background: rgba(255, 254, 250, 0.76);
   backdrop-filter: blur(12px);
@@ -7354,7 +7402,7 @@ textarea:focus-visible {
 
 .bundle-savings-badge span,
 .bundle-mood {
-  color: rgba(122, 36, 50, 0.9);
+  color: rgba(var(--accent-rgb), 0.9);
   font-size: 9px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -7402,9 +7450,9 @@ textarea:focus-visible {
   margin-bottom: 14px;
   padding: 14px 16px;
   text-align: left;
-  border: 1px solid rgba(122, 36, 50, 0.18);
+  border: 1px solid rgba(var(--accent-rgb), 0.18);
   border-radius: 12px;
-  background: rgba(122, 36, 50, 0.055);
+  background: rgba(var(--accent-rgb), 0.055);
 }
 
 .bundle-feature span,
@@ -7449,7 +7497,7 @@ textarea:focus-visible {
   font-size: 24px;
   line-height: 1;
   text-decoration: line-through;
-  text-decoration-color: rgba(122, 36, 50, 0.72);
+  text-decoration-color: rgba(var(--accent-rgb), 0.72);
 }
 
 .bundle-card .bundle-total-amount {
@@ -7594,7 +7642,7 @@ textarea:focus-visible {
   text-transform: uppercase;
   color: var(--accent);
   padding: 6px 12px;
-  border: 1px solid rgba(122, 36, 50, 0.28);
+  border: 1px solid rgba(var(--accent-rgb), 0.28);
   border-radius: 999px;
 }
 .mood-hero-actions {
@@ -7721,7 +7769,7 @@ textarea:focus-visible {
   letter-spacing: 0.12em;
   color: var(--accent);
   padding: 4px 8px;
-  border: 1px solid rgba(122, 36, 50, 0.28);
+  border: 1px solid rgba(var(--accent-rgb), 0.28);
   border-radius: 999px;
   align-self: flex-start;
   text-transform: uppercase;
@@ -7905,7 +7953,7 @@ textarea:focus-visible {
   border-color: var(--accent);
 }
 .disc-anchor--active {
-  background: rgba(122, 36, 50, .07);
+  background: rgba(var(--accent-rgb), .07);
 }
 
 .disc-anchor-img {
@@ -8006,7 +8054,7 @@ textarea:focus-visible {
 }
 .disc-rec-price {
   font-size: 11px;
-  color: var(--accent, var(--wine));
+  color: var(--accent, var(--bronze-ink));
   margin-top: 2px;
 }
 
@@ -8021,7 +8069,7 @@ textarea:focus-visible {
   font-size: 10px;
   letter-spacing: .12em;
   text-transform: uppercase;
-  color: var(--accent, var(--wine));
+  color: var(--accent, var(--bronze-ink));
   margin: 4px 0 10px;
   line-height: 1.4;
 }
@@ -8531,7 +8579,7 @@ textarea:focus-visible {
 .ck-mini-img--fallback::after {
   content: '✦';
   font-size: 16px;
-  color: rgba(122, 36, 50, 0.3);
+  color: rgba(var(--accent-rgb), 0.3);
 }
 .ck-mini-name {
   font-size: 10px;
@@ -8660,7 +8708,7 @@ textarea:focus-visible {
   font-size: 15px;
 }
 
-.rail-empty a { color: var(--wine); text-decoration: underline; text-underline-offset: 4px; }
+.rail-empty a { color: var(--bronze-ink); text-decoration: underline; text-underline-offset: 4px; }
 
 /* ── "Compra según lo que buscas" — four visual entry points ─── */
 .intent-grid {
@@ -8693,13 +8741,13 @@ textarea:focus-visible {
 
 .intent-tile:hover,
 .intent-tile:focus-visible {
-  border-color: var(--wine);
-  background: var(--wine-tint);
+  border-color: var(--bronze-ink);
+  background: var(--bronze-tint);
 }
 
 .intent-tile svg {
   width: 22px; height: 22px;
-  color: var(--wine);
+  color: var(--bronze-ink);
 }
 
 .intent-tile-label {
@@ -8751,9 +8799,9 @@ textarea:focus-visible {
 .step-num {
   width: 34px; height: 34px;
   border-radius: var(--radius-pill);
-  border: 1px solid var(--wine-line);
-  background: var(--wine-tint);
-  color: var(--wine);
+  border: 1px solid var(--bronze-line);
+  background: var(--bronze-tint);
+  color: var(--bronze-ink);
   font-family: var(--font-sans);
   font-size: 15px;
   font-weight: 500;
@@ -8809,7 +8857,7 @@ textarea:focus-visible {
   display: flex;
   align-items: center;
 }
-.faq-q::after { color: var(--wine); font-weight: 400; }
+.faq-q::after { color: var(--bronze-ink); font-weight: 400; }
 .faq-a { font-size: 15px; line-height: 1.7; color: var(--ink-soft); }
 
 .faq-more {
@@ -8818,7 +8866,7 @@ textarea:focus-visible {
   color: var(--ink-soft);
 }
 
-.faq-more a { color: var(--wine); text-decoration: underline; text-underline-offset: 4px; }
+.faq-more a { color: var(--bronze-ink); text-decoration: underline; text-underline-offset: 4px; }
 
 /* ── Trust strip (light, quiet) ──────────────────────────────── */
 .trust-strip {
@@ -8850,7 +8898,7 @@ textarea:focus-visible {
 }
 
 .breadcrumb a { color: var(--ink-soft); text-decoration: underline; text-underline-offset: 3px; }
-.breadcrumb a:hover { color: var(--wine); }
+.breadcrumb a:hover { color: var(--bronze-ink); }
 
 .page-title {
   font-family: var(--font-display);
@@ -8902,7 +8950,7 @@ textarea:focus-visible {
 .finder-bar span {
   display: block;
   height: 100%;
-  background: var(--wine);
+  background: var(--bronze);
   transition: width var(--dur-slow) var(--ease-out);
 }
 
@@ -8941,16 +8989,16 @@ textarea:focus-visible {
               background var(--dur) var(--ease-standard);
 }
 
-.finder-option:hover { border-color: var(--wine); background: var(--wine-tint); }
+.finder-option:hover { border-color: var(--border-hl); background: var(--bg-sunk); }
 
 .finder-option[aria-pressed="true"] {
-  border-color: var(--wine);
-  background: var(--wine-tint);
+  border-color: var(--ink);
+  background: var(--bg-sunk);
   font-weight: 500;
 }
 
 /* The selected state is marked with a glyph as well as colour. */
-.finder-option[aria-pressed="true"]::after { content: '\2713'; color: var(--wine); }
+.finder-option[aria-pressed="true"]::after { content: '\2713'; color: var(--ink); }
 
 .finder-nav {
   display: flex;
@@ -8967,7 +9015,7 @@ textarea:focus-visible {
   text-decoration: underline;
   text-underline-offset: 4px;
 }
-.finder-skip:hover { color: var(--wine); }
+.finder-skip:hover { color: var(--bronze-ink); }
 
 @media (max-width: 640px) {
   .steps-grid { grid-template-columns: 1fr; }
@@ -9193,7 +9241,7 @@ textarea:focus-visible {
 }
 
 .nav-cta:hover { background: var(--action-hover); color: var(--on-action); }
-.nav-cta .hero-cta-spark { color: #e9a4ae; }
+.nav-cta .hero-cta-spark { color: var(--bronze-soft); }
 
 @media (min-width: 1024px) { .nav-cta { display: inline-flex; } }
 
@@ -9258,7 +9306,7 @@ textarea:focus-visible {
   border-bottom: 1px solid var(--line);
 }
 
-.pick-card--best .pick-label { color: var(--wine); }
+.pick-card--best .pick-label { color: var(--bronze-ink); }
 
 .pick-media {
   aspect-ratio: 4 / 3;
@@ -9403,20 +9451,28 @@ textarea:focus-visible {
 .finder-next { width: 100%; }
 .finder-next:disabled { background: var(--bg-sunk); border-color: var(--line); color: var(--ink-faint); cursor: not-allowed; }
 
-/* ── Catalog: search on the page, not only behind an icon ────────── */
-.catalog-search {
+/* ── Catalog search — the single search field in the storefront ────
+   Always visible, always live: it filters from the first character and
+   never waits on Enter. The header magnifier focuses this field. */
+.catalog-search { margin-bottom: 12px; }
+
+.catalog-search-field {
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 12px 14px;
+  padding: 10px 8px 10px 14px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  margin-bottom: 12px;
+  min-height: 48px;
 }
 
-.catalog-search svg { width: 18px; height: 18px; color: var(--ink-faint); flex: 0 0 auto; }
+.catalog-search-field > svg {
+  width: 18px; height: 18px;
+  color: var(--ink-faint);
+  flex: 0 0 auto;
+}
 
 .catalog-search input {
   flex: 1;
@@ -9425,13 +9481,37 @@ textarea:focus-visible {
   outline: none;
   background: none;
   font-family: var(--font-sans);
-  font-size: 16px;
+  font-size: 16px;   /* 16px avoids the iOS zoom-on-focus jump */
   color: var(--ink);
-  min-height: 24px;
+  min-height: 26px;
 }
 
 .catalog-search input::placeholder { color: var(--ink-faint); }
-.catalog-search:focus-within { border-color: var(--ink); }
+.catalog-search-field:focus-within { border-color: var(--ink); }
+
+/* The native WebKit "×" is already suppressed globally (see "Hide native
+   search cancel button"); this field ships its own 36px clear control. */
+.catalog-search-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 36px; height: 36px;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-standard),
+              color var(--dur-fast) var(--ease-standard);
+}
+
+.catalog-search-x:hover { background: var(--bg-sunk); color: var(--ink); }
+
+/* While a search is live the browse-only editorial band steps aside: the
+   results have to start immediately under the field, not below a prompt
+   about a different way to shop. */
+body.rd-searching .helper-band { display: none; }
 
 /* ── Loading skeletons that read as loading, not as breakage ─────── */
 .card-skeleton {
@@ -9556,11 +9636,11 @@ textarea:focus-visible {
 .gender-badge--compact svg { width: 12px; height: 12px; }
 
 /* The badge is information, not an accent: only the unisex mark borrows a
-   hint of wine, because "either" is the state worth noticing. */
+   hint of bronze, because "either" is the state worth noticing. */
 .gender-badge--unisex {
-  color: var(--wine);
-  border-color: var(--wine-line);
-  background: var(--wine-tint);
+  color: var(--bronze-ink);
+  border-color: var(--bronze-line);
+  background: var(--bronze-tint);
 }
 
 /* House + badge on one line above the product name. */
@@ -9625,12 +9705,12 @@ textarea:focus-visible {
 .picks-chip--edit {
   cursor: pointer;
   text-decoration: underline;
-  text-decoration-color: var(--wine-line);
+  text-decoration-color: var(--bronze-line);
   text-underline-offset: 3px;
   font-family: inherit;
 }
 
-.picks-chip--edit:hover { color: var(--wine); text-decoration-color: var(--wine); }
+.picks-chip--edit:hover { color: var(--bronze-ink); text-decoration-color: var(--bronze-ink); }
 
 .picks-chip-sep { color: var(--ink-faint); }
 
@@ -9662,7 +9742,7 @@ textarea:focus-visible {
   color: var(--ink-soft);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-left: 3px solid var(--wine-line);
+  border-left: 3px solid var(--bronze-line);
   border-radius: var(--radius-sm);
 }
 
@@ -9706,7 +9786,7 @@ textarea:focus-visible {
    The global :focus-visible ring is a 1px 72%-opacity hairline, which is
    easy to lose on the ivory surface. Every control the finder introduces —
    the answer chips, the option rows, the editable answer chips, the pick
-   media and the buy button — gets a deliberate 2px wine ring with an
+   media and the buy button — gets a deliberate 2px bronze ring with an
    offset, so a keyboard-only path through all four questions and the three
    results is always traceable. Colour is never the only signal: the ring
    is a shape change, and the selected state additionally carries a ✓. */
@@ -9719,7 +9799,7 @@ textarea:focus-visible {
 .pick-media:focus-visible,
 .sf-empty-relax:focus-visible,
 .gender-badge:focus-visible {
-  outline: 2px solid var(--wine);
+  outline: 2px solid var(--color-primary);
   outline-offset: 3px;
   border-radius: var(--radius-sm);
 }

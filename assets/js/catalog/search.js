@@ -136,7 +136,13 @@ const BRAND_QUERY_ALIASES = [
   { alias: 'mfk', brand: 'maison francis kurkdjian' },
 ];
 
-const MIN_SEARCH_SCORE = 600;
+/* Scent notes are searchable ("vainilla", "cítrico"), but in their own tier
+   strictly below every identity match: a note can never outrank a product
+   whose NAME or BRAND the customer typed, and it can never pull an unrelated
+   product into a query like "le beau". Descriptions, moods, badges and
+   recommendation tags stay unsearchable — those are editorial copy, and
+   letting them qualify is what used to return half the catalog for "fresco". */
+const MIN_SEARCH_SCORE = 400;
 const SEARCH_SCORE = {
   nameExact:       1000,
   namePrefix:       950,
@@ -144,7 +150,8 @@ const SEARCH_SCORE = {
   primaryAllTokens: 850,
   aliasExact:       800,
   aliasPhrase:      750,
-  partialIdentity:  MIN_SEARCH_SCORE,
+  partialIdentity:  600,
+  notes:            MIN_SEARCH_SCORE,
 };
 
 /* Query-token equivalents are intentionally narrow. They let common numeric
@@ -327,8 +334,16 @@ export function scoreSearchResult(product, rawQuery) {
     score = SEARCH_SCORE.aliasPhrase;
   } else {
     const quality = _allTokensMatch(queryTokens, identityTokens, { allowFuzzy: true });
-    if (!quality) return 0;
-    score = SEARCH_SCORE.partialIdentity + quality;
+    if (quality) {
+      score = SEARCH_SCORE.partialIdentity + quality;
+    } else {
+      /* Notes are exact/prefix only — no fuzzy. "beau" must not reach "eau",
+         and a typo in a note is not worth a wrong product. */
+      const noteTokens = _identityTokens(fields.notes.join(' '));
+      const noteQuality = _allTokensMatch(queryTokens, noteTokens, { allowFuzzy: false });
+      if (!noteQuality) return 0;
+      score = SEARCH_SCORE.notes + Math.min(noteQuality, 40);
+    }
   }
 
   /* Secondary metadata is a bounded tiebreak signal after identity qualifies. */
@@ -372,6 +387,13 @@ function _searchFields(product) {
       `${name} ${brand}`,
     ])),
   );
+  /* The olfactory pyramid as the customer would name it: the listed notes
+     plus the normalized accords, which are the same vocabulary under a
+     different key. Nothing editorial belongs in here. */
+  const notes = _uniqueNormalized([
+    ..._asArray(product?.notes),
+    ..._asArray(f?.accords),
+  ]);
   const secondary = _uniqueNormalized([
     product?.desc,
     product?.story,
@@ -386,7 +408,7 @@ function _searchFields(product) {
     ..._asArray(f?.accords),
   ]);
 
-  return { names, brands, brandAliases, aliases, brandAndName, secondary };
+  return { names, brands, brandAliases, aliases, brandAndName, notes, secondary };
 }
 
 function _asArray(value) {

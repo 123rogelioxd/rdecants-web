@@ -2,9 +2,11 @@
    RDECANTS — DESIGN TOKENS
    Single source of truth for all CSS custom properties.
 
-   Editorial light system: warm ivory paper, ink type, one deep-wine
-   accent. The accent is deliberately scarce — primary actions, active
-   states and small marks only; it must never paint whole sections.
+   Editorial light system: cream paper, black ink type, one discreet
+   bronze accent. Black carries every primary action and every selected
+   state; bronze is reserved for small marks, hairlines and highlighted
+   prices and must never paint a whole surface. Green appears only for
+   WhatsApp and positive states. There is no third hue.
    Dark ink surfaces (--dark) are reserved for the footer and the odd
    contrast band, never for the page as a whole.
 
@@ -18,42 +20,59 @@
 
 :root {
 
+  /* ── Brand palette (canonical names) ─────────────────
+     Every colour in the interface resolves to one of these six. Change
+     a value here and the whole storefront follows; nothing below this
+     block re-declares a brand colour as a literal. */
+  --color-background:     #F5F1E8;   /* cream page */
+  --color-surface:        #FFFCF7;   /* warm white card + panel */
+  --color-primary:        #191816;   /* black — text, buttons, selection */
+  --color-secondary-text: #716B63;   /* secondary copy (4.6:1 on cream) */
+  --color-border:         #D8D0C5;
+  --color-accent:         #A48257;   /* bronze — small details only */
+
   /* ── Core palette ───────────────────────────────────── */
-  --bg:          #f4f1ea;   /* warm ivory page */
+  --bg:          var(--color-background);
   /* The recessed band is only two steps darker than the page: any deeper and
-     --ink-soft (the brief's #6f6b64) drops below 4.5:1 on top of it. */
-  --bg-sunk:     #f1ede4;   /* recessed band / alternating section */
-  --surface:     #fffefa;   /* card + panel */
+     --ink-soft drops below 4.5:1 on top of it. */
+  --bg-sunk:     #F0EBE0;   /* recessed band / alternating section */
+  --surface:     var(--color-surface);
   --surface-hi:  #ffffff;   /* raised / hovered card */
 
-  --ink:         #191816;   /* primary text */
-  --ink-soft:    #68645e;   /* secondary text */
+  --ink:         var(--color-primary);
+  --ink-soft:    var(--color-secondary-text);
   /* Captions sit at 11–12px, so this is set by the 4.5:1 floor on --surface
      rather than by taste — a lighter grey fails on the card face. */
   --ink-faint:   #767168;   /* captions, meta */
 
-  --line:        #ded9d0;   /* soft border */
-  --line-soft:   #e8e3da;   /* hairline inside cards */
+  --line:        var(--color-border);
+  --line-soft:   #E7E0D4;   /* hairline inside cards */
 
   /* Primary action is INK, not the accent. A shop's main button should read
      as "the button", not as a brand statement — and it keeps the accent
      scarce enough to still mean something where it does appear. */
-  --action:       #191816;
+  --action:       var(--color-primary);
   --action-hover: #30302d;
-  --on-action:    #fffefa;
+  --on-action:    var(--color-surface);
 
-  /* The accent earns under 5% of the interface: the cart count, active
-     states, the "Ayúdame a elegir" spark and the recommendation label.
-     Nothing else. */
-  --wine:        #7a2432;
-  --wine-hover:  #5c1823;
-  --wine-tint:   #f6eeee;   /* faint accent wash — active fills only */
-  --wine-line:   #e3ced1;   /* accent hairline */
+  /* The accent earns under 5% of the interface: hairlines, the cart count,
+     the "Ayúdame a elegir" spark and a highlighted price. Never a fill
+     behind a whole panel, never a primary button, never a selected state.
+     --accent-rgb backs the low-alpha washes used across the sheet.
+     --bronze-ink is the darkened text-safe variant (4.6:1 on cream); the
+     base bronze is 3.2:1 and is therefore never used for small copy. */
+  --bronze:      var(--color-accent);
+  --accent-rgb:  164, 130, 87;
+  --bronze-ink:  #856741;
+  --bronze-deep: #6E5436;   /* hover / pressed on a bronze text link */
+  --bronze-soft: #C9A87C;   /* bronze that reads on an ink surface */
+  --bronze-tint: #F3EDE3;   /* faint accent wash — small marks only */
+  --bronze-line: #E2D6C4;   /* accent hairline */
 
   --dark:        #171614;   /* dark sections + footer */
   --dark-soft:   #2a2825;   /* borders inside dark sections */
-  --on-dark:     #f4f1ea;   /* text on dark sections */
-  --on-dark-soft: rgba(244, 241, 234, 0.62);
+  --on-dark:     var(--color-background);   /* text on dark sections */
+  --on-dark-soft: rgba(245, 241, 232, 0.62);
 
   --pure-white:  #ffffff;
 
@@ -67,10 +86,14 @@
   --muted:  var(--ink-soft);
   --soft:   var(--ink-faint);
 
-  --accent:        var(--wine);
-  --accent-strong: var(--wine-hover);
-  --accent-soft:   var(--wine-tint);
-  --accent-line:   var(--wine-line);
+  /* The sheet uses --accent for TEXT far more often than for marks, and the
+     brand bronze is 3.2:1 on cream — fine for a hairline, unreadable at
+     11–13px. The alias therefore resolves to the darkened bronze; --bronze
+     stays the exact brand value for hairlines, dots and rules. */
+  --accent:        var(--bronze-ink);
+  --accent-strong: var(--bronze-deep);
+  --accent-soft:   var(--bronze-tint);
+  --accent-line:   var(--bronze-line);
 
   --danger:      #b3261e;
   --danger-soft: rgba(179, 38, 30, 0.10);
@@ -132,7 +155,7 @@
 
   /* ── Borders ────────────────────────────────────────── */
   --border:    var(--line);
-  --border-hl: #cfc7ba;
+  --border-hl: #C6BCAB;
 
   /* ── Border radius (moderate — 10–14px) ─────────────── */
   --radius-sm: 10px;
@@ -154,7 +177,7 @@
   --transition: all var(--dur) var(--ease-standard);
 
   /* ── Focus ring (visible, never color-only) ─────────── */
-  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--wine);
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--color-primary);
 
   /* ── Safe areas (iPhone notch / home indicator) ─────── */
   --safe-b: env(safe-area-inset-bottom, 0px);

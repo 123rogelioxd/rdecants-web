@@ -27,13 +27,13 @@
 
 <title>Catálogo de decants — RDecants</title>
 <meta name="description" content="Explora todas las fragancias originales disponibles en decants de 3, 5 y 10 ml. Busca por nombre, marca o nota y filtra por ocasión, casa y precio.">
-<meta name="theme-color" content="#f4f1ea">
+<meta name="theme-color" content="#F5F1E8">
 
-<link rel="icon" href="/favicon.ico?v=2026.07.26.6" sizes="any">
-<link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/favicon-32.png?v=2026.07.26.6">
-<link rel="icon" type="image/png" sizes="16x16" href="/assets/brand/favicon-16.png?v=2026.07.26.6">
-<link rel="apple-touch-icon" sizes="180x180" href="/assets/brand/apple-touch-icon.png?v=2026.07.26.6">
-<link rel="manifest" href="/site.webmanifest?v=2026.07.26.6">
+<link rel="icon" href="/favicon.ico?v=2026.07.31.1" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/favicon-32.png?v=2026.07.31.1">
+<link rel="icon" type="image/png" sizes="16x16" href="/assets/brand/favicon-16.png?v=2026.07.31.1">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/brand/apple-touch-icon.png?v=2026.07.31.1">
+<link rel="manifest" href="/site.webmanifest?v=2026.07.31.1">
 <link rel="canonical" href="https://rdecants.com/catalogo.html">
 
 <!-- Local demo catalog is dev-only; this flag keeps demo SKUs out of production. -->
@@ -55,10 +55,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="/assets/css/tokens.css?v=2026.07.26.6">
-<link rel="stylesheet" href="/assets/css/animations.css?v=2026.07.26.6">
-<link rel="stylesheet" href="/assets/css/components.css?v=2026.07.26.6">
-<link rel="stylesheet" href="/assets/css/styles.css?v=2026.07.26.6">
+<link rel="stylesheet" href="/assets/css/tokens.css?v=2026.07.31.1">
+<link rel="stylesheet" href="/assets/css/animations.css?v=2026.07.31.1">
+<link rel="stylesheet" href="/assets/css/components.css?v=2026.07.31.1">
+<link rel="stylesheet" href="/assets/css/styles.css?v=2026.07.31.1">
 </head>
 
 <body class="catalog-body">
@@ -76,7 +76,7 @@
   </button>
 
   <a href="/" class="header-logo" aria-label="RDecants — inicio">
-    <img class="logo-mark" src="/assets/brand/rdecants-monogram.png?v=2026.07.26.6"
+    <img class="logo-mark" src="/assets/brand/rdecants-monogram.png?v=2026.07.31.1"
          alt="RDecants" width="240" height="171" decoding="async">
     <span class="logo-text">RDECANTS</span>
   </a>
@@ -88,7 +88,7 @@
 
   <div class="header-actions">
     <button class="btn-hs-mobile" id="btn-hs-mobile" type="button"
-      aria-label="Buscar fragancias" aria-expanded="false" aria-controls="hs-wrap">
+      aria-label="Buscar fragancias en el catálogo">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="20" height="20" aria-hidden="true">
         <circle cx="11" cy="11" r="7"/>
         <path d="m20 20-3.5-3.5" stroke-linecap="round"/>
@@ -104,23 +104,6 @@
     </button>
   </div>
 </header>
-
-<!-- SEARCH OVERLAY -->
-<div class="hs-wrap" id="hs-wrap" role="search" aria-label="Buscar fragancias">
-  <svg class="hs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-    <circle cx="11" cy="11" r="7"/>
-    <path d="m20 20-3.5-3.5" stroke-linecap="round"/>
-  </svg>
-  <input id="hs-input" class="hs-input" type="search"
-    placeholder="Buscar fragancia, marca o nota…" autocomplete="off" spellcheck="false"
-    aria-label="Buscar fragancias">
-  <button class="hs-x" id="hs-x" type="button" aria-label="Limpiar búsqueda" hidden>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" aria-hidden="true">
-      <path d="M18 6 6 18M6 6l12 12"/>
-    </svg>
-  </button>
-  <button class="hs-cancel" id="hs-cancel" type="button" aria-label="Cancelar búsqueda">Cancelar</button>
-</div>
 
 <!-- MOBILE NAV -->
 <div class="nav-scrim" id="nav-scrim"></div>
@@ -155,22 +138,30 @@
 </section>
 
 <!-- CATALOG — the filter bar and grid are injected here by ui/searchbar.js
-     and catalog/render.js, exactly as before. The search field is on the
-     page itself: on a catalog, hiding search behind an icon costs more than
-     the space it saves. -->
+     and catalog/render.js, exactly as before. This field is the ONE search
+     input in the storefront: the header magnifier navigates here and focuses
+     it, so there is never a second search box competing with it. -->
 <section class="section section--catalog" id="catalog">
   <div class="container">
 
-    <label class="catalog-search" for="catalog-search-input">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-        <circle cx="11" cy="11" r="7"/>
-        <path d="m20 20-3.5-3.5" stroke-linecap="round"/>
-      </svg>
-      <input id="catalog-search-input" type="search"
-             placeholder="Busca por nombre, marca o nota…"
-             autocomplete="off" spellcheck="false"
-             aria-label="Buscar en el catálogo">
-    </label>
+    <div class="catalog-search" id="catalog-search" role="search">
+      <label class="catalog-search-field" for="catalog-search-input">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"/>
+          <path d="m20 20-3.5-3.5" stroke-linecap="round"/>
+        </svg>
+        <input id="catalog-search-input" type="search" enterkeyhint="search"
+               placeholder="Busca por nombre, marca, concentración o nota…"
+               autocomplete="off" spellcheck="false"
+               aria-label="Buscar en el catálogo">
+        <button class="catalog-search-x" id="catalog-search-x" type="button"
+                aria-label="Limpiar búsqueda" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" aria-hidden="true">
+            <path d="M18 6 6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </label>
+    </div>
 
     <div class="helper-band">
       <p>¿No sabes cuál elegir? Te recomendamos tres en menos de un minuto.</p>
@@ -217,6 +208,6 @@
 <!-- TOAST -->
 <div id="toast" class="toast" aria-live="polite"></div>
 
-<script type="module" src="/assets/js/pages/catalog.js?v=2026.07.26.6"></script>
+<script type="module" src="/assets/js/pages/catalog.js?v=2026.07.31.1"></script>
 </body>
 </html>

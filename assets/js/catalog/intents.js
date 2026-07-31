@@ -132,6 +132,27 @@ export function stashGuideHandoff(answers, storage = globalThis.sessionStorage) 
   try { storage?.setItem(HANDOFF_KEY, JSON.stringify(answers)); } catch { /* private mode */ }
 }
 
+/* The header magnifier hands over the same way, and for the same reason: it
+   asks for `?focus=search`, but a host that 301s `/catalogo.html` to
+   `/catalogo` drops the query and the field would never take focus. The flag
+   is one-shot and session-scoped so a later, ordinary visit to the catalog
+   never steals focus (and never pops the keyboard) out of nowhere. */
+const FOCUS_KEY = 'rd_search_focus';
+
+export function stashSearchFocus(storage = globalThis.sessionStorage) {
+  try { storage?.setItem(FOCUS_KEY, '1'); } catch { /* private mode */ }
+}
+
+export function takeSearchFocus(storage = globalThis.sessionStorage) {
+  try {
+    const raw = storage?.getItem(FOCUS_KEY);
+    storage?.removeItem(FOCUS_KEY);
+    return raw === '1';
+  } catch {
+    return false;
+  }
+}
+
 export function takeGuideHandoff(storage = globalThis.sessionStorage) {
   try {
     const raw = storage?.getItem(HANDOFF_KEY);

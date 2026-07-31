@@ -104,10 +104,28 @@ test('"bleu de chanel" does not return unrelated Chanel products', () => {
 
 test('"sauvage" does not return non-Sauvage Dior products or metadata matches', () => {
   assert.deepEqual(ids('sauvage'), ['sauvage']);
-  assert.deepEqual(ids('ambroxan'), [], 'accords and notes are not searchable');
   assert.deepEqual(ids('confident'), [], 'mood tags are not searchable');
   assert.deepEqual(ids('oficina'), [], 'recommendation tags and descriptions are not searchable');
   assert.deepEqual(ids('azul fresco'), [], 'descriptions are not searchable');
+});
+
+test('scent notes are searchable, in a tier strictly below product identity', () => {
+  /* A shopper who knows what they like by smell ("vainilla", "cítrico") can
+     find it. Notes and accords count; nothing else in the metadata does. */
+  assert.deepEqual(ids('citricos'), ['allure'], 'a note finds its product');
+  assert.deepEqual(ids('cedro'), ['allure']);
+  assert.ok(ids('ambroxan').includes('miss-dior'), 'listed note qualifies');
+  assert.ok(ids('ambroxan').includes('sauvage'), 'normalized accord qualifies');
+
+  /* …but a note never outranks an identity match, and never smuggles an
+     unrelated product into a query that names a real product. */
+  const sauvage = catalog.find(p => p.id === 'sauvage');
+  const missDior = catalog.find(p => p.id === 'miss-dior');
+  assert.ok(
+    scoreSearchResult(sauvage, 'sauvage') > scoreSearchResult(missDior, 'ambroxan'),
+    'identity outranks any note match',
+  );
+  assert.deepEqual(ids('bleu de chanel'), ['bdc'], 'identity queries stay clean');
 });
 
 test('search tolerates lightweight typos on commercial identity only', () => {

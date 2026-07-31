@@ -18,9 +18,11 @@
 import { bootstrapShell }    from '../core/shell.js';
 import { renderProducts }    from '../catalog/render.js';
 import { SearchBar }         from '../ui/searchbar.js';
+import { focusCatalogSearch } from '../ui/header.js';
 import { readGuideFromQuery,
          readQueryFromQuery,
-         takeGuideHandoff }   from '../catalog/intents.js';
+         takeGuideHandoff,
+         takeSearchFocus }    from '../catalog/intents.js';
 import { setupScrollAnimations,
          observeFadeUp }     from '../ui/animations.js';
 import { Tracker }           from '../tracking/tracker.js';
@@ -35,6 +37,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   _setupInlineSearch();
   _applyUrlState(window.location.search);
+  _applyFocusRequest(window.location.search);
 
   observeFadeUp();
   setupScrollAnimations();
@@ -43,30 +46,78 @@ document.addEventListener('DOMContentLoaded', async () => {
   Tracker.emit('page_view', { path: window.location.pathname });
 });
 
-/* The catalog owns a visible search field. It delegates to the same
-   SearchBar engine the header icon uses, and keeps the two inputs in sync so
-   a query typed in either place is reflected in both. */
+/* SEARCH_DEBOUNCE_MS is short enough that the grid feels live from the first
+   character and long enough that a fast typist filters once, not eight times. */
+const SEARCH_DEBOUNCE_MS = 200;
+
+/* The catalog owns the one visible search field in the storefront. Every
+   keystroke filters the grid through the same SearchBar engine the filters
+   use — Enter is accepted but never required, and nothing waits for it. */
 function _setupInlineSearch() {
   const input = document.getElementById('catalog-search-input');
   if (!input) return;
 
-  const header = document.getElementById('hs-input');
+  const clearBtn = document.getElementById('catalog-search-x');
   let timer = null;
 
-  input.addEventListener('input', () => {
-    const query = input.value;
-    if (header) header.value = query;
+  const run = query => {
+    if (clearBtn) clearBtn.hidden = !query;
     clearTimeout(timer);
-    timer = setTimeout(() => SearchBar.applyQuery(query), 250);
+    timer = setTimeout(() => SearchBar.applyQuery(query), SEARCH_DEBOUNCE_MS);
+  };
+
+  input.addEventListener('input', () => run(input.value));
+
+  /* The native search widget's own clear (the WebKit "×") fires `search`,
+     not `input`, on some builds — treat it like any other edit. */
+  input.addEventListener('search', () => run(input.value));
+
+  clearBtn?.addEventListener('click', () => {
+    input.value = '';
+    clearBtn.hidden = true;
+    clearTimeout(timer);
+    SearchBar.applyQuery('');
+    input.focus();
   });
 
   input.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
       input.value = '';
-      if (header) header.value = '';
+      if (clearBtn) clearBtn.hidden = true;
+      clearTimeout(timer);
       SearchBar.applyQuery('');
+      return;
+    }
+    if (event.key === 'Enter') {
+      /* Results are already on screen; Enter just commits the pending
+         debounce and dismisses the mobile keyboard. */
+      event.preventDefault();
+      clearTimeout(timer);
+      SearchBar.applyQuery(input.value);
+      input.blur();
     }
   });
+}
+
+/* Arriving from the header magnifier: focus the field (and, where the browser
+   allows it, raise the keyboard), then drop the flag from the URL so a reload
+   or a shared link is a plain catalog visit. The session flag is always
+   consumed, even when the URL already carried the request, so it can never
+   leak into the next visit. */
+function _applyFocusRequest(search) {
+  const params = new URLSearchParams(String(search ?? '').replace(/^\?/, ''));
+  const stashed = takeSearchFocus();
+  if (params.get('focus') !== 'search' && !stashed) return;
+
+  focusCatalogSearch();
+
+  params.delete('focus');
+  const rest = params.toString();
+  window.history?.replaceState?.(
+    window.history.state,
+    '',
+    `${window.location.pathname}${rest ? `?${rest}` : ''}${window.location.hash}`,
+  );
 }
 
 /* Apply whatever the URL asked for, in priority order: an explicit search
@@ -75,8 +126,10 @@ function _setupInlineSearch() {
 function _applyUrlState(search) {
   const query = readQueryFromQuery(search);
   if (query) {
-    const input = document.getElementById('hs-input');
+    const input = document.getElementById('catalog-search-input');
     if (input) input.value = query;
+    const clearBtn = document.getElementById('catalog-search-x');
+    if (clearBtn) clearBtn.hidden = false;
     SearchBar.applyQuery(query);
     /* Drop any parked answers: an explicit search is a new intent. */
     takeGuideHandoff();

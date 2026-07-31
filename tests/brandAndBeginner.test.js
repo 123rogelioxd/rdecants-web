@@ -47,7 +47,7 @@ test('every public page declares the favicon, not just the home', () => {
     assert.match(html, /sizes="16x16" href="\/assets\/brand\/favicon-16\.png\?v=/, `${page}: 16px png`);
     assert.match(html, /rel="apple-touch-icon" sizes="180x180"/, `${page}: apple touch icon`);
     assert.match(html, /rel="manifest" href="\/site\.webmanifest/, `${page}: manifest`);
-    assert.match(html, /<meta name="theme-color" content="#f4f1ea">/, `${page}: theme colour`);
+    assert.match(html, /<meta name="theme-color" content="#F5F1E8">/, `${page}: theme colour`);
   }
 });
 
@@ -391,10 +391,12 @@ test('the primary action is ink, and the accent stays rare', () => {
   const tokens = read('assets/css/tokens.css');
   const css = read('assets/css/components.css');
 
-  assert.match(tokens, /--action:\s*#191816/);
+  assert.match(tokens, /--color-primary:\s*#191816/);
+  assert.match(tokens, /--action:\s*var\(--color-primary\)/);
   assert.match(tokens, /--action-hover:\s*#30302d/);
 
   assert.match(css, /\.btn-primary \{[^}]*background: var\(--action\)/s, 'primary button is ink');
-  assert.doesNotMatch(css, /\.btn-primary \{[^}]*background: var\(--wine\)/s, 'never a wine primary button');
+  assert.doesNotMatch(css, /\.btn-primary \{[^}]*background: var\(--(wine|bronze|accent)\)/s,
+    'the primary button is never painted with the accent');
   assert.match(css, /\.hero-cta \{[^}]*background: var\(--action\)/s, 'hero CTA is ink');
 });

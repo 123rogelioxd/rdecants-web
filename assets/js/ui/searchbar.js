@@ -258,7 +258,7 @@ function _bindBarEvents() {
 function _clearFilter(key) {
   if (key === 'all') { _clearAll(); return; }
   _state.guide = null;
-  if (key === 'query') { _state.query = ''; _clearHeaderSearchInput(); _lastTrackedQuery = ''; }
+  if (key === 'query') { _state.query = ''; _syncSearchInput(''); _lastTrackedQuery = ''; }
   if (key === 'gender') _state.gender = null;
   if (key === 'mood')   _state.mood = null;
   if (key === 'house')  _state.house = '';
@@ -269,13 +269,43 @@ function _clearFilter(key) {
   Tracker.filterCleared();
 }
 
-/* The header owns the search input; keep it in sync when the query is cleared
-   from the catalog (chip removal / clear-all) so the two never drift apart. */
-function _clearHeaderSearchInput() {
-  const hs  = document.getElementById('hs-input');
-  const hsx = document.getElementById('hs-x');
-  if (hs)  hs.value = '';
-  if (hsx) hsx.hidden = true;
+/* The catalog's visible field is the only search input. Push the engine's
+   query back into it whenever the query changes from somewhere else (a chip
+   removal, "Limpiar todo", or a ?q= handed over in the URL) so the field and
+   the grid can never disagree. */
+function _syncSearchInput(query) {
+  const input = document.getElementById('catalog-search-input');
+  const clear = document.getElementById('catalog-search-x');
+  if (input && input.value !== query) input.value = query;
+  if (clear) clear.hidden = !query;
+}
+
+/* Mirror the active query into the address bar so a search is shareable and
+   survives a reload. replaceState, never pushState: one history entry per
+   keystroke would turn the back button into an undo key for typing, and
+   "back" has to leave the catalog the way the visitor expects. */
+function _syncQueryToUrl(query) {
+  const loc = globalThis.window?.location;
+  const history = globalThis.window?.history;
+  if (!loc?.href || typeof history?.replaceState !== 'function') return;
+  if (!document.getElementById('products-grid')) return;   /* catalog page only */
+
+  try {
+    const url = new URL(loc.href);
+    const next = (query ?? '').trim();
+    if ((url.searchParams.get('q') ?? '') === next) return;
+    if (next) url.searchParams.set('q', next);
+    else url.searchParams.delete('q');
+    history.replaceState(history.state, '', `${url.pathname}${url.search}${url.hash}`);
+  } catch { /* opaque or non-standard location — the grid is still filtered */ }
+}
+
+/* A live search owns the screen: the page's own editorial blocks (the
+   "¿No sabes cuál elegir?" band and anything else marked as browse-only)
+   step aside while results are showing, instead of sitting between the
+   field and its matches. */
+function _syncSearchingState(query) {
+  document.body?.classList?.toggle?.('rd-searching', Boolean(query));
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -449,6 +479,11 @@ function _run() {
      underneath so it can act as the relevance tiebreak and be restored when
      the query is cleared. */
   _syncBarFromState();
+
+  /* One query, three surfaces: the field, the URL and the page state. */
+  const activeQuery = (_state.query ?? '').trim();
+  _syncQueryToUrl(activeQuery);
+  _syncSearchingState(activeQuery);
 
   /* Guided mode: the finder's beginner-safe ranking defines the grid order in
      place (top pick pinned). Manual filters/sort are bypassed — using any of
@@ -674,7 +709,7 @@ function _clearAll() {
   _state        = { ..._DEFAULT };
   _pendingQuery = null;
   _lastTrackedQuery = '';
-  _clearHeaderSearchInput();
+  _syncSearchInput('');
   if (!_bar) return;
   _syncBarFromState();
   _syncDrawer();

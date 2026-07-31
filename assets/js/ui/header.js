@@ -1,21 +1,22 @@
 /* =============================================================
    RDECANTS — HEADER
-   Scroll state + the single global search, which lives behind an icon
-   in an overlay panel (there is no permanently visible search field).
+   Scroll state + the magnifier, which is a shortcut to ONE search
+   field: the visible input on the catalog page.
 
-   Two behaviours, one input:
-     • On a page that owns the catalog grid, every keystroke filters it
-       live through the existing SearchBar engine.
-     • On a page without a grid (home, product, mood), submitting hands
-       the query to the catalog page instead of silently doing nothing.
+     • On the catalog, the icon focuses that input in place.
+     • On any other page it navigates straight to the catalog with
+       ?focus=search, and the catalog focuses the field on arrival
+       (opening the keyboard on the mobile browsers that allow it).
 
-   The overlay deliberately does NOT lock the body: results are the
-   page's own content and must stay scrollable while typing.
+   There is deliberately no overlay input any more: two search fields
+   on the same site meant two states to keep in sync, and a query typed
+   on the home page had nowhere to land until the visitor pressed Enter.
    ============================================================= */
 
-import { SearchBar } from './searchbar.js';
+import { stashSearchFocus } from '../catalog/intents.js';
 
 const CATALOG_URL = '/catalogo.html';
+const CATALOG_INPUT_ID = 'catalog-search-input';
 
 export function setupHeader() {
   const header = document.querySelector('.header');
@@ -27,101 +28,36 @@ export function setupHeader() {
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
 
-  _setupHeaderSearch();
+  _setupSearchShortcut();
 }
 
-/* ── Header search ──────────────────────────────────────────── */
-function _setupHeaderSearch() {
-  const wrap      = document.getElementById('hs-wrap');
-  const input     = document.getElementById('hs-input');
-  const xBtn      = document.getElementById('hs-x');
-  const cancelBtn = document.getElementById('hs-cancel');
+/* ── Magnifier → the catalog's search field ─────────────────── */
+function _setupSearchShortcut() {
   const searchBtn = document.getElementById('btn-hs-mobile');
+  if (!searchBtn) return;
 
-  if (!wrap || !input) return;
-
-  /* Live search — debounced via SearchBar.applyQuery.
-     Tracking is handled inside SearchBar._run() to avoid double-counting. */
-  let _timer = null;
-  input.addEventListener('input', () => {
-    const q = input.value;
-    if (xBtn) xBtn.hidden = !q;
-    clearTimeout(_timer);
-    _timer = setTimeout(() => {
-      SearchBar.applyQuery(q);   /* buffers query if catalog not ready yet */
-      if (q.length >= 1) _scrollToCatalog();
-    }, 280);
-  });
-
-  /* Clear button */
-  xBtn?.addEventListener('click', () => {
-    input.value = '';
-    xBtn.hidden = true;
-    SearchBar.applyQuery('');
-    input.focus();
-  });
-
-  /* The icon is the only search affordance, on every viewport. */
-  searchBtn?.addEventListener('click', () => {
-    wrap.classList.add('hs-wrap--open');
-    searchBtn.setAttribute('aria-expanded', 'true');
-    setTimeout(() => input.focus(), 80);
-  });
-
-  cancelBtn?.addEventListener('click', () => {
-    _closeOverlay(wrap, input, xBtn, searchBtn);
-  });
-
-  input.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
-      if (wrap.classList.contains('hs-wrap--open')) {
-        _closeOverlay(wrap, input, xBtn, searchBtn);
-      } else {
-        input.value = '';
-        if (xBtn) xBtn.hidden = true;
-        SearchBar.applyQuery('');
-      }
-    }
-    if (e.key === 'Enter') {
-      /* Without a grid on this page the query has nowhere to land, so send
-         the visitor to the catalog with the search already applied. */
-      if (!_hasCatalogGrid()) {
-        const q = (input.value ?? '').trim();
-        if (q) { _gotoCatalogSearch(q); return; }
-      }
-      _scrollToCatalog();
-      if (wrap.classList.contains('hs-wrap--open')) {
-        _closeOverlay(wrap, input, xBtn, searchBtn);
-      }
-    }
+  searchBtn.addEventListener('click', () => {
+    const input = document.getElementById(CATALOG_INPUT_ID);
+    if (input) { focusCatalogSearch(input); return; }
+    /* Belt and braces: the URL states the intent, and a one-shot session flag
+       survives the hosts that 301 away the query string (see intents.js). */
+    stashSearchFocus();
+    window.location.href = `${CATALOG_URL}?focus=search`;
   });
 }
 
-function _closeOverlay(wrap, input, xBtn, searchBtn) {
-  wrap.classList.remove('hs-wrap--open');
-  input.value = '';
-  if (xBtn) xBtn.hidden = true;
-  searchBtn?.setAttribute('aria-expanded', 'false');
-  SearchBar.applyQuery('');
-  searchBtn?.focus?.();
-}
-
-function _hasCatalogGrid() {
-  return Boolean(document.getElementById('products-grid'));
-}
-
-function _gotoCatalogSearch(query) {
-  window.location.href = `${CATALOG_URL}?q=${encodeURIComponent(query)}`;
-}
-
-function _scrollToCatalog() {
-  const catalog = document.getElementById('catalog');
-  if (!catalog) return;
-  const rect = catalog.getBoundingClientRect();
-  /* Scroll only when the catalog grid is entirely out of the visible viewport.
-     If any part is already on-screen, don't disrupt the user's scroll position. */
-  const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
-  if (!isVisible) {
-    catalog.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
+/* Bring the field into view and put the caret in it. Called both by the
+   in-page shortcut and by the catalog page when it arrives with
+   ?focus=search. Scrolling first keeps the field clear of the sticky
+   header; the focus itself is what opens the mobile keyboard, where the
+   browser allows it outside a direct tap. */
+export function focusCatalogSearch(input = document.getElementById(CATALOG_INPUT_ID)) {
+  if (!input) return false;
+  input.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+  input.focus?.({ preventScroll: true });
+  /* Safari/Chrome on iOS only raise the keyboard for a focus that carries a
+     user gesture; when it does open, put the caret after any existing text. */
+  const value = input.value ?? '';
+  input.setSelectionRange?.(value.length, value.length);
+  return true;
 }

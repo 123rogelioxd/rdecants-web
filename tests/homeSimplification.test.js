@@ -182,10 +182,12 @@ test('the header holds only the logo, two destinations, search and cart', () => 
   assert.equal((header.match(/class="header-nav-link"/g) ?? []).length, 1, 'one plain nav link');
   assert.equal((header.match(/class="nav-cta"/g) ?? []).length, 1, 'one highlighted action');
 
-  /* The permanently visible search field is gone; the input lives in the
-     overlay panel outside the header. */
-  assert.doesNotMatch(header, /id="hs-input"/, 'no always-on search field in the header');
-  assert.match(html, /class="hs-wrap"[^>]*id="hs-wrap"/, 'search overlay exists');
+  /* The home page carries no search field at all — not in the header and not
+     in an overlay. The magnifier navigates to the catalog, which owns the one
+     search input in the storefront. */
+  assert.doesNotMatch(header, /id="hs-input"/, 'no search field in the header');
+  assert.doesNotMatch(html, /hs-wrap/, 'no search overlay on the home page');
+  assert.doesNotMatch(html, /type="search"/, 'no second search input anywhere on the home');
 });
 
 test('footer links point to live routes only', () => {

@@ -47,6 +47,39 @@ let _renderCtx = { guided: null, recById: null };
 let _catalogResizeBound = false;
 let _lastMobileCatalogState = null;
 
+/* No-match state. When a query is what emptied the grid, the message says so
+   and quotes it back — "sin match perfecto" next to a field the visitor just
+   typed into reads as a broken search rather than as an honest zero. */
+function _noMatchHtml(query) {
+  const q = String(query ?? '').trim();
+  return q
+    ? `
+      <div class="sf-empty-icon" aria-hidden="true">R</div>
+      <h3 class="sf-empty-title">Sin resultados para “${_escapeHtml(q)}”</h3>
+      <p class="sf-empty-desc">
+        Revisa la ortografía o busca por la marca (Dior, Xerjoff) o por una nota (vainilla, cítrico).
+      </p>
+      <button class="btn-ghost sf-empty-clear" onclick="window.__rd?.ui?.clearSearch?.()">
+        Limpiar búsqueda →
+      </button>`
+    : `
+      <div class="sf-empty-icon" aria-hidden="true">R</div>
+      <h3 class="sf-empty-title">Sin match perfecto</h3>
+      <p class="sf-empty-desc">Intenta otros filtros o ajusta tu búsqueda</p>
+      <button class="btn-ghost sf-empty-clear" onclick="window.__rd?.ui?.clearSearch?.()">
+        Limpiar filtros →
+      </button>`;
+}
+
+function _escapeHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function _emptyState(title, desc) {
   return `
     <div class="catalog-empty premium-empty">
@@ -148,13 +181,7 @@ function _renderGrid(products, { rememberProducts = true, guided = null, preserv
         <button class="btn-ghost sf-empty-clear" onclick="window.__rd?.ui?.clearGuide?.()">
           Ver todo el catálogo
         </button>`
-      : `
-        <div class="sf-empty-icon" aria-hidden="true">R</div>
-        <h3 class="sf-empty-title">Sin match perfecto</h3>
-        <p class="sf-empty-desc">Intenta otros filtros o ajusta tu búsqueda</p>
-        <button class="btn-ghost sf-empty-clear" onclick="window.__rd?.ui?.clearSearch?.()">
-          Limpiar filtros →
-        </button>`;
+      : _noMatchHtml(SearchBar.getState?.().query ?? '');
     empty.querySelector('[data-relax]')?.addEventListener('click', event => {
       window.__rd?.ui?.relaxGuide?.(event.currentTarget.dataset.relax);
     });
@@ -233,9 +260,16 @@ function _buildCard(p, absoluteIndex, { guided, recById } = {}) {
      reason it can contradict it ("Diario" under "la mejor coincidencia para la
      noche"). The reason wins on those cards; the chip stays everywhere else. */
   const showGuidanceChip = !whyHtml;
-  const guidanceHtml = guidanceBadge && showGuidanceChip
-    ? `<div class="card-guidance" aria-label="Ideal para"><span class="guidance-chip guidance-chip--${guidanceBadge.key}">${guidanceBadge.label}</span></div>`
-    : '';
+  /* The row is always emitted, empty or not: a card that happens to earn a
+     chip must occupy exactly the same footprint as one that does not, or the
+     grid re-flows every time the filter changes which cards carry one. */
+  const guidanceHtml = whyHtml
+    ? ''
+    : `<div class="card-guidance" aria-label="Ideal para">${
+        guidanceBadge && showGuidanceChip
+          ? `<span class="guidance-chip guidance-chip--${guidanceBadge.key}">${guidanceBadge.label}</span>`
+          : ''
+      }</div>`;
 
   const card = document.createElement('div');
   card.className             = `product-card product-card--clickable fade-up visible${isTop ? ' product-card--top' : ''}`;
@@ -249,7 +283,9 @@ function _buildCard(p, absoluteIndex, { guided, recById } = {}) {
     ${rankHtml}
     ${!rankHtml && isUrgent ? `<span class="card-badge ${stockState.badgeClass}">${stockState.label}</span>` : ''}
     <div class="card-img-wrap${p.image ? '' : ' img-shell img-failed'}" style="--img-initial:${_brandInitialCss(p)}">
-      ${p.image ? `<img src="${p.image}" alt="${p.name}" loading="lazy" decoding="async">` : ''}
+      ${p.image
+        ? `<img src="${p.image}" alt="${p.name}" width="400" height="500" loading="lazy" decoding="async">`
+        : ''}
     </div>
     <div class="card-body">
       <div class="card-topline">

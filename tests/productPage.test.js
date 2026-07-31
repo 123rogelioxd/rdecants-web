@@ -202,30 +202,54 @@ test('PDP module imports getSizeLabel from versioned prices module', async () =>
 
 /* ── Editorial UX redesign ──────────────────────────────────── */
 
-test('PDP order: user buys first — buy sits right after the sell/guide section', () => {
+test('PDP order: buy is IN the hero, the sell/guide section follows it', () => {
   const html = buildProductPageHtml(sample);
-  /* Buy-first spec: hero → ¿Por qué te puede gustar? → buy →
+  /* Buy-first spec: hero (incl. buy) → ¿Por qué te puede gustar? →
      recomendaciones (pairs + related) → perfil técnico (colapsado, al final). */
   const i = needle => html.indexOf(needle);
   assert.ok(i('id="pdp-hero"') >= 0);
-  assert.ok(i('id="pdp-novice"') > i('id="pdp-hero"'));
-  assert.ok(i('id="pdp-buy"') > i('id="pdp-novice"'));
-  assert.ok(i('id="pdp-pairs"') > i('id="pdp-buy"'));
+  assert.ok(i('id="pdp-buy"') > i('id="pdp-hero"'));
+  assert.ok(i('id="pdp-novice"') > i('id="pdp-buy"'));
+  assert.ok(i('id="pdp-pairs"') > i('id="pdp-novice"'));
   assert.ok(i('id="pdp-related"') > i('id="pdp-pairs"'));
   assert.ok(i('id="pdp-tech"') > i('id="pdp-related"'));
 });
 
-test('PDP hero does NOT contain the variant selector (moved to buy section)', () => {
+test('PDP hero carries the presentations and Add — no intermediate step', () => {
   const html = buildProductPageHtml(sample);
   const heroSlice = html.slice(
     html.indexOf('id="pdp-hero"'),
     html.indexOf('id="pdp-novice"')
   );
-  assert.ok(!heroSlice.includes('pdp-sizes'), 'hero should not show variant grid');
-  assert.ok(!heroSlice.includes('pdp-btn-add'), 'hero should not show Add button');
-  assert.ok(heroSlice.includes('pdp-jump-buy'), 'hero exposes a "Comprar" jump button');
-  assert.ok(heroSlice.includes('pdp-hero-price'), 'hero shows a price-from line');
+  assert.ok(heroSlice.includes('pdp-sizes'), 'presentations are on the page itself');
+  assert.ok(heroSlice.includes('pdp-btn-add'), 'Add is reachable without scrolling');
+  assert.ok(heroSlice.includes('id="pdp-price"'), 'the live price sits with them');
+  /* The old two-step path (a button that only scrolled to a buy section) is gone. */
+  assert.ok(!heroSlice.includes('pdp-jump-buy'), 'no "Elige presentación" jump step');
+  assert.ok(!html.includes('pdp-jump-buy'), 'the jump button is gone from the page');
   assert.ok(!heroSlice.includes('pdp-jump-fit'), 'fit quiz jump removed');
+});
+
+test('the pre-selected presentation is the recommended one, read from the catalog', () => {
+  const html = buildProductPageHtml(sample);
+  /* sample has 3ml and 5ml in stock -> 5ml is both flagged and selected. */
+  const five = html.slice(html.indexOf('data-size="5"') - 300, html.indexOf('data-size="5"') + 200);
+  assert.ok(five.includes('pdp-size-btn--active'), '5ml pre-selected');
+  assert.ok(five.includes('pdp-size-btn--recommended'), '5ml flagged as recommended');
+
+  /* With 5ml sold out the first orderable presentation takes both roles —
+     nothing is hardcoded to a size that cannot be bought. */
+  const noFive = buildProductPageHtml({
+    ...sample,
+    variants: [
+      sample.variants[0],
+      { ...sample.variants[1], availability: 0, stock: 0, available: false, soldOut: true, sold_out: true },
+    ],
+  });
+  const three = noFive.slice(noFive.indexOf('data-size="3"') - 300, noFive.indexOf('data-size="3"') + 200);
+  assert.ok(three.includes('pdp-size-btn--active'), '3ml pre-selected');
+  assert.ok(three.includes('pdp-size-btn--recommended'), '3ml carries the recommendation');
+  assert.ok(noFive.includes('aria-pressed="true"'), 'a presentation is always pre-selected');
 });
 
 test('PDP no longer renders the interactive fit quiz', () => {
@@ -245,7 +269,7 @@ test('PDP fused section carries up to 2 why bullets next to the lead', () => {
   const html = buildProductPageHtml(sample);
   const novice = html.slice(
     html.indexOf('id="pdp-novice"'),
-    html.indexOf('id="pdp-buy"')
+    html.indexOf('id="pdp-pairs"')
   );
   assert.ok(novice.includes('pdp-novice-lead'), 'lead present');
   assert.ok(novice.includes('pdp-why-list'), 'why bullets folded into the section');
@@ -335,7 +359,7 @@ test('Afnan 9PM shows concise public guidance', () => {
   };
   const html = buildProductPageHtml(afnan9pm);
   const heroSlice = html.slice(html.indexOf('id="pdp-hero"'), html.indexOf('id="pdp-novice"'));
-  const whySlice = html.slice(html.indexOf('id="pdp-novice"'), html.indexOf('id="pdp-buy"'));
+  const whySlice = html.slice(html.indexOf('id="pdp-novice"'), html.indexOf('id="pdp-pairs"'));
 
   assert.ok(heroSlice.includes('>Noche<'));
   assert.ok(heroSlice.includes('>Dulce<'));
@@ -380,7 +404,7 @@ test('PDP keeps cart Add + WhatsApp wired in the buy section', () => {
   const html = buildProductPageHtml(sample);
   const buySlice = html.slice(
     html.indexOf('id="pdp-buy"'),
-    html.indexOf('id="pdp-related"')
+    html.indexOf('id="pdp-novice"')
   );
   assert.ok(buySlice.includes('id="pdp-btn-add"'));
   assert.ok(buySlice.includes('id="pdp-btn-wa"'));

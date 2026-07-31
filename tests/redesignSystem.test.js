@@ -28,16 +28,17 @@ const styles = read('assets/css/styles.css');
 
 /* ── A. Palette ──────────────────────────────────────────────── */
 
-test('tokens declare the redesign palette', () => {
+test('tokens declare the brand palette under its canonical names', () => {
+  /* The six names the brief specifies. Every other colour token resolves to
+     one of these, so a palette change is a six-line edit — and a raw literal
+     anywhere else in the sheet is a bug, not a shortcut. */
   const expected = {
-    '--bg': '#f4f1ea',
-    '--surface': '#fffefa',
-    '--ink': '#191816',
-    '--ink-soft': '#68645e',
-    '--line': '#ded9d0',
-    '--wine': '#7a2432',
-    '--wine-hover': '#5c1823',
-    '--dark': '#171614',
+    '--color-background': '#F5F1E8',
+    '--color-surface': '#FFFCF7',
+    '--color-primary': '#191816',
+    '--color-secondary-text': '#716B63',
+    '--color-border': '#D8D0C5',
+    '--color-accent': '#A48257',
   };
   for (const [name, value] of Object.entries(expected)) {
     assert.match(
@@ -45,6 +46,27 @@ test('tokens declare the redesign palette', () => {
       new RegExp(`${name}:\\s*${value};`),
       `${name} must be ${value}`,
     );
+  }
+
+  /* The working tokens are aliases of those six, never separate values. */
+  for (const [alias, source] of [
+    ['--bg', '--color-background'],
+    ['--surface', '--color-surface'],
+    ['--ink', '--color-primary'],
+    ['--ink-soft', '--color-secondary-text'],
+    ['--line', '--color-border'],
+    ['--bronze', '--color-accent'],
+    ['--action', '--color-primary'],
+  ]) {
+    assert.match(tokens, new RegExp(`${alias}:\\s*var\\(${source}\\)`), `${alias} -> ${source}`);
+  }
+});
+
+test('the wine/guinda accent is gone from the whole interface', () => {
+  for (const sheet of [tokens, components, styles]) {
+    for (const dead of ['#7a2432', '#5c1823', '122, 36, 50', '--wine', '#e9a4ae']) {
+      assert.ok(!sheet.includes(dead), `the wine palette survives as ${dead}`);
+    }
   }
 });
 
@@ -59,7 +81,7 @@ test('the gold-on-black palette is gone from the component sheet', () => {
 
 test('the legacy token names are repointed, not left describing a dark theme', () => {
   assert.match(tokens, /--white:\s*var\(--ink\)/, '--white was the strong foreground');
-  assert.match(tokens, /--accent:\s*var\(--wine\)/, '--accent is the wine accent');
+  assert.match(tokens, /--accent:\s*var\(--bronze-ink\)/, '--accent is the readable bronze');
   assert.match(tokens, /--muted:\s*var\(--ink-soft\)/);
 });
 
