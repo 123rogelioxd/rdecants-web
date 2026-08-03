@@ -3,19 +3,225 @@
    All UI component styles. Depends on tokens.css.
    ============================================================= */
 
-/* ── Info bar ────────────────────────────────────────────────────
-   One thin, quiet line. It scrolls away; only the header sticks. */
-.infobar {
-  background: var(--bg-sunk);
+/* ── Birthday promo ──────────────────────────────────────────────
+   A short, self-contained campaign strip above the sticky header. */
+.birthday-promo {
+  background: var(--bg);
   border-bottom: 1px solid var(--line);
-  color: var(--ink-soft);
-  font-size: 12px;
-  letter-spacing: 0.01em;
-  text-align: center;
-  padding: 7px var(--gutter);
+  padding: 14px var(--gutter);
 }
 
-.infobar b { font-weight: 500; color: var(--ink); }
+.birthday-promo__inner {
+  max-width: var(--container);
+  min-height: 68px;
+  margin: 0 auto;
+  padding: 8px clamp(18px, 2.2vw, 28px);
+  display: grid;
+  grid-template-columns: minmax(158px, 1fr) 1px minmax(218px, 1.2fr) 1px minmax(210px, 1.15fr) auto;
+  align-items: center;
+  gap: clamp(13px, 1.65vw, 24px);
+  background: var(--bg-sunk);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-lg);
+  color: var(--ink);
+}
+
+.birthday-promo__intro {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.birthday-promo__cake {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+}
+
+.birthday-promo__title,
+.birthday-promo__offer span,
+.birthday-promo__code,
+.birthday-promo__terms,
+.birthday-promo__cta {
+  font-family: var(--font-sans);
+  letter-spacing: 0.06em;
+}
+
+.birthday-promo__title {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.birthday-promo__thanks {
+  margin-top: 4px;
+  color: var(--ink-soft);
+  font-size: 10px;
+  line-height: 1.25;
+}
+
+.birthday-promo__divider {
+  width: 1px;
+  height: 46px;
+  background: var(--ink-faint);
+  opacity: 0.58;
+}
+
+.birthday-promo__offer {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-width: 0;
+}
+
+.birthday-promo__offer strong {
+  font-size: clamp(42px, 4.05vw, 56px);
+  font-weight: 700;
+  letter-spacing: -0.07em;
+  line-height: 0.92;
+}
+
+.birthday-promo__offer span {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.birthday-promo__details { min-width: 0; }
+
+.birthday-promo__code {
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.birthday-promo__code strong {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.birthday-promo__terms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 7px;
+  color: var(--ink-soft);
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.birthday-promo__terms > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.birthday-promo__terms svg {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 auto;
+}
+
+.birthday-promo__date--short { display: none; }
+
+.birthday-promo__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 12px 20px;
+  background: var(--action);
+  border: 1px solid var(--action);
+  border-radius: var(--radius-sm);
+  color: var(--on-action);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  transition: background var(--dur) var(--ease-standard), border-color var(--dur) var(--ease-standard);
+}
+
+.birthday-promo__cta:hover { background: var(--action-hover); border-color: var(--action-hover); }
+
+@media (max-width: 899px) {
+  .birthday-promo { padding-block: 12px; }
+
+  .birthday-promo__inner {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    grid-template-areas:
+      "intro offer cta"
+      "details details details";
+    min-height: 0;
+    gap: 12px 18px;
+  }
+
+  .birthday-promo__intro { grid-area: intro; }
+  .birthday-promo__offer { grid-area: offer; }
+  .birthday-promo__details { grid-area: details; }
+  .birthday-promo__cta { grid-area: cta; }
+  .birthday-promo__divider { display: none; }
+  .birthday-promo__terms { margin-top: 7px; }
+}
+
+@media (max-width: 599px) {
+  .birthday-promo { padding-block: 8px; }
+
+  .birthday-promo__inner {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "intro offer"
+      "details details"
+      "cta cta";
+    gap: 9px 12px;
+    padding: 12px 14px;
+  }
+
+  .birthday-promo__cake { width: 24px; height: 24px; }
+  .birthday-promo__intro { gap: 8px; }
+  .birthday-promo__title { font-size: 11px; letter-spacing: 0.045em; }
+  .birthday-promo__thanks { display: none; }
+
+  .birthday-promo__offer { gap: 7px; justify-content: flex-end; }
+  .birthday-promo__offer strong { font-size: 38px; }
+  .birthday-promo__offer span { font-size: 10px; line-height: 1.3; letter-spacing: 0.045em; }
+
+  .birthday-promo__details {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 12px;
+    flex-wrap: wrap;
+    padding-top: 9px;
+    border-top: 1px solid var(--line-soft);
+  }
+
+  .birthday-promo__code { font-size: 9px; }
+  .birthday-promo__code strong { font-size: 11px; }
+  .birthday-promo__terms { margin-top: 0; gap: 8px; font-size: 7.5px; }
+  .birthday-promo__terms svg { width: 10px; height: 10px; }
+  .birthday-promo__date--long { display: none; }
+  .birthday-promo__date--short { display: inline; }
+
+  .birthday-promo__cta { width: 100%; min-height: 44px; font-size: 10px; }
+}
+
+@media (max-width: 359px) {
+  .birthday-promo__inner { padding-inline: 11px; gap: 8px; }
+  .birthday-promo__cake { width: 21px; height: 21px; }
+  .birthday-promo__title { font-size: 10px; }
+  .birthday-promo__offer strong { font-size: 34px; }
+  .birthday-promo__offer span { font-size: 9px; }
+  .birthday-promo__details { justify-content: center; }
+}
 
 /* ── Header ──────────────────────────────────────────────────────
    Sticky (not fixed): the page needs no compensating padding, and
