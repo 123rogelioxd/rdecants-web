@@ -177,6 +177,7 @@ export const PRICE_LABELS = {
 };
 
 export const SORT_LABELS = {
+  newest:       'Novedades',
   trending:     'Destacados',
   'price-asc':  'Menor precio',
   'price-desc': 'Mayor precio',
@@ -253,8 +254,8 @@ export function filterProducts(products, state) {
   /* 6 — Sort. With a query, relevance is always the primary key and the
      selected catalog sort (including Destacados) is only a tiebreaker. */
   return searchScores
-    ? _sortByRelevance(result, searchScores, state.sort ?? 'trending')
-    : _sort(result, state.sort ?? 'trending');
+    ? _sortByRelevance(result, searchScores, state.sort ?? 'newest')
+    : _sort(result, state.sort ?? 'newest');
 }
 
 /**
@@ -606,6 +607,15 @@ function _sortByRelevance(products, searchScores, sort) {
 function _sort(products, sort) {
   const arr = [...products];
   switch (sort) {
+    case 'newest':
+      /* R Supply OS does not expose a creation timestamp in the public
+         catalog. Its numeric product_id is the stable, incremental catalog
+         identifier, so higher values are the most recently added products.
+         `id` makes an anomalous duplicate product_id deterministic. */
+      return arr.sort((a, b) =>
+        _catalogAddedOrder(b) - _catalogAddedOrder(a) ||
+        _compareStableIdDesc(a.id, b.id)
+      );
     case 'price-asc':
       return arr.sort((a, b) => _ref5ml(a) - _ref5ml(b));
     case 'price-desc':
@@ -631,4 +641,19 @@ function _sort(products, sort) {
         (b.stock ?? 0) - (a.stock ?? 0)
       );
   }
+}
+
+function _catalogAddedOrder(product) {
+  const value = Number(product?.product_id);
+  return Number.isFinite(value) ? value : Number.NEGATIVE_INFINITY;
+}
+
+function _compareStableIdDesc(a, b) {
+  const aNumber = Number(a);
+  const bNumber = Number(b);
+  if (Number.isFinite(aNumber) && Number.isFinite(bNumber)) return bNumber - aNumber;
+
+  const aId = String(a ?? '');
+  const bId = String(b ?? '');
+  return aId === bId ? 0 : (aId > bId ? -1 : 1);
 }

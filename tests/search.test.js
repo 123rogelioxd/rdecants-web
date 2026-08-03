@@ -313,7 +313,7 @@ test('active filters intersect with search results and never add products', () =
   assert.deepEqual(relevanceIds('Le beau', { gender: 'mujer' }), []);
 });
 
-test('clearing a query restores the Destacados order', () => {
+test('clearing a query restores the explicitly selected Destacados order', () => {
   const featuredAlias = product('featured-alias', 'Maison Test', 'Le Male Collector', {
     featured: true,
     fragrance: { aliases: ['le beau inspired'] },

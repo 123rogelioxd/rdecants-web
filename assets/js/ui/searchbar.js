@@ -33,7 +33,7 @@ const _DEFAULT = {
   mood:       null,
   house:      '',
   priceRange: null,
-  sort:       'trending',
+  sort:       'newest',
   gender:     null,
   /* Guided-catalog answers ({ family, occasion, gender }) set by the finder /
      intent chips. When present, the finder's beginner-safe ranking defines the
@@ -184,7 +184,7 @@ function _buildBar() {
      a wall of controls. Search is owned solely by the header — the bar shows
      the active query as a removable chip instead of a second input. */
   const sortOpts = Object.entries(SORT_LABELS).map(([k, v]) =>
-    `<option value="${k}" ${k === 'trending' ? 'selected' : ''}>${v}</option>`
+    `<option value="${k}" ${k === 'newest' ? 'selected' : ''}>${v}</option>`
   ).join('');
 
   _bar = document.createElement('div');

@@ -38,6 +38,7 @@ const P = (id, o = {}) => ({
   featured: !!o.featured,
   hero: !!o.hero,
   commercial_role: o.commercial_role ?? null,
+  product_id: o.product_id ?? id,
   gender: o.gender ?? null,
   stock: o.stock ?? 10,
   variants: [{
@@ -50,7 +51,26 @@ const P = (id, o = {}) => ({
 const order = (list, state = {}) =>
   filterProducts(list, { sort: 'trending', ...state }).map(p => p.id);
 
-/* ── A. Smart commercial order (default "trending" sort) ──────── */
+test('default catalog order is newest catalog entry first by descending product_id', () => {
+  const list = [
+    P('old', { product_id: 10 }),
+    P('new', { product_id: 30 }),
+    P('middle', { product_id: 20 }),
+  ];
+
+  assert.deepEqual(filterProducts(list, {}).map(p => p.id), ['new', 'middle', 'old']);
+});
+
+test('newest order has a deterministic descending id tiebreaker', () => {
+  const list = [
+    P('100', { product_id: 20 }),
+    P('101', { product_id: 20 }),
+  ];
+
+  assert.deepEqual(filterProducts(list, { sort: 'newest' }).map(p => p.id), ['101', '100']);
+});
+
+/* ── A. Smart commercial order (explicit "trending" sort) ─────── */
 
 test('available products rank above sold-out ones', () => {
   const list = [P('out', { stock: 0 }), P('live', { stock: 5 })];
