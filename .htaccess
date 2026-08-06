@@ -21,6 +21,12 @@ Options -MultiViews
 <IfModule mod_mime.c>
     AddType image/avif .avif
     AddType image/webp .webp
+
+    # Hostinger/LiteSpeed served site.webmanifest as `text/plain`, which also
+    # left it outside every cache rule below — the one file on the site with
+    # no caching policy at all, so WebKit fell back to heuristic freshness and
+    # an iOS home-screen web app could pin an old copy indefinitely.
+    AddType application/manifest+json .webmanifest
 </IfModule>
 
 <IfModule mod_headers.c>
@@ -30,8 +36,24 @@ Options -MultiViews
         Header set Expires "0"
     </FilesMatch>
 
+    # The manifest is re-read every time iOS launches the home-screen web app.
+    # It must revalidate for the same reason the HTML does: it is the document
+    # that names the app's identity and start URL, and a frozen copy keeps the
+    # installed icon pointing at an old app definition.
+    <FilesMatch "\.webmanifest$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </FilesMatch>
+
+    # `Expires` is set alongside every Cache-Control below because LiteSpeed
+    # injects its own `Expires: +7 days` on static files. Cache-Control wins
+    # per RFC 7234, but shipping a response that says "revalidate" and "fresh
+    # for a week" in the same breath is exactly the ambiguity that leaves an
+    # installed web app one release behind.
     <FilesMatch "\.js$">
         Header set Cache-Control "no-cache"
+        Header set Expires "0"
     </FilesMatch>
 
     # The hero photograph is content-addressed by filename (the crop and the

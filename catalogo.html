@@ -7,6 +7,62 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 
+<!-- Installed-app update check (iOS home-screen web app / standalone PWA).
+
+     An iOS home-screen web app runs in its own WebKit process with its own
+     network cache, separate from Safari — so a fresh Safari does not make the
+     installed icon fresh. Worse, leaving the app suspends it instead of
+     closing it: coming back restores the last document from the page cache
+     with no navigation at all, which is why `no-store` on the HTML never gets
+     a chance to run and the app can sit a release behind indefinitely.
+
+     This asks the server for the deployed version whenever the app comes back
+     to the foreground and reloads once if it has moved. It is deliberately not
+     a service worker: no request interception, no offline cache to invalidate,
+     nothing that can itself go stale. It only runs when launched from the home
+     screen — in a normal browser tab it does nothing.
+
+     Inline on purpose: the HTML is served `no-store`, so this snippet is the
+     one piece of code guaranteed to be current on the device. -->
+<script>
+  (function () {
+    var BUILD = '2026.08.06.1';
+    var installed = navigator.standalone === true ||
+      (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+    if (!installed || !window.fetch) return;
+
+    var lastCheck = 0;
+
+    function check() {
+      if (document.hidden || Date.now() - lastCheck < 60000) return;
+      lastCheck = Date.now();
+
+      fetch('/VERSION', { cache: 'no-store' })
+        .then(function (res) { return res.ok ? res.text() : null; })
+        .then(function (deployed) {
+          if (!deployed) return;
+          deployed = deployed.trim();
+          if (!deployed || deployed === BUILD) return;
+
+          /* One reload per deployed version per session. During the upload
+             window the server can briefly answer with a new VERSION and an
+             old HTML; without this guard that pairing is a reload loop. */
+          try {
+            if (sessionStorage.getItem('rd-updated-to') === deployed) return;
+            sessionStorage.setItem('rd-updated-to', deployed);
+          } catch (e) { /* private mode — fall through and reload once */ }
+
+          location.reload();
+        })
+        .catch(function () { /* offline: keep showing what we have */ });
+    }
+
+    document.addEventListener('visibilitychange', check);
+    window.addEventListener('pageshow', function (e) { if (e.persisted) check(); });
+    check();
+  })();
+</script>
+
 <!-- Scroll-reveal gate: arms entrance animation only when motion can run
      (JS + IntersectionObserver + motion allowed + foreground tab); otherwise
      content stays visible. Fallback reveals anything still pending. -->
@@ -29,11 +85,11 @@
 <meta name="description" content="Explora todas las fragancias originales disponibles en decants de 3, 5 y 10 ml. Busca por nombre, marca o nota y filtra por ocasión, casa y precio.">
 <meta name="theme-color" content="#F5F1E8">
 
-<link rel="icon" href="/favicon.ico?v=2026.08.04.1" sizes="any">
-<link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/favicon-32.png?v=2026.08.04.1">
-<link rel="icon" type="image/png" sizes="16x16" href="/assets/brand/favicon-16.png?v=2026.08.04.1">
-<link rel="apple-touch-icon" sizes="180x180" href="/assets/brand/apple-touch-icon.png?v=2026.08.04.1">
-<link rel="manifest" href="/site.webmanifest?v=2026.08.04.1">
+<link rel="icon" href="/favicon.ico?v=2026.08.06.1" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/favicon-32.png?v=2026.08.06.1">
+<link rel="icon" type="image/png" sizes="16x16" href="/assets/brand/favicon-16.png?v=2026.08.06.1">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/brand/apple-touch-icon.png?v=2026.08.06.1">
+<link rel="manifest" href="/site.webmanifest?v=2026.08.06.1">
 <link rel="canonical" href="https://rdecants.com/catalogo.html">
 
 <!-- Local demo catalog is dev-only; this flag keeps demo SKUs out of production. -->
@@ -55,10 +111,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="/assets/css/tokens.css?v=2026.08.04.1">
-<link rel="stylesheet" href="/assets/css/animations.css?v=2026.08.04.1">
-<link rel="stylesheet" href="/assets/css/components.css?v=2026.08.04.1">
-<link rel="stylesheet" href="/assets/css/styles.css?v=2026.08.04.1">
+<link rel="stylesheet" href="/assets/css/tokens.css?v=2026.08.06.1">
+<link rel="stylesheet" href="/assets/css/animations.css?v=2026.08.06.1">
+<link rel="stylesheet" href="/assets/css/components.css?v=2026.08.06.1">
+<link rel="stylesheet" href="/assets/css/styles.css?v=2026.08.06.1">
 </head>
 
 <body class="catalog-body">
@@ -76,7 +132,7 @@
   </button>
 
   <a href="/" class="header-logo" aria-label="RDecants — inicio">
-    <img class="logo-mark" src="/assets/brand/rdecants-monogram.png?v=2026.08.04.1"
+    <img class="logo-mark" src="/assets/brand/rdecants-monogram.png?v=2026.08.06.1"
          alt="RDecants" width="240" height="171" decoding="async">
     <span class="logo-text">RDECANTS</span>
   </a>
@@ -208,6 +264,6 @@
 <!-- TOAST -->
 <div id="toast" class="toast" aria-live="polite"></div>
 
-<script type="module" src="/assets/js/pages/catalog.js?v=2026.08.04.1"></script>
+<script type="module" src="/assets/js/pages/catalog.js?v=2026.08.06.1"></script>
 </body>
 </html>
