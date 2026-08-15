@@ -1,10 +1,17 @@
 /* =============================================================
    THE EXHAUSTIVE SWEEP
 
-   Every combination of every option of every active question, run against
+   Every combination of every answer value the ENGINE accepts, run against
    the real R Supply OS catalog snapshot:
 
-     gender (3) × age (4) × occasion (5) × goal (3) × climate (3) = 540
+     gender (3) × age (4) × occasion (6) × goal (4) × climate (3) = 864
+
+   Note this is deliberately wider than what the finder asks. The customer
+   now answers three questions offering `dia`/`salir` and
+   `versatil`/`destacar`/`mejor`, but `oficina`, `cita`, `noche`, `regalo`,
+   `discreto` and every climate remain reachable from a shared catalogue
+   link, an intent preset or a bookmarked result — so they still have to
+   behave, and they are still swept here.
 
    Four manual scenarios prove nothing about an engine with five
    interacting dimensions. This file asserts the invariants that must hold
@@ -41,9 +48,18 @@ const label = a => `${a.gender}/${a.age}/${a.occasion}/${a.goal}/${a.climate}`;
 const RUNS = COMBOS.map(answers => ({ answers, ...rankCatalog(CATALOG, answers) }));
 
 test('the sweep covers the whole answer space', () => {
-  assert.equal(COMBOS.length, 540);
+  /* Derived, not hardcoded: adding an answer value must widen the sweep
+     rather than fail a count and tempt someone to bump the number. */
+  const expected = ANSWER_VALUES.gender.length
+    * ANSWER_VALUES.age.length
+    * ANSWER_VALUES.occasion.length
+    * ANSWER_VALUES.goal.length
+    * ANSWER_VALUES.climate.length;
+
+  assert.equal(COMBOS.length, expected);
+  assert.equal(expected, 864, 'the answer space changed — confirm that is intended');
   assert.ok(CATALOG.length >= 70, `catalog has ${CATALOG.length} products`);
-  assert.equal(new Set(COMBOS.map(label)).size, 540, 'no duplicate combination');
+  assert.equal(new Set(COMBOS.map(label)).size, expected, 'no duplicate combination');
 });
 
 /* ── Numeric safety across the entire space ─────────────────────── */

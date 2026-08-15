@@ -92,7 +92,13 @@ test('every answer value has a customer-facing label', () => {
   }
   assert.deepEqual(
     describeAnswers({ gender: 'mujer', age: '15-18', occasion: 'noche', goal: 'destacar' }),
-    ['Mujer', '15–18', 'Noche', 'Que destaque'],
+    ['Mujer', '15–18', 'Noche', 'Que se note'],
+  );
+
+  /* The two answers the three-question finder added. */
+  assert.deepEqual(
+    describeAnswers({ occasion: 'salir', goal: 'mejor' }),
+    ['Para salir', 'El que mejor huele'],
   );
 });
 

@@ -90,11 +90,17 @@ export const DIMENSION_WEIGHTS = {
 
 export const ANSWER_KEYS = ['gender', 'age', 'occasion', 'goal', 'climate', 'family', 'budget'];
 
+/* Values the engine accepts. The customer-facing finder now offers a strict
+   subset — `dia` / `salir` for occasion and `versatil` / `destacar` / `mejor`
+   for goal — but every older value stays legal here, because they are still
+   reachable from a shared `/catalogo.html?occasion=oficina` link, from the
+   intent presets, and from a bookmarked finder result. Dropping them would
+   turn a working link into an unranked catalogue. */
 export const ANSWER_VALUES = {
   gender:   ['hombre', 'mujer', 'unisex'],
   age:      ['15-18', '19-24', '25-34', '35+'],
-  occasion: ['dia', 'oficina', 'cita', 'noche', 'regalo'],
-  goal:     ['versatil', 'destacar', 'discreto'],
+  occasion: ['dia', 'salir', 'oficina', 'cita', 'noche', 'regalo'],
+  goal:     ['versatil', 'destacar', 'mejor', 'discreto'],
   climate:  ['calido', 'templado', 'frio'],
   family:   ['fresco', 'dulce', 'intenso', 'floral', 'elegante'],
 };
@@ -104,8 +110,8 @@ export const ANSWER_VALUES = {
 export const ANSWER_LABELS = {
   gender:   { hombre: 'Hombre', mujer: 'Mujer', unisex: 'Unisex', any: 'Cualquiera' },
   age:      { '15-18': '15–18', '19-24': '19–24', '25-34': '25–34', '35+': '35+' },
-  occasion: { dia: 'Diario', oficina: 'Oficina', cita: 'Cita', noche: 'Noche', regalo: 'Regalo' },
-  goal:     { versatil: 'Versátil', destacar: 'Que destaque', discreto: 'Discreto' },
+  occasion: { dia: 'De día', salir: 'Para salir', oficina: 'Oficina', cita: 'Cita', noche: 'Noche', regalo: 'Regalo' },
+  goal:     { versatil: 'Oler bien', destacar: 'Que se note', mejor: 'El que mejor huele', discreto: 'Discreto' },
   climate:  { calido: 'Clima cálido', templado: 'Todo el año', frio: 'Clima frío' },
   family:   { fresco: 'Fresco', dulce: 'Dulce', intenso: 'Intenso', floral: 'Floral', elegante: 'Elegante' },
 };
@@ -228,6 +234,34 @@ const OCCASION_RULES = {
     },
     phrase: 'para la noche',
   },
+  /* "Para salir" — the union of cita, noche and fiesta.
+     This is not a simplification the metadata pays for. Measured against the
+     live 96-product catalogue, `night_out` has TWO distinct values (85 for 47
+     products, 90 for six) and `date_night` has 85 for 39 of 53, so asking
+     "cita o noche?" returned an identical top three either way. The question
+     was costing the customer a decision and buying nothing. Collapsing it
+     keeps every signal both branches used and stops pretending to a precision
+     the data does not have.
+
+     Both `night_out` and `date_night` are read, so a product that is strong
+     for one and unremarkable for the other still ranks. */
+  salir: {
+    exact: ['noche', 'fiesta', 'cita'],
+    related: ['formal', 'social'],
+    scores: { night_out: 0.3, date_night: 0.3, longevity: 0.2, compliment: 0.2 },
+    contradiction: n => {
+      const nightOut = scoreOf(n, 'night_out');
+      const dateNight = scoreOf(n, 'date_night');
+      /* Only a product the metadata rejects for BOTH modes of going out is
+         contradicted. Failing one of the two is ordinary — the union is the
+         whole point. */
+      if (nightOut === null || dateNight === null) return null;
+      return nightOut <= 0.32 && dateNight <= 0.3
+        ? { code: 'not_for_going_out', message: 'la metadata no la respalda para salir' }
+        : null;
+    },
+    phrase: 'para salir',
+  },
   regalo: {
     exact: ['regalo'],
     related: ['diario', 'social'],
@@ -308,6 +342,48 @@ const GOAL_RULES = {
         : null;
     },
     phrase: 'para destacar',
+  },
+  /* "Quiero ser el que mejor huele."
+     A claim about the RESULT — being the person people ask about — not about
+     price, and deliberately not built from it. Price is not read here at all;
+     it remains what it always was, a tie-break applied after score,
+     confidence and every priority dimension.
+
+     The keys were chosen by measuring how much each one actually separates
+     the live catalogue, because a weight on a near-constant score is a weight
+     that does nothing:
+
+       compliment    11 distinct values, 53–80  → the real signal, so it leads
+       longevity      5 distinct, genuinely bimodal (22 at 60, 28 at 80)
+       exclusivity    6 distinct, but 42 of 53 sit at 80 → supporting only
+       projection     6 distinct, 44 of 53 sit at 70   → light nudge only
+
+     `elegance`, `luxury` and `uniqueness` are deliberately ABSENT despite
+     sounding exactly right for this question. Each has three distinct values
+     across the whole catalogue, so weighting them would add arithmetic and no
+     ordering. Reintroduce them if the profiles ever carry real spread.
+
+     `entry` and `budget_alternative` are real tags in the catalogue naming
+     starter and cheaper-substitute products. They are negatives here because
+     of what they say about the recommendation, not what they say about the
+     price. */
+  mejor: {
+    scores: { compliment: 0.4, longevity: 0.25, exclusivity: 0.2, projection: 0.15 },
+    plusTags: ['fragancia_firma', 'cumplidor', 'premium', 'lujoso', 'nicho', 'nicho_popular', 'elegante', 'alto_rendimiento'],
+    minusTags: ['entry', 'budget_alternative', 'basico'],
+    requires: ['compliment', 'longevity', 'exclusivity'],
+    requiresAtLeast: 2,
+    contradiction: n => {
+      const compliment = scoreOf(n, 'compliment');
+      const longevity = scoreOf(n, 'longevity');
+      if (compliment === null) return null;
+      /* Nothing that draws few compliments and fades can be the answer to
+         "I want to be the best-smelling one", however good it is otherwise. */
+      return compliment <= 0.55 && (longevity ?? 1) <= 0.6
+        ? { code: 'not_a_standout', message: 'no destaca lo suficiente ni dura lo necesario para ser la que más se recuerda' }
+        : null;
+    },
+    phrase: 'para ser quien mejor huele',
   },
   discreto: {
     /* Inverted keys: a low intensity/projection is a HIGH fit here. */

@@ -48,22 +48,58 @@ test('every option the finder can offer is an answer the engine accepts', () => 
     }
   }
 
-  assert.deepEqual(Object.keys(offered).sort(), ['age', 'climate', 'gender', 'goal', 'occasion']);
+  assert.deepEqual(Object.keys(offered).sort(), ['age', 'gender', 'goal', 'occasion']);
+
+  /* The finder offers a SUBSET of what the engine accepts, not the whole set.
+     `climate`, `family`, and the retired `oficina` / `cita` / `noche` /
+     `regalo` / `discreto` answers stay reachable from a shared catalogue
+     link or an intent preset, so the engine must keep scoring them — but no
+     customer is asked for them any more.
+
+     What must never happen is the other direction: the UI offering something
+     the engine silently drops. That would show the customer a choice that
+     changes nothing. */
   for (const [key, values] of Object.entries(offered)) {
-    assert.deepEqual(values, ANSWER_VALUES[key], `${key}: the UI and the engine must offer the same values`);
     for (const value of values) {
+      assert.ok(
+        ANSWER_VALUES[key].includes(value),
+        `${key}=${value} is offered by the finder but not accepted by the engine`,
+      );
       assert.equal(readAnswers({ [key]: value })[key], value, `${key}=${value} survives readAnswers`);
     }
   }
 });
 
-test('the step index of every answer is known, so each chip can link back to its question', () => {
+test('the answers the finder no longer asks are still scored when a URL carries them', () => {
+  /* Retiring a question must not retire a dimension: these all still arrive
+     from `/catalogo.html?…` links people have already shared. */
+  for (const [key, value] of [
+    ['climate', 'calido'], ['climate', 'frio'],
+    ['occasion', 'oficina'], ['occasion', 'cita'], ['occasion', 'noche'], ['occasion', 'regalo'],
+    ['goal', 'discreto'],
+    ['family', 'dulce'],
+  ]) {
+    assert.equal(readAnswers({ [key]: value })[key], value, `${key}=${value} must survive readAnswers`);
+  }
+});
+
+test('every asked answer has a step to go back to, and URL-only answers have none', () => {
   const owners = new Map();
   ASSISTANT_QUESTIONS.forEach((question, index) => {
     for (const id of questionAnswerIds(question)) owners.set(id, index);
   });
-  for (const key of ['gender', 'age', 'occasion', 'goal', 'climate']) {
+
+  /* Everything the customer answered must be editable from its chip. */
+  for (const key of ['gender', 'age', 'occasion', 'goal']) {
     assert.ok(owners.has(key), `${key} has no step to go back to`);
+  }
+
+  /* `climate` and `family` are refinements a URL can carry but no step asks
+     for. They must NOT claim a step — `_answerSummary()` renders a step-less
+     answer as a plain chip instead of an edit button, so a fabricated index
+     here would produce a button that jumps to the wrong question. */
+  for (const key of ['climate', 'family']) {
+    assert.ok(!owners.has(key), `${key} is not asked, so it must not own a step`);
   }
 });
 
@@ -199,7 +235,7 @@ test('losing even one answer measurably changes the result — proof the handoff
 
 test('the guided-state summary lists every answer that shaped the ranking', () => {
   const labels = describeAnswers(SESSION);
-  assert.deepEqual(labels, ['Mujer', '15–18', 'Noche', 'Que destaque', 'Clima frío']);
+  assert.deepEqual(labels, ['Mujer', '15–18', 'Noche', 'Que se note', 'Clima frío']);
   assert.equal(labels.length, Object.keys(SESSION).length,
     'one chip per answer — no invisible filters');
 });
