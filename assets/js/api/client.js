@@ -73,6 +73,10 @@ export const ApiClient = {
   getFeatured:        () => _get('/api/web/featured'),
   getTrending:        () => _get('/api/web/trending'),
   getPacks:           () => _get('/api/web/packs'),
+  /* Editorial placements: which products the home leads with today. Always
+     answers with every slot present (empty when nothing is scheduled), so a
+     caller never has to distinguish "off", "not migrated" and "none set". */
+  getMerchandising:   () => _get('/api/web/merchandising'),
   createWebOrder:     (payload) => _post('/api/web/orders', payload),
   /* Discount PREVIEW only — R Supply OS is the source of truth and recalculates
      during Web Order creation. The storefront never computes discounts itself. */

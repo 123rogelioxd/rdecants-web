@@ -55,6 +55,13 @@ export const EVENTS = {
   CHECKOUT_COMPLETED: 'checkout_completed',
 
   PRODUCT_CLICKED: 'product_clicked',
+  /* Home merchandising. These four answer the questions the commercial pass
+     was built to answer: does the hero convert, which of the three paths do
+     people take, and does Roger's curation get clicked. */
+  HERO_CTA_CLICKED: 'hero_cta_clicked',
+  CATALOG_CTA_CLICKED: 'catalog_cta_clicked',
+  HOME_PATH_SELECTED: 'home_path_selected',
+  ROGER_RECOMMENDATION_CLICKED: 'roger_recommendation_clicked',
   ADD_TO_CART: 'add_to_cart',
   REMOVE_FROM_CART: 'remove_from_cart',
   CART_OPENED: 'cart_opened',
@@ -186,6 +193,25 @@ export const Tracker = {
     this.emit(EVENTS.PRODUCT_CLICKED, {
       ..._productPayload(product),
       source,
+    });
+  },
+
+  heroCtaClicked(cta = '') {
+    this.emit(EVENTS.HERO_CTA_CLICKED, { cta });
+  },
+
+  catalogCtaClicked(source = 'hero') {
+    this.emit(EVENTS.CATALOG_CTA_CLICKED, { source });
+  },
+
+  homePathSelected(path = '') {
+    this.emit(EVENTS.HOME_PATH_SELECTED, { path });
+  },
+
+  rogerRecommendationClicked(product, position = 0) {
+    this.emit(EVENTS.ROGER_RECOMMENDATION_CLICKED, {
+      ..._productPayload(product),
+      position,
     });
   },
 

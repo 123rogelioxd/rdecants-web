@@ -101,7 +101,7 @@
 
 <meta property="og:site_name"   content="RDecants">
 <meta property="og:title"       content="Perfumes originales en frascos de 3, 5 y 10 ml — RDecants">
-<meta property="og:description" content="Frascos pequeños de 3, 5 y 10 ml. Responde 4 preguntas y te recomendamos, o explora el catálogo.">
+<meta property="og:description" content="Frascos pequeños de 3, 5 y 10 ml. Responde 3 preguntas y te recomendamos, o explora el catálogo.">
 <meta property="og:type"        content="website">
 <meta property="og:url"         content="https://rdecants.com/">
 <meta property="og:image"       content="https://rdecants.com/assets/hero/sauvage-decants-social-1200.jpg">
@@ -111,7 +111,7 @@
 <meta property="og:locale"      content="es_MX">
 <meta name="twitter:card"        content="summary_large_image">
 <meta name="twitter:title"       content="Perfumes originales en frascos de 3, 5 y 10 ml — RDecants">
-<meta name="twitter:description" content="Frascos pequeños de 3, 5 y 10 ml. Responde 4 preguntas y te recomendamos, o explora el catálogo.">
+<meta name="twitter:description" content="Frascos pequeños de 3, 5 y 10 ml. Responde 3 preguntas y te recomendamos, o explora el catálogo.">
 <meta name="twitter:image"       content="https://rdecants.com/assets/hero/sauvage-decants-social-1200.jpg">
 
 <!-- Fonts — one sans for everything the customer reads and acts on,
@@ -244,7 +244,7 @@
 <main>
 
 <!-- HERO — what we sell, in one sentence, with one dominant action.
-     Deliberately short: the top of "Más vendidos" has to be reachable on a
+     Deliberately short: the three routes below have to be reachable on a
      phone without scrolling past a full screen of introduction. -->
 <section class="hero">
   <div class="hero-inner">
@@ -256,14 +256,14 @@
       </p>
 
       <div class="hero-actions">
-        <a class="hero-cta" href="/elegir.html">
+        <a class="hero-cta" href="/elegir.html" data-cta="hero-finder">
           <span class="hero-cta-main">
             Ayúdame a elegir
             <span class="hero-cta-spark" aria-hidden="true">✦</span>
           </span>
-          <span class="hero-cta-note">4 preguntas · menos de 1 min</span>
+          <span class="hero-cta-note">3 preguntas · menos de 1 min</span>
         </a>
-        <a class="btn-outline" href="/catalogo.html">Ver catálogo</a>
+        <a class="btn-outline" href="/catalogo.html" data-cta="hero-catalog">Ver catálogo</a>
       </div>
 
     </div>
@@ -315,6 +315,56 @@
       <li class="hero-size"><b>3 ml</b><span>Prueba corta</span></li>
       <li class="hero-size"><b>5 ml</b><span>Lo más pedido</span></li>
       <li class="hero-size"><b>10 ml</b><span>Ya te gustó</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ¿QUÉ BUSCAS? — three routes, immediately after the hero.
+     Three and not five: "cita", "fiesta" and "noche" are one decision for
+     someone standing in front of a homepage, and the catalogue metadata
+     cannot separate them anyway. Each tile is a preset of the SAME finder
+     answers, so a tile and the questionnaire can never rank differently. -->
+<section class="section section--sunk" id="intenciones" aria-labelledby="intenciones-title">
+  <div class="container">
+    <div class="section-header fade-up">
+      <div>
+        <h2 class="section-title" id="intenciones-title">¿Qué buscas?</h2>
+      </div>
+    </div>
+
+    <ul class="intent-grid intent-grid--three" id="intent-grid">
+      <li>
+        <a class="intent-tile" href="/catalogo.html?intent=dia" data-path="dia">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19" stroke-linecap="round"/>
+          </svg>
+          <span class="intent-tile-label">De día
+            <span class="intent-tile-hint">Diario, escuela, trabajo</span>
+          </span>
+        </a>
+      </li>
+      <li>
+        <a class="intent-tile" href="/catalogo.html?intent=salir" data-path="salir">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" stroke-linejoin="round"/>
+          </svg>
+          <span class="intent-tile-label">Para salir
+            <span class="intent-tile-hint">Citas, fiesta, noche</span>
+          </span>
+        </a>
+      </li>
+      <li>
+        <a class="intent-tile" href="/elegir.html" data-path="regalo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <path d="M4 10h16v10H4zM3 6h18v4H3zM12 6v14" stroke-linejoin="round"/>
+            <path d="M12 6S10.5 3 8.5 3a2 2 0 0 0 0 4M12 6s1.5-3 3.5-3a2 2 0 0 1 0 4" stroke-linejoin="round"/>
+          </svg>
+          <span class="intent-tile-label">Para regalar
+            <span class="intent-tile-hint">Te ayudamos a elegir</span>
+          </span>
+        </a>
+      </li>
     </ul>
   </div>
 </section>
@@ -373,17 +423,27 @@
   </div>
 </section>
 
-<!-- MÁS VENDIDOS — four, then the catalog. -->
-<section class="section" id="mas-vendidos" aria-labelledby="mas-vendidos-title">
+<!-- ROGER RECOMIENDA — four, curated, then the catalog.
+     This rail used to be headed "Más vendidos", which was not true: it was
+     sorted by availability, the `featured` flag and `factor_hype`, never by
+     sales. Real sales data exists (/api/web/trending) and is not what this
+     showed. Rather than fix the sort, the honest fix is to stop claiming a
+     ranking nobody produced and say who chose them.
+
+     Products come from /api/web/merchandising when Roger has curated them,
+     and fall back to the same derived order as before when he has not, so
+     the rail is never empty. -->
+<section class="section" id="roger-recomienda" aria-labelledby="roger-recomienda-title">
   <div class="container">
     <div class="section-header fade-up">
       <div>
-        <h2 class="section-title" id="mas-vendidos-title">Más vendidos</h2>
+        <h2 class="section-title" id="roger-recomienda-title">Roger recomienda</h2>
+        <p class="section-sub" id="roger-recomienda-sub">Lo que traería si vinieras a preguntarme.</p>
       </div>
       <a class="section-link" href="/catalogo.html">Ver todos</a>
     </div>
 
-    <ul class="rail-grid rail-grid--four" id="bestsellers-grid" aria-label="Fragancias más vendidas" aria-busy="true">
+    <ul class="rail-grid rail-grid--four" id="bestsellers-grid" aria-label="Fragancias recomendadas" aria-busy="true">
       <li><div class="card-skeleton" aria-hidden="true"><div class="card-skeleton-body"><div class="card-skeleton-line card-skeleton-line--short"></div><div class="card-skeleton-line card-skeleton-line--wide"></div><div class="card-skeleton-line"></div></div></div></li>
       <li><div class="card-skeleton" aria-hidden="true"><div class="card-skeleton-body"><div class="card-skeleton-line card-skeleton-line--short"></div><div class="card-skeleton-line card-skeleton-line--wide"></div><div class="card-skeleton-line"></div></div></div></li>
       <li><div class="card-skeleton" aria-hidden="true"><div class="card-skeleton-body"><div class="card-skeleton-line card-skeleton-line--short"></div><div class="card-skeleton-line card-skeleton-line--wide"></div><div class="card-skeleton-line"></div></div></div></li>
@@ -396,64 +456,37 @@
   </div>
 </section>
 
-<!-- COMPRA SEGÚN LO QUE BUSCAS — four entry points, nothing more. -->
-<section class="section section--sunk" id="intenciones" aria-labelledby="intenciones-title">
+<!-- THE ASSISTANT, offered once more — quiet, after the picks.
+     Someone who did not recognise any of Roger's four needs a way out that
+     is not "here is the whole catalogue". -->
+<section class="section section--sunk" id="asistente" aria-labelledby="asistente-title">
+  <div class="container">
+    <div class="finder-prompt">
+      <p id="asistente-title">¿No sabes cuál elegir? Responde tres preguntas.</p>
+      <a class="btn-primary" href="/elegir.html" data-cta="assistant">Ayúdame a elegir</a>
+    </div>
+  </div>
+</section>
+
+<!-- NUEVOS — a short rail, not a second catalogue.
+     Derived from the catalogue's own ordering (R Supply OS does not expose a
+     creation timestamp; the incremental product_id is the stable proxy the
+     catalog sort already uses), so nothing has to be flagged by hand. -->
+<section class="section" id="nuevos" aria-labelledby="nuevos-title">
   <div class="container">
     <div class="section-header fade-up">
       <div>
-        <h2 class="section-title" id="intenciones-title">¿Para qué lo quieres?</h2>
+        <h2 class="section-title" id="nuevos-title">Nuevos en RDECANTS</h2>
       </div>
+      <a class="section-link" href="/catalogo.html?sort=newest">Ver todos</a>
     </div>
 
-    <ul class="intent-grid" id="intent-grid">
-      <li>
-        <a class="intent-tile" href="/catalogo.html?intent=diario">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-            <circle cx="12" cy="12" r="4"/>
-            <path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19" stroke-linecap="round"/>
-          </svg>
-          <span class="intent-tile-label">Para diario
-            <span class="intent-tile-hint">Ligero y fácil de usar</span>
-          </span>
-        </a>
-      </li>
-      <li>
-        <a class="intent-tile" href="/catalogo.html?intent=citas">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-            <path d="M12 20s-7-4.4-7-9a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 4.6-7 9-7 9Z" stroke-linejoin="round"/>
-          </svg>
-          <span class="intent-tile-label">Para citas
-            <span class="intent-tile-hint">Cercano y memorable</span>
-          </span>
-        </a>
-      </li>
-      <li>
-        <a class="intent-tile" href="/catalogo.html?intent=noche">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-            <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" stroke-linejoin="round"/>
-          </svg>
-          <span class="intent-tile-label">Para la noche
-            <span class="intent-tile-hint">Con más presencia</span>
-          </span>
-        </a>
-      </li>
-      <li>
-        <a class="intent-tile" href="/elegir.html">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-            <path d="M4 10h16v10H4zM3 6h18v4H3zM12 6v14" stroke-linejoin="round"/>
-            <path d="M12 6S10.5 3 8.5 3a2 2 0 0 0 0 4M12 6s1.5-3 3.5-3a2 2 0 0 1 0 4" stroke-linejoin="round"/>
-          </svg>
-          <span class="intent-tile-label">Para regalar
-            <span class="intent-tile-hint">Te ayudamos a elegir</span>
-          </span>
-        </a>
-      </li>
+    <ul class="rail-grid rail-grid--four" id="newest-grid" aria-label="Fragancias recién agregadas" aria-busy="true">
+      <li><div class="card-skeleton" aria-hidden="true"><div class="card-skeleton-body"><div class="card-skeleton-line card-skeleton-line--short"></div><div class="card-skeleton-line card-skeleton-line--wide"></div><div class="card-skeleton-line"></div></div></div></li>
+      <li><div class="card-skeleton" aria-hidden="true"><div class="card-skeleton-body"><div class="card-skeleton-line card-skeleton-line--short"></div><div class="card-skeleton-line card-skeleton-line--wide"></div><div class="card-skeleton-line"></div></div></div></li>
+      <li><div class="card-skeleton" aria-hidden="true"><div class="card-skeleton-body"><div class="card-skeleton-line card-skeleton-line--short"></div><div class="card-skeleton-line card-skeleton-line--wide"></div><div class="card-skeleton-line"></div></div></div></li>
+      <li><div class="card-skeleton" aria-hidden="true"><div class="card-skeleton-body"><div class="card-skeleton-line card-skeleton-line--short"></div><div class="card-skeleton-line card-skeleton-line--wide"></div><div class="card-skeleton-line"></div></div></div></li>
     </ul>
-
-    <div class="finder-prompt">
-      <p>¿No sabes cuál elegir? Responde cuatro preguntas.</p>
-      <a class="btn-primary" href="/elegir.html">Ayúdame a elegir</a>
-    </div>
   </div>
 </section>
 
