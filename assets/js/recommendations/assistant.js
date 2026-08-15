@@ -58,34 +58,50 @@ export {
 };
 
 /* ── The questions ────────────────────────────────────────────────
-   Four one-tap questions, in customer language, and EVERY one of them
-   changes eligibility, score, order or the reason shown — that is what
-   tests/answerMatrix.test.js proves for all 540 combinations.
+   THREE one-tap questions, in the words a customer would actually use.
+   Every one of them changes eligibility, score, order or the reason shown —
+   tests/answerMatrix.test.js proves that across the whole grid.
 
    What each one buys, in R Supply OS fields:
-     gender   → fragrance.gender_profile  (hard constraint + 22/100)
+     gender   → fragrance.gender_profile  (hard constraint + 22 weight)
      age      → fragrance.moods + beginner_friendly / luxury / exclusivity
-                (8/100, plus the size suggested first)
-     occasion → fragrance.occasions + night_out / office_safe / date_night /
-                versatility / mass_appeal  (26/100, the heaviest)
-     goal     → projection / intensity / longevity / office_safe /
-                versatility / blind_buy_safe  (22/100)
-     climate  → fragrance.climates + summer / cold_weather  (16/100)
+                (8, plus the size suggested first)
+     occasion → fragrance.occasions + night_out / date_night / longevity /
+                compliment / versatility / office_safe / mass_appeal
+                (26, the heaviest)
+     goal     → compliment / longevity / exclusivity / projection /
+                intensity / versatility / blind_buy_safe (22)
 
-   Climate is the question this iteration added. It is not decoration:
-   69 of 73 products carry climate metadata and 51 carry summer /
-   cold_weather scores, and Mexico spans genuinely different climates, so
-   it separates products that the other three questions rank identically.
+   Weights are renormalised over whatever was actually answered, so dropping
+   a question re-weights the rest instead of deflating every score.
 
-   Scent family is deliberately NOT asked. A first-time buyer cannot answer
-   "fresco / dulce / intenso" before smelling anything, and asking it first
-   is what turned the old finder into a quiz you had to already know
-   perfume to pass. It stays available as an optional refinement carried in
-   the URL (?family=dulce) and it is fully scored when present. */
+   ── What was removed, and why ──────────────────────────────────────
+   CLIMATE was asked until now, and the argument for it was real: most
+   products carry climate metadata. But it cost every visitor a fourth screen,
+   and a run of the whole answer grid against the live 96-product catalogue
+   showed exactly ONE combination dropping below three results without it —
+   and that one used `regalo` + `discreto`, neither of which is asked any
+   more. It survives as an internal signal and as a URL refinement
+   (?climate=calido), fully scored when present. Nothing was deleted from the
+   profiles.
+
+   "OFICINA" and "ES UN REGALO" left the occasion question. Gift intent is a
+   homepage path ("Para regalar"), not something to spend a mandatory screen
+   on; office is a refinement most visitors do not need. Both remain legal
+   answers the engine scores.
+
+   "QUE SE NOTE POCO Y NO INCOMODE" (`discreto`) left the goal question. It
+   asked the customer to rule themselves out, and the two-sided framing
+   ("stand out" vs "don't bother anyone") made the third option feel like a
+   punishment. It is still scored when a URL carries it.
+
+   Scent family is still deliberately NOT asked. A first-time buyer cannot
+   answer "fresco / dulce / intenso" before smelling anything; asking it is
+   what made the old finder a quiz you had to already know perfume to pass. */
 export const ASSISTANT_QUESTIONS = [
   {
     id: 'audience',
-    label: '¿Para quién es y qué edad tiene?',
+    label: '¿Para quién es?',
     /* One screen, two choices — they are a single thought for the customer. */
     groups: [
       {
@@ -94,7 +110,7 @@ export const ASSISTANT_QUESTIONS = [
         options: [
           { value: 'hombre', label: 'Hombre' },
           { value: 'mujer', label: 'Mujer' },
-          { value: 'unisex', label: 'Unisex' },
+          { value: 'unisex', label: 'Me da igual' },
         ],
       },
       {
@@ -111,31 +127,19 @@ export const ASSISTANT_QUESTIONS = [
   },
   {
     id: 'occasion',
-    label: '¿Dónde lo usarás principalmente?',
+    label: '¿Cuándo lo vas a usar más?',
     options: [
-      { value: 'dia', label: 'Diario o escuela' },
-      { value: 'oficina', label: 'Oficina' },
-      { value: 'cita', label: 'Citas' },
-      { value: 'noche', label: 'Noche o fiesta' },
-      { value: 'regalo', label: 'Es un regalo' },
+      { value: 'dia', label: 'De día', hint: 'Diario, escuela, trabajo' },
+      { value: 'salir', label: 'Para salir', hint: 'Citas, fiesta, noche' },
     ],
   },
   {
     id: 'goal',
-    label: '¿Qué quieres que pase cuando lo uses?',
+    label: '¿Qué buscas?',
     options: [
-      { value: 'versatil', label: 'Que sea fácil de gustar y versátil' },
-      { value: 'destacar', label: 'Que destaque y reciba cumplidos' },
-      { value: 'discreto', label: 'Que se note poco y no incomode' },
-    ],
-  },
-  {
-    id: 'climate',
-    label: '¿Cómo es el clima donde lo vas a usar?',
-    options: [
-      { value: 'calido', label: 'Caluroso la mayor parte del año' },
-      { value: 'templado', label: 'Templado, lo usaré todo el año' },
-      { value: 'frio', label: 'Frío o de noche fresca' },
+      { value: 'versatil', label: 'Solo quiero oler bien' },
+      { value: 'destacar', label: 'Quiero que se note' },
+      { value: 'mejor', label: 'Quiero ser el que mejor huele' },
     ],
   },
 ];

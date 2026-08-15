@@ -53,26 +53,54 @@ test('the catalog page owns the grid, and the finder page owns the questions', (
 
 /* ── B. Home section order and content ───────────────────────── */
 
-test('home order is hero -> bestsellers -> intents -> how it works -> authenticity -> faq', () => {
+test('home order is hero -> paths -> trust -> Roger -> finder -> new -> how it works -> authenticity -> faq', () => {
   const html = read('index.html');
   const at = needle => html.indexOf(needle);
 
   const hero          = at('class="hero"');
-  const bestsellers   = at('id="mas-vendidos"');
   const intents       = at('id="intenciones"');
+  const trust         = at('class="howto-strip"');
+  const roger         = at('id="roger-recomienda"');
+  const assistant     = at('id="asistente"');
+  const newest        = at('id="nuevos"');
   const howItWorks    = at('id="como-funciona"');
   const authenticity  = at('id="autenticidad"');
   const faq           = at('id="faq"');
 
-  for (const [name, index] of Object.entries({ hero, bestsellers, intents, howItWorks, authenticity, faq })) {
+  for (const [name, index] of Object.entries({
+    hero, intents, trust, roger, assistant, newest, howItWorks, authenticity, faq,
+  })) {
     assert.ok(index > -1, `${name} present`);
   }
 
-  assert.ok(hero < bestsellers, 'hero before best sellers');
-  assert.ok(bestsellers < intents, 'best sellers is the first commercial section');
-  assert.ok(intents < howItWorks, 'intents before how it works');
+  /* Progressive disclosure: say what to do before showing what to buy.
+     The three routes come before any product, so a visitor who knows what
+     kind of thing they want never has to read a rail to find the way in. */
+  assert.ok(hero < intents, 'hero before the routes');
+  assert.ok(intents < trust, 'the routes come before the explanation strip');
+  assert.ok(trust < roger, 'what a decant is, before the first product');
+  assert.ok(roger < assistant, "Roger's picks before the fallback prompt");
+  assert.ok(assistant < newest, 'the finder prompt before the new arrivals');
+  assert.ok(newest < howItWorks, 'products before the long-form content');
   assert.ok(howItWorks < authenticity, 'how it works before authenticity');
   assert.ok(authenticity < faq, 'authenticity before the FAQ');
+});
+
+test('the home no longer claims a best-seller ranking it never produced', () => {
+  const html = read('index.html');
+
+  /* The rail was headed "Más vendidos" while being sorted by availability,
+     the `featured` flag and `factor_hype`. Real sales data lives at
+     /api/web/trending and was not what it showed.
+
+     Comments are stripped first: the source still explains the rename, and
+     that history is worth keeping. What must not survive is the claim
+     reaching a customer. */
+  const rendered = html.replace(/<!--[\s\S]*?-->/g, '');
+
+  assert.ok(!rendered.includes('Más vendidos'), 'the untrue heading is gone');
+  assert.ok(!rendered.includes('id="mas-vendidos"'), 'and so is its anchor');
+  assert.match(rendered, /<h2[^>]*>Roger recomienda<\/h2>/);
 });
 
 test('the hero states what is sold, the sizes and the entry price', () => {
@@ -106,30 +134,47 @@ test('the best-seller rail links to the full catalog instead of inlining it', ()
   assert.match(html, /href="\/catalogo\.html"/, 'the link is a real route');
 });
 
-test('exactly four shopping intents are offered, each with a destination', () => {
+test('exactly three shopping routes are offered, each with a destination', () => {
   const html = read('index.html');
   const grid = html.slice(html.indexOf('id="intent-grid"'), html.indexOf('</ul>', html.indexOf('id="intent-grid"')));
 
-  assert.equal((grid.match(/class="intent-tile"/g) ?? []).length, 4, 'four tiles, no more');
-  assert.match(grid, /Para diario/);
-  assert.match(grid, /Para citas/);
-  assert.match(grid, /Para la noche/);
+  /* Three, not four: "cita", "fiesta" and "noche" are one decision for a
+     customer, and the catalogue metadata cannot separate them anyway. */
+  assert.equal((grid.match(/class="intent-tile"/g) ?? []).length, 3, 'three tiles, no more');
+  assert.match(grid, /De día/);
+  assert.match(grid, /Para salir/);
   assert.match(grid, /Para regalar/);
+
+  /* The hints say what each route covers so nobody has to guess. */
+  assert.match(grid, /Citas, fiesta, noche/);
 
   /* Every tile leads somewhere real: a pre-filtered catalog or the finder. */
   const hrefs = [...grid.matchAll(/href="([^"]+)"/g)].map(m => m[1]);
-  assert.equal(hrefs.length, 4, 'every tile is a link');
+  assert.equal(hrefs.length, 3, 'every tile is a link');
   for (const href of hrefs) {
     assert.ok(
       href.startsWith('/catalogo.html?') || href === '/elegir.html',
       `intent destination "${href}" is filtered results or the guided flow`,
     );
   }
+
+  /* Each one is measurable, or we cannot answer "which route do people take?" */
+  assert.equal((grid.match(/data-path="/g) ?? []).length, 3);
 });
 
 test('the guided flow is offered once more, as a quiet secondary prompt', () => {
   const html = read('index.html');
-  assert.match(html, /¿No sabes cuál elegir\? Responde cuatro preguntas\./);
+  assert.match(html, /¿No sabes cuál elegir\? Responde tres preguntas\./);
+});
+
+test('the new-arrivals rail is short and links out rather than growing', () => {
+  const html = read('index.html');
+  const section = html.slice(html.indexOf('id="nuevos"'), html.indexOf('</section>', html.indexOf('id="nuevos"')));
+
+  assert.match(section, /Nuevos en RDECANTS/);
+  assert.match(section, /id="newest-grid"/);
+  assert.match(section, /rail-grid--four/, 'capped like every other rail');
+  assert.match(section, /href="\/catalogo\.html\?sort=newest"/, 'the rest is one tap away');
 });
 
 test('how it works is three short steps', () => {

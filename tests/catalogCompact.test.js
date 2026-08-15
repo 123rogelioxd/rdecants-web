@@ -307,18 +307,27 @@ test('intents are one preset answer set shared by the tiles, the URL and the fin
   const { getIntentAnswers, getIntentHref, readGuideFromQuery, buildCatalogUrl } =
     await import('../assets/js/catalog/intents.js');
 
-  /* An intent is nothing but preset finder answers — never a second taxonomy. */
-  assert.deepEqual(getIntentAnswers('noche'), { occasion: 'noche', goal: 'destacar' });
+  /* An intent is nothing but preset finder answers — never a second taxonomy.
+     The two the home now shows mirror the finder's own second question. */
+  assert.deepEqual(getIntentAnswers('dia'), { occasion: 'dia' });
+  assert.deepEqual(getIntentAnswers('salir'), { occasion: 'salir' });
+
+  /* Links already shared keep working. `citas` and `noche` resolve to `salir`
+     — the same ranking they produced when they were separate answers, because
+     the metadata never told them apart. */
+  assert.deepEqual(getIntentAnswers('noche'), { occasion: 'salir', goal: 'destacar' });
+  assert.deepEqual(getIntentAnswers('citas'), { occasion: 'salir' });
   assert.deepEqual(getIntentAnswers('diario'), { occasion: 'dia', goal: 'versatil' });
 
   /* "Para regalar" carries no scent signal of its own, so it must open the
      guided flow instead of pretending to filter. */
   assert.equal(getIntentAnswers('regalo'), null);
   assert.equal(getIntentHref('regalo'), '/elegir.html');
+  assert.equal(getIntentHref('salir'), '/catalogo.html?intent=salir');
   assert.equal(getIntentHref('noche'), '/catalogo.html?intent=noche');
 
   /* The URL contract round-trips through the same answer shape. */
-  assert.deepEqual(readGuideFromQuery('?intent=citas'), { occasion: 'cita' });
+  assert.deepEqual(readGuideFromQuery('?intent=citas'), { occasion: 'salir' });
   assert.deepEqual(
     readGuideFromQuery('?family=fresco&occasion=dia&gender=hombre'),
     { family: 'fresco', occasion: 'dia', gender: 'hombre' },

@@ -1,13 +1,18 @@
 /* =============================================================
-   RDECANTS — HOME BESTSELLERS RAIL
-   The home page's single commercial surface: at most eight cards on
-   desktop, four on a phone (CSS trims the tail), then one clear link
-   into the full catalog. It never renders the whole catalog.
+   RDECANTS — HOME EDITORIAL RAIL ("Roger recomienda")
 
-   Ranking reuses the catalog's own commercial order ("trending":
-   available → featured → badge → gender tiebreak) so the home and the
-   catalog agree on what is prominent. Nothing sold out is ever
-   featured here — that is what isSellable() is for.
+   The home page's single commercial surface: four cards, then one clear
+   link into the full catalog. It never renders the whole catalog.
+
+   This rail was headed "Más vendidos" and was not sorted by sales. It used
+   the catalog's commercial order — available → featured → badge → gender —
+   which is a reasonable ordering and simply not the one the heading claimed.
+   Real sales data exists at /api/web/trending and was not what this showed.
+
+   So the products now come from Roger's own picks
+   (/api/web/merchandising, slot `roger`) when he has curated them, and fall
+   back to exactly the previous derived order when he has not. Both paths run
+   through isSellable(), so nothing sold out is ever shown either way.
    ============================================================= */
 
 import { CatalogProvider }   from '../providers/catalog.js';
@@ -37,6 +42,31 @@ export function selectBestsellers(products, limit = BESTSELLER_LIMIT) {
   return filterProducts(sellable, { sort: 'trending' }).slice(0, Math.max(0, limit));
 }
 
+/**
+ * Pure: reconcile curated placements with the derived fallback.
+ *
+ * A curated entry only survives if it is still sellable — the backend already
+ * drops unpublished and sold-out products, but the storefront re-checks rather
+ * than trusting a payload that may have been cached for up to a minute on
+ * either side.
+ *
+ * If curation yields nothing at all, the rail falls back whole. It is never
+ * topped up from the derived list: a half-curated, half-automatic rail would
+ * make "Roger recomienda" partly untrue, and there is no way for the customer
+ * to tell which halves are which.
+ */
+export function selectRogerPicks(placements, products, limit = BESTSELLER_LIMIT) {
+  const curated = (Array.isArray(placements) ? placements : [])
+    .filter(entry => entry?.product && isSellable(entry.product))
+    .slice(0, Math.max(0, limit));
+
+  if (curated.length) return curated;
+
+  return selectBestsellers(products, limit).map(product => ({
+    label: null, reason: null, product,
+  }));
+}
+
 export async function renderBestsellers(containerId = 'bestsellers-grid') {
   const grid = document.getElementById(containerId);
   if (!grid) return;
@@ -48,7 +78,11 @@ export async function renderBestsellers(containerId = 'bestsellers-grid') {
     products = [];
   }
 
-  const picks = selectBestsellers(products);
+  /* Curation is additive: if it is off, un-migrated or empty, this is `[]`
+     and the rail behaves exactly as it did before. */
+  const placements = await CatalogProvider.getMerchandising('roger');
+
+  const picks = selectRogerPicks(placements, products);
   grid.setAttribute('aria-busy', 'false');
 
   if (!picks.length) {
@@ -60,14 +94,69 @@ export async function renderBestsellers(containerId = 'bestsellers-grid') {
     return;
   }
 
+  const curated = Boolean(placements.length);
+
+  /* "Lo que traería si vinieras a preguntarme" is a promise that a person
+     chose these. When the rail has fallen back to the derived order nobody
+     did, so the line comes out — the same reason the heading stopped saying
+     "Más vendidos". The heading itself stays: it names who stands behind the
+     shop's selection, which is true either way. */
+  if (!curated) document.getElementById('roger-recomienda-sub')?.remove();
+
+  grid.innerHTML = '';
+  const frag = document.createDocumentFragment();
+  picks.forEach((pick, index) => frag.appendChild(
+    _buildRailCard(pick.product, index, { label: pick.label, reason: pick.reason, curated }),
+  ));
+  grid.appendChild(frag);
+  primeImageStates(grid);
+
+  syncEntryPrice(products);
+  picks.forEach(p => Tracker.productView(p.product));
+}
+
+/**
+ * Pure: the most recently added products the storefront can sell.
+ *
+ * R Supply OS does not expose a creation timestamp in the public catalog, so
+ * the incremental `product_id` is the proxy — the same one the catalog's own
+ * "Novedades" sort already uses, rather than a second definition of "new".
+ */
+export function selectNewest(products, limit = BESTSELLER_LIMIT) {
+  return (Array.isArray(products) ? products : [])
+    .filter(Boolean)
+    .filter(isSellable)
+    .filter(p => Number.isFinite(Number(p.product_id)))
+    .sort((a, b) => Number(b.product_id) - Number(a.product_id))
+    .slice(0, Math.max(0, limit));
+}
+
+export async function renderNewest(containerId = 'newest-grid') {
+  const grid = document.getElementById(containerId);
+  if (!grid) return;
+
+  let products = [];
+  try {
+    products = await CatalogProvider.getProducts();
+  } catch {
+    products = [];
+  }
+
+  const picks = selectNewest(products);
+  grid.setAttribute('aria-busy', 'false');
+
+  /* No apology copy here — the rail above already handles the empty catalog.
+     A second "we are restocking" block would just be noise. */
+  if (!picks.length) {
+    grid.closest('section')?.remove();
+    return;
+  }
+
   grid.innerHTML = '';
   const frag = document.createDocumentFragment();
   picks.forEach((product, index) => frag.appendChild(_buildRailCard(product, index)));
   grid.appendChild(frag);
   primeImageStates(grid);
-
-  syncEntryPrice(products);
-  picks.forEach(p => Tracker.productView(p));
 }
 
 /* The hero prints an entry price ("desde $100"). A hardcoded number drifts
@@ -102,7 +191,7 @@ export function syncEntryPrice(products, doc = document) {
    one action. No size selector here — three toggles on every card is how
    the home became a control panel last time; the sizes live in the product
    view, one tap away. */
-function _buildRailCard(product, index) {
+function _buildRailCard(product, index, editorial = {}) {
   const tryVariant = getVariantForSize(product, TRY_SIZE_ML);
   const variant = tryVariant ?? getDisplayVariant(product);
   const stock = getScarcityDisplay(product);
@@ -127,10 +216,22 @@ function _buildRailCard(product, index) {
   card.setAttribute('tabindex', '0');
   card.setAttribute('aria-label', `Ver detalle de ${product.name}`);
 
-  /* Only a genuinely urgent state earns the single allowed mark. */
-  const urgent = stock.state === 'last_units'
-    ? `<span class="card-badge ${stock.badgeClass}">${stock.label}</span>`
+  /* ONE badge, never two.
+     Precedence is deliberate: real scarcity outranks editorial copy, because
+     "Últimos ml" is a fact about what the customer can still buy and
+     "Roger recomienda" is an opinion. Stacking both is how a card starts
+     looking like a discount aggregator. */
+  const badgeText = stock.state === 'last_units'
+    ? stock.label
+    : (String(editorial.label ?? '').trim() || '');
+  const badgeClass = stock.state === 'last_units' ? stock.badgeClass : 'card-badge--editorial';
+  const urgent = badgeText
+    ? `<span class="card-badge ${badgeClass}">${_escape(badgeText)}</span>`
     : '';
+
+  /* Roger's one-line "why". Replaces the derived blurb rather than joining
+     it — two descriptions of the same perfume on one card is one too many. */
+  const reason = String(editorial.reason ?? '').trim();
 
   card.innerHTML = `
     ${urgent}
@@ -145,7 +246,9 @@ function _buildRailCard(product, index) {
         ${genderBadgeHtml(product)}
       </div>
       <h3 class="card-name">${product.name}</h3>
-      ${blurb ? `<p class="card-blurb">${blurb}</p>` : ''}
+      ${reason
+        ? `<p class="card-blurb card-blurb--reason">${_escape(reason)}</p>`
+        : (blurb ? `<p class="card-blurb">${blurb}</p>` : '')}
       <div class="card-purchase">
         <p class="card-price">${priceHtml}</p>
         <button type="button" class="card-action"
@@ -172,6 +275,10 @@ function _buildRailCard(product, index) {
     if (event.target.closest('.card-action')) return;
     openProductModal(product);
     Tracker.productClicked(product, 'home_rail');
+    /* Curated picks report separately: "does Roger recomienda get clicked?"
+       is a different question from "does the home rail get clicked?", and it
+       is the one that decides whether the curation is worth his time. */
+    if (editorial.curated) Tracker.rogerRecommendationClicked(product, index + 1);
   });
 
   card.addEventListener('keydown', event => {
@@ -183,6 +290,18 @@ function _buildRailCard(product, index) {
 
   li.appendChild(card);
   return li;
+}
+
+/* Operator-authored copy reaches innerHTML, so it is escaped at the boundary.
+   The admin field is length-limited and typed by a trusted operator, but "the
+   author is trusted" is not the same guarantee as "this cannot inject". */
+function _escape(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function _brandInitialCss(p) {

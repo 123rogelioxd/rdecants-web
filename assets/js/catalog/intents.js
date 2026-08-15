@@ -16,17 +16,29 @@ import { readAnswers } from '../recommendations/engine.js';
    its own — "para regalar" depends entirely on who receives it — so it
    routes to the guided finder instead of pretending to filter. */
 export const INTENT_PRESETS = [
-  { key: 'diario', label: 'Para diario', hint: 'Ligero y fácil de usar',   answers: { occasion: 'dia', goal: 'versatil' } },
-  { key: 'citas',  label: 'Para citas',  hint: 'Cercano y memorable',      answers: { occasion: 'cita' } },
-  { key: 'noche',  label: 'Para la noche', hint: 'Con más presencia',      answers: { occasion: 'noche', goal: 'destacar' } },
+  /* The three the home offers. They mirror the finder's own answers exactly —
+     `dia` and `salir` are the two options of its second question — so a tile
+     and the questionnaire cannot rank the catalogue differently. */
+  { key: 'dia',    label: 'De día',      hint: 'Diario, escuela, trabajo', answers: { occasion: 'dia' } },
+  { key: 'salir',  label: 'Para salir',  hint: 'Citas, fiesta, noche',     answers: { occasion: 'salir' } },
   { key: 'regalo', label: 'Para regalar', hint: 'Te ayudamos a elegir',    answers: null },
-  /* Kept for existing surfaces (guide bar chips, campaign links). */
+
+  /* Kept for existing surfaces and for links already shared: guide-bar chips,
+     campaign URLs, and the four tiles the home used to show. `citas` and
+     `noche` now both resolve to `salir`, which is the same ranking they
+     produced separately — see the OCCASION_RULES note in engine.js. */
+  { key: 'diario',  label: 'Para diario', hint: 'Ligero y fácil de usar',  answers: { occasion: 'dia', goal: 'versatil' } },
+  { key: 'citas',   label: 'Para citas',  hint: 'Cercano y memorable',     answers: { occasion: 'salir' } },
+  { key: 'noche',   label: 'Para la noche', hint: 'Con más presencia',     answers: { occasion: 'salir', goal: 'destacar' } },
   { key: 'calor',   label: 'Calor',   hint: 'Fresco para clima cálido', answers: { family: 'fresco', climate: 'calido' } },
   { key: 'oficina', label: 'Oficina', hint: 'Discreto y correcto',      answers: { occasion: 'oficina', goal: 'discreto' } },
 ];
 
-/* The four entry points the home surfaces, in order. */
-export const HOME_INTENTS = ['diario', 'citas', 'noche', 'regalo'];
+/* The three entry points the home surfaces, in order.
+   Deliberately three, not five: "cita", "fiesta" and "noche" are one decision
+   for a customer standing in front of a homepage, and the metadata cannot
+   separate them anyway. */
+export const HOME_INTENTS = ['dia', 'salir', 'regalo'];
 
 export function getIntent(key) {
   return INTENT_PRESETS.find(i => i.key === String(key ?? '').toLowerCase()) ?? null;

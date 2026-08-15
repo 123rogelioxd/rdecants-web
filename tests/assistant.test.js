@@ -82,11 +82,11 @@ const ids = (list) => list.map(r => r.product.id);
 
 /* ── A. The questions ───────────────────────────────────────────── */
 
-test('asks four one-tap questions, and never opens on a scent-family quiz', () => {
-  assert.equal(ASSISTANT_QUESTIONS.length, 4);
+test('asks three one-tap questions, and never opens on a scent-family quiz', () => {
+  assert.equal(ASSISTANT_QUESTIONS.length, 3);
   assert.deepEqual(
     ASSISTANT_QUESTIONS.map(q => q.id),
-    ['audience', 'occasion', 'goal', 'climate'],
+    ['audience', 'occasion', 'goal'],
   );
   /* A beginner cannot answer "fresco / dulce / intenso" before smelling
      anything; the family stays an optional URL refinement. */
@@ -110,36 +110,76 @@ test('step one collects who it is for and an age range on one screen', () => {
   assert.deepEqual(questionAnswerIds(audience), ['gender', 'age']);
 
   const gender = audience.groups[0];
-  /* Three real values. "Me da igual" is gone: the brief asks for
-     hombre / mujer / unisex, and an opt-out was scoring nothing anyway. */
+  /* Three real values. `unisex` is a scored positioning, not an opt-out —
+     it is only LABELLED "Me da igual" so a customer who has no preference
+     has somewhere to go. */
   assert.deepEqual(gender.options.map(o => o.value), ['hombre', 'mujer', 'unisex']);
 
   const age = audience.groups[1];
   assert.deepEqual(age.options.map(o => o.value), ['15-18', '19-24', '25-34', '35+']);
 });
 
-test('step two asks where it will be worn, in plain language', () => {
+test('step two asks when it will be worn, and offers only two answers', () => {
   const occasion = ASSISTANT_QUESTIONS[1];
-  assert.deepEqual(
-    occasion.options.map(o => o.value),
-    ['dia', 'oficina', 'cita', 'noche', 'regalo'],
-  );
-  assert.match(occasion.options[0].label, /escuela/i, 'daily is phrased for a student too');
+  assert.deepEqual(occasion.options.map(o => o.value), ['dia', 'salir']);
   assert.deepEqual(questionAnswerIds(occasion), ['occasion']);
+
+  /* The hints carry what the two words mean, so nobody has to guess whether
+     a date counts as "salir". */
+  assert.match(occasion.options[0].hint, /diario|escuela/i);
+  assert.match(occasion.options[1].hint, /cita|fiesta|noche/i);
 });
 
-test('step three offers all three outcomes, including "discreto"', () => {
+test('step three asks what the customer wants, without perfume jargon', () => {
   const goal = ASSISTANT_QUESTIONS[2];
-  assert.deepEqual(goal.options.map(o => o.value), ['versatil', 'destacar', 'discreto']);
+  assert.deepEqual(goal.options.map(o => o.value), ['versatil', 'destacar', 'mejor']);
+
+  /* No projection/longevity/sillage vocabulary reaches the customer. */
+  for (const option of goal.options) {
+    assert.doesNotMatch(option.label, /proyecci|sillage|longevidad|fijaci|nota|acorde|fouger|amaderad/i);
+  }
 });
 
-test('step four asks the climate, which is a scored dimension not decoration', () => {
-  const climate = ASSISTANT_QUESTIONS[3];
-  assert.deepEqual(climate.options.map(o => o.value), ['calido', 'templado', 'frio']);
+test('a collapsed "salir" still ranks, and does not need cita and noche apart', () => {
+  /* The reason the two were merged: measured on the live catalogue,
+     `night_out` has two distinct values and `date_night` has one dominant
+     value, so asking which kind of going-out returned the same order. What
+     must still hold is that `salir` itself discriminates against day wear. */
+  const nightish = apiProduct('NightOut', {
+    occasions: ['noche', 'fiesta'],
+    moods: ['nocturno', 'seductor'],
+    scores: {
+      night_out: 90, date_night: 85, longevity: 84, compliment: 80,
+      projection: 85, intensity: 85, versatility: 45, office_safe: 35,
+      mass_appeal: 62, beginner_friendly: 45, blind_buy_safe: 55, exclusivity: 80,
+    },
+  });
+  const dayish = apiProduct('DayClean', {
+    occasions: ['diario', 'oficina'],
+    moods: ['limpio', 'moderno'],
+    scores: {
+      night_out: 40, date_night: 55, longevity: 60, compliment: 60,
+      projection: 58, intensity: 62, versatility: 84, office_safe: 85,
+      mass_appeal: 80, beginner_friendly: 80, blind_buy_safe: 75, exclusivity: 55,
+    },
+  });
 
-  /* Proof it is not decoration: two products identical on every other
-     dimension, differing only in their climate metadata. Flip the climate
-     answer and the winner flips with it. */
+  const salir = getAssistantRecommendations({ occasion: 'salir', goal: 'destacar' }, [dayish, nightish]);
+  const dia = getAssistantRecommendations({ occasion: 'dia', goal: 'versatil' }, [dayish, nightish]);
+
+  assert.equal(salir[0].product.id, 'NightOut');
+  assert.equal(dia[0].product.id, 'DayClean');
+});
+
+test('climate is no longer asked but is still fully scored when a URL supplies it', () => {
+  /* Removing the fourth question removed FRICTION, not a signal. A shared
+     `/catalogo.html?climate=calido` link, and every internal caller, must
+     still get climate-aware ranking — otherwise dropping the question would
+     have quietly deleted a dimension from the engine. */
+  assert.ok(!ASSISTANT_QUESTIONS.some(q => q.id === 'climate'), 'not a customer-facing step');
+
+  /* Two products identical on every other dimension, differing only in their
+     climate metadata. Flip the climate answer and the winner flips with it. */
   const base = {
     occasions: ['diario', 'oficina'],
     moods: ['limpio', 'moderno'],

@@ -98,7 +98,7 @@ test('the finder is the dominant action of the hero, with its cost stated', () =
   const hero = html.slice(html.indexOf('<section class="hero">'), html.indexOf('</section>', html.indexOf('<section class="hero">')));
 
   assert.match(hero, /class="hero-cta"[^>]*href="\/elegir\.html"/s, 'the finder is the hero CTA');
-  assert.match(hero, /4 preguntas · menos de 1 min/, 'the effort is stated up front');
+  assert.match(hero, /3 preguntas · menos de 1 min/, 'the effort is stated up front');
   assert.match(hero, /class="btn-outline"[^>]*href="\/catalogo\.html"/s, 'the catalog is the outline secondary');
 
   /* Exactly one filled action in the hero: two equal buttons is no hierarchy. */
@@ -132,7 +132,7 @@ test('the home explains the product before it sells anything', () => {
   const html = read('index.html');
   const hero = html.indexOf('<section class="hero">');
   const strip = html.indexOf('class="howto-strip"');
-  const rail = html.indexOf('id="mas-vendidos"');
+  const rail = html.indexOf('id="roger-recomienda"');
 
   assert.ok(hero > -1 && strip > -1 && rail > -1, 'all three present');
   assert.ok(hero < strip, 'hero first');

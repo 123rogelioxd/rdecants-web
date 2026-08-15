@@ -102,6 +102,45 @@ export const CatalogProvider = {
     return products[0] || null;
   },
 
+  /**
+   * Editorial placements for a slot ('roger' | 'hero'), newest curation first.
+   *
+   * Returns `[]` for every failure mode there is — feature off, table not
+   * migrated, endpoint down, nothing scheduled — because the home treats all
+   * four identically: fall back to the derived order. An empty rail is never
+   * an acceptable outcome, so the caller must always have something to show.
+   *
+   * The product inside each entry is the SAME payload /api/web/catalog serves,
+   * so it is mapped through the same `_mapProduct` and carries no separately
+   * stored price, stock or image.
+   */
+  async getMerchandising(slot) {
+    try {
+      const data = await ApiClient.getMerchandising();
+      const entries = Array.isArray(data?.[slot]) ? data[slot] : [];
+
+      return entries
+        .map(entry => {
+          const product = _mapProduct(entry?.product);
+          if (!product) return null;
+          return {
+            label: entry.label ?? null,
+            reason: entry.reason ?? null,
+            headline: entry.headline ?? null,
+            body: entry.body ?? null,
+            cta: entry.cta ?? null,
+            secondaryCta: entry.secondary_cta ?? null,
+            product,
+          };
+        })
+        .filter(Boolean);
+    } catch {
+      /* No console noise: an un-migrated or switched-off backend is an
+         expected state during rollout, not an error the visitor caused. */
+      return [];
+    }
+  },
+
   async getProductById(id) {
     const products = await this.getProducts();
     return products.find(p => String(p.id) === String(id)) || null;

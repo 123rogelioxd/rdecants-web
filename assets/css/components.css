@@ -700,6 +700,15 @@
 .card-badge.danger { background: var(--action); color: var(--on-action); border-color: var(--action); }
 .card-badge.trend  { background: var(--surface); color: var(--ink-soft); border-color: var(--line); }
 
+/* Roger's own label. Reads as a note from the seller, not as a promotion:
+   the accent is the existing warm ink, and it never appears at the same time
+   as a scarcity badge — real availability outranks an opinion. */
+.card-badge--editorial {
+  background: var(--ink);
+  color: var(--surface);
+  border-color: var(--ink);
+}
+
 .card-img-wrap {
   position: relative;
   aspect-ratio: 4 / 5;
@@ -8724,6 +8733,17 @@ textarea:focus-visible {
   .intent-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
+/* Three routes, not four.
+   On a phone the third tile spans both columns rather than sitting next to a
+   gap — a lone half-width tile reads as a rendering fault. From 768px up the
+   three share the row evenly. */
+.intent-grid--three > li:nth-child(3) { grid-column: 1 / -1; }
+
+@media (min-width: 768px) {
+  .intent-grid--three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .intent-grid--three > li:nth-child(3) { grid-column: auto; }
+}
+
 .intent-tile {
   display: flex;
   flex-direction: column;
@@ -9176,6 +9196,42 @@ textarea:focus-visible {
   line-height: 1.45;
   color: var(--ink-soft);
   margin-bottom: 10px;
+}
+
+/* Roger's reason, when there is one. Slightly darker than a derived blurb so
+   it reads as something a person wrote, without becoming a second heading. */
+.card-blurb--reason { color: var(--ink); }
+
+/* The hero's featured perfume, when a campaign names one. One quiet line
+   under the actions — never a second card, which would compete with the two
+   CTAs the hero exists to present. */
+.hero-featured {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 14px;
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 2px;
+}
+.hero-featured:hover,
+.hero-featured:focus-visible { border-bottom-color: var(--ink); }
+.hero-featured-house {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* One quiet line under a section title. Used by "Roger recomienda" to say
+   who is recommending, which is the whole difference from the old heading. */
+.section-sub {
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  margin: 2px 0 0;
 }
 
 /* On the home rail the action is the row, not a chip beside the price:

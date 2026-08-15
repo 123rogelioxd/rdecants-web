@@ -1,16 +1,19 @@
 /* =============================================================
    RDECANTS — HOME ENTRY POINT
 
-   The home is a discovery page, not the store: a promise, the eight
-   best sellers, four ways to say what you are shopping for, how it
-   works, why it is authentic, four questions. The catalog (search,
-   filters, sort, 70+ products) lives at /catalogo.html and the guided
+   The home is a discovery page, not the store: a promise, three ways to
+   say what you are shopping for, what a decant is, Roger's four picks,
+   the guided finder, what is new, how it works, why it is authentic,
+   the four questions that block a first order. The catalog (search,
+   filters, sort, 90+ products) lives at /catalogo.html and the guided
    finder at /elegir.html, so no single screen asks the visitor to
    choose between five different ways to start.
    ============================================================= */
 
 import { bootstrapShell }          from './core/shell.js';
-import { renderBestsellers }       from './ui/bestsellers.js';
+import { renderHero }              from './ui/hero.js';
+import { renderBestsellers,
+         renderNewest }            from './ui/bestsellers.js';
 import { setupScrollAnimations,
          observeFadeUp }           from './ui/animations.js';
 import { Tracker }                 from './tracking/tracker.js';
@@ -39,16 +42,42 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await bootstrapShell();
 
-  /* The one commercial surface on this page. */
+  /* The hero is already rendered from HTML; this only applies an active
+     campaign on top of it, and does nothing when there is none. */
+  await renderHero();
+
+  /* The two product rails. Roger's picks lead; "Nuevos" sits below the
+     finder prompt and removes itself when there is nothing to show. */
   await renderBestsellers('bestsellers-grid');
+  await renderNewest('newest-grid');
 
   observeFadeUp();
   setupScrollAnimations();
   _setupScrollTracking();
+  _setupDiscoveryTracking();
 
   AppState.set('initialized', true);
   Tracker.emit('page_view', { path: window.location.pathname });
 });
+
+/* Which of the three routes into the store a visitor actually takes.
+   One delegated listener rather than a listener per element, so a rail that
+   re-renders cannot leave handlers behind. */
+function _setupDiscoveryTracking() {
+  document.addEventListener('click', event => {
+    const path = event.target.closest('[data-path]');
+    if (path) {
+      Tracker.homePathSelected(path.dataset.path);
+      return;
+    }
+
+    const cta = event.target.closest('[data-cta]');
+    if (!cta) return;
+
+    if (cta.dataset.cta === 'hero-catalog') Tracker.catalogCtaClicked('hero');
+    else Tracker.heroCtaClicked(cta.dataset.cta);
+  });
+}
 
 /* ── Behavioral observability ───────────────────────────────── */
 function _setupScrollTracking() {
@@ -70,8 +99,10 @@ function _setupScrollTracking() {
   window.addEventListener('scroll', onScroll, { passive: true });
 
   /* Section viewed — fires once per section when 15% enters viewport */
+  /* In page order, so the reported index is how far down someone got. */
   const SECTIONS = [
-    'mas-vendidos', 'intenciones', 'como-funciona', 'autenticidad', 'faq',
+    'intenciones', 'roger-recomienda', 'asistente', 'nuevos',
+    'como-funciona', 'autenticidad', 'faq',
   ];
   if (!('IntersectionObserver' in window)) return;
   SECTIONS.forEach((id, positionIndex) => {
