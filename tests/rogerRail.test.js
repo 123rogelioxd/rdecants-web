@@ -153,3 +153,38 @@ test('operator-authored copy is escaped before it reaches innerHTML', async () =
   assert.match(source, /_escape\(badgeText\)/);
   assert.match(source, /_escape\(reason\)/);
 });
+
+/* ── Quick-add is the same add ───────────────────────────────────── */
+
+test('the rail\'s "Probar 5 ml" is the same cart write as the product page', async () => {
+  /* The home rail, the catalogue grid, the quick-view modal and the PDP all
+     call `Cart.add(productId, size)` and nothing else. `add()` re-reads the
+     product from CatalogProvider and derives price and variant through
+     getPriceForSize / getVariantForSize, so no surface can compute a price of
+     its own or write a cart line the others could not produce.
+
+     This is asserted rather than implemented: the equivalence already held,
+     and the risk worth guarding is a future "faster" path that skips it. */
+  const fs = await import('node:fs');
+  const read = p => fs.readFileSync(new URL(p, import.meta.url), 'utf8');
+
+  for (const surface of [
+    '../assets/js/ui/bestsellers.js',
+    '../assets/js/ui/productPage.js',
+    '../assets/js/ui/modal.js',
+    '../assets/js/catalog/render.js',
+  ]) {
+    const source = read(surface);
+    assert.match(source, /cart\??\.?\.add\??\.?\(/, `${surface} adds through Cart.add`);
+    /* No surface may price a line itself. */
+    assert.doesNotMatch(
+      source.replace(/\/\*[\s\S]*?\*\//g, ''),
+      /price\s*[*]\s*(qty|quantity|cantidad)/i,
+      `${surface} must not compute a line total`,
+    );
+  }
+
+  const cart = read('../assets/js/cart/cart.js');
+  assert.match(cart, /const price = getPriceForSize\(product, size\)/);
+  assert.match(cart, /const variant = getVariantForSize\(product, size\)/);
+});
