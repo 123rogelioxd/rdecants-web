@@ -9202,6 +9202,29 @@ textarea:focus-visible {
    it reads as something a person wrote, without becoming a second heading. */
 .card-blurb--reason { color: var(--ink); }
 
+/* The hero's featured perfume, when a campaign names one. One quiet line
+   under the actions — never a second card, which would compete with the two
+   CTAs the hero exists to present. */
+.hero-featured {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 14px;
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 2px;
+}
+.hero-featured:hover,
+.hero-featured:focus-visible { border-bottom-color: var(--ink); }
+.hero-featured-house {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
 /* One quiet line under a section title. Used by "Roger recomienda" to say
    who is recommending, which is the whole difference from the old heading. */
 .section-sub {

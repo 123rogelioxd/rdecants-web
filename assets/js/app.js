@@ -11,6 +11,7 @@
    ============================================================= */
 
 import { bootstrapShell }          from './core/shell.js';
+import { renderHero }              from './ui/hero.js';
 import { renderBestsellers,
          renderNewest }            from './ui/bestsellers.js';
 import { setupScrollAnimations,
@@ -40,6 +41,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (_redirectLegacyHash()) return;
 
   await bootstrapShell();
+
+  /* The hero is already rendered from HTML; this only applies an active
+     campaign on top of it, and does nothing when there is none. */
+  await renderHero();
 
   /* The two product rails. Roger's picks lead; "Nuevos" sits below the
      finder prompt and removes itself when there is nothing to show. */
