@@ -94,10 +94,19 @@ export async function renderBestsellers(containerId = 'bestsellers-grid') {
     return;
   }
 
+  const curated = Boolean(placements.length);
+
+  /* "Lo que traería si vinieras a preguntarme" is a promise that a person
+     chose these. When the rail has fallen back to the derived order nobody
+     did, so the line comes out — the same reason the heading stopped saying
+     "Más vendidos". The heading itself stays: it names who stands behind the
+     shop's selection, which is true either way. */
+  if (!curated) document.getElementById('roger-recomienda-sub')?.remove();
+
   grid.innerHTML = '';
   const frag = document.createDocumentFragment();
   picks.forEach((pick, index) => frag.appendChild(
-    _buildRailCard(pick.product, index, { label: pick.label, reason: pick.reason, curated: Boolean(placements.length) }),
+    _buildRailCard(pick.product, index, { label: pick.label, reason: pick.reason, curated }),
   ));
   grid.appendChild(frag);
   primeImageStates(grid);

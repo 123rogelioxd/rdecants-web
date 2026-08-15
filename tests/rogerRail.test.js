@@ -154,6 +154,17 @@ test('operator-authored copy is escaped before it reaches innerHTML', async () =
   assert.match(source, /_escape\(reason\)/);
 });
 
+test('the personal subtitle is only claimed when a person actually chose', async () => {
+  /* "Lo que traería si vinieras a preguntarme" promises that Roger picked
+     these. On the fallback path nobody did, so the line is removed — the
+     same standard that retired "Más vendidos". The heading stays either way:
+     it names who stands behind the shop's selection, which is true. */
+  const source = await import('node:fs')
+    .then(fs => fs.readFileSync(new URL('../assets/js/ui/bestsellers.js', import.meta.url), 'utf8'));
+
+  assert.match(source, /if \(!curated\) document\.getElementById\('roger-recomienda-sub'\)\?\.remove\(\)/);
+});
+
 /* ── Quick-add is the same add ───────────────────────────────────── */
 
 test('the rail\'s "Probar 5 ml" is the same cart write as the product page', async () => {
