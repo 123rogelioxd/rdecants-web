@@ -7,7 +7,10 @@ import { ApiClient } from '../api/client.js';
 import { normalizeApiImageUrl } from '../api/config.js';
 import { normalizeGender } from '../utils/gender.js';
 import { sentenceCase, composeDisplayName } from '../utils/presentation.js';
-import { PRODUCTS, PACKS } from '../../../data/products.js';
+import { normalizePacks } from '../recommendations/starterPacks.js';
+/* PACKS is deliberately no longer imported. The demo fixture carries invented
+   pack prices, and a pack is a priced commercial offer — see getPacks(). */
+import { PRODUCTS } from '../../../data/products.js';
 
 let _productsCache = null;
 let _packsCache = null;
@@ -61,6 +64,23 @@ export const CatalogProvider = {
     return _productsCache;
   },
 
+  /**
+   * Curated beginner packs, exactly as R Supply OS configured them.
+   *
+   * Returns `[]` for every failure mode there is — feature off, table not
+   * migrated, endpoint down, nothing configured, every pack currently
+   * unsellable — because the storefront's response to all of them is the
+   * same: hide the section.
+   *
+   * There is NO demo fallback here, unlike getProducts(). A pack is a priced
+   * commercial offer, and `data/products.js` PACKS are stale fixtures with
+   * invented prices; showing one to a real customer would be advertising a
+   * bundle at a number nobody approved. An empty rail is the honest outcome.
+   *
+   * Products inside each pack are the SAME payload /api/web/catalog serves,
+   * mapped through the same `_mapProduct`, so a pack carries no separately
+   * stored price, stock or image.
+   */
   async getPacks() {
     if (_packsCache) return _packsCache;
 
@@ -68,18 +88,32 @@ export const CatalogProvider = {
       const data = await ApiClient.getPacks();
       const items = Array.isArray(data?.data) ? data.data : data;
 
-      if (Array.isArray(items) && items.length) {
-        _packsCache = items.map(_mapPack);
+      if (Array.isArray(items)) {
+        _packsCache = normalizePacks(items.map(_mapPackPayload)).filter(Boolean);
         return _packsCache;
       }
-    } catch (err) {
-      console.warn('[RDecants] packs API unavailable.', err.message);
+    } catch {
+      /* No console noise: an un-migrated or switched-off backend is an
+         expected state during rollout, not an error the visitor caused. */
     }
 
-    if (!_demoFallbackAllowed()) return [];
+    return [];
+  },
 
-    _packsCache = PACKS;
-    return _packsCache;
+  /**
+   * The active promotional banner, or null.
+   *
+   * Same contract as the packs above: null covers "no promotion", "campaign
+   * not live", "feature off" and "endpoint down", and the home hides its
+   * section for all four.
+   */
+  async getPromotion() {
+    try {
+      const data = await ApiClient.getPromotion();
+      return _mapPromotion(data?.promotion ?? null);
+    } catch {
+      return null;
+    }
   },
 
   async getFeatured() {
@@ -396,17 +430,49 @@ function _sharedAvailableMl(product, variants) {
   return candidates.length ? Math.max(...candidates) : null;
 }
 
-function _mapPack(p) {
+/**
+ * Map a pack's nested products through the SAME `_mapProduct` the catalog
+ * uses, then hand the result to the shared normalizer.
+ *
+ * The mapping matters: it is what makes a pack's product identical to the same
+ * perfume opened from the grid — same id, same image URL normalization, same
+ * variant shape — so `Cart` can re-resolve it and the modal can open it with
+ * no pack-specific branch.
+ */
+function _mapPackPayload(p) {
+  if (!p) return null;
+
   return {
-    id: p.id ?? p.slug,
-    name: p.name ?? 'Pack',
-    emoji: p.emoji ?? '✦',
-    desc: p.desc ?? p.description ?? '',
-    detail: p.detail ?? p.detail_text ?? '',
-    price: Number(p.price ?? 0),
-    originalPrice: Number(p.original_price ?? p.originalPrice ?? p.price ?? 0),
-    stock: _safeStock(p.stock) || 10,
-    badge: p.badge ?? p.label ?? '',
+    ...p,
+    items: Array.isArray(p.items)
+      ? p.items.map(item => ({ ...item, product: _mapProduct(item?.product) }))
+      : [],
+  };
+}
+
+/** Presentation facts only — the endpoint sends nothing else. */
+function _mapPromotion(p) {
+  if (!p) return null;
+
+  const headline = String(p.headline ?? '').trim();
+  if (!headline) return null;
+
+  const mobile = normalizeApiImageUrl(p.image?.mobile) || null;
+  const desktop = normalizeApiImageUrl(p.image?.desktop) || null;
+
+  return {
+    id: p.id ?? null,
+    campaignSlug: p.campaign_slug ?? null,
+    headline,
+    body: String(p.body ?? '').trim() || null,
+    image: {
+      /* Either creative stands in for the other, matching the backend's own
+         fallback, so a promotion uploaded in a hurry is never half-rendered. */
+      mobile: mobile ?? desktop,
+      desktop: desktop ?? mobile,
+    },
+    cta: p.cta?.url ? { label: p.cta.label || 'Ver promoción', url: p.cta.url } : null,
+    endsAt: p.ends_at ?? null,
   };
 }
 

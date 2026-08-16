@@ -77,6 +77,10 @@ export const ApiClient = {
      answers with every slot present (empty when nothing is scheduled), so a
      caller never has to distinguish "off", "not migrated" and "none set". */
   getMerchandising:   () => _get('/api/web/merchandising'),
+  /* The active homepage promotion, or { promotion: null }. Never 404s for
+     "nothing scheduled", so a caller distinguishes only success from
+     transport failure. */
+  getPromotion:       () => _get('/api/web/promotion'),
   createWebOrder:     (payload) => _post('/api/web/orders', payload),
   /* Discount PREVIEW only — R Supply OS is the source of truth and recalculates
      during Web Order creation. The storefront never computes discounts itself. */

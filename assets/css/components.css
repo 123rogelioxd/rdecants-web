@@ -9202,28 +9202,11 @@ textarea:focus-visible {
    it reads as something a person wrote, without becoming a second heading. */
 .card-blurb--reason { color: var(--ink); }
 
-/* The hero's featured perfume, when a campaign names one. One quiet line
-   under the actions — never a second card, which would compete with the two
-   CTAs the hero exists to present. */
-.hero-featured {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 8px;
-  margin-top: 14px;
-  font-size: 14px;
-  color: var(--ink);
-  text-decoration: none;
-  border-bottom: 1px solid var(--line);
-  padding-bottom: 2px;
-}
-.hero-featured:hover,
-.hero-featured:focus-visible { border-bottom-color: var(--ink); }
-.hero-featured-house {
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
-}
+/* `.hero-featured` lived here: the perfume a hero placement named, printed as
+   a line under the CTAs. It was removed with the element — the hero photograph
+   is art-directed and fixed, so a caption naming whatever perfume merchandising
+   pointed at could contradict the bottle in the picture, and in production it
+   did (Sauvage in the frame, RASASI HAWAS ICE underneath). See ui/hero.js. */
 
 /* One quiet line under a section title. Used by "Roger recomienda" to say
    who is recommending, which is the whole difference from the old heading. */
@@ -10072,6 +10055,67 @@ body.rd-searching .helper-band { display: none; }
   color: var(--ink);
 }
 
+/* ── A pack that really is cheaper than its parts ─────────────────
+   R Supply OS now owns a real pack discount, derived from the canonical
+   3 ml prices and re-derived at checkout, so the card can finally state a
+   saving without inventing one.
+
+   The treatment is deliberately quiet. The commercial message is "this is
+   obviously better value", not "this looks suspiciously cheap": the old
+   price is struck through in the faint ink, the pack price is the only
+   prominent number, and the saving is one small badge in the existing
+   bronze wash — the same accent the rest of the storefront uses for marks.
+   No red, no percentage shouted at the customer, no oversized graphic. A
+   pack with no configured discount falls back to the plain single-total
+   layout above rather than being dressed up as a deal. */
+.pack-price--deal {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.pack-price-was {
+  font-size: 13px;
+  color: var(--ink-faint);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.pack-price .pack-price-now {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.pack-save {
+  flex: 0 0 auto;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--bronze-tint);
+  color: var(--bronze-ink);
+  border: 1px solid var(--bronze-line);
+  white-space: nowrap;
+}
+
+/* One restrained badge, top-right of the card head. Same rule as a
+   placement's label: two badges on a card is already too many. */
+.pack-badge {
+  margin-left: auto;
+  align-self: flex-start;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  background: var(--bg);
+  white-space: nowrap;
+}
+
 .pack-add { width: 100%; }
 
 /* Reserves the card footprint while the catalog loads, so the section
@@ -10472,3 +10516,130 @@ body.rd-searching .quick-gender { display: none; }
 .faq-q::after { right: 16px; }
 .faq-a { padding: 0 16px 16px; }
 .faq-item[open] { border-color: var(--border-hl); }
+
+/* ══════════════════════════════════════════════════════════════
+   PROMOCIÓN — the one campaign banner the home may carry.
+
+   Composed as a compact premium card, not a full-bleed flyer. The uploaded
+   creative can be the loudest thing inside it, but the frame around it is
+   the same ivory / hairline / near-black system as every other section, so
+   the section still reads as RDECANTS rather than as an injected social
+   post. Deliberately absent: red, urgency copy, countdowns, oversized
+   discount graphics — the campaign's own artwork carries whatever noise it
+   carries, and the page does not add more.
+   ══════════════════════════════════════════════════════════════ */
+.promo-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.promo-kicker {
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--bronze-ink);
+}
+
+.promo-title {
+  margin: 0;
+  font-size: clamp(19px, 4.4vw, 24px);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.promo-body {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+/* The creative sits inside the card's own rounded frame and never bleeds
+   past it. `aspect-ratio` is deliberately not fixed: Roger uploads whatever
+   the campaign produced, and cropping someone's flyer to a shape this page
+   preferred would cut the text off it. */
+.promo-figure {
+  margin: 0;
+  border-radius: var(--radius-md, 10px);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.promo-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+}
+
+.promo-cta { align-self: flex-start; }
+
+@media (max-width: 599px) {
+  /* Full-width action on a phone: the same rule the pack card follows, so
+     the two commercial sections do not disagree about tap targets. */
+  .promo-cta { align-self: stretch; width: 100%; text-align: center; }
+}
+
+@media (min-width: 768px) {
+  .promo-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+    grid-template-areas:
+      "kicker figure"
+      "title  figure"
+      "body   figure"
+      "cta    figure";
+    align-items: start;
+    column-gap: 28px;
+    padding: 26px;
+  }
+  .promo-kicker { grid-area: kicker; }
+  .promo-title  { grid-area: title; }
+  .promo-body   { grid-area: body; }
+  .promo-cta    { grid-area: cta; margin-top: 6px; }
+  .promo-figure { grid-area: figure; align-self: center; }
+}
+
+/* ── A pack inside the cart drawer ─────────────────────────────────
+   One block, not three lines. The pack is added and removed whole — that
+   is what makes a phantom pack discount impossible — so the contents are
+   listed for reassurance and carry no controls of their own. */
+.cart-item--pack { border-left: 2px solid var(--bronze-line); padding-left: 10px; }
+
+.cart-pack-contents {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cart-pack-contents li {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  min-width: 0;
+}
+.cart-pack-item-name { overflow-wrap: anywhere; }
+.cart-pack-item-role { font-size: 10.5px; color: var(--ink-faint); white-space: nowrap; }
+
+.cart-pack-saving {
+  margin: 8px 0 0;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.cart-pack-was  { font-size: 12px; color: var(--ink-faint); text-decoration: line-through; }
+.cart-pack-save { font-size: 11px; color: var(--bronze-ink); }

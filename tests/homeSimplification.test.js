@@ -110,23 +110,42 @@ test('the packs are the first thing on the page a visitor can buy', () => {
 });
 
 test('the home never advertises a discount the backend cannot honour', () => {
-  /* A pack is the sum of its three real 3 ml prices. R Supply OS has no pack
-     discount, so no savings badge may be invented here or in the renderer. */
+  /* This test used to require that NO savings language existed anywhere,
+     because R Supply OS had no pack discount and any "Ahorras" would have
+     been a number this repository invented.
+
+     R Supply OS now owns a real one: it derives the pack's normal total from
+     the canonical 3 ml prices, applies the operator's configured rule, and
+     derives it AGAIN at checkout against live variants. So savings language
+     is allowed — but the guarantee it existed to protect is unchanged and now
+     stated directly: every figure shown must be READ from the server payload,
+     and none of it may be computed here. */
   const html = read('index.html');
   const logic = read('assets/js/recommendations/starterPacks.js');
   const ui = read('assets/js/ui/starterPacks.js');
 
-  /* Comments are stripped first: the source explains WHY there is no badge,
+  /* Comments are stripped first: the source explains WHY it computes nothing,
      and that reasoning is the thing most worth keeping. */
   const executable = src => src
     .replace(/\/\*[\s\S]*?\*\//g, ' ')
     .replace(/<!--[\s\S]*?-->/g, ' ');
 
-  for (const source of [html, logic, ui]) {
-    assert.doesNotMatch(executable(source), /Ahorra|ahorro|-\d+\s*%|antes \$/i,
-      'no invented savings language reaches the customer');
+  /* No arithmetic on money, in either file. A local subtraction is exactly
+     how a displayed saving starts to disagree with a charged one. */
+  for (const [name, source] of [['logic', logic], ['ui', ui]]) {
+    const code = executable(source);
+    assert.doesNotMatch(code, /normalTotal\s*[-+*/]\s*finalTotal|finalTotal\s*[-+*/]/,
+      `${name}: the saving must be read, not derived`);
+    assert.doesNotMatch(code, /reduce\(\s*\(sum/, `${name}: no local total is summed`);
   }
-  assert.match(logic, /savings:\s*0/, 'the savings field is explicitly zero');
+
+  /* The saving that IS shown comes from the server's own discount_amount. */
+  assert.match(executable(logic), /savings:\s*Number\.isFinite\(savings\)/,
+    'savings is normalized straight off discount_amount');
+
+  /* And no savings figure is hardcoded into the page itself. */
+  assert.doesNotMatch(executable(html), /Ahorras?\s*\$?\d/i,
+    'no static discount number in the markup');
 });
 
 test('the home no longer claims a best-seller ranking it never produced', () => {

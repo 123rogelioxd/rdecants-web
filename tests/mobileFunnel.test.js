@@ -102,15 +102,22 @@ test('filters and sort get real tap targets on a phone', () => {
 
 test('the personalized "Para ti" state reads top to bottom on a phone', () => {
   const render = read('assets/js/catalog/render.js');
+  const searchbar = read('assets/js/ui/searchbar.js');
   const css = read('assets/css/components.css');
 
-  /* Kicker → what was asked → how many matched → the two ways out. */
+  /* The answers and the count moved UP, into the filter bar, where each
+     answer is now a removable chip next to the result count. Printing them
+     here as well said the same thing twice on a screen with room for neither
+     — so this header is the kicker and the two ways out. */
   const header = render.slice(render.indexOf('el.innerHTML = `'), render.indexOf('_productsContainer.insertAdjacentElement'));
-  assert.ok(header.indexOf('cgs-kicker') < header.indexOf('cgs-answers'));
-  assert.ok(header.indexOf('cgs-answers') < header.indexOf('cgs-count'));
-  assert.ok(header.indexOf('cgs-count') < header.indexOf('cgs-adjust'));
+  assert.ok(header.indexOf('cgs-kicker') < header.indexOf('cgs-adjust'));
   assert.match(header, /Cambiar respuestas/);
   assert.match(header, /Ver todo el catálogo/);
+  assert.doesNotMatch(header, /cgs-answers|cgs-count/, 'no duplicated summary');
+
+  /* And they really are shown, once, by the bar. */
+  assert.match(searchbar, /sf-count/, 'the count lives with the chips');
+  assert.match(searchbar, /guide:\$\{?/, 'each guided answer is its own removable chip');
 
   const mobile = css.slice(css.indexOf('/* ── "Para ti" state on a phone'));
   assert.match(mobile, /\.catalog-guide-state \{[^}]*flex-direction: column/s, 'stacked, not squeezed');
@@ -191,7 +198,7 @@ test('pack thumbnails are the canonical catalog photos, never a second image sou
 
   /* The only image a pack may show is the one the catalog already serves for
      that product — the same field the card, the modal and the PDP read. */
-  assert.match(executable, /const image = String\(product\.image \?\? ''\)\.trim\(\)/);
+  assert.match(executable, /const image = String\(product\?\.image \?\? ''\)\.trim\(\)/);
   assert.match(executable, /<img src="\$\{_escape\(image\)\}"/);
 
   /* No bundled artwork, no generated pack photography, no second store of
@@ -202,7 +209,7 @@ test('pack thumbnails are the canonical catalog photos, never a second image sou
   /* Degradation, in both directions: a product with no photo falls back to
      the shared monogram treatment, and a pack where NOT ONE product has a
      photo drops the row and keeps the icon-only card. */
-  assert.match(executable, /if \(!pack\.slots\.some\(slot => String\(slot\.product\.image \?\? ''\)\.trim\(\)\)\) return ''/);
+  assert.match(executable, /if \(!pack\.items\.some\(item => String\(item\.product\?\.image \?\? ''\)\.trim\(\)\)\) return ''/);
   assert.match(executable, /img-shell img-failed/);
   assert.match(executable, /--img-initial/);
   assert.match(read('assets/js/ui/images.js'), /'pack-thumb'/,

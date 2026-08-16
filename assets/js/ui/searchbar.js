@@ -25,6 +25,11 @@ import {
   personalizeProducts,
 } from '../recommendations/personalization.js';
 import { rankGuidedCatalog } from '../recommendations/assistant.js';
+/* The finder's own label map. Reused rather than re-authored so a chip and the
+   question that produced it cannot say different things — and so this file
+   adds no second taxonomy for copy's sake. */
+import { ANSWER_LABELS } from '../recommendations/engine.js';
+import { buildCatalogUrl } from '../catalog/intents.js';
 import { lockBodyScroll, unlockBodyScroll } from './scrollLock.js';
 
 /* ── State ──────────────────────────────────────────────────── */
@@ -116,6 +121,7 @@ export const SearchBar = {
     _syncBarFromState();
     _syncDrawer?.();
     _run();
+    _syncGuideToUrl();
   },
 
   /* Exit guided mode ("Ver todo") back to the full default catalog. */
@@ -124,6 +130,7 @@ export const SearchBar = {
     _state.guide = null;
     _syncBarFromState();
     _run();
+    _syncGuideToUrl();
   },
 
   /* Drop exactly ONE answer, by explicit request. The engine names which
@@ -135,7 +142,10 @@ export const SearchBar = {
     delete next[dimension];
     _state.guide = Object.keys(next).length ? next : null;
     _syncBarFromState();
+    _syncDrawer();
     _run();
+    _syncGuideToUrl();
+    Tracker.guideFilterRemoved(dimension, _state.guide ?? {});
   },
 
   isGuided() {
@@ -174,22 +184,64 @@ export const SearchBar = {
   },
 
   /* Gender, applied from outside the drawer (the catalog's "Explora rápido
-     por género" buttons). It sets the SAME `_state.gender` the drawer pill
-     sets, so the pill, the removable chip, the badge count and the result
-     count follow automatically — a second, parallel gender filter is exactly
-     how two surfaces end up disagreeing about what is on screen.
-     Passing null (or the active value again) clears it. */
+     por género" buttons). It sets the SAME gender the drawer pill sets, so the
+     pill, the removable chip, the badge count and the result count follow
+     automatically — a second, parallel gender filter is exactly how two
+     surfaces end up disagreeing about what is on screen.
+     Passing null (or the active value again) clears it.
+
+     ── The production bug this fixes ────────────────────────────────
+     This used to begin `_state.guide = null`. So a customer who tapped
+     "De día" on the home and then "Caballero" in the catalog did not get
+     men's daytime fragrances — they got all men's fragrances, because
+     choosing a gender silently threw the occasion away. Occasion and gender
+     were mutually exclusive MODES, which is not what a filter row that shows
+     two chips promises.
+
+     They compose now. `gender` is one of the finder's own answer keys and
+     `rankGuidedCatalog` already gates on it, so guided mode needs no second
+     filtering engine — writing gender INTO the guide is the whole fix. When
+     no guide is active it keeps writing `_state.gender`, so the plain catalog
+     behaves exactly as before.
+
+     One gender, one place: whichever mode is active, there is a single value,
+     and `effectiveGender()` is the only thing that reads it. */
   applyGender(gender) {
     if (!_onFilter) return;
-    const next = gender && _state.gender !== gender ? gender : null;
-    _state.guide = null;
-    _state.gender = next;
+
+    const current = _effectiveGender();
+    const next = gender && current !== gender ? gender : null;
+
+    if (_state.guide) {
+      const guide = { ..._state.guide };
+      if (next) guide.gender = next;
+      else delete guide.gender;
+      /* Dropping the last answer leaves guided mode entirely; dropping one of
+         several keeps the rest filtering — the same rule relaxGuide() uses. */
+      _state.guide = Object.keys(guide).length ? guide : null;
+    } else {
+      _state.gender = next;
+    }
+
     _syncBarFromState();
     _syncDrawer();
     _run();
+    _syncGuideToUrl();
     return next;
   },
+
+  /* The gender currently filtering the grid, wherever it is stored. The quick
+     buttons, the drawer pill, the chips and the URL all read this, so none of
+     them can show a state the grid does not have. */
+  effectiveGender() {
+    return _effectiveGender();
+  },
 };
+
+/** One gender value, read from whichever mode owns it. */
+function _effectiveGender() {
+  return (_state.guide ? _state.guide.gender : _state.gender) ?? null;
+}
 
 /* ══════════════════════════════════════════════════════════════
    BAR — main search + filter row(s)
@@ -271,9 +323,17 @@ function _bindBarEvents() {
   });
 }
 
-/* Remove a single active filter (or all) from the chip row. */
+/* Remove a single active filter (or all) from the chip row.
+   A `guide:<dimension>` key drops exactly that answer and leaves the rest
+   filtering — the × on "De día" must not take "Caballero" with it. */
 function _clearFilter(key) {
   if (key === 'all') { _clearAll(); return; }
+
+  if (key.startsWith('guide:')) {
+    SearchBar.relaxGuide(key.slice('guide:'.length));
+    return;
+  }
+
   _state.guide = null;
   if (key === 'query') { _state.query = ''; _syncSearchInput(''); _lastTrackedQuery = ''; }
   if (key === 'gender') _state.gender = null;
@@ -419,7 +479,15 @@ function _bindDrawerEvents() {
     btn.addEventListener('click', () => {
       const { t, v } = btn.dataset;
 
-      if (t === 'gender') _state.gender    = (v === '' || _state.gender === v) ? null : v;
+      /* Gender goes through the same entry point the quick buttons use, so
+         the drawer cannot write a gender the guide does not see (and vice
+         versa). Everything else is a plain catalog filter and exits guided
+         mode, because the finder ranking and a manual mood/house/price filter
+         have no defined way to compose. */
+      if (t === 'gender') {
+        SearchBar.applyGender(v === '' ? null : v);
+        return;
+      }
       if (t === 'mood')  _state.mood       = _state.mood === v        ? null : v;
       if (t === 'house') _state.house      = _state.house === v       ? ''   : v;
       if (t === 'price') _state.priceRange = _state.priceRange === v  ? null : v;
@@ -626,7 +694,26 @@ function _trackSearchQuery(count) {
    removable chip next to the result count, plus a single "Limpiar todo". In
    guided mode the guide-state header above the grid is the primary summary, so
    the bar just reports how many recommendations were found. */
+/**
+ * Every active filter, as its own removable chip.
+ *
+ * In guided mode each ANSWER is a chip — "De día ×", "Caballero ×" — rather
+ * than the whole guide being one all-or-nothing thing. That is the visible
+ * half of the composition fix: if the row shows two chips, tapping either
+ * one's × must remove only that dimension, and the other must keep filtering.
+ * The chip key is the canonical answer key, so removal routes straight to
+ * relaxGuide() with no lookup table.
+ */
 function _activeChips() {
+  if (_state.guide) {
+    return GUIDE_CHIP_ORDER
+      .filter(dimension => _state.guide[dimension])
+      .map(dimension => ({
+        key: `guide:${dimension}`,
+        label: _guideLabel(dimension, _state.guide[dimension]),
+      }));
+  }
+
   return [
     _state.query      ? { key: 'query',  label: `“${_state.query}”` }        : null,
     _state.gender     ? { key: 'gender', label: GENDER_LABELS[_state.gender] } : null,
@@ -636,19 +723,27 @@ function _activeChips() {
   ].filter(Boolean);
 }
 
+/* Chip order, so "De día · Caballero" reads the same way every time rather
+   than in whatever order the answers happened to be written. Occasion first
+   because it is what the customer chose on the home. */
+const GUIDE_CHIP_ORDER = ['occasion', 'gender', 'family', 'goal', 'climate', 'age', 'budget'];
+
+/* Customer-facing wording for one answer.
+   `ANSWER_LABELS` is the finder's own map, so a chip and the question that
+   produced it cannot say different things — notably `salir`, which the finder
+   presents as "Salidas nocturnas". Gender falls back to the catalog's
+   Hombre/Mujer labels, which is the vocabulary the quick buttons use. */
+function _guideLabel(dimension, value) {
+  if (dimension === 'gender') {
+    return ANSWER_LABELS.gender?.[value] ?? GENDER_LABELS[value] ?? value;
+  }
+  return ANSWER_LABELS[dimension]?.[value] ?? String(value);
+}
+
 function _updateActiveChips(count = 0) {
   const el = _bar?.querySelector('#sf-active');
   if (!el) return;
   const total = _allProducts.length;
-
-  /* Guided mode already gets ONE compact state header (answers + count +
-     Ajustar/Ver todo) directly above the grid — see _syncGuideState in
-     catalog/render.js. Repeating the count here would say "Para ti" twice
-     in the same screen, so this row stays empty while guided. */
-  if (_state.guide) {
-    el.innerHTML = '';
-    return;
-  }
 
   const chips = _activeChips();
   const countText = count === total ? `${total} fragancias` : `${count} de ${total}`;
@@ -673,7 +768,10 @@ function _syncDrawer() {
   _drawer.querySelectorAll('.sf-dp').forEach(btn => {
     const { t, v } = btn.dataset;
     let on = false;
-    if (t === 'gender') on = v === '' ? !_state.gender : _state.gender === v;
+    /* Read through the effective value: in guided mode the gender lives on
+       the guide, and a pill that reflected only `_state.gender` would show
+       "Todos" while the grid was filtered to Caballero. */
+    if (t === 'gender') on = v === '' ? !_effectiveGender() : _effectiveGender() === v;
     if (t === 'mood')   on = _state.mood       === v;
     if (t === 'house')  on = _state.house      === v;
     if (t === 'price')  on = _state.priceRange === v;
@@ -711,7 +809,12 @@ function _hasActiveFilters() {
   );
 }
 
+/* The badge counts what the chip row shows, so the two can never disagree
+   about how many filters are on. In guided mode that is one per answer — a
+   customer looking at "De día × Caballero ×" must see 2, not 1 or 0. */
 function _activeFilterCount() {
+  if (_state.guide) return _activeChips().length;
+
   return (
     (_state.query      ? 1 : 0) +
     (_state.mood       ? 1 : 0) +
@@ -719,6 +822,39 @@ function _activeFilterCount() {
     (_state.priceRange ? 1 : 0) +
     (_state.gender     ? 1 : 0)
   );
+}
+
+/**
+ * Mirror the guided state into the address bar.
+ *
+ * `buildCatalogUrl` is the same serializer the finder hands over with, so a
+ * shared link and a reload land on exactly the state that produced them:
+ * `?occasion=dia&gender=hombre` restores both chips, not one.
+ *
+ * replaceState, never pushState — for the same reason the query does. Each
+ * refinement is an edit to one view, not a new page, and pushing would turn
+ * Back into an undo key for filter taps instead of "leave the catalog".
+ */
+function _syncGuideToUrl() {
+  const loc = globalThis.window?.location;
+  const history = globalThis.window?.history;
+  if (!loc?.href || typeof history?.replaceState !== 'function') return;
+  if (!document.getElementById('products-grid')) return;   /* catalog page only */
+
+  try {
+    const url = new URL(loc.href);
+    const next = new URL(buildCatalogUrl(_state.guide ?? {}), url.origin);
+
+    /* A live search is serialized by _syncQueryToUrl and must survive a
+       guide change — the two writers own different params. */
+    const query = (_state.query ?? '').trim();
+    if (query) next.searchParams.set('q', query);
+
+    const search = next.searchParams.toString();
+    if (search === url.searchParams.toString()) return;
+
+    history.replaceState(history.state, '', `${url.pathname}${search ? `?${search}` : ''}${url.hash}`);
+  } catch { /* opaque or non-standard location — the grid is still filtered */ }
 }
 
 function _clearAll() {

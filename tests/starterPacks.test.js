@@ -1,16 +1,28 @@
 /* =============================================================
    STARTER PACKS — the home's first commercial offer.
 
-   Three packs of 3 × 3 ml, filled from the live catalog through the SAME
-   ranking engine the guided finder uses. The reason that matters is the
-   defect it prevents: the storefront's previous themed kits ("Set Citas",
-   "Set Noches") were filled by keyword score with no gender rule and no
-   stock re-check, which is how three masculine fragrances once appeared
-   under a "Mujer" result with an add-to-cart button, and how two different
-   kits resolved to identical contents.
+   ── What changed, and why these tests changed with it ──────────────
+   This file used to verify that packs were ASSEMBLED correctly: filled
+   from the live catalog through the guided finder's ranking engine, with a
+   hard gender gate and a re-checked 3 ml variant. Those were the right
+   assertions for that design and they passed.
 
-   Everything here runs against the real R Supply OS snapshot through the
-   provider mapping production uses.
+   The design was wrong. Ranking optimises for FIT, and the best fit for
+   "quiero que se note" is routinely a niche flanker — so a pack that exists
+   for someone who cannot name a single fragrance was free to fill itself
+   with Torino 21 and Sauvage Elixir. No re-weighting fixes that, because
+   the problem is not the weights: choosing what goes in a commercial
+   product is a commercial decision.
+
+   Roger now chooses, in R Supply OS, and R Supply OS prices it. So the
+   assertions here move from "did the algorithm pick well" to:
+     • the storefront renders exactly what the backend sent, in order;
+     • it prices nothing itself;
+     • it never invents, substitutes or reconstructs a pack;
+     • it disappears cleanly when there is nothing to sell.
+
+   The composition and pricing guarantees themselves are tested where they
+   now live — StorefrontPackTest and StorefrontPackOrderTest in r-supply-os.
    ============================================================= */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -18,150 +30,181 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import {
-  STARTER_PACK_TEMPLATES,
   STARTER_PACK_SIZE_ML,
-  resolveStarterPacks,
-  resolveStarterPack,
-  isOrderablePackVariant,
+  STARTER_PACK_COUNT,
+  normalizePack,
+  normalizePacks,
+  normalizePackPricing,
+  hasRealSavings,
 } from '../assets/js/recommendations/starterPacks.js';
-import { evaluateProduct } from '../assets/js/recommendations/engine.js';
-import { isSellable } from '../assets/js/recommendations/scoring.js';
-import { getVariantForSize } from '../assets/js/utils/prices.js';
-import { loadLiveCatalog } from './helpers/liveCatalog.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 /* Normalised for the same reason as redesignSystem / mobileFunnel: a source
    assertion must not depend on how git materialised the line endings. */
 const read = path => readFileSync(join(root, path), 'utf8').replace(/\r\n/g, '\n');
 
-const CATALOG = loadLiveCatalog();
-const PACKS = resolveStarterPacks(CATALOG);
+/* Comments stripped, same convention as hero.test.js: these files explain at
+   length why they no longer rank a catalog or name a perfume, and that
+   explanation must not trip the check it is explaining. */
+const readCode = path => read(path)
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .replace(/^\s*\/\/.*$/gm, '');
+
+/* A pack exactly as GET /api/web/packs sends it, at the brief's own numbers:
+   120 + 150 + 180 = 450, ten percent off. */
+const product = (id, price) => ({
+  id,
+  product_id: Number(id.replace(/\D/g, '')) || 1,
+  name: `Perfume ${id}`,
+  house: 'CASA',
+  image: `/img/${id}.jpg`,
+  variants: [{ id: `${id}-3`, variant_id: `${id}-3`, ml: 3, size: 3, price, stock: 5, availability: 5, available: true }],
+});
+
+const apiPack = (overrides = {}) => ({
+  id: 7,
+  slug: 'pack-todo-terreno',
+  name: 'Pack Todo Terreno',
+  description: 'Uno fresco, uno que va con todo y uno para salir.',
+  badge: null,
+  position: 0,
+  presentation_ml: 3,
+  item_count: 3,
+  pricing: {
+    normal_total: 450,
+    discount_type: 'percent',
+    discount_value: 10,
+    discount_amount: 45,
+    final_total: 405,
+    savings_percentage: 10,
+  },
+  items: [
+    { position: 0, role_label: 'Fresco', product: product('A', 120), variant: { id: 'A-3', ml: 3, price: 120, stock: 5 } },
+    { position: 1, role_label: 'Va con todo', product: product('B', 150), variant: { id: 'B-3', ml: 3, price: 150, stock: 5 } },
+    { position: 2, role_label: 'Para salir', product: product('C', 180), variant: { id: 'C-3', ml: 3, price: 180, stock: 5 } },
+  ],
+  ...overrides,
+});
 
 /* ── A. Shape ────────────────────────────────────────────────── */
 
-test('the three packs the brief asks for are the three that exist', () => {
-  assert.deepEqual(
-    STARTER_PACK_TEMPLATES.map(t => t.name),
-    ['Pack Todo Terreno', 'Pack Para Salir', 'Pack Para Ella'],
-  );
-  for (const template of STARTER_PACK_TEMPLATES) {
-    assert.equal(template.slots.length, 3, `${template.name} is 3 × 3 ml`);
-  }
+test('a pack is three decants of three millilitres', () => {
   assert.equal(STARTER_PACK_SIZE_ML, 3);
+  assert.equal(STARTER_PACK_COUNT, 3);
+
+  const pack = normalizePack(apiPack());
+  assert.equal(pack.count, 3);
+  assert.equal(pack.itemSize, 3);
 });
 
-test('every pack fills completely against the live catalog', () => {
-  assert.equal(PACKS.length, 3, 'all three resolve');
-  for (const pack of PACKS) {
-    assert.equal(pack.products.length, 3, `${pack.name} has three fragrances`);
-    assert.equal(pack.itemSize, 3);
-    assert.ok(pack.copy.trim().length > 0, `${pack.name} explains itself`);
-  }
+test('the products are the ones the backend configured, in the backend order', () => {
+  const pack = normalizePack(apiPack());
+
+  assert.deepEqual(pack.items.map(i => i.product.id), ['A', 'B', 'C']);
+  assert.deepEqual(pack.items.map(i => i.label), ['Fresco', 'Va con todo', 'Para salir']);
+  assert.deepEqual(pack.products.map(p => p.id), ['A', 'B', 'C']);
 });
 
-test('a pack never repeats a fragrance inside itself', () => {
-  for (const pack of PACKS) {
-    const ids = pack.products.map(p => String(p.id));
-    assert.equal(new Set(ids).size, 3, `${pack.name}: ${ids.join(', ')}`);
-  }
+/* ── B. The storefront prices nothing ────────────────────────── */
+
+test('the totals are read from the server, never recomputed', () => {
+  const pack = normalizePack(apiPack());
+
+  assert.equal(pack.pricing.normalTotal, 450);
+  assert.equal(pack.pricing.finalTotal, 405);
+  assert.equal(pack.pricing.savings, 45);
+  assert.equal(pack.pricing.savingsPercentage, 10);
 });
 
-test('two packs are not the same box under two names', () => {
-  /* "Set Citas" and "Set Noches" used to resolve to identical contents at an
-     identical price. Overlap is legitimate — the catalog is 73 products and
-     "fiesta" and "cita" are neighbours — but three-for-three is not. */
-  for (let i = 0; i < PACKS.length; i++) {
-    for (let j = i + 1; j < PACKS.length; j++) {
-      const a = PACKS[i].products.map(p => String(p.id));
-      const b = new Set(PACKS[j].products.map(p => String(p.id)));
-      const shared = a.filter(id => b.has(id)).length;
-      assert.ok(shared < 3, `${PACKS[i].name} and ${PACKS[j].name} are the same three products`);
-    }
-  }
-});
-
-/* ── B. Nothing unsellable, nothing incompatible ─────────────── */
-
-test('every fragrance in every pack can actually be bought in 3 ml', () => {
-  for (const pack of PACKS) {
-    for (const slot of pack.slots) {
-      assert.ok(isSellable(slot.product), `${pack.name}/${slot.label}: ${slot.product.id} is not sellable`);
-      assert.equal(Number(slot.variant.size), 3, 'the pack size is the size quoted');
-      assert.ok(isOrderablePackVariant(slot.variant),
-        `${pack.name}/${slot.label}: ${slot.product.id} has no orderable 3 ml variant`);
-    }
-  }
-});
-
-test('"Pack Para Ella" contains only fragrances the engine accepts for mujer', () => {
-  /* The hard gender constraint, verified independently of how the pack was
-     built: each product is re-evaluated with `gender: 'mujer'` and must come
-     back eligible. This is the assertion the old kits would have failed. */
-  const pack = PACKS.find(p => p.id === 'para-ella');
-  assert.ok(pack, 'the pack resolved');
-
-  for (const product of pack.products) {
-    const { eligible, exclusions } = evaluateProduct(product, { gender: 'mujer' });
-    assert.ok(eligible, `${product.name} is not eligible for mujer (${exclusions.join(', ')})`);
-  }
-});
-
-test('a sold-out product is never placed in a pack', () => {
-  const soldOut = CATALOG.map(product => ({
-    ...product,
-    stock: 0,
-    variants: (product.variants ?? []).map(v => ({
-      ...v, stock: 0, availability: 0, available: false, soldOut: true, sold_out: true,
-    })),
+test('the saving is the server\'s discount_amount, not a local subtraction', () => {
+  /* If the two ever disagree, the server's number is the one the customer is
+     charged by — so that is the one shown. A locally derived
+     (normal − final) would quietly diverge on a rounding difference. */
+  const pack = normalizePack(apiPack({
+    pricing: { normal_total: 450, final_total: 405, discount_amount: 45, discount_type: 'percent', discount_value: 10, savings_percentage: 10 },
   }));
-  assert.deepEqual(resolveStarterPacks(soldOut), [], 'nothing sellable → no packs at all');
+
+  assert.equal(pack.pricing.savings, 45);
 });
 
-/* ── C. Price is the sum of its parts ────────────────────────── */
+test('a fixed-amount discount survives normalization unchanged', () => {
+  const pricing = normalizePackPricing({
+    normal_total: 450, final_total: 399, discount_amount: 51,
+    discount_type: 'fixed', discount_value: 51, savings_percentage: 11.33,
+  });
 
-test('the total is exactly the three 3 ml prices added up', () => {
-  for (const pack of PACKS) {
-    const expected = pack.products.reduce(
-      (sum, product) => sum + Number(getVariantForSize(product, 3).price), 0);
-    assert.equal(pack.total, expected, `${pack.name} quotes a total it did not compute`);
-    assert.ok(pack.total > 0);
+  assert.equal(pricing.normalTotal, 450);
+  assert.equal(pricing.finalTotal, 399);
+  assert.equal(pricing.savings, 51);
+  assert.equal(pricing.discountType, 'fixed');
+});
+
+test('a pack with no configured discount claims no saving', () => {
+  const pack = normalizePack(apiPack({
+    pricing: { normal_total: 450, final_total: 450, discount_amount: 0, discount_type: 'none', discount_value: 0, savings_percentage: 0 },
+  }));
+
+  assert.equal(hasRealSavings(pack), false, 'a curation is not a deal');
+});
+
+test('a pack with a real discount is flagged as one', () => {
+  assert.equal(hasRealSavings(normalizePack(apiPack())), true);
+});
+
+/* ── C. Degradation ──────────────────────────────────────────── */
+
+test('an empty or unreachable payload yields no packs', () => {
+  assert.deepEqual(normalizePacks([]), []);
+  assert.deepEqual(normalizePacks(null), []);
+  assert.deepEqual(normalizePacks(undefined), []);
+});
+
+test('a malformed pack is dropped rather than half-rendered', () => {
+  assert.equal(normalizePack(null), null);
+  assert.equal(normalizePack(apiPack({ items: [] })), null, 'no contents');
+  assert.equal(normalizePack(apiPack({ pricing: null })), null, 'no price');
+  assert.equal(normalizePack(apiPack({ id: null })), null, 'nothing to order');
+});
+
+test('one bad pack in a payload does not take the good ones with it', () => {
+  const packs = normalizePacks([apiPack(), apiPack({ id: 8, slug: 'roto', pricing: null })]);
+
+  assert.equal(packs.length, 1);
+  assert.equal(packs[0].slug, 'pack-todo-terreno');
+});
+
+/* ── D. No algorithmic resurrection ──────────────────────────── */
+
+test('nothing in the pack path can assemble a pack from the catalog', () => {
+  /* The one fallback worth refusing. An API outage would otherwise show a
+     $900 beginner pack nobody approved, on exactly the day nobody is
+     watching — and it would look identical to the bug this release fixes. */
+  const logic = readCode('assets/js/recommendations/starterPacks.js');
+  const ui = readCode('assets/js/ui/starterPacks.js');
+
+  for (const [file, source] of [['recommendations', logic], ['ui', ui]]) {
+    assert.doesNotMatch(source, /rankCatalog/, `${file}: no ranking-driven pack assembly`);
+    assert.doesNotMatch(source, /STARTER_PACK_TEMPLATES/, `${file}: no hardcoded pack definitions`);
+    assert.doesNotMatch(source, /answers:/, `${file}: no finder answer sets`);
   }
 });
 
-test('no pack claims a saving, because there is no pack discount upstream', () => {
-  /* Cart.addBundle prorates line prices by total/originalTotal. Passing a
-     total below the sum would charge less than R Supply OS agreed to; passing
-     one above would be a markup. Zero savings keeps that ratio at 1. */
-  for (const pack of PACKS) {
-    assert.equal(pack.savings, 0, `${pack.name} invented a discount`);
+test('no perfume is named in the storefront pack source', () => {
+  /* "Do not hardcode beginner pack products in rdecants-web." */
+  const source = readCode('assets/js/recommendations/starterPacks.js') + readCode('assets/js/ui/starterPacks.js');
+
+  for (const name of ['Sauvage', 'Hawas', 'Bleu de Chanel', 'Torino', 'Le Male', 'Scandal']) {
+    assert.ok(!source.includes(name), `${name} is hardcoded in the storefront`);
   }
 });
 
-/* ── D. Degradation ──────────────────────────────────────────── */
+test('the demo pack fixture can no longer reach a customer', () => {
+  /* data/products.js PACKS carry invented prices. A pack is a priced offer,
+     so unlike the product catalog there is no dev-only fallback for it. */
+  const provider = readCode('assets/js/providers/catalog.js');
 
-test('an unreachable or thin catalog yields no pack rather than a broken one', () => {
-  assert.deepEqual(resolveStarterPacks([]), []);
-  assert.deepEqual(resolveStarterPacks(null), []);
-  assert.deepEqual(resolveStarterPacks(undefined), []);
-
-  /* Two products cannot fill three slots: the pack is dropped, not padded. */
-  assert.equal(resolveStarterPack(STARTER_PACK_TEMPLATES[0], CATALOG.slice(0, 2)), null);
-});
-
-test('a pack is dropped when one slot cannot be filled, not shipped short', () => {
-  const template = {
-    id: 'impossible',
-    name: 'Impossible',
-    copy: 'x',
-    slots: [
-      ...STARTER_PACK_TEMPLATES[0].slots,
-      /* An answer set nothing in the catalog can satisfy. */
-      { key: 'ghost', label: 'Ghost', answers: { gender: 'mujer', family: 'fresco', occasion: 'oficina', goal: 'discreto', climate: 'frio', age: '35+' } },
-    ],
-  };
-  const resolved = resolveStarterPack(template, CATALOG);
-  assert.ok(resolved === null || resolved.slots.length === template.slots.length,
-    'either every slot is filled or the pack does not exist');
+  assert.doesNotMatch(provider, /_packsCache = PACKS/);
+  assert.doesNotMatch(provider, /import \{ PRODUCTS, PACKS \}/);
 });
 
 /* ── E. Wiring ───────────────────────────────────────────────── */
@@ -177,17 +220,25 @@ test('the home mounts the packs and the renderer owns the markup', () => {
   /* The section removes itself instead of standing empty. */
   assert.match(ui, /rail\.closest\('section'\)\?\.remove\(\)/);
 
-  /* Tracking reuses names the backend allowlist accepts — a new event name
-     would be 422'd and lost (see backendAllowlistParity). */
-  for (const call of ['discoverySetViewed', 'discoverySetAdded', 'discoverySetClicked']) {
+  /* Pack events now have their own names in the backend allowlist — see
+     backendAllowlistParity for why all three places move together. */
+  for (const call of ['packViewed', 'packAdded', 'packSelected']) {
     assert.ok(ui.includes(`Tracker.${call}`), `${call} is emitted`);
   }
   assert.doesNotMatch(ui, /Tracker\.emit\(/, 'no ad-hoc event names from this surface');
 });
 
-test('adding a pack goes through the cart, which re-resolves the products', () => {
-  const ui = read('assets/js/ui/starterPacks.js');
-  assert.match(ui, /cart\?\.addBundle/, 'the existing bundle path, not a second add implementation');
-  assert.match(ui, /originalTotal: pack\.total/);
-  assert.match(ui, /total: pack\.total/, 'ratio 1 — the price shown is the price charged');
+test('the thumbnails are the canonical catalog photos, never a second image source', () => {
+  const ui = readCode('assets/js/ui/starterPacks.js');
+
+  assert.match(ui, /product\?\.image/, 'reads the same field the catalog card reads');
+  assert.doesNotMatch(ui, /pack\.image_url|pack\.thumbnail/, 'no pack-owned image');
+});
+
+test('adding a pack sends identity, and the price treatment stays restrained', () => {
+  const ui = readCode('assets/js/ui/starterPacks.js');
+
+  assert.match(ui, /cart\?\.addPack\?\.\(pack\)/, 'one cart entry point, identity only');
+  /* No red, no urgency, no shouting — the RDECANTS price treatment. */
+  assert.doesNotMatch(ui, /OFERTÓN|¡|!!|urgen|Últimas horas/i);
 });

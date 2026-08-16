@@ -42,6 +42,7 @@ const BACKEND_ALLOWED_EVENTS = [
   'filter_cleared',
   'gender_filter_applied',
   'for_you_sort_applied',
+  'guide_filter_removed',
   // Home merchandising
   'hero_cta_clicked',
   'home_path_selected',
@@ -69,6 +70,13 @@ const BACKEND_ALLOWED_EVENTS = [
   'taste_dislike',
   'taste_skip',
   'taste_builder_recommendations_clicked',
+  // Curated beginner packs
+  'pack_viewed',
+  'pack_selected',
+  'pack_added',
+  // Storefront promotion banner
+  'promotion_viewed',
+  'promotion_clicked',
   // Cart, shipping thresholds and checkout
   'cart_minimum_prompt_shown',
   'cart_minimum_prompt_converted',

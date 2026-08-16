@@ -164,8 +164,14 @@ function _performCheckout(phoneNumber) {
    path). The customer never sees a system error. */
 async function _createOrderInBackground(items, data, total, discount = null, attribution = {}) {
   try {
-    const orderable = items.filter(item => item.type !== 'pack');
-    if (!orderable.length) return; // pure-pack orders are coordinated in chat
+    /* A pure-pack order used to be dropped here — the old packs were a
+       hardcoded list with no resolvable products, so there was nothing to
+       send and the sale was "coordinated in chat". Packs are now real,
+       server-resolved products with a server-derived discount, so a cart of
+       nothing but packs is an ordinary order. */
+    const hasSomethingToOrder = items.some(item => item.type !== 'pack')
+      || Cart.packPurchases().length > 0;
+    if (!hasSomethingToOrder) return;
 
     /* Forward ONLY the code + campaign attribution — R Supply OS validates,
        resolves the campaign and recalculates. We never send the previewed
@@ -174,7 +180,7 @@ async function _createOrderInBackground(items, data, total, discount = null, att
       ? discount.map(d => d?.normalizedCode || d?.code).filter(Boolean)
       : (discount?.code ? [discount.code] : []);
     const payload = await buildWebOrderPayload(items, data, { couponCodes, attribution });
-    if (!payload.items.length) return;
+    if (!payload.items.length && !payload.packs?.length) return;
 
     const response = await ApiClient.createWebOrder(payload);
     const order = response?.order;
@@ -246,12 +252,20 @@ export async function buildWebOrderPayload(items, data, options = {}) {
     orderItems.push(await _buildOrderItem(item));
   }
 
+  /* Packs travel as IDENTITY AND QUANTITY. Deliberately no price, no discount
+     amount and no component list: R Supply OS resolves the pack, re-reads the
+     canonical 3 ml variants and derives the discount itself, exactly as it
+     already ignores `unit_price` on ordinary items. A storefront that could
+     state its own pack price could state any price. */
+  const packs = options.packs ?? Cart.packPurchases();
+
   const payload = {
     customer: {
       name: data.name || null,
       phone: data.phone || null,
     },
     items: orderItems,
+    ...(packs.length ? { packs } : {}),
     notes: data.notes || null,
     metadata: {
       source: 'rdecants-web',
@@ -563,6 +577,24 @@ function _normalizeDiscountList(discount) {
 function _whatsAppItemLine(item) {
   const qty = Number(item.qty) || 1;
   const quantityText = qty > 1 ? ` — x${qty}` : '';
+
+  /* A pack is one line plus its contents, indented. The customer is telling
+     Roger what is in the box, and "Pack Todo Terreno — 3 × 3 ml — $399" on its
+     own would leave him asking which three. The saving is stated here because
+     the price above it is already the discounted one, and an unexplained $399
+     against three decants that add to $450 reads as an error. */
+  if (item.type === 'pack') {
+    const header = `${_humanizeProductText(item.name)} — ${item.size} — ${_lineItemPrice(item.price)}${quantityText}`;
+    const contents = (item.items ?? [])
+      .map(entry => `\n   · ${_whatsAppProductName(entry)}`)
+      .join('');
+    const saving = Number(item.savings) > 0
+      ? `\n   (antes ${_lineItemPrice(item.normal_price)}, ahorras ${_lineItemPrice(item.savings)})`
+      : '';
+
+    return `${header}${contents}${saving}`;
+  }
+
   return `${_whatsAppProductName(item)} — ${_presentationText(item)} — ${_lineItemPrice(item.price)}${quantityText}`;
 }
 
