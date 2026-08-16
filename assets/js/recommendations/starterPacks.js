@@ -1,41 +1,41 @@
 /* =============================================================
-   RDECANTS — STARTER PACKS (logic)
+   RDECANTS — STARTER PACKS (shape helpers)
 
-   Three fixed packs of 3 × 3 ml, offered directly under the hero. They
-   exist for the visitor who wants to try perfume and cannot name a single
-   fragrance: the cheapest honest way in is three small decants that already
-   cover the situations they will actually be in.
+   ── What this file used to be ──────────────────────────────────────
+   It ASSEMBLED the packs. Three templates, each a set of finder answers,
+   filled by ranking the live catalog with `rankCatalog()` and taking the
+   best unused product per slot.
 
-   ── Where the products come from ───────────────────────────────────
-   Each pack is THREE SLOTS, and a slot is nothing but a set of finder
-   answers. Filling a slot means ranking the live catalog with
-   `rankCatalog()` — the exact engine and the exact gates the guided finder
-   uses — and taking the best product that is still unused inside the pack.
+   That was the wrong business model, and it failed in a specific, visible
+   way: the ranking optimises for FIT, and the best fit for "quiero que se
+   note" is frequently a niche flanker. A pack that exists for the visitor
+   who cannot name a single fragrance was therefore free to fill itself
+   with Torino 21 and Sauvage Elixir — a beginner box at a price no
+   beginner is going to spend on perfumes they have never smelled.
 
-   That matters more than it looks:
-     • "Pack Para Ella" carries `gender: 'mujer'` on every slot, so it is
-       filled by the same hard gender constraint the finder enforces. The
-       old themed kits picked by keyword score with no gender rule at all,
-       which is how a set of three masculine fragrances once ended up under
-       a "Mujer" result with an add-to-cart button.
-     • Nothing sold out, unpublished or without an orderable variant id can
-       enter a pack: `rankCatalog` already excludes it, and the 3 ml variant
-       is re-checked here before the slot is accepted.
-     • A pack that cannot fill all three slots is DROPPED, never padded with
-       a near-miss. Three named roles with two products in the box is a
-       broken promise, and the customer cannot see which role is missing.
+   The fix is not a price ceiling and not a re-weighted ranking. Both would
+   still be an algorithm choosing a commercial product. A starter pack IS a
+   commercial product, so Roger chooses what is in it, in R Supply OS, and
+   the storefront renders what he chose.
+
+   ── What this file is now ──────────────────────────────────────────
+   Pure shape helpers over the `/api/web/packs` payload. No selection, no
+   ranking, no templates, no fallback. There is deliberately NO path back
+   to rankCatalog() from here: a "temporary" algorithmic fallback would be
+   indistinguishable from the bug above on exactly the day the API is down,
+   and a customer would be shown a $900 beginner pack nobody approved.
+
+   When the backend has no packs, the section hides. See ui/starterPacks.js.
 
    ── Price ──────────────────────────────────────────────────────────
-   The total is the sum of the same three 3 ml variants the cart will
-   resolve, so the price shown is the price charged. There is deliberately
-   NO savings badge: R Supply OS has no pack discount, and a "-15%" this
-   storefront invented would be a fake discount on a real order. If a real
-   pack price ever exists upstream, it belongs here, not in the markup.
+   Still not computed here, and now for a stronger reason than before.
+   R Supply OS derives the normal total from the canonical 3 ml prices,
+   applies the pack's own discount rule, and returns both — and it does the
+   same arithmetic again at checkout, against live variants. The numbers on
+   the card are read from that payload and never recalculated locally: a
+   storefront that could compute a pack price could disagree with the one
+   the customer is charged.
    ============================================================= */
-
-import { rankCatalog } from './engine.js';
-import { isSellable } from './scoring.js';
-import { getVariantForSize } from '../utils/prices.js';
 
 /** The presentation a pack is sold in. Three millilitres is the trial size. */
 export const STARTER_PACK_SIZE_ML = 3;
@@ -43,130 +43,100 @@ export const STARTER_PACK_SIZE_ML = 3;
 /** Products per pack. Three roles, three decants — the "3 × 3 ml" promise. */
 export const STARTER_PACK_COUNT = 3;
 
-/* The three packs, in page order. Copy is customer-facing and deliberately
-   short: on a phone the card has to be readable at a glance. */
-export const STARTER_PACK_TEMPLATES = [
-  {
-    id: 'todo-terreno',
-    name: 'Pack Todo Terreno',
-    /* `icon` names a mark, not a picture: the renderer maps it to one of the
-       storefront's own line icons. Deliberately not a photograph — the pack
-       is assembled from whatever the catalog can fill today, so any image of
-       "the pack" would show bottles that may not be in it. */
-    icon: 'compass',
-    /* One short sentence. It carries the three roles in the same order the
-       card lists the fragrances, which is what lets the list itself stay a
-       line of names instead of a table of labels. */
-    copy: 'Uno fresco, uno que va con todo y uno para salir.',
-    slots: [
-      { key: 'fresco',   label: 'Fresco',     answers: { occasion: 'dia',   family: 'fresco' } },
-      { key: 'versatil', label: 'Va con todo', answers: { occasion: 'dia',   goal: 'versatil' } },
-      { key: 'salir',    label: 'Para salir',  answers: { occasion: 'salir', goal: 'destacar' } },
-    ],
-  },
-  {
-    id: 'para-salir',
-    name: 'Pack Para Salir',
-    icon: 'moon',
-    copy: 'Cita, fiesta y noche, con presencia para cuando sales.',
-    slots: [
-      { key: 'cita',   label: 'Cita',   answers: { occasion: 'salir', goal: 'mejor' } },
-      { key: 'fiesta', label: 'Fiesta', answers: { occasion: 'salir', goal: 'destacar' } },
-      { key: 'noche',  label: 'Noche',  answers: { occasion: 'salir', family: 'intenso' } },
-    ],
-  },
-  {
-    id: 'para-ella',
-    name: 'Pack Para Ella',
-    icon: 'bloom',
-    copy: 'Diario, salidas y una para ocasión especial. Femeninas.',
-    slots: [
-      { key: 'diario',   label: 'Diario',           answers: { gender: 'mujer', occasion: 'dia',   goal: 'versatil' } },
-      { key: 'salir',    label: 'Para salir',       answers: { gender: 'mujer', occasion: 'salir', goal: 'destacar' } },
-      { key: 'especial', label: 'Ocasión especial', answers: { gender: 'mujer', occasion: 'salir', goal: 'mejor' } },
-    ],
-  },
-];
-
 /**
- * Pure: resolve every pack against a live catalog.
+ * Pure: normalize one pack from `/api/web/packs` into the shape the card
+ * renders and the cart adds.
  *
- * @returns {Array} packs that could be filled completely, in template order.
- *                  A pack that could not is omitted — never half-filled.
+ * Returns null for anything that cannot be rendered honestly — a pack with no
+ * id, no items, or no pricing block. The backend already refuses to publish an
+ * incomplete pack; this is the storefront declining to invent the missing half
+ * if one ever arrives anyway.
  */
-export function resolveStarterPacks(products, {
-  sizeMl = STARTER_PACK_SIZE_ML,
-  templates = STARTER_PACK_TEMPLATES,
-} = {}) {
-  const list = Array.isArray(products) ? products.filter(Boolean) : [];
-  if (!list.length) return [];
+export function normalizePack(raw) {
+  if (!raw) return null;
 
-  return templates
-    .map(template => resolveStarterPack(template, list, { sizeMl }))
-    .filter(Boolean);
-}
+  const id = raw.id ?? raw.pack_id ?? null;
+  const items = Array.isArray(raw.items) ? raw.items.map(normalizePackItem).filter(Boolean) : [];
+  const pricing = normalizePackPricing(raw.pricing);
 
-/** Pure: one pack, or null when any slot cannot be filled. */
-export function resolveStarterPack(template, products, { sizeMl = STARTER_PACK_SIZE_ML } = {}) {
-  if (!template?.slots?.length) return null;
-
-  const used = new Set();
-  const slots = [];
-
-  for (const slot of template.slots) {
-    const match = _fillSlot(slot, products, used, sizeMl);
-    if (!match) return null;                       /* incomplete → no pack */
-    used.add(String(match.product.id));
-    slots.push({ key: slot.key, label: slot.label, ...match });
-  }
-
-  const variants = slots.map(s => s.variant);
+  if (id === null || id === undefined || !items.length || !pricing) return null;
 
   return {
-    id: template.id,
-    /* `name` / `products` / `total` mirror the discovery-set shape so the
-       existing Tracker.discoverySet* payloads and Cart.addBundle accept a
-       pack without a second contract. */
-    name: template.name,
-    copy: template.copy,
-    icon: template.icon ?? null,
-    slots,
-    products: slots.map(s => s.product),
-    variants,
-    itemSize: sizeMl,
-    count: slots.length,
-    total: variants.reduce((sum, v) => sum + Number(v.price), 0),
-    /* No invented discount — see the header note. Kept explicit so a caller
-       cannot mistake "no badge" for "nobody thought about it". */
-    savings: 0,
+    id,
+    slug: raw.slug ?? String(id),
+    name: raw.name ?? 'Pack',
+    copy: raw.description ?? raw.short_description ?? '',
+    badge: raw.badge ?? null,
+    itemSize: Number(raw.presentation_ml ?? STARTER_PACK_SIZE_ML),
+    count: items.length,
+    items,
+    /* `products` mirrors the discovery-set shape so existing surfaces that
+       expect a flat product list keep working without a second contract. */
+    products: items.map(item => item.product),
+    pricing,
   };
 }
 
-/* The best product for one slot: the engine's own ranking, first entry that
-   is not already in this pack and can actually be sold in the pack size. */
-function _fillSlot(slot, products, used, sizeMl) {
-  const { results } = rankCatalog(products, slot.answers ?? {});
-
-  for (const evaluation of results) {
-    const product = evaluation.product;
-    if (!product || used.has(String(product.id))) continue;
-    /* rankCatalog already dropped unsellable products; re-checking here keeps
-       this function safe to call from any surface with any product list. */
-    if (!isSellable(product)) continue;
-
-    const variant = getVariantForSize(product, sizeMl);
-    if (!isOrderablePackVariant(variant)) continue;
-
-    return { product, variant, compatibility: evaluation.compatibility };
-  }
-
-  return null;
+/** Pure: every renderable pack in the payload, in the order the backend sent. */
+export function normalizePacks(payload) {
+  const list = Array.isArray(payload) ? payload : [];
+  return list.map(normalizePack).filter(Boolean);
 }
 
-/** A variant a pack may contain: in stock, priced, and orderable upstream. */
-export function isOrderablePackVariant(variant) {
-  if (!variant || variant.soldOut || !(Number(variant.availability) > 0)) return false;
-  if (!Number.isFinite(Number(variant.price)) || Number(variant.price) <= 0) return false;
-  const id = String(variant.variant_id ?? '').trim();
-  return Boolean(id) && id !== 'null' && id !== 'undefined';
+/**
+ * Pure: one slot. The product is the canonical web-catalog payload, mapped by
+ * the caller through the same `_mapProduct` every other surface uses, so this
+ * carries no separately stored name, image or price.
+ */
+function normalizePackItem(raw) {
+  if (!raw?.product) return null;
+
+  const variant = raw.variant ?? null;
+  const variantId = variant?.id ?? variant?.variant_id ?? null;
+
+  return {
+    position: Number(raw.position ?? 0),
+    label: raw.role_label ?? null,
+    product: raw.product,
+    variant: variant
+      ? {
+          ...variant,
+          variant_id: variantId,
+          size: Number(variant.ml ?? variant.size ?? STARTER_PACK_SIZE_ML),
+          price: Number(variant.price ?? 0),
+        }
+      : null,
+  };
+}
+
+/**
+ * Pure: the server's pricing block, read — never recomputed.
+ *
+ * `savings` is taken from `discount_amount` rather than derived from
+ * (normal − final) locally. They are the same number when the payload is
+ * consistent, and when they are not, the server's own subtraction is the one
+ * the customer will be charged by.
+ */
+export function normalizePackPricing(raw) {
+  if (!raw) return null;
+
+  const normalTotal = Number(raw.normal_total);
+  const finalTotal = Number(raw.final_total);
+  const savings = Number(raw.discount_amount ?? 0);
+
+  if (!Number.isFinite(normalTotal) || !Number.isFinite(finalTotal)) return null;
+
+  return {
+    normalTotal,
+    finalTotal,
+    savings: Number.isFinite(savings) ? savings : 0,
+    savingsPercentage: Number(raw.savings_percentage ?? 0),
+    discountType: raw.discount_type ?? 'none',
+  };
+}
+
+/** True when a pack is worth showing a "Ahorras" badge for. */
+export function hasRealSavings(pack) {
+  return Number(pack?.pricing?.savings) > 0
+    && Number(pack?.pricing?.finalTotal) < Number(pack?.pricing?.normalTotal);
 }

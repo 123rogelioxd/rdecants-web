@@ -52,6 +52,16 @@ export const API_EVENT_MAP = {
   taste_like:                'taste_like',
   taste_dislike:             'taste_dislike',
   taste_skip:                'taste_skip',
+  /* Curated packs and the homepage promotion. Added to
+     EventTrackingService::ALLOWED_EVENTS in the same release — see
+     tests/backendAllowlistParity.test.js for why all three places move
+     together. */
+  pack_viewed:               'pack_viewed',
+  pack_selected:             'pack_selected',
+  pack_added:                'pack_added',
+  promotion_viewed:          'promotion_viewed',
+  promotion_clicked:         'promotion_clicked',
+  guide_filter_removed:      'guide_filter_removed',
   search_performed:          'search_performed',
   search_result_clicked:     'search_result_clicked',
   search_no_results:         'search_no_results',

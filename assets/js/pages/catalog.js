@@ -137,8 +137,14 @@ function _setupQuickGender() {
      Synchronously, not in a rAF: every one of those handlers is bound to an
      element deeper than the document, so by the time the click bubbles here
      the state is already updated — and a rAF would simply never run in a
-     backgrounded tab, leaving the buttons lying about the filter. */
-  document.addEventListener('click', () => sync(SearchBar.getState().gender ?? null));
+     backgrounded tab, leaving the buttons lying about the filter.
+
+     `effectiveGender()`, not `getState().gender`: in guided mode the gender
+     lives on the guide alongside the occasion, so reading the plain filter
+     field would find null and immediately un-press a button the customer had
+     just pressed. One reader for one value — that is the whole point of the
+     helper. */
+  document.addEventListener('click', () => sync(SearchBar.effectiveGender()));
 }
 
 /* Arriving from the header magnifier: focus the field (and, where the browser

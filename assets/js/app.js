@@ -14,6 +14,7 @@
 import { bootstrapShell }          from './core/shell.js';
 import { renderHero }              from './ui/hero.js';
 import { renderStarterPacks }      from './ui/starterPacks.js';
+import { renderPromotion }         from './ui/promotion.js';
 import { renderBestsellers,
          renderNewest }            from './ui/bestsellers.js';
 import { setupScrollAnimations,
@@ -52,6 +53,12 @@ document.addEventListener('DOMContentLoaded', async () => {
      the rails. Like "Nuevos", the section removes itself rather than
      standing empty when the catalog cannot fill a single pack. */
   await renderStarterPacks('packs-rail');
+
+  /* The active campaign banner, under the packs and above "Prefiero elegir
+     yo". Same rule as every other optional section: it removes itself when
+     there is nothing to show, so a home with no promotion is one section
+     shorter rather than one gap longer. */
+  await renderPromotion('promocion');
 
   /* The two product rails. Roger's picks lead; "Nuevos" sits below the
      finder prompt and removes itself when there is nothing to show. */

@@ -178,20 +178,34 @@ async function _previewSet(codes, items) {
 }
 
 /* Multi-coupon preview payload. Accepts an array of codes (or a single string).
-   Sends coupon_codes[] — the storefront's canonical contract. Packs are never
-   priced server-side, so they're filtered out. */
+   Sends coupon_codes[] — the storefront's canonical contract.
+
+   Packs travel in their own `packs` array as identity and quantity, exactly as
+   they do at checkout. They used to be filtered out, on the (then true)
+   grounds that packs were never priced server-side; they now are, and omitting
+   them would preview a coupon against a base that excluded most of the cart —
+   a smaller discount on screen than the one actually applied, or a larger one
+   if the pack's own saving were ignored. Preview and checkout must resolve the
+   same cart or they will quote different totals. */
 export function buildPreviewPayload(codes, items = []) {
   const list = (Array.isArray(codes) ? codes : [codes]).map(normalizeCode).filter(Boolean);
+  const all = items || [];
+
+  const packs = all
+    .filter(item => item?.type === 'pack' && item.pack_id !== null && item.pack_id !== undefined)
+    .map(item => ({ pack_id: item.pack_id, quantity: Number(item.qty) || 1 }));
+
   return {
     coupon_codes: list,
     channel: 'storefront',
-    items: (items || [])
+    items: all
       .filter(item => item && item.type !== 'pack')
       .map(item => ({
         product_id: item.product_id ?? item.sourceId ?? null,
         variant_id: item.variant_id ?? null,
         quantity: Number(item.qty) || 1,
       })),
+    ...(packs.length ? { packs } : {}),
   };
 }
 

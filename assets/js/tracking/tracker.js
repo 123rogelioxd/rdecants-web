@@ -69,6 +69,19 @@ export const EVENTS = {
   CHECKOUT_WHATSAPP_CLICKED: 'checkout_whatsapp_clicked',
   WHATSAPP_CHECKOUT: 'whatsapp_checkout',
   PACK_CLICKED: 'pack_clicked',
+
+  /* Curated beginner packs. Their own names rather than the discovery_set_*
+     ones they used to borrow: a pack is now a commercial product Roger
+     configures, and "which pack converts" is not answerable from a funnel
+     where packs and algorithmic discovery sets share an event name. */
+  PACK_VIEWED:   'pack_viewed',
+  PACK_SELECTED: 'pack_selected',
+  PACK_ADDED:    'pack_added',
+
+  /* The homepage promotional banner. */
+  PROMOTION_VIEWED:  'promotion_viewed',
+  PROMOTION_CLICKED: 'promotion_clicked',
+
   PAGE_VIEW: 'page_view',
 
   PRODUCT_VIEW: 'product_view',
@@ -83,6 +96,11 @@ export const EVENTS = {
   SECTION_VIEWED:        'section_viewed',
   FILTER_APPLIED:        'filter_applied',
   FILTER_CLEARED:        'filter_cleared',
+  /* WHICH guided dimension was dropped ("de día", "caballero"), as distinct
+     from FILTER_CLEARED, which says only that something went. Now that
+     occasion and gender compose instead of replacing each other, the half the
+     customer let go of is the interesting half. */
+  GUIDE_FILTER_REMOVED:  'guide_filter_removed',
   SCROLL_DEPTH_REACHED:  'scroll_depth_reached',
   CATALOG_EXPANDED:      'catalog_expanded',
   CATALOG_COLLAPSED:     'catalog_collapsed',
@@ -252,6 +270,47 @@ export const Tracker = {
       price: pack.price,
       source,
     });
+  },
+
+  /* ── Curated packs ───────────────────────────────────────────────
+     Payloads carry the pack's identity plus the two numbers that decide
+     whether the offer worked: what it cost and what came off. Both are read
+     from the server's own pricing block — this file computes nothing. No
+     customer-identifying data: a pack is a shelf, not a person. */
+
+  packViewed(pack) {
+    this.emit(EVENTS.PACK_VIEWED, _packPayload(pack));
+  },
+
+  packSelected(pack, source = 'pack_card') {
+    this.emit(EVENTS.PACK_SELECTED, { ..._packPayload(pack), source });
+  },
+
+  packAdded(pack) {
+    this.emit(EVENTS.PACK_ADDED, _packPayload(pack));
+  },
+
+  /* ── Homepage promotion ──────────────────────────────────────────
+     The campaign slug is the join key back to MarketingCampaign, so "did the
+     banner sell anything" is answerable against the same campaign the orders
+     are attributed to. */
+
+  promotionViewed(promotion) {
+    this.emit(EVENTS.PROMOTION_VIEWED, _promotionPayload(promotion));
+  },
+
+  promotionClicked(promotion) {
+    this.emit(EVENTS.PROMOTION_CLICKED, _promotionPayload(promotion), { allowDuplicate: true });
+  },
+
+  /* One guided dimension removed. `dimension` is the canonical answer key
+     (occasion / gender / family / goal) and `remaining` is what still
+     filters, so the funnel can tell "narrowed too far" from "changed mind". */
+  guideFilterRemoved(dimension, remaining = {}) {
+    this.emit(EVENTS.GUIDE_FILTER_REMOVED, {
+      dimension,
+      remaining: Object.keys(remaining ?? {}),
+    }, { allowDuplicate: true });
   },
 
   bundleViewed(bundle) {
@@ -607,6 +666,28 @@ function _campaignPayload(attr = {}) {
   if (attr.utm_source) out.utm_source = attr.utm_source;
   if (attr.utm_medium) out.utm_medium = attr.utm_medium;
   return out;
+}
+
+/* A pack, as the funnel needs it. The prices come straight off the server's
+   pricing block; nothing here recomputes a total, so an analytics number can
+   never disagree with the one the customer was charged. */
+function _packPayload(pack = {}) {
+  return {
+    pack_id: pack.id ?? null,
+    pack_slug: pack.slug ?? null,
+    pack_name: pack.name ?? null,
+    pack_final_total: Number(pack.pricing?.finalTotal ?? 0),
+    pack_normal_total: Number(pack.pricing?.normalTotal ?? 0),
+    pack_discount_amount: Number(pack.pricing?.savings ?? 0),
+    product_ids: (pack.items ?? []).map(item => item.product?.id ?? null).filter(Boolean),
+  };
+}
+
+function _promotionPayload(promotion = {}) {
+  return {
+    promotion_id: promotion.id ?? null,
+    campaign_slug: promotion.campaignSlug ?? null,
+  };
 }
 
 function _productPayload(product = {}) {

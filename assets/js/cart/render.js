@@ -60,11 +60,46 @@ export function renderCart() {
       <div class="cart-product-list">
         ${items.map(item => {
     const isMaxed = !Cart.canIncrement(item.key);
-    const label   = item.type === 'pack' ? 'Pack' : `${item.size}ml`;
+    const isPack  = item.type === 'pack';
+    /* `item.size` already reads "3 × 3 ml" for a pack — set once when the
+       pack was added, so there is no second place that decides the wording. */
+    const label   = isPack ? item.size : `${item.size}ml`;
     const subtotal = isValidPrice(item.price) ? item.price * item.qty : null;
+    const normalSubtotal = isPack && isValidPrice(item.normal_price)
+      ? item.normal_price * item.qty
+      : null;
+
+    /* The three fragrances inside the pack, named. A pack is added and
+       removed whole — there is deliberately no per-fragrance remove button —
+       so this list is what the customer opens the drawer to check. Making the
+       group atomic is also what makes a phantom pack discount impossible:
+       there is no edit that can leave the cart holding two decants while
+       still claiming to hold a pack. */
+    const contents = isPack && item.items?.length
+      ? `<ul class="cart-pack-contents">
+           ${item.items.map(entry => `
+             <li>
+               <span class="cart-pack-item-name">${entry.name}</span>
+               ${entry.label ? `<span class="cart-pack-item-role">${entry.label}</span>` : ''}
+             </li>`).join('')}
+         </ul>`
+      : '';
+
+    /* Normal → saving → pack, in the same order and the same restrained
+       treatment the pack card on the home uses. */
+    /* Bare amounts on the secondary row: `formatPrice` appends " MXN", and
+       stating the currency three times inside one cart line is noise. It stays
+       on the line that is actually charged, below. */
+    const bare = value => formatPrice(value).replace(/\s*MXN$/, '');
+    const savingRow = isPack && Number(item.savings) > 0 && normalSubtotal
+      ? `<p class="cart-pack-saving">
+           <span class="cart-pack-was">Normal ${bare(normalSubtotal)}</span>
+           <span class="cart-pack-save">Ahorras ${bare(item.savings * item.qty)}</span>
+         </p>`
+      : '';
 
     return `
-      <div class="cart-item">
+      <div class="cart-item${isPack ? ' cart-item--pack' : ''}">
         <div class="cart-item-top">
           <div class="cart-item-id">
             <p class="cart-item-house">${item.house}</p>
@@ -74,6 +109,8 @@ export function renderCart() {
             onclick="window.__rd.cart.remove('${item.key}')"
             aria-label="Eliminar ${item.name}">×</button>
         </div>
+        ${contents}
+        ${savingRow}
         <div class="cart-item-bottom">
           <div class="cart-item-meta-price">
             <span class="cart-item-meta">${label} &times; ${item.qty}</span>

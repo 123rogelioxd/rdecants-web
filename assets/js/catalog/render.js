@@ -338,26 +338,30 @@ function _buildCard(p, absoluteIndex, { guided, recById } = {}) {
 
 /* ── Guided-mode chrome ──────────────────────────────────────── */
 
-/* Editorial state header above the grid. It lists EVERY answer that shaped
-   the ranking — not just three of them, which is how a customer used to
-   arrive from the finder and see "Para ti · Diario" while their gender, age,
-   goal and climate were also filtering the grid invisibly.
-   describeAnswers() is the same function the finder's own summary uses, so
-   the two screens can never disagree about what was asked. */
+/* Guided-mode actions above the grid.
+   Every answer that shaped the ranking is still shown — that requirement has
+   not gone away — but it is shown by the filter bar, one removable chip per
+   answer, which is both the summary and the control. This header is now only
+   the two escape hatches. */
 function _syncGuideState(guided, count = 0) {
   document.getElementById('catalog-guide-state')?.remove();
   if (!guided) return;
 
-  const labels = describeAnswers(guided.answers ?? {});
-  const noun = count === 1 ? 'fragancia compatible' : 'fragancias compatibles';
+  /* The ANSWERS and the COUNT used to be printed here as well as in the filter
+     bar. They are not any more: the bar now renders each answer as its own
+     removable chip ("De día ×  Caballero ×") next to the result count, which
+     is where a customer looks to change what they are seeing. Repeating them
+     one row lower said the same thing twice on a phone screen that has room
+     for neither.
+
+     What stays is the pair of actions that have no other home: go back and
+     change the answers, or leave guided mode entirely. */
   const el = document.createElement('div');
   el.id = 'catalog-guide-state';
   el.className = 'catalog-guide-state';
   el.innerHTML = `
     <div class="cgs-info">
       <span class="cgs-kicker">Para ti</span>
-      ${labels.length ? `<span class="cgs-answers">${labels.join(' · ')}</span>` : ''}
-      <span class="cgs-count">${count} ${noun}</span>
     </div>
     <div class="cgs-actions">
       <button type="button" class="cgs-adjust" id="cgs-adjust">Cambiar respuestas</button>

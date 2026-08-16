@@ -7,16 +7,29 @@
    what the store opens with from R Supply OS and it is live within a minute.
 
    ── What a hero placement may change, and what it may not ──────────
-   It may change WORDS and DESTINATIONS: headline, supporting line, either
-   CTA, and which perfume the hero points at.
+   It may change WORDS and DESTINATIONS: headline, supporting line, and
+   either CTA.
 
    It may NOT change the photograph. The hero image is art-directed — two
    purpose-built crops (4:3 full-bleed for a phone, 5:4 for the desktop
    column) across AVIF/WebP/JPEG at four widths, preloaded as the LCP
    element. Substituting a 400×500 catalogue photo would swap a designed
    frame for one `object-fit` will crop badly, and would cost the preload.
-   A featured perfume is surfaced as a line under the CTAs instead, which
-   is the part that actually needs to rotate.
+
+   It may NOT name a perfume either, and that is the correction this file
+   carries. A hero placement used to print its product's brand and name as
+   a line under the CTAs, on the reasoning that "the part that needs to
+   rotate" was the perfume. In production that produced a hero whose
+   photograph showed Sauvage and whose caption read RASASI HAWAS ICE —
+   two different fragrances in one frame, presented as if they were the
+   same offer. There is no arrangement of that line that fixes it while
+   the photograph stays fixed, so the line is gone.
+
+   The hero is now exactly: value proposition, primary CTA, secondary CTA,
+   trust signals, art-directed image. The backend may still POINT the hero
+   slot at a product — that pointer is what tracks which perfume the
+   opening copy was written for — but nothing about the product reaches
+   the page.
 
    Every field is optional and every one falls back to the copy already in
    the HTML, so an empty, switched-off or un-migrated backend leaves the
@@ -24,20 +37,21 @@
    ============================================================= */
 
 import { CatalogProvider } from '../providers/catalog.js';
-import { Tracker } from '../tracking/tracker.js';
 
 /**
  * Pure: what the hero should display, given a placement and the defaults
  * already rendered in the HTML. Exported so the precedence is testable
  * without a DOM.
+ *
+ * Words and destinations only. The placement's `product` is deliberately not
+ * read: see the header note on why a perfume name under an art-directed
+ * photograph of a different perfume cannot be made correct.
  */
 export function resolveHero(placement, defaults = {}) {
   const text = value => {
     const trimmed = String(value ?? '').trim();
     return trimmed === '' ? null : trimmed;
   };
-
-  const product = placement?.product ?? null;
 
   return {
     headline: text(placement?.headline) ?? defaults.headline ?? null,
@@ -48,8 +62,6 @@ export function resolveHero(placement, defaults = {}) {
     secondary: placement?.secondaryCta?.label && placement?.secondaryCta?.url
       ? { label: text(placement.secondaryCta.label), url: placement.secondaryCta.url }
       : null,
-    /* Only a product that can actually be bought is worth pointing at. */
-    product: product && product.variants?.length ? product : null,
   };
 }
 
@@ -93,34 +105,4 @@ export async function renderHero(root = document) {
     secondary.href = resolved.secondary.url;
     secondary.textContent = resolved.secondary.label;
   }
-
-  if (resolved.product) _appendFeatured(hero, resolved.product);
-}
-
-/* The featured perfume, as one line under the actions. Deliberately not a
-   card: a second product card in the hero competes with the CTAs, which is
-   the one thing the hero must not do. */
-function _appendFeatured(hero, product) {
-  const actions = hero.querySelector('.hero-actions');
-  if (!actions || hero.querySelector('.hero-featured')) return;
-
-  const link = document.createElement('a');
-  link.className = 'hero-featured';
-  link.href = `/product.html?id=${encodeURIComponent(product.id)}`;
-  link.dataset.cta = 'hero-featured';
-
-  const house = document.createElement('span');
-  house.className = 'hero-featured-house';
-  house.textContent = product.house ?? '';
-
-  const name = document.createElement('strong');
-  name.textContent = product.name ?? '';
-
-  /* textContent throughout — the product name comes from the catalogue and
-     the surrounding copy from an operator, and neither is worth trusting to
-     innerHTML for the sake of a bold tag. */
-  link.append(house, name);
-  link.addEventListener('click', () => Tracker.heroCtaClicked('hero-featured'));
-
-  actions.insertAdjacentElement('afterend', link);
 }

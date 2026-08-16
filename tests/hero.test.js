@@ -6,6 +6,13 @@
    direction: a hero placement that is absent, empty or partial must leave
    the shipped copy standing rather than blanking the first thing a visitor
    reads.
+
+   And one thing it must NOT change: the perfume. A hero placement used to
+   print its product's brand and name under the CTAs, which in production
+   put "RASASI HAWAS ICE" beneath an art-directed photograph of Dior
+   Sauvage. The photograph is fixed, so no caption naming a rotating
+   merchandising pick can be made correct. The hero is now value
+   proposition + two CTAs + trust + image, and the tests below pin that.
    ============================================================= */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -28,7 +35,6 @@ test('no placement leaves every default in place', () => {
     body: DEFAULTS.body,
     primary: null,
     secondary: null,
-    product: null,
   });
 });
 
@@ -56,11 +62,34 @@ test('a CTA needs both a label and a destination to replace the default', () => 
   );
 });
 
-test('a featured perfume that cannot be bought is not pointed at', () => {
-  const soldOut = { id: 'X', name: 'X', house: 'CASA', variants: [] };
+test('a hero placement never carries a product into the resolved hero', () => {
+  /* The backend may still POINT the hero slot at a perfume — that pointer
+     records which product the opening copy was written for, and removing the
+     column would have been a schema migration for a copy problem. What must
+     not happen is any of it reaching the page. */
+  const resolved = resolveHero({ product: sellable('HAWAS'), headline: 'Hola' }, DEFAULTS);
 
-  assert.equal(resolveHero({ product: soldOut }, DEFAULTS).product, null);
-  assert.equal(resolveHero({ product: sellable('OK') }, DEFAULTS).product.id, 'OK');
+  assert.equal(resolved.product, undefined, 'the hero has no product to render');
+  assert.deepEqual(Object.keys(resolved).sort(), ['body', 'headline', 'primary', 'secondary']);
+});
+
+test('the hero renders no perfume name, brand or product link', () => {
+  const code = readFileSync(new URL('../assets/js/ui/hero.js', import.meta.url), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '');
+
+  /* The specific regression: a `.hero-featured` element built from
+     product.house + product.name and linked to the PDP. */
+  assert.doesNotMatch(code, /hero-featured/, 'the featured-product line is gone');
+  assert.doesNotMatch(code, /product\.(name|house)/, 'no product identity reaches the hero');
+  assert.doesNotMatch(code, /product\.html/, 'the hero does not link to a PDP');
+});
+
+test('no stylesheet still ships the removed featured-product rule', () => {
+  const css = readFileSync(new URL('../assets/css/components.css', import.meta.url), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '');
+
+  assert.doesNotMatch(css, /\.hero-featured/, 'dead CSS for a removed element');
 });
 
 test('the hero never substitutes the art-directed photograph', () => {

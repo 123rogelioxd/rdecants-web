@@ -99,44 +99,66 @@ export const Cart = {
     _commit();
   },
 
-  async addPack(packId) {
-    const pack = await CatalogProvider.getPackById(packId);
-    if (!pack) return;
+  /**
+   * Add a curated pack as ONE indivisible line.
+   *
+   * ── Why one line and not three ─────────────────────────────────────
+   * A pack's discount only exists while the pack does. If its three decants
+   * were three ordinary cart lines, a customer could remove one and be left
+   * holding two decants that the cart still believed were a discounted pack
+   * — a phantom discount the server would then refuse, at checkout, after
+   * the WhatsApp window had already opened. Making the pack atomic removes
+   * the failure mode instead of detecting it: there is no edit that can
+   * leave the cart representing a pack it is not.
+   *
+   * The customer can still SEE what is inside (`items` below feeds the cart
+   * drawer), and can still open any of the three from the pack card. What
+   * they cannot do is quietly disassemble one.
+   *
+   * ── What is stored ─────────────────────────────────────────────────
+   * Identity, quantity, and a display snapshot. The prices held here are
+   * never sent anywhere: checkout submits { pack_id, quantity } and R Supply
+   * OS resolves the products, re-reads the canonical 3 ml variants and
+   * derives the discount again. `reconcile()` refreshes the snapshot from
+   * the live endpoint so a stale tab shows the current number, but even a
+   * stale one cannot be charged.
+   *
+   * @param {object|string|number} packOrId  a normalized pack, or its id
+   * @returns {Promise<boolean>} false when nothing was added
+   */
+  async addPack(packOrId) {
+    const pack = typeof packOrId === 'object' && packOrId !== null
+      ? packOrId
+      : await CatalogProvider.getPackById(packOrId);
+
+    if (!pack?.id || !pack.items?.length || !pack.pricing) return false;
 
     const key      = `pack-${pack.id}`;
     const existing = _items.find(i => i.key === key);
+    const stock    = _packStock(pack);
 
-    if (existing) {
-      if (existing.qty >= pack.stock) {
-        showToast(`Solo quedan ${pack.stock} de ${pack.name}`);
-        return;
-      }
-      existing.qty++;
-    } else {
-      if (pack.stock <= 0) {
-        showToast(`${pack.name} está agotado`);
-        return;
-      }
-      _items.push({
-        key,
-        sourceId: pack.id,
-        product_id: pack.id,
-        sku: pack.sku ?? null,
-        variant_id: null,
-        type:     'pack',
-        name:     pack.name,
-        house:    'PACK',
-        size:     'Pack',
-        price:    pack.price,
-        qty:      1,
-        stock:    pack.stock,
-        image:    pack.image ?? null,
-      });
+    if (stock <= 0) {
+      showToast(`${pack.name} no está disponible ahora`);
+      return false;
     }
 
-    Tracker.packClicked(pack, 'pack_btn');
-    showToast(`${pack.name} — Agregado 💎`);
+    if (existing) {
+      if (existing.qty >= stock) {
+        showToast(`Solo alcanza para ${stock} de ${pack.name}`);
+        return false;
+      }
+      existing.qty++;
+      Object.assign(existing, _packSnapshot(pack), { qty: existing.qty });
+    } else {
+      _items.push({ key, qty: 1, ..._packSnapshot(pack) });
+    }
+
+    showToast(`${pack.name} — Agregado ✓`, {
+      actionLabel: 'Ver carrito',
+      onAction: () => window.__rd?.ui?.openCart?.(),
+    });
     _commit();
+    return true;
   },
 
   async addBundle(bundle) {
@@ -255,11 +277,45 @@ export const Cart = {
     _commit();
   },
 
+  /**
+   * What the customer will pay, as the storefront currently understands it.
+   *
+   * A pack line already carries its DISCOUNTED unit price, so the pack saving
+   * is inside this number rather than applied on top of it. R Supply OS
+   * recomputes the whole total at checkout from canonical prices; this is the
+   * figure the drawer shows while they shop.
+   */
   total() {
     return _items.reduce((sum, i) => {
       const price = isValidPrice(i.price) ? Number(i.price) : 0;
       return sum + price * i.qty;
     }, 0);
+  },
+
+  /** Merchandise at full price, before any pack saving. */
+  normalTotal() {
+    return _items.reduce((sum, i) => {
+      const price = i.type === 'pack' && isValidPrice(i.normal_price)
+        ? Number(i.normal_price)
+        : (isValidPrice(i.price) ? Number(i.price) : 0);
+      return sum + price * i.qty;
+    }, 0);
+  },
+
+  /** What the packs in the cart take off, for display next to the total. */
+  packSavings() {
+    return _items.reduce((sum, i) => {
+      if (i.type !== 'pack') return sum;
+      const saving = Number(i.savings);
+      return sum + (Number.isFinite(saving) && saving > 0 ? saving * i.qty : 0);
+    }, 0);
+  },
+
+  /** The pack purchases to submit, as identity and quantity only. */
+  packPurchases() {
+    return _items
+      .filter(i => i.type === 'pack' && i.pack_id !== null && i.pack_id !== undefined)
+      .map(i => ({ pack_id: i.pack_id, quantity: Number(i.qty) || 1 }));
   },
 
   count() {
@@ -307,9 +363,48 @@ export const Cart = {
       if (!catalog.length) return;
     }
 
+    /* Packs are re-read from the live endpoint, not skipped. A pack that went
+       out of stock, was deactivated, or had a product unpublished stops being
+       returned — and a cart line for a pack the server will refuse is a
+       checkout that fails after the WhatsApp window has opened. Re-reading
+       also refreshes the displayed total, so a tab left open overnight shows
+       today's price rather than yesterday's. */
+    let livePacks = null;
+    if (_items.some(i => i.type === 'pack')) {
+      try { livePacks = await CatalogProvider.getPacks(); }
+      catch { livePacks = null; }
+    }
+
     for (const item of _items) {
       if (item.type === 'pack') {
-        reconciled.push(item);
+        /* Endpoint unreachable is not evidence the pack went away — same rule
+           as the catalog guard above. Leave the line alone and retry later. */
+        if (livePacks === null) {
+          reconciled.push(item);
+          continue;
+        }
+
+        const live = livePacks.find(p => String(p.id) === String(item.pack_id));
+        if (!live) {
+          removed.push(item);
+          changed = true;
+          continue;
+        }
+
+        const stock = _packStock(live);
+        if (stock <= 0) {
+          removed.push(item);
+          changed = true;
+          continue;
+        }
+
+        const updated = {
+          ...item,
+          ..._packSnapshot(live),
+          qty: Math.min(Math.max(1, Number(item.qty) || 1), stock),
+        };
+        changed = changed || _packLineChanged(item, updated);
+        reconciled.push(updated);
         continue;
       }
 
@@ -375,25 +470,104 @@ function _load() {
     if (!raw) return [];
     return JSON.parse(raw)
       .filter(i => i && i.key)
-      .map(i => ({
-        ...i,
-        product_id: i.product_id ?? i.sourceId,
-        sku: i.sku ?? null,
-        variant_id: i.variant_id ?? null,
-        image: i.image ?? null,
-        stock: Math.max(0, Number(i.stock) || 0),
-        available_ml: _optionalNonNegativeNumber(i.available_ml),
-        qty: Math.max(1, Number(i.qty) || 1),
-      }));
+      /* Drop pack lines saved by the previous build. They hold a price from
+         the old hardcoded pack list — a number no product in the catalogue
+         backs any more — and no `pack_id` for checkout to submit. Restoring
+         one would put an unbuyable line at an invented price into a returning
+         customer's cart; dropping it costs them one tap to re-add. */
+      .filter(i => i.type !== 'pack' || (i.pack_id !== null && i.pack_id !== undefined))
+      .map(i => i.type === 'pack'
+        ? {
+            ...i,
+            product_id: null,
+            variant_id: null,
+            items: Array.isArray(i.items) ? i.items : [],
+            price: Number(i.price) || 0,
+            normal_price: Number(i.normal_price) || Number(i.price) || 0,
+            savings: Math.max(0, Number(i.savings) || 0),
+            stock: Math.max(0, Number(i.stock) || 0),
+            qty: Math.max(1, Number(i.qty) || 1),
+          }
+        : {
+            ...i,
+            product_id: i.product_id ?? i.sourceId,
+            sku: i.sku ?? null,
+            variant_id: i.variant_id ?? null,
+            image: i.image ?? null,
+            stock: Math.max(0, Number(i.stock) || 0),
+            available_ml: _optionalNonNegativeNumber(i.available_ml),
+            qty: Math.max(1, Number(i.qty) || 1),
+          });
   } catch {
     return [];
   }
 }
 
+/**
+ * How many of this pack the catalogue can currently fill.
+ *
+ * The binding constraint is the scarcest of its three perfumes: a pack of
+ * three 3 ml decants cannot be assembled twice if one of them has 4 ml left.
+ * `variant.stock` on the public payload is already derived from the shared
+ * millilitre pool by the backend's own transformer, so this is a minimum over
+ * canonical numbers rather than a second inventory opinion.
+ */
+function _packStock(pack) {
+  const stocks = (pack.items ?? []).map(item => {
+    const stock = Number(item?.variant?.stock ?? item?.variant?.availability);
+    return Number.isFinite(stock) ? stock : 0;
+  });
+
+  return stocks.length ? Math.max(0, Math.min(...stocks)) : 0;
+}
+
+/**
+ * The cart's view of a pack: identity, quantity ceiling, and a display
+ * snapshot. `price` is the DISCOUNTED unit total so Cart.total() needs no
+ * pack-specific branch; `normal_price` and `savings` exist only to render the
+ * strike-through and the badge.
+ */
+function _packSnapshot(pack) {
+  return {
+    sourceId: pack.id,
+    pack_id: pack.id,
+    pack_slug: pack.slug ?? null,
+    product_id: null,
+    sku: null,
+    variant_id: null,
+    type: 'pack',
+    name: pack.name,
+    house: 'PACK',
+    size: `${pack.count} × ${pack.itemSize} ml`,
+    price: Number(pack.pricing.finalTotal),
+    normal_price: Number(pack.pricing.normalTotal),
+    savings: Number(pack.pricing.savings ?? 0),
+    stock: _packStock(pack),
+    image: pack.items?.[0]?.product?.image ?? null,
+    /* Display only — what the customer opens the drawer to check. */
+    items: (pack.items ?? []).map(item => ({
+      id: item.product?.id ?? null,
+      name: item.product?.name ?? '',
+      house: item.product?.house ?? '',
+      image: item.product?.image ?? null,
+      label: item.label ?? null,
+    })),
+  };
+}
+
+function _packLineChanged(prev, next) {
+  return prev.price !== next.price ||
+    prev.normal_price !== next.normal_price ||
+    prev.savings !== next.savings ||
+    prev.qty !== next.qty ||
+    prev.stock !== next.stock ||
+    prev.name !== next.name;
+}
+
 async function _getAvailability(item) {
   if (item.type === 'pack') {
-    const pack = await CatalogProvider.getPackById(item.sourceId);
-    return { stock: pack?.stock ?? item.stock ?? 1, availableMl: null };
+    const pack = await CatalogProvider.getPackById(item.pack_id ?? item.sourceId);
+    return { stock: pack ? _packStock(pack) : 0, availableMl: null };
   }
   const product = await CatalogProvider.getProductById(item.sourceId);
   const variant = getVariantForSize(product, item.size);
