@@ -1010,7 +1010,14 @@ export function rankCatalog(products, rawAnswers = {}, { limit = Infinity } = {}
   const list = Array.isArray(products) ? products.filter(Boolean) : [];
 
   const all = list.map(product => evaluateProduct(product, answers));
-  const results = all.filter(e => e.eligible).sort(compareEvaluations);
+  const results = all
+    .filter(e => e.eligible)
+    .filter(e => _survivesEveryRefinementSubset(e.product, answers))
+    .sort(compareEvaluations);
+  /* `excluded` stays the raw per-product verdict for the full answer set —
+     it is diagnostic (the auditor and the "why not" copy read it), and a
+     product dropped by the monotonicity rule below was genuinely eligible
+     under these answers. Calling it "excluded" would misreport why. */
   const excluded = all.filter(e => !e.eligible);
 
   const notices = [];
@@ -1032,6 +1039,109 @@ export function rankCatalog(products, rawAnswers = {}, { limit = Infinity } = {}
   };
 }
 
+/* =============================================================
+   MONOTONIC REFINEMENT — adding an answer may only take products away
+
+   ── The defect ─────────────────────────────────────────────────────
+   `De día` matched 33 products. `De día` + `Caballero` matched 48.
+
+   `compatibility` is a weighted AVERAGE of per-dimension fit, so adding a
+   dimension a product scores WELL on raises its average. ERBA PURA went
+   from 43.8 to 69.6 — over the 62 gate — purely because `gender` was
+   averaged in. Nineteen products entered the result set by having a
+   constraint ADDED.
+
+   The catalog bar presents answers as composable filters —
+   `[De día ×] [Caballero ×]` — and a customer who adds a constraint must
+   never be shown more things than before.
+
+   ── The rule ───────────────────────────────────────────────────────
+   A product may appear under an answer set only if it would also appear
+   under every subset of those answers:
+
+       results(A) = { p : eligible(p, A′) for every A′ ⊆ A }
+
+   which gives the invariant for any dimension, in any order:
+
+       results(A) ⊆ results(A \ {d})
+
+   because every subset of A \ {d} is also a subset of A.
+
+   ── Why here, in the engine ────────────────────────────────────────
+   It was first written one layer up, in the guided catalog alone. That
+   broke a contract this file already owed: the finder's three picks are
+   the first rows of the guided catalog, and the finder hands its answers
+   to the catalog through the URL. Measured across the 72-combination
+   answer grid, a catalog-only rule left 17 combinations where the finder
+   recommended a perfume the catalog then refused to list. One eligibility
+   rule, one engine, every surface coherent.
+
+   ── Which dimensions it closes over, and why not all of them ───────
+   REFINABLE below is the set of answers the CATALOG lets a customer add
+   and remove one at a time — the home tiles write `occasion`, the quick
+   buttons and the drawer pill write `gender`, and both render as their own
+   removable chip. Those are the taps that must not grow the grid.
+
+   `age`, `goal`, `climate` and `family` only ever arrive as part of one
+   atomic answer set (the finder's three questions, or a URL), so no
+   customer can experience "I added it and got more". Closing over them as
+   well is not free: on the same 72-combination grid it emptied 24 of them,
+   so a third of finder sessions would answer three questions and be told
+   there is nothing — a worse defect than the one being fixed, and not one
+   the invariant requires.
+
+   `gender: 'unisex'` is deliberately not treated as a refinement either.
+   The finder offers it as "Me da igual" — a stated ABSENCE of preference —
+   and a non-preference cannot narrow anything. (It is also degenerate as a
+   standalone state: no product clears a single-dimension gate on it, so
+   intersecting with it would empty every set it touched.) Nothing about
+   how unisex products are scored or matched changes here; this only
+   declines to read "me da igual" as a constraint.
+
+   With that scope the finder is bit-for-bit what it was — 0 empty
+   combinations, the same 13 thin ones — and the catalog invariant holds
+   exactly.
+
+   ── What it does not do ────────────────────────────────────────────
+   It moves no threshold, changes no score and reorders nothing: it only
+   drops rows that qualified solely because a constraint was added. And it
+   is a pure function of the ANSWER SET, not of the order the customer
+   built it in, so a shared `?occasion=dia&gender=hombre` link restores the
+   same grid as clicking through. */
+export const REFINABLE = ['occasion', 'gender'];
+
+/** The refinements present in an answer set — see REFINABLE above. */
+function _refinements(answers) {
+  return REFINABLE.filter(dimension => {
+    const value = answers[dimension];
+    if (!value) return false;
+    /* "Me da igual" is not a refinement. */
+    return !(dimension === 'gender' && value === 'unisex');
+  });
+}
+
+function _survivesEveryRefinementSubset(product, answers) {
+  const dimensions = _refinements(answers);
+
+  /* Below two refinements there is nothing to enforce: dropping the only
+     one leaves the state the customer came from, which is this same set. */
+  if (dimensions.length < 2) return true;
+
+  const total = 1 << dimensions.length;
+  /* Every subset except the full set. Non-refinable answers are carried
+     through untouched, so each check is "the same question with one filter
+     lifted", not a differently-informed judgement. */
+  for (let mask = 0; mask < total - 1; mask++) {
+    const subset = { ...answers };
+    for (let i = 0; i < dimensions.length; i++) {
+      if (!(mask & (1 << i))) delete subset[dimensions[i]];
+    }
+    if (!evaluateProduct(product, subset).eligible) return false;
+  }
+
+  return true;
+}
+
 /* Which single answer, dropped, unblocks the most matches. Only ONE is ever
    offered, and only as an explicit choice — the engine never relaxes a
    condition on the customer's behalf. Gender is never offered: someone who
@@ -1044,8 +1154,13 @@ function _bestRelaxation(products, answers) {
     if (!answers[dimension]) continue;
     const relaxed = { ...answers };
     delete relaxed[dimension];
+    /* Counted through the same monotonicity rule the grid applies, so the
+       empty state cannot promise "aparecen 12 opciones" and then show a
+       different number. */
     const gained = products.reduce(
-      (count, product) => count + (evaluateProduct(product, relaxed).eligible ? 1 : 0),
+      (count, product) => count + (
+        evaluateProduct(product, relaxed).eligible && _survivesEveryRefinementSubset(product, relaxed) ? 1 : 0
+      ),
       0,
     );
     if (gained > 0 && (!best || gained > best.gained)) {

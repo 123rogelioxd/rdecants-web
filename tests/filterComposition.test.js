@@ -285,6 +285,52 @@ test('the rendered products satisfy the combined state', () => {
   assert.deepEqual(_lastMeta.answers.occasion, 'dia', 'and the occasion');
 });
 
+test('through the real UI, adding a gender only ever removes products', () => {
+  /* The same monotonicity contract as tests/guidedMonotonicity.test.js, but
+     driven the way a customer drives it: tap the occasion on the home, then
+     tap a gender in the catalog. Asserted here too because the invariant is
+     only worth anything if it survives the path the bar actually takes. */
+  for (const occasion of ['dia', 'salir']) {
+    for (const gender of ['hombre', 'mujer']) {
+      mount();
+
+      SearchBar.applyGuide({ occasion });
+      const before = new Set(_rendered.map(p => String(p.id)));
+
+      SearchBar.applyGender(gender);
+      const after = _rendered.map(p => String(p.id));
+
+      const leaked = after.filter(id => !before.has(id));
+      assert.deepEqual(
+        leaked, [],
+        `${occasion} + ${gender}: ${leaked.length} product(s) appeared only after the refinement`,
+      );
+      assert.ok(after.length <= before.size, `${occasion} + ${gender} grew the grid`);
+    }
+  }
+});
+
+test('the count the bar prints is the number of products it handed the grid', () => {
+  SearchBar.applyGuide({ occasion: 'dia' });
+  SearchBar.applyGender('hombre');
+
+  const printed = document.getElementById('sf-active')?.innerHTML ?? '';
+  const match = printed.match(/(\d+)\s+de\s+(\d+)/) ?? printed.match(/(\d+)\s+fragancias/);
+
+  assert.ok(match, 'the bar prints a count');
+  assert.equal(Number(match[1]), _rendered.length, 'and it is the real row count');
+});
+
+test('removing the gender through the chip restores the occasion grid exactly', () => {
+  SearchBar.applyGuide({ occasion: 'dia' });
+  const before = _rendered.map(p => String(p.id));
+
+  SearchBar.applyGender('hombre');
+  SearchBar.relaxGuide('gender');
+
+  assert.deepEqual(_rendered.map(p => String(p.id)), before);
+});
+
 test('unisex is never excluded BY GENDER from a gendered result', async () => {
   /* The two-button UI must not start hiding legitimate unisex fragrances.
      This is the semantics change the composition fix could have introduced

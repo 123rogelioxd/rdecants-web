@@ -216,6 +216,9 @@ export function rankCatalogForAnswers(answers = {}, products = []) {
  * The guided catalog's full envelope: the same ranked rows plus the honest
  * states the grid has to render (nothing found, only compatible profiles,
  * and the single condition worth relaxing).
+ *
+ * Rows obey the engine's monotonicity rule (see REFINABLE in engine.js):
+ * adding `De día` or a gender here can only ever remove products.
  */
 export function rankGuidedCatalog(answers = {}, products = []) {
   const ranked = rankCatalog(products, answers);
