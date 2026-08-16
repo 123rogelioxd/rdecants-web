@@ -66,10 +66,12 @@ export async function renderHero(root = document) {
   const title = hero.querySelector('.hero-title');
   if (title && resolved.headline) title.textContent = resolved.headline;
 
-  /* The supporting line carries a live entry price in a `data-entry-price`
-     span. Replacing its text would delete that element and freeze the price
-     at whatever was rendered, so an override only applies when the operator
-     actually wrote one — and it then owns the whole line. */
+  /* An override only applies when the operator actually wrote one, and it
+     then owns the whole line. The guard matters whenever the shipped line
+     contains live markup: it used to carry a `data-entry-price` span, and
+     replacing its text would have frozen the price at whatever was rendered.
+     The 2026-08 hero states the promise instead of a number, so there is
+     nothing live in it today — the rule stands for the day there is. */
   const desc = hero.querySelector('.hero-desc');
   if (desc && resolved.body) desc.textContent = resolved.body;
 

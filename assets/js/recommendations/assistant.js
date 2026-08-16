@@ -127,10 +127,16 @@ export const ASSISTANT_QUESTIONS = [
   },
   {
     id: 'occasion',
+    /* "Salidas nocturnas" rather than "Para salir": the two options have to be
+       read in a glance on a phone, and "de día / para salir" made someone stop
+       to work out whether an evening dinner counts as "salir". The ANSWER is
+       still `salir` — the same value the home tiles, the URL contract
+       (?intent=salir) and every OCCASION_RULE already use — so this is a label
+       change and not a second taxonomy. */
     label: '¿Cuándo lo vas a usar más?',
     options: [
       { value: 'dia', label: 'De día', hint: 'Diario, escuela, trabajo' },
-      { value: 'salir', label: 'Para salir', hint: 'Citas, fiesta, noche' },
+      { value: 'salir', label: 'Salidas nocturnas', hint: 'Citas, fiesta, noche' },
     ],
   },
   {

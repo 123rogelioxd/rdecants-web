@@ -159,10 +159,16 @@ export async function renderNewest(containerId = 'newest-grid') {
   primeImageStates(grid);
 }
 
-/* The hero prints an entry price ("desde $100"). A hardcoded number drifts
-   the moment pricing changes, and a promise the catalog no longer honours is
-   worse than no promise — so the real floor across every orderable
-   presentation replaces it whenever the two disagree. */
+/* A surface that prints an entry price ("desde $100") marks it with
+   `data-entry-price`. A hardcoded number drifts the moment pricing changes,
+   and a promise the catalog no longer honours is worse than no promise — so
+   the real floor across every orderable presentation replaces it whenever
+   the two disagree.
+
+   The home's hero stopped quoting a price in the 2026-08 funnel (the packs
+   directly below it show three real totals instead), so this currently finds
+   no target there and does nothing. It stays because the rule — never print
+   a price the catalog cannot honour — outlives any one piece of copy. */
 export function lowestOrderablePrice(products) {
   const prices = (Array.isArray(products) ? products : [])
     .filter(Boolean)
