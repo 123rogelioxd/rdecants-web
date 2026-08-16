@@ -128,20 +128,40 @@ test('the floating WhatsApp button waits until the first screen is past', () => 
 
 /* ── D. Home composition ─────────────────────────────────────── */
 
-test('the home explains the product before it sells anything', () => {
+test('the process is explained ONCE, in the "Cómo funciona" section', () => {
+  /* This used to assert the opposite order: an explanation strip between the
+     hero and the first product. The 2026-08 funnel moved the explanation
+     below the offer — someone who lands here wants to know what to buy, and
+     the three-step section further down still answers "what is a decant?"
+     for whoever needs it.
+
+     What must not come back is saying it TWICE: the page carried the strip
+     under the hero AND three step cards lower down, which explained the same
+     "original bottle → your decant → ready to use" idea in two different
+     shapes, one screen apart. The strip is now the closing half of the same
+     section, and this is the guard on that. */
   const html = read('index.html');
-  const hero = html.indexOf('<section class="hero">');
-  const strip = html.indexOf('class="howto-strip"');
-  const rail = html.indexOf('id="roger-recomienda"');
 
-  assert.ok(hero > -1 && strip > -1 && rail > -1, 'all three present');
-  assert.ok(hero < strip, 'hero first');
-  assert.ok(strip < rail, 'the explanation comes before the products');
+  assert.ok(!html.includes('class="howto-strip"'),
+    'the standalone explanation band above the products is gone');
 
-  const stripBlock = html.slice(strip, html.indexOf('</section>', strip));
-  assert.match(stripBlock, /Botella original/);
-  assert.match(stripBlock, /Tu decant de 3, 5 o 10 ml/);
-  assert.match(stripBlock, /Listo para usar/);
+  const list = html.indexOf('class="howto-list"');
+  const section = html.indexOf('id="como-funciona"');
+  const faq = html.indexOf('id="faq"');
+
+  assert.ok(section > -1 && list > -1, 'the process lives in a section');
+  assert.equal((html.match(/class="howto-list"/g) ?? []).length, 1,
+    'the process picture appears exactly once on the page');
+  assert.ok(section < list && list < faq, 'inside "Cómo funciona", above the FAQ');
+
+  const block = html.slice(section, html.indexOf('</section>', list));
+  assert.match(block, /Frasco original/);
+  assert.match(block, /Servimos 3, 5 o 10 ml/);
+  assert.match(block, /Listo para usar/);
+
+  /* And the steps that carry the instructions are in that same section. */
+  assert.match(block, /Elige tu perfume/);
+  assert.match(block, /Envía tu pedido por WhatsApp/);
 });
 
 test('the home shows four products and no size selectors', () => {

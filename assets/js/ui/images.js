@@ -14,6 +14,9 @@ const IMAGE_WRAPPERS = [
      surface that showed raw alt text on a grey box when a photo 404s, while
      every other card falls back to the house monogram. */
   'pick-media',
+  /* Starter-pack thumbnails: the same canonical catalog photo the card and
+     the PDP use, so it gets the same loading and failure treatment. */
+  'pack-thumb',
 ];
 
 let _initialized = false;

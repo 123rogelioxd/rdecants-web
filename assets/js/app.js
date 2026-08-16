@@ -1,17 +1,19 @@
 /* =============================================================
    RDECANTS — HOME ENTRY POINT
 
-   The home is a discovery page, not the store: a promise, three ways to
-   say what you are shopping for, what a decant is, Roger's four picks,
-   the guided finder, what is new, how it works, why it is authentic,
-   the four questions that block a first order. The catalog (search,
-   filters, sort, 90+ products) lives at /catalogo.html and the guided
-   finder at /elegir.html, so no single screen asks the visitor to
-   choose between five different ways to start.
+   The home is a funnel, not a brochure. In page order: the promise and
+   three trust signals, an easy first purchase (the starter packs), the
+   three self-service routes, Roger's four picks, the guided finder for
+   whoever is still undecided, what is new, how it works, and the four
+   questions that block a first order. The catalog (search, filters, sort,
+   90+ products) lives at /catalogo.html and the guided finder at
+   /elegir.html, so no single screen asks the visitor to choose between
+   five different ways to start.
    ============================================================= */
 
 import { bootstrapShell }          from './core/shell.js';
 import { renderHero }              from './ui/hero.js';
+import { renderStarterPacks }      from './ui/starterPacks.js';
 import { renderBestsellers,
          renderNewest }            from './ui/bestsellers.js';
 import { setupScrollAnimations,
@@ -45,6 +47,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   /* The hero is already rendered from HTML; this only applies an active
      campaign on top of it, and does nothing when there is none. */
   await renderHero();
+
+  /* The packs are the first thing a visitor can buy, so they render before
+     the rails. Like "Nuevos", the section removes itself rather than
+     standing empty when the catalog cannot fill a single pack. */
+  await renderStarterPacks('packs-rail');
 
   /* The two product rails. Roger's picks lead; "Nuevos" sits below the
      finder prompt and removes itself when there is nothing to show. */
@@ -101,8 +108,8 @@ function _setupScrollTracking() {
   /* Section viewed — fires once per section when 15% enters viewport */
   /* In page order, so the reported index is how far down someone got. */
   const SECTIONS = [
-    'intenciones', 'roger-recomienda', 'asistente', 'nuevos',
-    'como-funciona', 'autenticidad', 'faq',
+    'packs', 'intenciones', 'roger-recomienda', 'asistente', 'nuevos',
+    'como-funciona', 'faq',
   ];
   if (!('IntersectionObserver' in window)) return;
   SECTIONS.forEach((id, positionIndex) => {
