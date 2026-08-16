@@ -172,6 +172,23 @@ export const SearchBar = {
     _syncBarFromState();
     _run();
   },
+
+  /* Gender, applied from outside the drawer (the catalog's "Explora rápido
+     por género" buttons). It sets the SAME `_state.gender` the drawer pill
+     sets, so the pill, the removable chip, the badge count and the result
+     count follow automatically — a second, parallel gender filter is exactly
+     how two surfaces end up disagreeing about what is on screen.
+     Passing null (or the active value again) clears it. */
+  applyGender(gender) {
+    if (!_onFilter) return;
+    const next = gender && _state.gender !== gender ? gender : null;
+    _state.guide = null;
+    _state.gender = next;
+    _syncBarFromState();
+    _syncDrawer();
+    _run();
+    return next;
+  },
 };
 
 /* ══════════════════════════════════════════════════════════════

@@ -26,7 +26,7 @@
      one piece of code guaranteed to be current on the device. -->
 <script>
   (function () {
-    var BUILD = '2026.08.06.1';
+    var BUILD = '2026.08.15.1';
     var installed = navigator.standalone === true ||
       (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
     if (!installed || !window.fetch) return;
@@ -86,14 +86,14 @@
 </script>
 
 <title>RDecants — Perfumes originales en frascos de 3, 5 y 10 ml</title>
-<meta name="description" content="Prueba perfumes originales sin comprar la botella completa. Frascos pequeños (decants) de 3, 5 y 10 ml desde $100. Envíos a todo México y pedidos por WhatsApp.">
+<meta name="description" content="Prueba perfumes originales sin comprar la botella completa. Decants de 3, 5 y 10 ml, packs para empezar y envíos a todo México. Pedidos por WhatsApp.">
 <meta name="theme-color" content="#F5F1E8">
 
-<link rel="icon" href="/favicon.ico?v=2026.08.06.1" sizes="any">
-<link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/favicon-32.png?v=2026.08.06.1">
-<link rel="icon" type="image/png" sizes="16x16" href="/assets/brand/favicon-16.png?v=2026.08.06.1">
-<link rel="apple-touch-icon" sizes="180x180" href="/assets/brand/apple-touch-icon.png?v=2026.08.06.1">
-<link rel="manifest" href="/site.webmanifest?v=2026.08.06.1">
+<link rel="icon" href="/favicon.ico?v=2026.08.15.1" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/favicon-32.png?v=2026.08.15.1">
+<link rel="icon" type="image/png" sizes="16x16" href="/assets/brand/favicon-16.png?v=2026.08.15.1">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/brand/apple-touch-icon.png?v=2026.08.15.1">
+<link rel="manifest" href="/site.webmanifest?v=2026.08.15.1">
 <link rel="canonical" href="https://rdecants.com/">
 
 <!-- Local demo catalog is dev-only; this flag keeps demo SKUs out of production. -->
@@ -133,12 +133,12 @@
     HTML itself is served no-cache so browsers always get
     the latest version string.
 
-  Current version: 2026.08.06.1 - update all ?v= values on deploy.
+  Current version: 2026.08.15.1 - update all ?v= values on deploy.
 -->
-<link rel="stylesheet" href="/assets/css/tokens.css?v=2026.08.06.1">
-<link rel="stylesheet" href="/assets/css/animations.css?v=2026.08.06.1">
-<link rel="stylesheet" href="/assets/css/components.css?v=2026.08.06.1">
-<link rel="stylesheet" href="/assets/css/styles.css?v=2026.08.06.1">
+<link rel="stylesheet" href="/assets/css/tokens.css?v=2026.08.15.1">
+<link rel="stylesheet" href="/assets/css/animations.css?v=2026.08.15.1">
+<link rel="stylesheet" href="/assets/css/components.css?v=2026.08.15.1">
+<link rel="stylesheet" href="/assets/css/styles.css?v=2026.08.15.1">
 
 <!-- LCP preload — the hero photograph.
      Two hints, each scoped with `media` to exactly one of the two
@@ -195,7 +195,7 @@
   </button>
 
   <a href="/" class="header-logo" aria-label="RDecants — inicio">
-    <img class="logo-mark" src="/assets/brand/rdecants-monogram.png?v=2026.08.06.1"
+    <img class="logo-mark" src="/assets/brand/rdecants-monogram.png?v=2026.08.15.1"
          alt="RDecants" width="240" height="171" decoding="async">
     <span class="logo-text">RDECANTS</span>
   </a>
@@ -243,16 +243,18 @@
 
 <main>
 
-<!-- HERO — what we sell, in one sentence, with one dominant action.
-     Deliberately short: the three routes below have to be reachable on a
-     phone without scrolling past a full screen of introduction. -->
+<!-- HERO — the promise, two actions, three trust signals. Nothing else.
+     Deliberately short: the starter packs below have to be reachable on a
+     phone without scrolling past a full screen of introduction, so the hero
+     is one headline, one supporting line, the two routes into the store and
+     the three facts that make a first order feel safe. -->
 <section class="hero">
   <div class="hero-inner">
     <div class="hero-content">
-      <h1 class="hero-title">Prueba perfumes originales sin comprar la botella completa.</h1>
+      <h1 class="hero-title">Tu próximo perfume no tiene que costarte una botella completa</h1>
 
       <p class="hero-desc">
-        Frascos pequeños de 3, 5 y 10 ml desde <span data-entry-price>$100</span>.
+        Prueba fragancias originales desde 3 ml y encuentra la que de verdad va contigo.
       </p>
 
       <div class="hero-actions">
@@ -266,6 +268,30 @@
         <a class="btn-outline" href="/catalogo.html" data-cta="hero-catalog">Ver catálogo</a>
       </div>
 
+      <!-- Fast trust signals. Three, short, no icons bigger than the text. -->
+      <ul class="hero-trust" aria-label="Por qué comprar aquí">
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <path d="M12 3l7 3v5c0 4.4-3 8.3-7 10-4-1.7-7-5.6-7-10V6l7-3Z" stroke-linejoin="round"/>
+            <path d="m9 12 2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          100% originales
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <path d="M11 2h2v2.5h-2z"/>
+            <path d="M10 4.5h4v2.2l1 1.8V21a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V8.5l1-1.8V4.5Z" stroke-linejoin="round"/>
+          </svg>
+          Desde 3 ml
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z" stroke-linejoin="round"/>
+            <circle cx="7" cy="18" r="1.6"/><circle cx="17.5" cy="18" r="1.6"/>
+          </svg>
+          Envíos a todo México
+        </li>
+      </ul>
     </div>
 
     <!-- The product shot: an original bottle beside the actual RDecants
@@ -309,115 +335,101 @@
       </picture>
       <figcaption>De este frasco original salen tus decants de 3, 5 y 10 ml</figcaption>
     </figure>
+  </div>
+</section>
 
-    <!-- Full width under both columns: the three sizes are the product. -->
-    <ul class="hero-sizes" aria-label="Presentaciones disponibles">
-      <li class="hero-size"><b>3 ml</b><span>Prueba corta</span></li>
-      <li class="hero-size"><b>5 ml</b><span>Lo más pedido</span></li>
-      <li class="hero-size"><b>10 ml</b><span>Ya te gustó</span></li>
+<!-- PACKS — the easiest possible first purchase, immediately after the hero.
+     Someone who wants to try perfume and cannot name a single fragrance is
+     the visitor this page exists for, and asking them to browse 90 SKUs is
+     asking them to leave. Each pack is three 3 ml decants covering three
+     situations, filled from the live catalog by the SAME ranking engine the
+     guided finder uses (see recommendations/starterPacks.js), so nothing
+     sold out, incompatible or invented can end up in the box.
+     The price is the sum of its three real parts — there is no pack
+     discount upstream, so no savings badge is shown. -->
+<section class="section section--sunk section--tight" id="packs" aria-labelledby="packs-title">
+  <div class="container">
+    <div class="section-header fade-up">
+      <div>
+        <h2 class="section-title" id="packs-title">Empieza con un pack</h2>
+        <p class="section-sub">Tres decants de 3 ml listos para probar. Sin elegir entre 90 perfumes.</p>
+      </div>
+    </div>
+
+    <ul class="packs-rail" id="packs-rail" aria-label="Packs para empezar" aria-busy="true">
+      <li><div class="pack-skeleton" aria-hidden="true"></div></li>
+      <li><div class="pack-skeleton" aria-hidden="true"></div></li>
+      <li><div class="pack-skeleton" aria-hidden="true"></div></li>
     </ul>
   </div>
 </section>
 
-<!-- ¿QUÉ BUSCAS? — three routes, immediately after the hero.
+<!-- PREFIERO ELEGIR YO — three routes for the visitor who does not want a
+     pack chosen for them.
      Three and not five: "cita", "fiesta" and "noche" are one decision for
      someone standing in front of a homepage, and the catalogue metadata
      cannot separate them anyway. Each tile is a preset of the SAME finder
      answers, so a tile and the questionnaire can never rank differently. -->
-<section class="section section--sunk" id="intenciones" aria-labelledby="intenciones-title">
+<section class="section section--tight" id="intenciones" aria-labelledby="intenciones-title">
   <div class="container">
     <div class="section-header fade-up">
       <div>
-        <h2 class="section-title" id="intenciones-title">¿Qué buscas?</h2>
+        <h2 class="section-title" id="intenciones-title">Prefiero elegir yo</h2>
+        <p class="section-sub">Explora según la ocasión que traes en mente.</p>
       </div>
     </div>
 
+    <!-- Row cards, not vertical tiles: on a phone the icon, the label and
+         the "this goes somewhere" chevron read in one horizontal sweep, and
+         each row is a 76px target instead of two 132px boxes sharing a line
+         with a third stranded underneath. -->
     <ul class="intent-grid intent-grid--three" id="intent-grid">
       <li>
         <a class="intent-tile" href="/catalogo.html?intent=dia" data-path="dia">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-            <circle cx="12" cy="12" r="4"/>
-            <path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19" stroke-linecap="round"/>
-          </svg>
+          <span class="intent-tile-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+              <circle cx="12" cy="12" r="4"/>
+              <path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19" stroke-linecap="round"/>
+            </svg>
+          </span>
           <span class="intent-tile-label">De día
             <span class="intent-tile-hint">Diario, escuela, trabajo</span>
           </span>
+          <svg class="intent-tile-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <path d="m9 5 7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </a>
       </li>
       <li>
         <a class="intent-tile" href="/catalogo.html?intent=salir" data-path="salir">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-            <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" stroke-linejoin="round"/>
-          </svg>
+          <span class="intent-tile-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" stroke-linejoin="round"/>
+            </svg>
+          </span>
           <span class="intent-tile-label">Para salir
             <span class="intent-tile-hint">Citas, fiesta, noche</span>
           </span>
+          <svg class="intent-tile-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <path d="m9 5 7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </a>
       </li>
       <li>
         <a class="intent-tile" href="/elegir.html" data-path="regalo">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-            <path d="M4 10h16v10H4zM3 6h18v4H3zM12 6v14" stroke-linejoin="round"/>
-            <path d="M12 6S10.5 3 8.5 3a2 2 0 0 0 0 4M12 6s1.5-3 3.5-3a2 2 0 0 1 0 4" stroke-linejoin="round"/>
-          </svg>
+          <span class="intent-tile-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M4 10h16v10H4zM3 6h18v4H3zM12 6v14" stroke-linejoin="round"/>
+              <path d="M12 6S10.5 3 8.5 3a2 2 0 0 0 0 4M12 6s1.5-3 3.5-3a2 2 0 0 1 0 4" stroke-linejoin="round"/>
+            </svg>
+          </span>
           <span class="intent-tile-label">Para regalar
             <span class="intent-tile-hint">Te ayudamos a elegir</span>
           </span>
+          <svg class="intent-tile-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <path d="m9 5 7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </a>
-      </li>
-    </ul>
-  </div>
-</section>
-
-<!-- WHAT A DECANT IS — the one explanation someone who has never heard the
-     word needs, before any product is offered. -->
-<section class="howto-strip" aria-label="Cómo se prepara tu decant">
-  <div class="container">
-    <ol class="howto-list">
-      <li class="howto-step">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-          <path d="M10 2h4v3h-4z"/>
-          <path d="M8.5 5h7v3.2l1.5 2.6V21a1 1 0 0 1-1 1h-8a1 1 0 0 1-1-1V10.8L8.5 8.2V5Z" stroke-linejoin="round"/>
-        </svg>
-        <span>Botella original</span>
-      </li>
-      <li class="howto-step">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-          <path d="M11 2h2v2.5h-2z"/>
-          <path d="M10 4.5h4v2.2l1 1.8V21a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V8.5l1-1.8V4.5Z" stroke-linejoin="round"/>
-          <path d="M10 14h4" stroke-linecap="round"/>
-        </svg>
-        <span>Tu decant de 3, 5 o 10 ml</span>
-      </li>
-      <li class="howto-step">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-          <circle cx="12" cy="12" r="9"/>
-          <path d="m8.5 12.2 2.4 2.4 4.6-5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <span>Listo para usar</span>
-      </li>
-    </ol>
-
-    <ul class="trust-line" aria-label="Nuestras garantías">
-      <li>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-          <path d="M12 3l7 3v5c0 4.4-3 8.3-7 10-4-1.7-7-5.6-7-10V6l7-3Z" stroke-linejoin="round"/>
-          <path d="m9 12 2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        100% originales
-      </li>
-      <li>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-          <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round"/>
-        </svg>
-        Preparados al momento
-      </li>
-      <li>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-          <path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z" stroke-linejoin="round"/>
-          <circle cx="7" cy="18" r="1.6"/><circle cx="17.5" cy="18" r="1.6"/>
-        </svg>
-        Envíos a todo México
       </li>
     </ul>
   </div>
@@ -456,13 +468,17 @@
   </div>
 </section>
 
-<!-- THE ASSISTANT, offered once more — quiet, after the picks.
+<!-- THE RESCUE CTA — compact, immediately after the picks.
      Someone who did not recognise any of Roger's four needs a way out that
-     is not "here is the whole catalogue". -->
-<section class="section section--sunk" id="asistente" aria-labelledby="asistente-title">
+     is not "here is the whole catalogue". Strong enough to be obvious,
+     small enough not to compete with the hero. -->
+<section class="section section--sunk section--band" id="asistente" aria-labelledby="asistente-title">
   <div class="container">
     <div class="finder-prompt">
-      <p id="asistente-title">¿No sabes cuál elegir? Responde tres preguntas.</p>
+      <div class="finder-prompt-copy">
+        <p class="finder-prompt-title" id="asistente-title">¿No sabes cuál elegir?</p>
+        <p class="finder-prompt-note">Responde tres preguntas.</p>
+      </div>
       <a class="btn-primary" href="/elegir.html" data-cta="assistant">Ayúdame a elegir</a>
     </div>
   </div>
@@ -481,7 +497,7 @@
       <a class="section-link" href="/catalogo.html?sort=newest">Ver todos</a>
     </div>
 
-    <ul class="rail-grid rail-grid--four" id="newest-grid" aria-label="Fragancias recién agregadas" aria-busy="true">
+    <ul class="rail-grid rail-grid--four rail-grid--scroll" id="newest-grid" aria-label="Fragancias recién agregadas" aria-busy="true">
       <li><div class="card-skeleton" aria-hidden="true"><div class="card-skeleton-body"><div class="card-skeleton-line card-skeleton-line--short"></div><div class="card-skeleton-line card-skeleton-line--wide"></div><div class="card-skeleton-line"></div></div></div></li>
       <li><div class="card-skeleton" aria-hidden="true"><div class="card-skeleton-body"><div class="card-skeleton-line card-skeleton-line--short"></div><div class="card-skeleton-line card-skeleton-line--wide"></div><div class="card-skeleton-line"></div></div></div></li>
       <li><div class="card-skeleton" aria-hidden="true"><div class="card-skeleton-body"><div class="card-skeleton-line card-skeleton-line--short"></div><div class="card-skeleton-line card-skeleton-line--wide"></div><div class="card-skeleton-line"></div></div></div></li>
@@ -490,8 +506,14 @@
   </div>
 </section>
 
-<!-- CÓMO FUNCIONA -->
-<section class="section" id="como-funciona" aria-labelledby="como-funciona-title">
+<!-- CÓMO FUNCIONA — ONE process section, not two.
+     The page used to explain the same idea twice: a "Botella original → tu
+     decant → listo para usar" strip under the hero, and then three steps
+     further down that said it again in sentences. They are merged here: the
+     three steps carry the instructions, the strip closes them as a picture
+     of the same process, and the three guarantees sit under it. Nothing
+     below this section repeats any of it. -->
+<section class="section section--sunk" id="como-funciona" aria-labelledby="como-funciona-title">
   <div class="container">
     <div class="section-header fade-up">
       <div>
@@ -500,42 +522,89 @@
       </div>
     </div>
 
-    <ol class="steps-grid fade-up">
+    <ol class="steps-grid steps-grid--compact fade-up">
       <li class="step-card">
+        <span class="step-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M10 2h4v3h-4z"/>
+            <path d="M8.5 5h7v3.2l1.5 2.6V21a1 1 0 0 1-1 1h-8a1 1 0 0 1-1-1V10.8L8.5 8.2V5Z" stroke-linejoin="round"/>
+          </svg>
+        </span>
         <p class="step-num" aria-hidden="true">1</p>
         <h3 class="step-title">Elige tu perfume</h3>
         <p class="step-desc">Explora el catálogo o deja que te recomendemos según lo que buscas.</p>
       </li>
       <li class="step-card">
+        <span class="step-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 3.5c2.8 3.2 5 5.9 5 8.4a5 5 0 0 1-10 0c0-2.5 2.2-5.2 5-8.4Z" stroke-linejoin="round"/>
+          </svg>
+        </span>
         <p class="step-num" aria-hidden="true">2</p>
         <h3 class="step-title">Selecciona 3, 5 o 10 ml</h3>
         <p class="step-desc">Prueba en 3 o 5 ml y sube a 10 ml cuando ya sabes que es para ti.</p>
       </li>
       <li class="step-card">
+        <span class="step-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.5L3.5 20.5l1.6-5A8.5 8.5 0 1 1 21 11.5Z" stroke-linejoin="round"/>
+          </svg>
+        </span>
         <p class="step-num" aria-hidden="true">3</p>
         <h3 class="step-title">Envía tu pedido por WhatsApp</h3>
         <p class="step-desc">Ahí confirmamos disponibilidad, envío y forma de pago.</p>
       </li>
     </ol>
-  </div>
-</section>
 
-<!-- AUTENTICIDAD — said once, in one place. -->
-<section class="section section--sunk" id="autenticidad" aria-labelledby="autenticidad-title">
-  <div class="container">
-    <div class="authenticity-panel fade-up">
-      <h2 id="autenticidad-title">Cada decant sale de un frasco original.</h2>
-      <div>
-        <p>
-          Compramos los frascos completos en la casa o en distribuidores autorizados y
-          servimos cada decant al momento de tu pedido, sin clones ni reformulaciones.
-          Si quieres verificarlo, pídenos por WhatsApp evidencia del lote de la fragancia
-          que vas a comprar y te la mandamos antes de que pagues.
-        </p>
-        <a class="btn-ghost" href="https://wa.me/5219516513018" target="_blank" rel="noopener">
-          Solicitar evidencia del lote
-        </a>
-      </div>
+    <!-- The process, as a picture, closing the same section. -->
+    <div class="process-strip fade-up">
+      <ol class="howto-list" aria-label="Cómo se prepara tu decant">
+        <li class="howto-step">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <path d="M10 2h4v3h-4z"/>
+            <path d="M8.5 5h7v3.2l1.5 2.6V21a1 1 0 0 1-1 1h-8a1 1 0 0 1-1-1V10.8L8.5 8.2V5Z" stroke-linejoin="round"/>
+          </svg>
+          <span>Frasco original</span>
+        </li>
+        <li class="howto-step">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <path d="M11 2h2v2.5h-2z"/>
+            <path d="M10 4.5h4v2.2l1 1.8V21a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V8.5l1-1.8V4.5Z" stroke-linejoin="round"/>
+            <path d="M10 14h4" stroke-linecap="round"/>
+          </svg>
+          <span>Servimos 3, 5 o 10 ml</span>
+        </li>
+        <li class="howto-step">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="m8.5 12.2 2.4 2.4 4.6-5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Listo para usar</span>
+        </li>
+      </ol>
+
+      <ul class="trust-line" aria-label="Nuestras garantías">
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <path d="M12 3l7 3v5c0 4.4-3 8.3-7 10-4-1.7-7-5.6-7-10V6l7-3Z" stroke-linejoin="round"/>
+            <path d="m9 12 2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          100% originales
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round"/>
+          </svg>
+          Preparados al momento
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z" stroke-linejoin="round"/>
+            <circle cx="7" cy="18" r="1.6"/><circle cx="17.5" cy="18" r="1.6"/>
+          </svg>
+          Envíos a todo México
+        </li>
+      </ul>
     </div>
   </div>
 </section>
@@ -553,7 +622,12 @@
     <div class="faq-list fade-up">
       <details class="faq-item">
         <summary class="faq-q">¿Los perfumes son originales?</summary>
-        <p class="faq-a">Sí. Todos los decants provienen de frascos originales y auténticos. Puedes pedirnos evidencia del lote de cualquier fragancia antes de pagar.</p>
+        <p class="faq-a">
+          Sí. Compramos los frascos completos en la casa o en distribuidores autorizados y
+          servimos cada decant al momento de tu pedido, sin clones ni reformulaciones.
+          <a href="https://wa.me/5219516513018" target="_blank" rel="noopener">Pídenos por WhatsApp evidencia del lote</a>
+          de la fragancia que vas a comprar y te la mandamos antes de que pagues.
+        </p>
       </details>
       <details class="faq-item">
         <summary class="faq-q">¿Qué tamaño me conviene?</summary>
@@ -615,7 +689,7 @@
   ?v= must match the version in CSS links above.
   Update on every deploy: increment VERSION file + all ?v= strings.
 -->
-<script type="module" src="/assets/js/app.js?v=2026.08.06.1"></script>
+<script type="module" src="/assets/js/app.js?v=2026.08.15.1"></script>
 
 </body>
 </html>

@@ -53,37 +53,80 @@ test('the catalog page owns the grid, and the finder page owns the questions', (
 
 /* ── B. Home section order and content ───────────────────────── */
 
-test('home order is hero -> paths -> trust -> Roger -> finder -> new -> how it works -> authenticity -> faq', () => {
+test('home order is hero -> packs -> routes -> Roger -> finder -> new -> how it works -> faq', () => {
+  /* The funnel, in the order a purchase actually happens:
+       reduce friction (hero + three trust signals)
+     → offer the easy buy       (packs)
+     → let them self-segment    (Prefiero elegir yo)
+     → show curation            (Roger recomienda)
+     → rescue the undecided     (the finder prompt)
+     → allow exploration        (Nuevos)
+     → answer the rest          (Cómo funciona, FAQ)
+
+     The previous order put three explanation blocks between the hero and
+     anything a visitor could buy. */
   const html = read('index.html');
   const at = needle => html.indexOf(needle);
 
-  const hero          = at('class="hero"');
-  const intents       = at('id="intenciones"');
-  const trust         = at('class="howto-strip"');
-  const roger         = at('id="roger-recomienda"');
-  const assistant     = at('id="asistente"');
-  const newest        = at('id="nuevos"');
-  const howItWorks    = at('id="como-funciona"');
-  const authenticity  = at('id="autenticidad"');
-  const faq           = at('id="faq"');
+  const hero       = at('class="hero"');
+  const packs      = at('id="packs"');
+  const intents    = at('id="intenciones"');
+  const roger      = at('id="roger-recomienda"');
+  const assistant  = at('id="asistente"');
+  const newest     = at('id="nuevos"');
+  const howItWorks = at('id="como-funciona"');
+  const faq        = at('id="faq"');
 
   for (const [name, index] of Object.entries({
-    hero, intents, trust, roger, assistant, newest, howItWorks, authenticity, faq,
+    hero, packs, intents, roger, assistant, newest, howItWorks, faq,
   })) {
     assert.ok(index > -1, `${name} present`);
   }
 
-  /* Progressive disclosure: say what to do before showing what to buy.
-     The three routes come before any product, so a visitor who knows what
-     kind of thing they want never has to read a rail to find the way in. */
-  assert.ok(hero < intents, 'hero before the routes');
-  assert.ok(intents < trust, 'the routes come before the explanation strip');
-  assert.ok(trust < roger, 'what a decant is, before the first product');
-  assert.ok(roger < assistant, "Roger's picks before the fallback prompt");
-  assert.ok(assistant < newest, 'the finder prompt before the new arrivals');
+  assert.ok(hero < packs, 'the hero, then something to buy');
+  assert.ok(packs < intents, 'the easiest purchase comes before the browse routes');
+  assert.ok(intents < roger, 'self-service routes before the curated rail');
+  assert.ok(roger < assistant, "Roger's picks before the rescue prompt");
+  assert.ok(assistant < newest, 'the rescue prompt before the discovery rail');
   assert.ok(newest < howItWorks, 'products before the long-form content');
-  assert.ok(howItWorks < authenticity, 'how it works before authenticity');
-  assert.ok(authenticity < faq, 'authenticity before the FAQ');
+  assert.ok(howItWorks < faq, 'how it works before the FAQ');
+});
+
+test('the packs are the first thing on the page a visitor can buy', () => {
+  const html = read('index.html');
+  const section = html.slice(html.indexOf('id="packs"'), html.indexOf('</section>', html.indexOf('id="packs"')));
+
+  assert.match(section, /id="packs-rail"/, 'mount point for the resolved packs');
+  assert.match(section, /aria-busy="true"/, 'starts in a loading state');
+  assert.match(section, /pack-skeleton/, 'the card footprint is reserved so nothing jumps');
+
+  /* No pack name, product, price or "3 × 3 ml" is written into the HTML: a
+     pack is resolved from the live catalog at runtime, so the page can never
+     advertise a fragrance that is sold out or a price that has moved. */
+  assert.ok(!/\$\d/.test(section), 'no hardcoded price in the markup');
+  for (const template of ['Pack Todo Terreno', 'Pack Para Salir', 'Pack Para Ella']) {
+    assert.ok(!section.includes(template), `${template} is rendered, not hardcoded`);
+  }
+});
+
+test('the home never advertises a discount the backend cannot honour', () => {
+  /* A pack is the sum of its three real 3 ml prices. R Supply OS has no pack
+     discount, so no savings badge may be invented here or in the renderer. */
+  const html = read('index.html');
+  const logic = read('assets/js/recommendations/starterPacks.js');
+  const ui = read('assets/js/ui/starterPacks.js');
+
+  /* Comments are stripped first: the source explains WHY there is no badge,
+     and that reasoning is the thing most worth keeping. */
+  const executable = src => src
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/<!--[\s\S]*?-->/g, ' ');
+
+  for (const source of [html, logic, ui]) {
+    assert.doesNotMatch(executable(source), /Ahorra|ahorro|-\d+\s*%|antes \$/i,
+      'no invented savings language reaches the customer');
+  }
+  assert.match(logic, /savings:\s*0/, 'the savings field is explicitly zero');
 });
 
 test('the home no longer claims a best-seller ranking it never produced', () => {
@@ -103,26 +146,52 @@ test('the home no longer claims a best-seller ranking it never produced', () => 
   assert.match(rendered, /<h2[^>]*>Roger recomienda<\/h2>/);
 });
 
-test('the hero states what is sold, the sizes and the entry price', () => {
+test('the hero carries the promise, two actions and three trust signals', () => {
   const html = read('index.html');
-  assert.match(html, /Prueba perfumes originales sin comprar la botella completa\./);
-  assert.match(html, /Frascos pequeños de 3, 5 y 10 ml desde/);
-  assert.match(html, /data-entry-price/, 'the entry price is a live value, not a frozen string');
+  const hero = html.slice(html.indexOf('<section class="hero">'), html.indexOf('</section>', html.indexOf('<section class="hero">')));
+
+  assert.match(hero, /Tu próximo perfume no tiene que costarte una botella completa/);
+  assert.match(hero, /Prueba fragancias originales desde 3 ml/);
+  assert.match(hero, /href="\/elegir\.html"/, 'primary action is the finder');
+  assert.match(hero, /href="\/catalogo\.html"/, 'secondary action is the catalog');
+
+  /* Three compact signals, and nothing else between the actions and the
+     packs — the hero must not become a section of its own again. */
+  const trust = hero.slice(hero.indexOf('class="hero-trust"'), hero.indexOf('</ul>', hero.indexOf('class="hero-trust"')));
+  assert.match(trust, /100% originales/);
+  assert.match(trust, /Desde 3 ml/);
+  assert.match(trust, /Envíos a todo México/);
+  assert.equal((trust.match(/<li>/g) ?? []).length, 3, 'three signals, no more');
+
+  assert.ok(!hero.includes('class="hero-sizes"'),
+    'the 3/5/10 ml chips moved into "Cómo funciona" — the hero is not an explainer');
 });
 
-test('the trust line is stated once, with the explanation strip', () => {
+test('each promise is claimed in at most two places, both deliberate', () => {
   const html = read('index.html');
+
+  /* The hero states the fast signals a first-time visitor needs before they
+     scroll; the process strip closes "Cómo funciona" with the guarantees.
+     That is two occurrences by design. A third means the page has started
+     padding itself again, which is what the old four trust blocks were. */
   const strip = html.slice(html.indexOf('class="trust-line"'), html.indexOf('</ul>', html.indexOf('class="trust-line"')));
   assert.match(strip, /100% originales/);
   assert.match(strip, /Preparados al momento/);
   assert.match(strip, /Envíos a todo México/);
 
-  /* Repeating the same three promises in four places is what made the old
-     page feel padded. One occurrence each. */
-  for (const promise of ['100% originales', 'Preparados al momento']) {
-    assert.equal(
-      (html.match(new RegExp(promise, 'g')) ?? []).length, 1,
-      `"${promise}" is claimed exactly once on the home`,
+  /* Comments and the structured-data block are not customer-visible copy. */
+  const rendered = html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g, '');
+
+  for (const [promise, limit] of [
+    ['100% originales', 2],       /* hero + process strip */
+    ['Preparados al momento', 1], /* process strip only */
+    ['Envíos a todo México', 4],  /* infobar, hero, strip, footer tagline */
+  ]) {
+    assert.ok(
+      (rendered.match(new RegExp(promise, 'g')) ?? []).length <= limit,
+      `"${promise}" is claimed more than ${limit} time(s) on the home`,
     );
   }
 });
@@ -136,6 +205,10 @@ test('the best-seller rail links to the full catalog instead of inlining it', ()
 
 test('exactly three shopping routes are offered, each with a destination', () => {
   const html = read('index.html');
+  const section = html.slice(html.indexOf('id="intenciones"'), html.indexOf('</section>', html.indexOf('id="intenciones"')));
+  assert.match(section, /Prefiero elegir yo/, 'named for what it is: the self-service route');
+  assert.match(section, /Explora según la ocasión que traes en mente\./);
+
   const grid = html.slice(html.indexOf('id="intent-grid"'), html.indexOf('</ul>', html.indexOf('id="intent-grid"')));
 
   /* Three, not four: "cita", "fiesta" and "noche" are one decision for a
@@ -162,9 +235,15 @@ test('exactly three shopping routes are offered, each with a destination', () =>
   assert.equal((grid.match(/data-path="/g) ?? []).length, 3);
 });
 
-test('the guided flow is offered once more, as a quiet secondary prompt', () => {
+test('the guided flow is offered once more, as a compact rescue prompt', () => {
   const html = read('index.html');
-  assert.match(html, /¿No sabes cuál elegir\? Responde tres preguntas\./);
+  const section = html.slice(html.indexOf('id="asistente"'), html.indexOf('</section>', html.indexOf('id="asistente"')));
+
+  assert.match(section, /¿No sabes cuál elegir\?/, 'the question, on its own line');
+  assert.match(section, /Responde tres preguntas\./, 'and what it costs to answer');
+  assert.match(section, /href="\/elegir\.html"/);
+  assert.match(html, /class="section[^"]*section--band"[^>]*id="asistente"/,
+    'compact by construction: it must not compete with the hero');
 });
 
 test('the new-arrivals rail is short and links out rather than growing', () => {
@@ -186,13 +265,21 @@ test('how it works is three short steps', () => {
   assert.match(steps, /Envía tu pedido por WhatsApp/);
 });
 
-test('authenticity is stated once, in one compact section', () => {
+test('authenticity is stated once — and the lot evidence is still one tap away', () => {
+  /* The standing "Cada decant sale de un frasco original" panel is gone: it
+     was a full section restating the trust line and the FAQ's first answer.
+     What it actually carried — the offer to send lot evidence over WhatsApp
+     before you pay — moved into that FAQ answer, so nothing was lost except
+     the third telling. */
   const html = read('index.html');
-  assert.equal((html.match(/id="autenticidad"/g) ?? []).length, 1);
-  assert.match(html, /frasco original/i, 'the actual claim');
-  assert.match(html, /lote/i, 'the customer can ask for lot evidence');
-  /* The old page repeated the same promise in a four-item trust strip
-     as well as a separate authenticity block. */
+  assert.ok(!html.includes('id="autenticidad"'), 'no standing authenticity section');
+  assert.ok(!html.includes('class="authenticity-panel"'));
+
+  const faq = html.slice(html.indexOf('class="faq-list'), html.indexOf('</div>', html.indexOf('class="faq-list')));
+  assert.match(faq, /frasco/i, 'the claim survives');
+  assert.match(faq, /lote/i, 'and so does the lot evidence');
+  assert.match(faq, /wa\.me\/5219516513018/, 'as a real WhatsApp action, not a description of one');
+
   assert.doesNotMatch(html, /class="trust-strip"/, 'no duplicate trust strip on the home');
 });
 
@@ -253,6 +340,7 @@ test('footer links point to live routes only', () => {
 
 test('app.js is the discovery entry point and mounts no catalog machinery', () => {
   const app = read('assets/js/app.js');
+  assert.ok(app.includes('renderStarterPacks'), 'home renders the starter packs');
   assert.ok(app.includes('renderBestsellers'), 'home renders the best-seller rail');
   assert.ok(!app.includes('renderProducts'), 'home does not render the catalog grid');
   assert.ok(!app.includes('setupGuide('), 'the guide bar is gone with the merged page');

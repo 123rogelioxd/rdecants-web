@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await renderProducts();
 
   _setupInlineSearch();
+  _setupQuickGender();
   _applyUrlState(window.location.search);
   _applyFocusRequest(window.location.search);
 
@@ -97,6 +98,47 @@ function _setupInlineSearch() {
       input.blur();
     }
   });
+}
+
+/* "Explora rápido por género" — the two buttons above the grid.
+   They are a shortcut to the catalog's own gender filter, not a second
+   filtering path: SearchBar.applyGender sets the same state the drawer pill
+   sets and re-runs the same engine, so the pill, the removable chip and the
+   count can never disagree with these buttons. Tapping the active one again
+   clears the filter, which is why the pressed state is read back from what
+   SearchBar actually applied rather than assumed. */
+function _setupQuickGender() {
+  const root = document.getElementById('quick-gender');
+  if (!root) return;
+
+  const buttons = [...root.querySelectorAll('[data-gender]')];
+  if (!buttons.length) return;
+
+  const sync = active => {
+    buttons.forEach(btn =>
+      btn.setAttribute('aria-pressed', String(btn.dataset.gender === active)));
+  };
+
+  root.addEventListener('click', event => {
+    const btn = event.target.closest('[data-gender]');
+    if (!btn) return;
+
+    const active = SearchBar.applyGender(btn.dataset.gender) ?? null;
+    sync(active);
+    if (active) Tracker.genderFilterApplied(active, 'catalog_quick');
+    else Tracker.filterCleared();
+  });
+
+  /* The same filter can also be changed from the drawer pill, the removable
+     chip or "Limpiar todo". Reconciling after any click keeps these buttons
+     from showing a pressed state the grid no longer has — cheaper and less
+     brittle than mirroring every one of those code paths.
+
+     Synchronously, not in a rAF: every one of those handlers is bound to an
+     element deeper than the document, so by the time the click bubbles here
+     the state is already updated — and a rAF would simply never run in a
+     backgrounded tab, leaving the buttons lying about the filter. */
+  document.addEventListener('click', () => sync(SearchBar.getState().gender ?? null));
 }
 
 /* Arriving from the header magnifier: focus the field (and, where the browser

@@ -179,7 +179,12 @@ function _renderStep({ focus = false } = {}) {
     : `<div class="finder-options" role="group" aria-labelledby="finder-question">
         ${question.options.map(option => `
           <button type="button" class="finder-option" data-value="${option.value}"
-            aria-pressed="${_answers[question.id] === option.value}">${option.label}</button>`).join('')}
+            aria-pressed="${_answers[question.id] === option.value}">
+            <span class="finder-option-copy">
+              <span class="finder-option-label">${option.label}</span>
+              ${option.hint ? `<span class="finder-option-hint">${option.hint}</span>` : ''}
+            </span>
+          </button>`).join('')}
       </div>`;
 
   /* A compound step cannot auto-advance — the customer has two choices to
