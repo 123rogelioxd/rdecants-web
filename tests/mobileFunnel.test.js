@@ -18,7 +18,12 @@ import { ANSWER_VALUES } from '../assets/js/recommendations/engine.js';
 import { getIntentAnswers } from '../assets/js/catalog/intents.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const read = path => readFileSync(join(root, path), 'utf8');
+/* Line endings are normalised before matching, the same way
+   redesignSystem.test.js does it. This repo checks out with core.autocrlf on
+   Windows, so a source assertion that spans a line break passes in the
+   working copy that wrote it and fails on a fresh clone of the same commit —
+   a difference in the checkout, never in the code. */
+const read = path => readFileSync(join(root, path), 'utf8').replace(/\r\n/g, '\n');
 
 /* ── A. Quick gender exploration on the catalog ──────────────── */
 

@@ -30,7 +30,9 @@ import { getVariantForSize } from '../assets/js/utils/prices.js';
 import { loadLiveCatalog } from './helpers/liveCatalog.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const read = path => readFileSync(join(root, path), 'utf8');
+/* Normalised for the same reason as redesignSystem / mobileFunnel: a source
+   assertion must not depend on how git materialised the line endings. */
+const read = path => readFileSync(join(root, path), 'utf8').replace(/\r\n/g, '\n');
 
 const CATALOG = loadLiveCatalog();
 const PACKS = resolveStarterPacks(CATALOG);
