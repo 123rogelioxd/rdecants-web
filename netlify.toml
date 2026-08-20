@@ -54,6 +54,16 @@
   status = 200
 
 [[redirects]]
+  from   = "/perfumes"
+  to     = "/perfumes.html"
+  status = 200
+
+[[redirects]]
+  from   = "/cotiza"
+  to     = "/cotiza.html"
+  status = 200
+
+[[redirects]]
   from   = "/elegir"
   to     = "/elegir.html"
   status = 200

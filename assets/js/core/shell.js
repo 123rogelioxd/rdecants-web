@@ -38,6 +38,7 @@ export function installBridge() {
 
   window.__rd.cart = {
     add:       (id, size) => Cart.add(id, size),
+    addBottle: (id, key)  => Cart.addBottle(id, key),
     addPack:   (id)       => Cart.addPack(id),
     addBundle: (bundle)   => Cart.addBundle(bundle),
     remove:    (key)      => Cart.remove(key),

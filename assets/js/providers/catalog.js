@@ -247,6 +247,10 @@ function _mapProduct(p) {
       }, id))
   ).filter(v => Number.isFinite(v.size) && Number.isFinite(v.price) && v.price > 0);
 
+  const bottles = (Array.isArray(p.bottles) ? p.bottles : [])
+    .map(_mapBottleOffer)
+    .filter(Boolean);
+
   return {
     id,
     sku: p.sku ?? p.product_sku ?? null,
@@ -278,6 +282,40 @@ function _mapProduct(p) {
     fragrance: _mapFragrance(p.fragrance),
     prices,
     variants,
+    bottles,
+    offer_kinds: _mapOfferKinds(p.offer_kinds, variants, bottles),
+  };
+}
+
+function _mapBottleOffer(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const offerKey = String(raw.offer_key ?? '').trim();
+  const price = Number(raw.price);
+  const stock = _safeStock(raw.stock);
+  if (!offerKey || !Number.isFinite(price) || price <= 0 || stock <= 0) return null;
+
+  return {
+    offer_key: offerKey,
+    ml: Number(raw.ml),
+    bottle_ml: Number(raw.bottle_ml),
+    remaining_percent: raw.remaining_percent === null ? null : Number(raw.remaining_percent),
+    condition: String(raw.condition ?? ''),
+    condition_label: String(raw.condition_label ?? 'Botella'),
+    sealed: Boolean(raw.sealed),
+    price,
+    stock,
+    label: String(raw.label ?? raw.condition_label ?? 'Botella'),
+  };
+}
+
+function _mapOfferKinds(raw, variants, bottles) {
+  const decants = Boolean(raw?.decants ?? variants.length);
+  const hasBottles = Boolean(raw?.bottles ?? bottles.length);
+  return {
+    decants,
+    bottles: hasBottles,
+    both: decants && hasBottles,
+    primary: raw?.primary ?? (decants ? 'decants' : hasBottles ? 'bottles' : null),
   };
 }
 

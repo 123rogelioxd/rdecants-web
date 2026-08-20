@@ -200,11 +200,17 @@ export function buildPreviewPayload(codes, items = []) {
     channel: 'storefront',
     items: all
       .filter(item => item && item.type !== 'pack')
-      .map(item => ({
-        product_id: item.product_id ?? item.sourceId ?? null,
-        variant_id: item.variant_id ?? null,
-        quantity: Number(item.qty) || 1,
-      })),
+      .map(item => item.type === 'bottle'
+        ? {
+            product_id: item.product_id ?? item.sourceId ?? null,
+            offer_key: item.offer_key,
+            quantity: 1,
+          }
+        : {
+            product_id: item.product_id ?? item.sourceId ?? null,
+            variant_id: item.variant_id ?? null,
+            quantity: Number(item.qty) || 1,
+          }),
     ...(packs.length ? { packs } : {}),
   };
 }

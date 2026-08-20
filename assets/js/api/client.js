@@ -85,4 +85,7 @@ export const ApiClient = {
   /* Discount PREVIEW only — R Supply OS is the source of truth and recalculates
      during Web Order creation. The storefront never computes discounts itself. */
   previewDiscount:    (payload) => _postSafe('/api/web/discounts/preview', payload),
+  searchQuoteCatalog: (query, limit = 24) => _get(`/api/web/quote/search?q=${encodeURIComponent(query)}&limit=${limit}`),
+  priceQuoteBasket:   (items) => _post('/api/web/quote/price', { items }),
+  submitQuote:        (payload) => _post('/api/web/quote', payload),
 };

@@ -318,19 +318,20 @@ test('the home FAQ keeps only the four questions that block a first order', () =
 
 /* ── C. Header and footer ────────────────────────────────────── */
 
-test('the header holds only the logo, two destinations, search and cart', () => {
+test('the header exposes the four canonical storefront destinations, search and cart', () => {
   const html = read('index.html');
   const header = html.slice(html.indexOf('<header class="header">'), html.indexOf('</header>'));
 
   assert.match(header, /class="header-logo"/);
   assert.match(header, /href="\/catalogo\.html"/);
+  assert.match(header, /href="\/perfumes\.html"/);
+  assert.match(header, /href="\/cotiza\.html"/);
   assert.match(header, /href="\/elegir\.html"/);
   assert.match(header, /id="btn-hs-mobile"/, 'search is an icon');
   assert.match(header, /id="cart-count"/, 'cart shows a quantity');
 
-  /* Two destinations: the catalog as a plain link, the finder as the
-     highlighted action. */
-  assert.equal((header.match(/class="header-nav-link"/g) ?? []).length, 1, 'one plain nav link');
+  /* Three browse/quote destinations plus the highlighted finder action. */
+  assert.equal((header.match(/class="header-nav-link"/g) ?? []).length, 3, 'three plain nav links');
   assert.equal((header.match(/class="nav-cta"/g) ?? []).length, 1, 'one highlighted action');
 
   /* The home page carries no search field at all — not in the header and not

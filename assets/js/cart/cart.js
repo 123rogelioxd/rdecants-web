@@ -99,6 +99,55 @@ export const Cart = {
     _commit();
   },
 
+  /** Add one opaque bottle offer to the same cart used by decants and packs. */
+  async addBottle(productId, offerKey) {
+    const product = await CatalogProvider.getProductById(productId);
+    const offer = product?.bottles?.find(candidate => candidate.offer_key === offerKey);
+
+    if (!product || !offer) {
+      showToast('Esa botella ya no está disponible. Actualiza la página.');
+      return false;
+    }
+
+    const key = `bottle-${product.product_id ?? product.id}-${offer.offer_key}`;
+    if (_items.some(item => item.key === key)) {
+      showToast('Esa botella ya está en tu carrito.');
+      return false;
+    }
+
+    _items.push({
+      key,
+      sourceId: product.id,
+      product_id: product.product_id ?? product.id,
+      sku: product.sku ?? null,
+      variant_id: null,
+      offer_key: offer.offer_key,
+      type: 'bottle',
+      name: product.name,
+      house: product.house,
+      size: offer.ml,
+      offer_label: offer.label,
+      condition_label: offer.condition_label,
+      price: offer.price,
+      qty: 1,
+      stock: 1,
+      available_ml: null,
+      image: product.image,
+    });
+
+    Tracker.emit('bottle_added_to_cart', {
+      productId: product.id,
+      condition: offer.condition,
+      price: offer.price,
+    });
+    showToast(`${product.name} — Botella agregada ✓`, {
+      actionLabel: 'Ver carrito',
+      onAction: () => window.__rd?.ui?.openCart?.(),
+    });
+    _commit();
+    return true;
+  },
+
   /**
    * Add a curated pack as ONE indivisible line.
    *
@@ -240,6 +289,10 @@ export const Cart = {
     const item = _items[idx];
 
     if (delta > 0) {
+      if (item.type === 'bottle') {
+        showToast('Cada botella se pide de una en una.');
+        return;
+      }
       const availability = await _getAvailability(item);
       const stock = availability.stock;
       item.stock = stock;
@@ -326,6 +379,7 @@ export const Cart = {
     const item = _items.find(candidate => candidate.key === key);
     if (!item) return false;
     if (item.qty >= item.stock) return false;
+    if (item.type === 'bottle') return false;
     if (item.type === 'pack') return true;
 
     return canConsumeSharedMl(
@@ -404,6 +458,36 @@ export const Cart = {
           qty: Math.min(Math.max(1, Number(item.qty) || 1), stock),
         };
         changed = changed || _packLineChanged(item, updated);
+        reconciled.push(updated);
+        continue;
+      }
+
+      if (item.type === 'bottle') {
+        const product = await CatalogProvider.getProductById(item.sourceId ?? item.product_id);
+        const offer = product?.bottles?.find(candidate => candidate.offer_key === item.offer_key);
+
+        if (!product || !offer) {
+          removed.push(item);
+          changed = true;
+          continue;
+        }
+
+        const updated = {
+          ...item,
+          sourceId: product.id,
+          product_id: product.product_id ?? product.id,
+          sku: product.sku ?? item.sku ?? null,
+          offer_key: offer.offer_key,
+          offer_label: offer.label,
+          condition_label: offer.condition_label,
+          size: offer.ml,
+          price: offer.price,
+          qty: 1,
+          stock: 1,
+          available_ml: null,
+          image: product.image ?? item.image ?? null,
+        };
+        changed = changed || _cartItemChanged(item, updated);
         reconciled.push(updated);
         continue;
       }
@@ -488,7 +572,19 @@ function _load() {
             stock: Math.max(0, Number(i.stock) || 0),
             qty: Math.max(1, Number(i.qty) || 1),
           }
-        : {
+        : i.type === 'bottle'
+          ? {
+              ...i,
+              product_id: i.product_id ?? i.sourceId,
+              sku: i.sku ?? null,
+              variant_id: null,
+              offer_key: String(i.offer_key ?? ''),
+              qty: 1,
+              stock: 1,
+              available_ml: null,
+              image: i.image ?? null,
+            }
+          : {
             ...i,
             product_id: i.product_id ?? i.sourceId,
             sku: i.sku ?? null,
@@ -568,6 +664,11 @@ async function _getAvailability(item) {
   if (item.type === 'pack') {
     const pack = await CatalogProvider.getPackById(item.pack_id ?? item.sourceId);
     return { stock: pack ? _packStock(pack) : 0, availableMl: null };
+  }
+  if (item.type === 'bottle') {
+    const product = await CatalogProvider.getProductById(item.sourceId ?? item.product_id);
+    const offer = product?.bottles?.find(candidate => candidate.offer_key === item.offer_key);
+    return { stock: offer ? 1 : 0, availableMl: null };
   }
   const product = await CatalogProvider.getProductById(item.sourceId);
   const variant = getVariantForSize(product, item.size);

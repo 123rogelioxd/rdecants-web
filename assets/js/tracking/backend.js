@@ -75,6 +75,12 @@ export const API_EVENT_MAP = {
   personalized_catalog_viewed: 'personalized_catalog_viewed',
   for_you_sort_applied: 'for_you_sort_applied',
   taste_builder_recommendations_clicked: 'taste_builder_recommendations_clicked',
+  perfumes_view:             'perfumes_view',
+  bottle_offer_selected:     'bottle_offer_selected',
+  bottle_added_to_cart:      'bottle_added_to_cart',
+  quote_search:              'quote_search',
+  quote_item_added:          'quote_item_added',
+  quote_submitted:           'quote_submitted',
 };
 
 let _installed = false;
@@ -286,6 +292,24 @@ export function toApiPayload(event, payload = {}) {
       return { metadata: { source: payload.source } };
     case 'taste_builder_recommendations_clicked':
       return { metadata: { likes_count: payload.likes_count } };
+    case 'perfumes_view':
+      return { metadata: { results_count: payload.resultCount } };
+    case 'bottle_offer_selected':
+    case 'bottle_added_to_cart':
+      return {
+        product_id: pid,
+        metadata: {
+          offer_key: payload.offerKey,
+          condition: payload.condition,
+          price: payload.price,
+        },
+      };
+    case 'quote_search':
+      return { metadata: { query: payload.query, results_count: payload.resultCount } };
+    case 'quote_item_added':
+      return { metadata: { reference: payload.reference } };
+    case 'quote_submitted':
+      return { metadata: { reference: payload.reference, items_count: payload.itemCount } };
     default:
       return {};
   }
