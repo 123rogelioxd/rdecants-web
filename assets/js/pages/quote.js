@@ -1,6 +1,7 @@
 import { bootstrapShell } from '../core/shell.js';
 import { ApiClient } from '../api/client.js';
 import { Tracker } from '../tracking/tracker.js';
+import { primeImageStates } from '../ui/images.js';
 import { formatPrice } from '../utils/prices.js';
 
 export const MIN_QUOTE_QUERY = 2;
@@ -117,6 +118,7 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
       results.innerHTML = items.length
         ? `<div class="quote-result-grid">${items.map(_resultCard).join('')}</div>`
         : _searchState('No encontramos ese perfume', 'Prueba con la marca o con una parte del nombre.');
+      primeImageStates(results);
       results.querySelectorAll('[data-quote-add]').forEach(button => {
         button.addEventListener('click', async () => {
           const item = items.find(candidate => candidate.reference === button.dataset.quoteAdd);
@@ -150,6 +152,11 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
     submit.textContent = 'Revalidando…';
     if (message) message.textContent = '';
 
+    /* Reserve the tab during the submit gesture, before awaiting the backend.
+       This is the same popup-safe handoff used by decant checkout: once the
+       quote is accepted we can navigate this tab without losing the gesture. */
+    const reservedWindow = window.open('', '_blank');
+
     try {
       const response = await ApiClient.submitQuote({
         items: quoteLines(basket),
@@ -158,9 +165,26 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
         expected_total: pricedBasket.total,
       });
       Tracker.emit('quote_submitted', { reference: response.reference, itemCount: basket.length });
-      form.innerHTML = `<div class="quote-success" role="status"><h2>Solicitud recibida</h2><p>${_escape(response.message)}</p><p><strong>Referencia ${_escape(response.reference)}</strong></p></div>`;
+      const whatsappUrl = String(response.whatsapp_url ?? '').trim();
+      if (!whatsappUrl) throw new Error('No pudimos abrir WhatsApp. Inténtalo de nuevo.');
+
+      form.innerHTML = `<div class="quote-success" role="status">
+        <h2>Solicitud recibida</h2>
+        <p>Roger recibió tu solicitud y confirmará disponibilidad contigo por WhatsApp.</p>
+        <p><strong>Referencia ${_escape(response.reference)}</strong></p>
+        <a class="btn-primary quote-whatsapp-fallback" href="${_escape(whatsappUrl)}" target="_blank" rel="noopener" hidden>Continuar por WhatsApp</a>
+      </div>`;
       basketEl.hidden = true;
+
+      /* The backend owns the WhatsApp message and URL. Do not rebuild a
+         message here: quote-only data never belongs in frontend copy. */
+      if (reservedWindow) reservedWindow.location.href = whatsappUrl;
+      const opened = reservedWindow || window.open(whatsappUrl, '_blank');
+      if (!opened) {
+        form.querySelector('.quote-whatsapp-fallback')?.removeAttribute('hidden');
+      }
     } catch (error) {
+      reservedWindow?.close?.();
       if (error.status === 409 && error.data?.basket) {
         pricedBasket = error.data.basket;
         const byRef = new Map((pricedBasket.items ?? []).map(item => [item.reference, item]));
@@ -185,8 +209,8 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
 
 function _resultCard(item) {
   return `<article class="quote-result-card">
-    <div class="quote-result-image${item.image ? '' : ' quote-result-image--fallback'}">
-      ${item.image ? `<img src="${_escape(item.image)}" alt="${_escape(item.name)}" loading="lazy" decoding="async">` : '<span>R</span>'}
+    <div class="quote-result-image${item.image ? '' : ' img-shell img-failed'}">
+      ${item.image ? `<img src="${_escape(item.image)}" alt="${_escape(item.name)}" loading="lazy" decoding="async">` : ''}
     </div>
     <div class="quote-result-body">
       <h3>${_escape(item.name)}</h3>

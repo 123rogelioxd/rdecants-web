@@ -50,6 +50,8 @@ test('the canonical PDP renders bottle offers and both cross-sell directions', (
   assert.match(html, /54 ml de 60 ml · Tester · 90%/);
   assert.match(html, /data-bottle-offer="tester_parcial\|60\|54\|1900"/);
   assert.match(html, /3|5|10/);
+  assert.match(html, /Roger te confirma existencia y precio antes de apartarla\./);
+  assert.doesNotMatch(html, /R Supply OS/);
 });
 
 test('bottles do not masquerade as decant millilitres in client availability', () => {
