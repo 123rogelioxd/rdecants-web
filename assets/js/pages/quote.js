@@ -1,5 +1,6 @@
 import { bootstrapShell } from '../core/shell.js';
 import { ApiClient } from '../api/client.js';
+import { normalizeApiImageUrl } from '../api/config.js';
 import { Tracker } from '../tracking/tracker.js';
 import { primeImageStates } from '../ui/images.js';
 import { formatPrice } from '../utils/prices.js';
@@ -35,6 +36,8 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
   const basketEl = document.getElementById('quote-basket');
   const form = document.getElementById('quote-form');
   const submit = document.getElementById('quote-submit');
+  const successEl = document.getElementById('quote-success-message');
+  const whatsappFallback = document.getElementById('quote-whatsapp-fallback');
   if (!input || !results || !basketEl || !form || !submit) return;
 
   let searchTimer = null;
@@ -52,6 +55,14 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
+    if (successEl) {
+      successEl.hidden = true;
+      successEl.textContent = '';
+    }
+    if (whatsappFallback) {
+      whatsappFallback.hidden = true;
+      whatsappFallback.removeAttribute('href');
+    }
     form.hidden = false;
     const pricedByRef = new Map((pricedBasket.items ?? []).map(item => [item.reference, item]));
     const unavailable = new Set(pricedBasket.unavailable ?? []);
@@ -113,7 +124,12 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
     try {
       const response = await ApiClient.searchQuoteCatalog(query);
       if (generation !== searchGeneration || input.value.trim() !== query) return;
-      const items = Array.isArray(response?.results) ? response.results : [];
+      // Supplier quote images are resolved by the API, but normalize a legacy
+      // /storage path here as well so a cached backend response cannot make
+      // the storefront request the image from rdecants.com instead of the API.
+      const items = Array.isArray(response?.results)
+        ? response.results.map(item => ({ ...item, image: normalizeApiImageUrl(item?.image) }))
+        : [];
       Tracker.emit('quote_search', { query, resultCount: items.length });
       results.innerHTML = items.length
         ? `<div class="quote-result-grid">${items.map(_resultCard).join('')}</div>`
@@ -168,20 +184,26 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
       const whatsappUrl = String(response.whatsapp_url ?? '').trim();
       if (!whatsappUrl) throw new Error('No pudimos abrir WhatsApp. Inténtalo de nuevo.');
 
-      form.innerHTML = `<div class="quote-success" role="status">
-        <h2>Solicitud recibida</h2>
-        <p>Roger recibió tu solicitud y confirmará disponibilidad contigo por WhatsApp.</p>
-        <p><strong>Referencia ${_escape(response.reference)}</strong></p>
-        <a class="btn-primary quote-whatsapp-fallback" href="${_escape(whatsappUrl)}" target="_blank" rel="noopener" hidden>Continuar por WhatsApp</a>
-      </div>`;
-      basketEl.hidden = true;
+      // Keep the form and basket mounted. The completed basket is cleared so
+      // the same page can immediately start a second quote without reloading.
+      basket = [];
+      pricedBasket = { items: [], total: 0, unavailable: [] };
+      renderBasket();
+      form.reset();
+      if (successEl) {
+        successEl.textContent = 'Solicitud recibida. Roger recibió tu solicitud y confirmará disponibilidad contigo por WhatsApp.';
+        successEl.hidden = false;
+      }
 
       /* The backend owns the WhatsApp message and URL. Do not rebuild a
          message here: quote-only data never belongs in frontend copy. */
       if (reservedWindow) reservedWindow.location.href = whatsappUrl;
       const opened = reservedWindow || window.open(whatsappUrl, '_blank');
       if (!opened) {
-        form.querySelector('.quote-whatsapp-fallback')?.removeAttribute('hidden');
+        if (whatsappFallback) {
+          whatsappFallback.href = whatsappUrl;
+          whatsappFallback.hidden = false;
+        }
       }
     } catch (error) {
       reservedWindow?.close?.();

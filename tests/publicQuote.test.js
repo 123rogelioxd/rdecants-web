@@ -48,14 +48,20 @@ test('public quote UI never renders supplier internals', () => {
 
 test('successful quotes hand off through the backend WhatsApp URL with a blocked-popup fallback', () => {
   const source = readFileSync(new URL('../assets/js/pages/quote.js', import.meta.url), 'utf8');
+  const html = readFileSync(new URL('../cotiza.html', import.meta.url), 'utf8');
+  const combined = `${source}\n${html}`;
 
   assert.match(source, /window\.open\('', '_blank'\)/, 'reserves the popup during the submit gesture');
   assert.match(source, /response\.whatsapp_url/, 'uses the server-provided WhatsApp URL');
   assert.doesNotMatch(source, /buildWhatsAppMessage/, 'does not construct a quote message in the storefront');
   assert.match(source, /Solicitud recibida/);
   assert.match(source, /Roger recibió tu solicitud y confirmará disponibilidad contigo por WhatsApp\./);
-  assert.match(source, /Referencia \$\{_escape\(response\.reference\)\}/);
-  assert.match(source, /Continuar por WhatsApp/);
+  assert.doesNotMatch(source, /Referencia \$\{_escape\(response\.reference\)\}/, 'public success copy never exposes a quote folio');
+  assert.match(combined, /Continuar por WhatsApp/);
+  assert.match(source, /form\.reset\(\)/);
+  assert.match(source, /basket = \[\]/);
+  assert.doesNotMatch(source, /form\.innerHTML/);
+  assert.doesNotMatch(source, /basketEl\.hidden = true/);
 });
 
 test('quote result images use the shared no-broken-image fallback', () => {
@@ -64,6 +70,7 @@ test('quote result images use the shared no-broken-image fallback', () => {
   const css = readFileSync(new URL('../assets/css/styles.css', import.meta.url), 'utf8');
 
   assert.match(quote, /primeImageStates\(results\)/);
+  assert.match(quote, /normalizeApiImageUrl\(item\?\.image\)/, 'legacy API storage paths are made API-absolute before rendering');
   assert.match(images, /'quote-result-image'/);
   assert.match(images, /'bottle-card-image'/);
   assert.match(css, /\.quote-result-image img \{[^}]*object-fit: contain/);
