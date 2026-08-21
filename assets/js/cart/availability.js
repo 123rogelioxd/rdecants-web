@@ -34,7 +34,7 @@ export function requestedMlForProduct(items = [], productKey) {
   if (!productKey) return 0;
 
   return items.reduce((total, item) => {
-    if (item?.type === 'pack' || physicalProductKey(item) !== String(productKey)) return total;
+    if (item?.type === 'pack' || item?.type === 'bottle' || physicalProductKey(item) !== String(productKey)) return total;
     const size = _positiveNumber(item.size);
     const qty = _positiveNumber(item.qty);
     return total + (size !== null && qty !== null ? size * qty : 0);
@@ -80,7 +80,7 @@ export function clampToSharedAvailability(items = []) {
     const group = productKey ? groups.get(productKey) : null;
     const size = _positiveNumber(item?.size);
 
-    if (item?.type === 'pack' || !group || size === null) {
+    if (item?.type === 'pack' || item?.type === 'bottle' || !group || size === null) {
       result.push(item);
       continue;
     }
@@ -108,7 +108,7 @@ function _groupAvailability(items) {
   const groups = new Map();
 
   for (const item of items) {
-    if (!item || item.type === 'pack') continue;
+    if (!item || item.type === 'pack' || item.type === 'bottle') continue;
     const productKey = physicalProductKey(item);
     const availableMl = _nonNegativeNumber(item.available_ml ?? item.availableMl);
     if (!productKey || availableMl === null) continue;

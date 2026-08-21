@@ -243,7 +243,9 @@ test('a cart of nothing but packs is still a real order', () => {
   /* Pure-pack carts used to be dropped ("coordinated in chat") because the
      old packs had no resolvable products. They do now. */
   assert.doesNotMatch(checkout, /if \(!orderable\.length\) return/);
-  assert.match(checkout, /Cart\.packPurchases\(\)\.length > 0/);
+  assert.match(checkout, /\.filter\(item => item\.type === 'pack'\)/,
+    'the submitted snapshot derives pack purchases before the live cart is cleared');
+  assert.match(checkout, /pack_id: item\.pack_id/);
 });
 
 test('the cart drawer shows the pack as a group, with no per-item controls', () => {

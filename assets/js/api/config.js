@@ -11,7 +11,7 @@ export const API_BASE =
 
 // Keep this in sync with the asset query strings in the HTML entry points
 // and with the VERSION file (tests/cacheFreshness.test.js checks all three).
-export const BUILD_VERSION = '2026.08.16.1';
+export const BUILD_VERSION = '2026.08.20.1';
 
 export function normalizeApiImageUrl(value) {
   const url = String(value ?? '').trim();

@@ -14,6 +14,100 @@
   box-sizing: border-box;
 }
 
+/* ── Perfumes: one fragrance, several bottle offers ─────────── */
+.perfume-page-head { padding-bottom: 28px; }
+.bottle-filter-bar { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
+.bottle-filter-bar h2 { margin: 0 0 4px; font-size: clamp(1.45rem, 3vw, 2rem); }
+.bottle-filter-bar p { margin: 0; color: var(--muted, #6b665e); }
+.bottle-filters { display: flex; gap: 8px; overflow-x: auto; padding: 3px; scrollbar-width: none; }
+.bottle-filters::-webkit-scrollbar { display: none; }
+.bottle-filters button { min-height: 44px; flex: 0 0 auto; border: 1px solid var(--border, #d9d3c8); border-radius: 999px; background: transparent; color: inherit; padding: 0 16px; font: inherit; cursor: pointer; }
+.bottle-filters button.is-active { background: var(--ink, #171713); border-color: var(--ink, #171713); color: #fff; }
+.bottle-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+.bottle-grid > .premium-empty { grid-column: 1 / -1; }
+.bottle-card { min-width: 0; border: 1px solid var(--border, #ddd6ca); border-radius: 20px; overflow: hidden; background: var(--surface, #fffdf8); }
+.bottle-card-link { display: block; height: 100%; color: inherit; text-decoration: none; }
+.bottle-card-image { aspect-ratio: 4 / 5; background: #ede8dd; overflow: hidden; }
+.bottle-card-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.bottle-card-body { display: flex; flex-direction: column; align-items: flex-start; gap: 9px; padding: 20px; }
+.bottle-card-house, .bottle-card-name, .bottle-card-price { margin: 0; }
+.bottle-card-house { color: var(--muted, #6b665e); font-size: .76rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.bottle-card-name { font-size: 1.25rem; line-height: 1.2; }
+.bottle-card-price { font-weight: 700; }
+.bottle-card-types { display: flex; flex-wrap: wrap; gap: 6px; min-height: 30px; }
+.bottle-card-types span { border: 1px solid var(--border, #ddd6ca); border-radius: 999px; padding: 5px 9px; font-size: .75rem; }
+.bottle-card-cta { width: 100%; margin-top: 8px; text-align: center; }
+
+/* ── Canonical PDP bottle offers and cross-sell ─────────────── */
+.pdp-bottle-section { max-width: 1180px; margin: 24px auto 0; padding: clamp(24px, 5vw, 54px); border: 1px solid var(--border, #ddd6ca); border-radius: 24px; background: var(--surface, #fffdf8); }
+.pdp-bottle-head > * { margin-top: 0; }
+.pdp-bottle-head p:last-child { color: var(--muted, #6b665e); max-width: 680px; }
+.pdp-bottle-list { display: grid; gap: 10px; margin-top: 22px; }
+.pdp-bottle-offer { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 16px; border: 1px solid var(--border, #ddd6ca); border-radius: 14px; }
+.pdp-bottle-offer-copy { display: grid; gap: 4px; }
+.pdp-bottle-offer-copy span { font-weight: 700; }
+.pdp-bottle-offer-copy small { color: var(--muted, #6b665e); }
+.pdp-bottle-add { flex: 0 0 auto; }
+.pdp-try-first { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--border, #ddd6ca); }
+.pdp-try-first p { margin: 0 0 8px; }
+
+/* ── Cotiza tu perfume ──────────────────────────────────────── */
+.quote-main { min-height: 70vh; }
+.quote-hero { padding: clamp(42px, 8vw, 86px) 0 30px; }
+.quote-hero h1 { margin: 8px 0 12px; font-size: clamp(2.4rem, 7vw, 5.2rem); line-height: .95; }
+.quote-hero > .container > p { max-width: 700px; }
+.quote-search { display: flex; align-items: center; gap: 12px; max-width: 760px; min-height: 58px; margin-top: 28px; padding: 0 18px; border: 1px solid var(--ink, #171713); border-radius: 14px; background: #fff; }
+.quote-search input { flex: 1; min-width: 0; height: 54px; border: 0; outline: 0; background: transparent; font: inherit; font-size: 1rem; }
+#quote-search-help { color: var(--muted, #6b665e); font-size: .86rem; }
+.quote-results-section { padding-top: 18px; }
+.quote-result-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.quote-result-card { display: grid; grid-template-columns: 132px 1fr; min-width: 0; border: 1px solid var(--border, #ddd6ca); border-radius: 18px; overflow: hidden; background: var(--surface, #fffdf8); }
+.quote-result-image { min-height: 184px; background: #ede8dd; }
+.quote-result-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.quote-result-image--fallback { display: grid; place-items: center; font-family: serif; font-size: 2rem; }
+.quote-result-body { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; padding: 16px; }
+.quote-result-body h3, .quote-result-body p { margin: 0; }
+.quote-result-body > .btn-primary { width: 100%; margin-top: auto; }
+.quote-availability { color: var(--muted, #6b665e); font-size: .8rem; }
+.quote-state, .quote-loading { min-height: 190px; display: grid; place-items: center; align-content: center; text-align: center; gap: 6px; border: 1px dashed var(--border, #ddd6ca); border-radius: 18px; padding: 28px; }
+.quote-state h2, .quote-state p { margin: 0; }
+.quote-checkout-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(300px, .7fr); gap: 28px; align-items: start; }
+.quote-basket-empty { padding: 28px; border: 1px dashed var(--border, #ddd6ca); border-radius: 16px; color: var(--muted, #6b665e); }
+.quote-basket-empty p { color: var(--ink, #171713); font-weight: 700; }
+.quote-basket-lines { display: grid; gap: 10px; }
+.quote-basket-line { display: grid; grid-template-columns: minmax(0, 1fr) 90px auto auto; align-items: center; gap: 14px; padding: 16px; border: 1px solid var(--border, #ddd6ca); border-radius: 14px; }
+.quote-basket-line > div { display: grid; gap: 4px; min-width: 0; }
+.quote-basket-line span { color: var(--muted, #6b665e); font-size: .82rem; }
+.quote-basket-line label { font-size: .75rem; }
+.quote-basket-line input { width: 72px; min-height: 42px; border: 1px solid var(--border, #ddd6ca); border-radius: 9px; padding: 6px; }
+.quote-remove { border: 0; background: transparent; text-decoration: underline; cursor: pointer; }
+.quote-total-row { display: flex; justify-content: space-between; gap: 18px; margin-top: 14px; padding: 18px 4px; font-size: 1.1rem; }
+.quote-form { display: grid; gap: 14px; position: sticky; top: 110px; padding: 22px; border: 1px solid var(--border, #ddd6ca); border-radius: 18px; background: var(--surface, #fffdf8); }
+.quote-form h2 { margin: 0; }
+.quote-form label { display: grid; gap: 6px; font-weight: 600; }
+.quote-form input { min-height: 48px; border: 1px solid var(--border, #ddd6ca); border-radius: 10px; padding: 0 12px; font: inherit; }
+.quote-form-note { color: var(--muted, #6b665e); font-size: .83rem; }
+.quote-alert { color: #8b251e; }
+.quote-success { padding: 12px; }
+
+@media (max-width: 820px) {
+  .bottle-filter-bar { align-items: stretch; flex-direction: column; }
+  .bottle-filters { margin-inline: -16px; padding-inline: 16px; }
+  .bottle-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .quote-result-grid, .quote-checkout-grid { grid-template-columns: 1fr; }
+  .quote-form { position: static; }
+}
+
+@media (max-width: 560px) {
+  .bottle-grid { grid-template-columns: 1fr; }
+  .pdp-bottle-offer { align-items: stretch; flex-direction: column; }
+  .pdp-bottle-add { width: 100%; }
+  .quote-result-card { grid-template-columns: 96px 1fr; }
+  .quote-result-image { min-height: 160px; }
+  .quote-basket-line { grid-template-columns: 1fr auto; }
+  .quote-basket-line > div { grid-column: 1 / -1; }
+}
+
 /* The [hidden] attribute is how every module here toggles visibility, but a
    component that sets `display: flex/grid/block` outranks the UA rule and
    silently un-hides the element. This sheet has collected scoped guards for

@@ -79,8 +79,15 @@ export async function sendCheckoutWhatsApp(phoneNumber) {
   _isSubmitting = true;
   _syncAvailability();
 
+  /* Bottle inventory must be revalidated before the handoff, but waiting for
+     that request would lose the browser's click gesture and make WhatsApp look
+     like a blocked popup. Reserve the tab synchronously, then either navigate
+     it after validation or close it on a customer-facing stock error. */
+  const hasBottle = Cart.items.some(item => item.type === 'bottle');
+  const reservedWindow = hasBottle ? window.open('', '_blank') : null;
+
   try {
-    await _performCheckout(phoneNumber);
+    await _performCheckout(phoneNumber, reservedWindow);
   } finally {
     _isSubmitting = false;
     _syncAvailability();
@@ -90,10 +97,11 @@ export async function sendCheckoutWhatsApp(phoneNumber) {
 /* WhatsApp-first: the WhatsApp window is opened SYNCHRONOUSLY inside the click
    gesture (no awaits before it) so the popup isn't blocked and a backend outage
    can never block the sale. The system order is created afterwards, async. */
-function _performCheckout(phoneNumber) {
+async function _performCheckout(phoneNumber, reservedWindow = null) {
   const items = Cart.items;
 
   if (!items.length) {
+    reservedWindow?.close?.();
     const message = 'Agrega una fragancia antes de finalizar por WhatsApp';
     _showMessage(message, 'error');
     showToast(message);
@@ -103,6 +111,7 @@ function _performCheckout(phoneNumber) {
 
   const availabilityError = Cart.availabilityError();
   if (availabilityError) {
+    reservedWindow?.close?.();
     const available = _formatMl(availabilityError.availableMl);
     const message = `Ajusta tu carrito: esta fragancia tiene ${available}ml disponibles en total.`;
     _showMessage(message, 'error');
@@ -132,19 +141,39 @@ function _performCheckout(phoneNumber) {
   const attribution = Attribution.forOrder();
   if (Object.keys(attribution).length) Tracker.campaignCheckoutAttributed(Attribution.forTracking());
 
+  /* A bottle is a unique physical object. Before opening WhatsApp we ask the
+     backend to revalidate its opaque offer against live inventory and create
+     the canonical pending order. This is the one checkout exception to the
+     decant flow's background write: "that bottle just sold" must reach the
+     customer while they can still act on it, not disappear into a log. */
+  let recordedOrder = null;
+  if (orderItems.some(item => item.type === 'bottle')) {
+    try {
+      recordedOrder = await _submitWebOrder(orderItems, data, total, discount, attribution);
+    } catch (error) {
+      reservedWindow?.close?.();
+      const message = _customerBottleError(error);
+      _showMessage(message, 'error');
+      showToast(message);
+      Tracker.backgroundOrderFailure(String(error?.message || 'bottle_unavailable'), total);
+      return;
+    }
+  }
+
   const messageText = buildWhatsAppMessage(orderItems, total, data, '', discount);
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(messageText)}`;
 
   /* 1) WhatsApp first. */
   _markFired();
-  const opened = window.open(whatsappUrl, '_blank');
+  if (reservedWindow) reservedWindow.location.href = whatsappUrl;
+  const opened = reservedWindow || window.open(whatsappUrl, '_blank');
 
   if (!opened) {
     /* Popup blocked — keep the cart, discount AND attribution intact, offer a
        manual link, still try to record the order in the background. No lost
        carts, no lost campaign credit. */
     _showManualWhatsApp(whatsappUrl);
-    _createOrderInBackground(orderItems, data, total, discount, attribution);
+    if (!recordedOrder) _createOrderInBackground(orderItems, data, total, discount, attribution);
     return;
   }
 
@@ -156,7 +185,7 @@ function _performCheckout(phoneNumber) {
   Cart.clear();
   Discount.clear();
   Attribution.clear();
-  _createOrderInBackground(orderItems, data, total, discount, attribution);
+  if (!recordedOrder) _createOrderInBackground(orderItems, data, total, discount, attribution);
 }
 
 /* Records the system order WITHOUT ever blocking the customer or showing them
@@ -169,33 +198,38 @@ async function _createOrderInBackground(items, data, total, discount = null, att
        send and the sale was "coordinated in chat". Packs are now real,
        server-resolved products with a server-derived discount, so a cart of
        nothing but packs is an ordinary order. */
-    const hasSomethingToOrder = items.some(item => item.type !== 'pack')
-      || Cart.packPurchases().length > 0;
+    const hasSomethingToOrder = items.length > 0;
     if (!hasSomethingToOrder) return;
 
     /* Forward ONLY the code + campaign attribution — R Supply OS validates,
        resolves the campaign and recalculates. We never send the previewed
        amount/total as truth. */
-    const couponCodes = Array.isArray(discount)
-      ? discount.map(d => d?.normalizedCode || d?.code).filter(Boolean)
-      : (discount?.code ? [discount.code] : []);
-    const payload = await buildWebOrderPayload(items, data, { couponCodes, attribution });
-    if (!payload.items.length && !payload.packs?.length) return;
-
-    const response = await ApiClient.createWebOrder(payload);
-    const order = response?.order;
-    if (!response?.ok || !order?.folio) throw new Error('No se pudo crear el pedido en sistema.');
-
-    localStorage.setItem(LAST_ORDER_KEY, order.folio || '');
-    /* If the backend rejected/adjusted the discount, trust its response — the
-       preview was only ever an estimate. Recorded for observability. */
-    const finalTotal = _money(order.total) || total;
-    Tracker.checkoutCompleted(items, finalTotal, { folio: order.folio });
-    Tracker.backgroundOrderSuccess(order.folio, finalTotal);
+    await _submitWebOrder(items, data, total, discount, attribution);
   } catch (error) {
     _logCheckoutError(error);
     Tracker.backgroundOrderFailure(String(error?.message || 'error'), total);
   }
+}
+
+async function _submitWebOrder(items, data, total, discount = null, attribution = {}) {
+  const couponCodes = Array.isArray(discount)
+    ? discount.map(d => d?.normalizedCode || d?.code).filter(Boolean)
+    : (discount?.code ? [discount.code] : []);
+  const packs = items
+    .filter(item => item.type === 'pack')
+    .map(item => ({ pack_id: item.pack_id, quantity: Number(item.qty) || 1 }));
+  const payload = await buildWebOrderPayload(items, data, { couponCodes, attribution, packs });
+  if (!payload.items.length && !payload.packs?.length) return null;
+
+  const response = await ApiClient.createWebOrder(payload);
+  const order = response?.order;
+  if (!response?.ok || !order?.folio) throw new Error('No se pudo crear el pedido en sistema.');
+
+  localStorage.setItem(LAST_ORDER_KEY, order.folio || '');
+  const finalTotal = _money(order.total) || total;
+  Tracker.checkoutCompleted(items, finalTotal, { folio: order.folio });
+  Tracker.backgroundOrderSuccess(order.folio, finalTotal);
+  return order;
 }
 
 /* Popup-blocked fallback: a persistent manual link, cart kept intact. */
@@ -317,6 +351,23 @@ export async function buildWebOrderPayload(items, data, options = {}) {
 
 async function _buildOrderItem(item) {
   const product = await CatalogProvider.getProductById(item.sourceId ?? item.product_id);
+
+  if (item.type === 'bottle') {
+    const offer = product?.bottles?.find(candidate => candidate.offer_key === item.offer_key);
+    if (!product || !offer) {
+      const error = new Error('Esa botella ya no está disponible. Actualiza la página para ver las opciones actuales.');
+      error.code = 'STALE_BOTTLE_OFFER';
+      error.item = item;
+      throw error;
+    }
+
+    return {
+      product_id: product.product_id ?? product.id,
+      offer_key: offer.offer_key,
+      quantity: 1,
+    };
+  }
+
   const variant = getVariantForSize(product, item.size);
   const variantId = _validVariantId(variant?.variant_id);
 
@@ -338,10 +389,14 @@ async function _buildOrderItem(item) {
 }
 
 export function buildWhatsAppMessage(items, total, data, folio = '', discount = null) {
+  const hasBottle = items.some(item => item.type === 'bottle');
+  const hasDecant = items.some(item => item.type !== 'bottle' && item.type !== 'pack');
   const lines = [
     'Hola 👋',
     '',
-    items.length === 1 ? 'Me interesa este decant:' : 'Me interesan estos decants:',
+    items.length === 1
+      ? (hasBottle ? 'Me interesa esta botella:' : 'Me interesa este decant:')
+      : (hasBottle && hasDecant ? 'Me interesan estos perfumes:' : hasBottle ? 'Me interesan estas botellas:' : 'Me interesan estos decants:'),
   ];
 
   items.forEach(item => {
@@ -384,6 +439,14 @@ export function buildWhatsAppMessage(items, total, data, folio = '', discount = 
   lines.push('', 'Quedo pendiente de disponibilidad y detalles de compra.');
 
   return lines.join('\n');
+}
+
+function _customerBottleError(error) {
+  const message = String(error?.data?.message || error?.message || '').trim();
+  if (/precio/i.test(message)) return 'El precio de esa botella cambió. Actualiza la página y confirma el nuevo precio.';
+  if (/contenido|mililit|parcial/i.test(message)) return 'Cambió el contenido de esa botella parcial. Actualiza la página para ver la cantidad actual.';
+  if (/disponible|vendi|offer|oferta/i.test(message)) return 'Esa botella acaba de venderse o ya no está disponible. Actualiza la página para ver las opciones actuales.';
+  return 'No pudimos confirmar esa botella ahora. Tu carrito sigue guardado; inténtalo de nuevo.';
 }
 
 export function syncCheckoutAvailability() {
@@ -595,6 +658,10 @@ function _whatsAppItemLine(item) {
     return `${header}${contents}${saving}`;
   }
 
+  if (item.type === 'bottle') {
+    return `${_whatsAppProductName(item)} — Botella ${item.offer_label || item.condition_label || ''} — ${_lineItemPrice(item.price)}`;
+  }
+
   return `${_whatsAppProductName(item)} — ${_presentationText(item)} — ${_lineItemPrice(item.price)}${quantityText}`;
 }
 
@@ -626,6 +693,7 @@ function _humanizeProductText(value) {
 
 function _presentationText(item) {
   if (item.type === 'pack') return 'Pack';
+  if (item.type === 'bottle') return `Botella ${item.offer_label || item.condition_label || ''}`.trim();
   return item.size ? `${item.size}ml` : 'Por confirmar';
 }
 

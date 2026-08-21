@@ -37,7 +37,7 @@ export function renderCart() {
       <div class="cart-empty">
         <div class="cart-empty-icon">R</div>
         <h3 class="cart-empty-title">Tu carrito est&aacute; vac&iacute;o</h3>
-        <p class="cart-empty-desc">Agrega un decant para armar tu pedido.</p>
+        <p class="cart-empty-desc">Agrega un decant o una botella para armar tu pedido.</p>
         <button class="btn-continue cart-empty-cta" onclick="window.__rd.ui.scrollToCatalog()">
           Explorar cat&aacute;logo
         </button>
@@ -61,9 +61,10 @@ export function renderCart() {
         ${items.map(item => {
     const isMaxed = !Cart.canIncrement(item.key);
     const isPack  = item.type === 'pack';
+    const isBottle = item.type === 'bottle';
     /* `item.size` already reads "3 × 3 ml" for a pack — set once when the
        pack was added, so there is no second place that decides the wording. */
-    const label   = isPack ? item.size : `${item.size}ml`;
+    const label   = isPack ? item.size : isBottle ? `Botella · ${item.offer_label || item.condition_label}` : `${item.size}ml`;
     const subtotal = isValidPrice(item.price) ? item.price * item.qty : null;
     const normalSubtotal = isPack && isValidPrice(item.normal_price)
       ? item.normal_price * item.qty
@@ -99,7 +100,7 @@ export function renderCart() {
       : '';
 
     return `
-      <div class="cart-item${isPack ? ' cart-item--pack' : ''}">
+      <div class="cart-item${isPack ? ' cart-item--pack' : ''}${isBottle ? ' cart-item--bottle' : ''}">
         <div class="cart-item-top">
           <div class="cart-item-id">
             <p class="cart-item-house">${item.house}</p>
@@ -117,7 +118,7 @@ export function renderCart() {
             ${isMaxed ? '<span class="cart-stock-note">Máximo disponible</span>' : ''}
             <span class="cart-item-price">${formatPrice(subtotal, 'Precio por confirmar')}</span>
           </div>
-          <div class="qty-controls">
+          <div class="qty-controls" ${isBottle ? 'aria-label="Una botella"' : ''}>
             <button class="qty-btn"
               onclick="window.__rd.cart.changeQty('${item.key}', -1)"
               aria-label="Reducir cantidad">−</button>

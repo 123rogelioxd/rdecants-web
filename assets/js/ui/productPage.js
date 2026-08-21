@@ -61,6 +61,7 @@ export function buildProductPageHtml(product) {
   if (!product) return _notFoundHtml();
 
   const variants = getValidVariants(product);
+  const bottles = Array.isArray(product.bottles) ? product.bottles : [];
   /* One rule, one source: getDefaultVariant prefers the recommended 5 ml and
      falls back to the first orderable presentation. The same variant is both
      flagged "Recomendado" and pre-selected, so the page can never highlight
@@ -135,9 +136,8 @@ export function buildProductPageHtml(product) {
              intermediate step, no second modal. -->
         <div class="pdp-buy" id="pdp-buy">
           <div class="pdp-buybar" aria-label="Compra rápida">
-            ${variants.length
-              ? '<div class="pdp-sizes-label">Elige presentación</div>'
-              : '<div class="pdp-price-consult">Precio disponible por consulta personalizada.</div>'}
+            ${variants.length ? `
+            <div class="pdp-sizes-label">Elige presentación</div>
 
             <div class="pdp-sizes" role="group" aria-label="Seleccionar presentación" ${variants.length ? '' : 'hidden'}>
               ${_sizesHtml(variants, defaultSize, recommendedSize, product)}
@@ -164,11 +164,18 @@ export function buildProductPageHtml(product) {
 
             ${lowestPrice !== null ? `
               <p class="pdp-value-prop">Una botella completa cuesta miles — pruébalo desde ${formatPrice(lowestPrice)}.</p>
-            ` : ''}
+            ` : ''}` : bottles.length
+              ? _bottleOfferRows(product, bottles, { heading: 'Elige tu botella' })
+              : '<div class="pdp-price-consult">Precio disponible por consulta personalizada.</div>'}
           </div>
         </div>
       </div>
     </section>
+
+    ${variants.length && bottles.length ? `
+      <section class="pdp-bottle-section" id="pdp-bottles" aria-labelledby="pdp-bottles-h">
+        ${_bottleOfferRows(product, bottles, { heading: '¿Quieres la botella?', crossSell: true })}
+      </section>` : ''}
 
     <!-- C. ¿Por qué te puede gustar? — fused sell/guide section, immediately
          after the purchase so the first scroll lands on it. -->
@@ -227,6 +234,24 @@ export function hydrateProductPage(root, product, deps = {}) {
     await cart?.add?.(product.id, selectedSize);
   });
 
+  root.querySelectorAll('[data-bottle-offer]').forEach(button => {
+    button.addEventListener('click', async () => {
+      const offerKey = button.dataset.bottleOffer;
+      const offer = product.bottles?.find(candidate => candidate.offer_key === offerKey);
+      if (!offer) {
+        showToast('Esa botella ya no está disponible. Actualiza la página.');
+        return;
+      }
+      Tracker.emit('bottle_offer_selected', {
+        productId: product.id,
+        condition: offer.condition,
+        price: offer.price,
+      });
+      const cart = deps.cart ?? window.__rd?.cart;
+      await cart?.addBottle?.(product.id, offer.offer_key);
+    });
+  });
+
   /* WhatsApp — opens a direct product inquiry, same pattern as the modal's
      WhatsApp button (never a hidden add-to-cart). Consistent label, consistent
      action, everywhere the button appears. */
@@ -263,6 +288,39 @@ export function hydrateProductPage(root, product, deps = {}) {
   /* Returning-user line — only if local taste signal already supports it.
      Built at hydrate time because it reads localStorage (not in SSR/tests). */
   _setupReturningLine(root, product, deps);
+}
+
+function _bottleOfferRows(product, bottles, { heading = 'Botellas disponibles', crossSell = false } = {}) {
+  const rows = bottles.map(offer => `
+    <article class="pdp-bottle-offer">
+      <div class="pdp-bottle-offer-copy">
+        <strong>${_escape(offer.label)}</strong>
+        <span>${formatPrice(offer.price)}</span>
+        ${offer.stock > 1 ? `<small>${offer.stock} disponibles</small>` : '<small>Última disponible</small>'}
+      </div>
+      <button class="btn-primary pdp-bottle-add" type="button"
+        data-bottle-offer="${_escape(offer.offer_key)}"
+        aria-label="Agregar ${_escape(product.name)}, ${_escape(offer.label)} al carrito">
+        Agregar botella
+      </button>
+    </article>`).join('');
+
+  const tryFirst = crossSell && product.variants?.length
+    ? `<div class="pdp-try-first">
+         <p><strong>¿Quieres probarlo primero?</strong></p>
+         <p>También está disponible en ${product.variants.map(v => `${v.size} ml`).join(' · ')}.</p>
+         <button type="button" class="btn-ghost" data-jump="#pdp-buy">Ver decants</button>
+       </div>`
+    : '';
+
+  return `
+    <div class="pdp-bottle-head">
+      <p class="pdp-kicker">Perfume completo</p>
+      <h2 class="pdp-section-h">${_escape(heading)}</h2>
+      <p>Elige entre las ofertas disponibles hoy. La existencia y el precio se confirman en R Supply OS al pedir.</p>
+    </div>
+    <div class="pdp-bottle-list">${rows}</div>
+    ${tryFirst}`;
 }
 
 function _setupReturningLine(root, product, deps = {}) {

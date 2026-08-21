@@ -99,6 +99,13 @@ const BACKEND_ALLOWED_EVENTS = [
   'campaign_promo_applied',
   'campaign_promo_rejected',
   'campaign_checkout_attributed',
+  // Bottle storefront and supplier quote funnel
+  'perfumes_view',
+  'bottle_offer_selected',
+  'bottle_added_to_cart',
+  'quote_search',
+  'quote_item_added',
+  'quote_submitted',
 ];
 
 test('every event this storefront posts is accepted by the backend allowlist', () => {

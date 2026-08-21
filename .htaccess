@@ -72,6 +72,8 @@ Options -MultiViews
     # discovery (/), the catalog, and the guided finder. These give
     # each one a short, shareable URL without a .html suffix.
     RewriteRule ^catalogo/?$          catalogo.html [L,QSA]
+    RewriteRule ^perfumes/?$          perfumes.html [L,QSA]
+    RewriteRule ^cotiza/?$            cotiza.html   [L,QSA]
     RewriteRule ^elegir/?$            elegir.html   [L,QSA]
     RewriteRule ^ayudame-a-elegir/?$  elegir.html   [L,QSA]
     RewriteRule ^ayuda/?$             ayuda.html    [L,QSA]
