@@ -349,7 +349,7 @@ test('footer links point to live routes only', () => {
   assert.match(footer, /wa\.me\/5219516513018/, 'WhatsApp');
   assert.match(footer, /href="\/catalogo\.html"/, 'Catálogo');
   assert.match(footer, /href="\/elegir\.html"/, 'Ayúdame a elegir');
-  assert.match(footer, /R Supply/, 'legal line kept');
+  assert.match(footer, /RDECANTS/, 'customer-facing legal line kept');
 
   for (const dead of ['#assistant', '#discovery-sets', '#smart-bundles', '#taste-builder', '#guide']) {
     assert.ok(!footer.includes(`href="${dead}"`), `no dead ${dead} anchor`);

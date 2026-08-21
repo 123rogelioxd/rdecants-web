@@ -317,7 +317,7 @@ function _bottleOfferRows(product, bottles, { heading = 'Botellas disponibles', 
     <div class="pdp-bottle-head">
       <p class="pdp-kicker">Perfume completo</p>
       <h2 class="pdp-section-h">${_escape(heading)}</h2>
-      <p>Elige entre las ofertas disponibles hoy. La existencia y el precio se confirman en R Supply OS al pedir.</p>
+      <p>Elige entre las ofertas disponibles hoy. Roger te confirma existencia y precio antes de apartarla.</p>
     </div>
     <div class="pdp-bottle-list">${rows}</div>
     ${tryFirst}`;

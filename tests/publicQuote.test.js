@@ -41,9 +41,33 @@ test('public quote UI never renders supplier internals', () => {
     readFileSync(new URL('../cotiza.html', import.meta.url), 'utf8'),
     readFileSync(new URL('../assets/js/pages/quote.js', import.meta.url), 'utf8'),
   ].join('\n').toLowerCase();
-  for (const forbidden of ['myscent', 'supplier_cost', 'provider_url', 'raw_supplier', 'margin_percent', 'shipping_allocation']) {
+  for (const forbidden of ['r supply os', 'myscent', 'supplier_cost', 'provider_url', 'raw_supplier', 'margin_percent', 'shipping_allocation']) {
     assert.doesNotMatch(source, new RegExp(forbidden));
   }
+});
+
+test('successful quotes hand off through the backend WhatsApp URL with a blocked-popup fallback', () => {
+  const source = readFileSync(new URL('../assets/js/pages/quote.js', import.meta.url), 'utf8');
+
+  assert.match(source, /window\.open\('', '_blank'\)/, 'reserves the popup during the submit gesture');
+  assert.match(source, /response\.whatsapp_url/, 'uses the server-provided WhatsApp URL');
+  assert.doesNotMatch(source, /buildWhatsAppMessage/, 'does not construct a quote message in the storefront');
+  assert.match(source, /Solicitud recibida/);
+  assert.match(source, /Roger recibió tu solicitud y confirmará disponibilidad contigo por WhatsApp\./);
+  assert.match(source, /Referencia \$\{_escape\(response\.reference\)\}/);
+  assert.match(source, /Continuar por WhatsApp/);
+});
+
+test('quote result images use the shared no-broken-image fallback', () => {
+  const quote = readFileSync(new URL('../assets/js/pages/quote.js', import.meta.url), 'utf8');
+  const images = readFileSync(new URL('../assets/js/ui/images.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../assets/css/styles.css', import.meta.url), 'utf8');
+
+  assert.match(quote, /primeImageStates\(results\)/);
+  assert.match(images, /'quote-result-image'/);
+  assert.match(images, /'bottle-card-image'/);
+  assert.match(css, /\.quote-result-image img \{[^}]*object-fit: contain/);
+  assert.match(css, /\.bottle-card-image img \{[^}]*object-fit: contain/);
 });
 
 test('submission posts references, customer data and expected total for revalidation', () => {

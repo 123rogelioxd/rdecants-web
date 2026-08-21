@@ -10,6 +10,8 @@ const IMAGE_WRAPPERS = [
   'pdm-img-wrap',
   'rr-img',
   'hero-img-wrap',
+  'bottle-card-image',
+  'quote-result-image',
   /* Finder result cards. Without this the three picks were the only product
      surface that showed raw alt text on a grey box when a photo 404s, while
      every other card falls back to the house monogram. */
