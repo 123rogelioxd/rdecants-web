@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <script>
     (function () {
-      var BUILD = '2026.08.21.2';
+      var BUILD = '2026.08.24.1';
       var installed = navigator.standalone === true ||
         (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
       if (!installed || !window.fetch) return;
@@ -40,31 +40,133 @@
   <title>Cotiza tu perfume — RDecants</title>
   <meta name="description" content="Busca perfumes por encargo y solicita una cotización RDecants.">
   <meta name="theme-color" content="#F5F1E8">
-  <link rel="icon" href="/favicon.ico?v=2026.08.21.2" sizes="any">
-  <link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/favicon-32.png?v=2026.08.21.2">
-  <link rel="icon" type="image/png" sizes="16x16" href="/assets/brand/favicon-16.png?v=2026.08.21.2">
-  <link rel="apple-touch-icon" sizes="180x180" href="/assets/brand/apple-touch-icon.png?v=2026.08.21.2">
-  <link rel="manifest" href="/site.webmanifest?v=2026.08.21.2">
+  <link rel="icon" href="/favicon.ico?v=2026.08.24.1" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/favicon-32.png?v=2026.08.24.1">
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/brand/favicon-16.png?v=2026.08.24.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/brand/apple-touch-icon.png?v=2026.08.24.1">
+  <link rel="manifest" href="/site.webmanifest?v=2026.08.24.1">
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/assets/css/tokens.css?v=2026.08.21.2"><link rel="stylesheet" href="/assets/css/animations.css?v=2026.08.21.2"><link rel="stylesheet" href="/assets/css/components.css?v=2026.08.21.2"><link rel="stylesheet" href="/assets/css/styles.css?v=2026.08.21.2">
+  <link rel="stylesheet" href="/assets/css/tokens.css?v=2026.08.24.1"><link rel="stylesheet" href="/assets/css/animations.css?v=2026.08.24.1"><link rel="stylesheet" href="/assets/css/components.css?v=2026.08.24.1"><link rel="stylesheet" href="/assets/css/styles.css?v=2026.08.24.1">
 </head>
 <body class="quote-body">
   <p class="infobar">Perfumes originales por encargo · Precio final RDECANTS</p>
   <header class="header">
     <button class="nav-toggle" id="nav-toggle" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="nav-drawer">☰</button>
-    <a href="/" class="header-logo" aria-label="RDecants — inicio"><img class="logo-mark" src="/assets/brand/rdecants-monogram.png?v=2026.08.21.2" alt="RDecants" width="240" height="171"><span class="logo-text">RDECANTS</span></a>
+    <a href="/" class="header-logo" aria-label="RDecants — inicio"><img class="logo-mark" src="/assets/brand/rdecants-monogram.png?v=2026.08.24.1" alt="RDecants" width="240" height="171"><span class="logo-text">RDECANTS</span></a>
     <nav class="header-nav" aria-label="Navegación principal"><a class="header-nav-link" href="/catalogo.html">Catálogo</a><a class="header-nav-link" href="/perfumes.html">Perfumes</a><a class="header-nav-link" href="/cotiza.html" aria-current="page">Cotiza tu perfume</a><a class="nav-cta" href="/elegir.html"><span aria-hidden="true">✦</span> Ayúdame a elegir</a></nav>
     <div class="header-actions"><button class="icon-btn" type="button" onclick="toggleCart()" aria-label="Abrir carrito">Bolsa <span class="cart-badge" id="cart-count">0</span></button></div>
   </header>
   <div class="nav-scrim" id="nav-scrim"></div><nav class="nav-drawer" id="nav-drawer" aria-label="Menú" aria-hidden="true"><div class="nav-drawer-head"><span class="logo-text">RDECANTS</span><button class="icon-btn" id="nav-close" type="button" aria-label="Cerrar menú">×</button></div><a href="/catalogo.html">Catálogo</a><a href="/perfumes.html">Perfumes</a><a href="/cotiza.html" aria-current="page">Cotiza tu perfume</a><a href="/elegir.html">Ayúdame a elegir</a><a href="/ayuda.html">Ayuda</a></nav>
   <main class="quote-main">
-    <section class="quote-hero"><div class="container"><nav class="breadcrumb" aria-label="Ruta"><a href="/">Inicio</a><span>/</span><span aria-current="page">Cotiza tu perfume</span></nav><p class="section-eyebrow">¿No está en nuestro inventario?</p><h1>Cotiza tu perfume</h1><p>Busca en nuestro catálogo de surtido. Verás únicamente el precio final RDECANTS y podrás pedir varios perfumes juntos.</p><label class="quote-search" for="quote-search-input"><span aria-hidden="true">⌕</span><input id="quote-search-input" type="search" enterkeyhint="search" autocomplete="off" autocapitalize="words" placeholder="Buscar perfume…" aria-describedby="quote-search-help"></label><p id="quote-search-help">Escribe al menos 2 letras. Los resultados no crean inventario ni una compra.</p></div></section>
-    <section class="section quote-results-section" aria-label="Resultados"><div class="container"><div id="quote-results" aria-live="polite"></div></div></section>
-    <section class="section quote-basket-section" aria-labelledby="quote-basket-title"><div class="container quote-checkout-grid"><div><p class="section-eyebrow">Tu solicitud</p><h2 id="quote-basket-title">Perfumes por cotizar</h2><div id="quote-success-message" class="quote-success" role="status" aria-live="polite" hidden></div><div id="quote-basket" aria-live="polite"></div></div><form id="quote-form" class="quote-form" hidden><h2>Tus datos</h2><label for="quote-name">Nombre<input id="quote-name" name="name" type="text" autocomplete="name" minlength="2" maxlength="160" required></label><label for="quote-phone">Teléfono<input id="quote-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" minlength="7" maxlength="40" required></label><p class="quote-form-note">Roger confirmará disponibilidad y precio contigo antes de apartarlo.</p><p id="quote-submit-message" class="quote-alert" role="alert" aria-live="assertive"></p><button id="quote-submit" class="btn-primary" type="submit">Solicitar cotización</button><a id="quote-whatsapp-fallback" class="btn-primary quote-whatsapp-fallback" href="#" target="_blank" rel="noopener" hidden>Continuar por WhatsApp</a></form></div></section>
+
+    <!-- A purchasing/search tool, not a marketing landing page — the search
+         field must be reachable almost immediately, so this head stays
+         compact (reuses .page-head/.page-title/.page-lede from the catalog
+         page) instead of the old oversized hero. -->
+    <section class="page-head page-head--tight quote-head">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Ruta">
+          <a href="/">Inicio</a> <span aria-hidden="true">/</span> <span aria-current="page">Cotiza tu perfume</span>
+        </nav>
+        <h1 class="page-title">Cotiza tu perfume</h1>
+        <p class="page-lede">Busca en nuestro catálogo de fragancias originales disponibles por encargo.</p>
+        <p class="quote-trust-line"><span aria-hidden="true">✓</span> Los precios mostrados ya son precios finales RDECANTS, sin costos ocultos.</p>
+
+        <label class="quote-search" for="quote-search-input">
+          <span class="quote-search-icon" aria-hidden="true">⌕</span>
+          <input id="quote-search-input" type="search" enterkeyhint="search" autocomplete="off" autocapitalize="words" placeholder="Buscar perfume o marca…" aria-describedby="quote-search-help">
+          <button type="button" class="icon-btn quote-search-clear" id="quote-search-clear" hidden aria-label="Borrar búsqueda">×</button>
+        </label>
+        <p id="quote-search-help" class="quote-search-help">Ejemplo: Hawas, Dior Sauvage, Le Beau, YSL Y EDP <span class="sf-sr-only">Escribe al menos 2 letras para buscar. Los resultados no crean inventario ni una compra.</span></p>
+
+        <ol class="steps-grid quote-steps" aria-label="Cómo funciona">
+          <li class="step-card">
+            <p class="step-num" aria-hidden="true">1</p>
+            <h3 class="step-title">Busca</h3>
+            <p class="step-desc">Encuentra tu perfume por nombre o marca.</p>
+          </li>
+          <li class="step-card">
+            <p class="step-num" aria-hidden="true">2</p>
+            <h3 class="step-title">Elige</h3>
+            <p class="step-desc">Selecciona nuevo y sellado o tester.</p>
+          </li>
+          <li class="step-card">
+            <p class="step-num" aria-hidden="true">3</p>
+            <h3 class="step-title">Agrega</h3>
+            <p class="step-desc">Súmalo a tu cotización.</p>
+          </li>
+          <li class="step-card">
+            <p class="step-num" aria-hidden="true">4</p>
+            <h3 class="step-title">Recibe</h3>
+            <p class="step-desc">Te confirmamos precio y disponibilidad.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section quote-body-section" aria-label="Resultados y cotización">
+      <div class="container quote-layout">
+
+        <div class="quote-results-col">
+          <div class="quote-results-head" id="quote-results-head" hidden>
+            <p class="quote-results-count" id="quote-results-count"></p>
+            <div class="sf-sel-wrap">
+              <label class="sf-sr-only" for="quote-sort">Ordenar por</label>
+              <select id="quote-sort" class="sf-sel" aria-label="Ordenar por">
+                <option value="relevance">Relevancia</option>
+                <option value="price_asc">Precio: menor a mayor</option>
+                <option value="price_desc">Precio: mayor a menor</option>
+              </select>
+              <svg class="sf-arrow" viewBox="0 0 10 6" stroke="currentColor" stroke-width="1.5" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg>
+            </div>
+          </div>
+          <div id="quote-results" aria-live="polite" aria-busy="false"></div>
+        </div>
+
+        <aside class="quote-panel" id="quote-panel" aria-label="Tu cotización">
+          <div class="quote-panel-head">
+            <h2 id="quote-panel-title">Tu cotización <span class="quote-panel-count" id="quote-panel-count" hidden>0</span></h2>
+            <button type="button" class="icon-btn quote-panel-close" id="quote-panel-close" aria-label="Cerrar cotización">×</button>
+          </div>
+
+          <div class="quote-panel-scroll">
+            <div id="quote-success-message" class="quote-success" role="status" aria-live="polite" hidden></div>
+            <div id="quote-basket" aria-live="polite"></div>
+
+            <form id="quote-form" class="quote-form" hidden>
+              <h3>Tus datos</h3>
+              <label for="quote-name">Nombre<input id="quote-name" name="name" type="text" autocomplete="name" minlength="2" maxlength="160" required></label>
+              <label for="quote-phone">Teléfono<input id="quote-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" minlength="7" maxlength="40" required></label>
+              <p id="quote-submit-message" class="quote-alert" role="alert" aria-live="assertive"></p>
+              <button id="quote-submit" class="btn-primary quote-submit-btn" type="submit">Solicitar cotización</button>
+              <a id="quote-whatsapp-fallback" class="btn-primary quote-whatsapp-fallback" href="#" target="_blank" rel="noopener" hidden>Continuar por WhatsApp</a>
+              <p class="quote-form-note">Roger confirmará disponibilidad y precio contigo antes de apartarlo.</p>
+            </form>
+
+            <ul class="quote-panel-trust">
+              <li>✓ Envío a todo México</li>
+              <li>✓ Perfumes originales</li>
+              <li>✓ Tus datos están seguros</li>
+            </ul>
+          </div>
+        </aside>
+        <div class="quote-panel-overlay" id="quote-panel-overlay"></div>
+
+      </div>
+    </section>
+
+    <!-- Mobile-only sticky summary; opens #quote-panel as a bottom drawer. -->
+    <div class="quote-mobile-bar" id="quote-mobile-bar" hidden>
+      <div class="quote-mobile-bar-info">
+        <strong id="quote-mobile-bar-count"></strong>
+        <span id="quote-mobile-bar-total"></span>
+      </div>
+      <button type="button" class="btn-primary" id="quote-mobile-bar-btn">Ver cotización</button>
+    </div>
   </main>
   <footer class="footer"><div class="container"><div><p class="footer-logo">RDECANTS</p><p class="footer-tagline">Decants y perfumes originales</p></div><nav class="footer-links"><a href="/catalogo.html">Catálogo</a><a href="/perfumes.html">Perfumes</a><a href="/cotiza.html">Cotiza tu perfume</a><a href="/elegir.html">Ayúdame a elegir</a></nav><div class="footer-legal"><span>© 2026 RDECANTS</span><span>Precios en MXN</span></div></div></footer>
   <a class="whatsapp-float" href="https://wa.me/5219516513018" target="_blank" rel="noopener" aria-label="Contactar por WhatsApp">WA</a><div id="toast" class="toast" aria-live="polite"></div>
-  <script type="module" src="/assets/js/pages/quote.js?v=2026.08.21.2"></script>
+  <script type="module" src="/assets/js/pages/quote.js?v=2026.08.24.1"></script>
 </body>
 </html>
