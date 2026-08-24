@@ -68,11 +68,31 @@ const CONDITION_RULES = [
 ];
 /* Shown only when nothing in the source name supports a real condition
    claim. Never silently upgraded to "Nuevo y sellado" — an unverified SKU
-   must read as unverified, not as the safest-looking default. */
+   must read as unverified, not as the safest-looking default. The UI never
+   renders this as a badge (see normalizePresentation: conditionLabel is
+   '' for 'unknown') — an absent fact should not become the loudest, most
+   repeated element on the page. */
 const UNKNOWN_CONDITION = Object.freeze({ key: 'unknown', label: 'Condición por confirmar', detail: '' });
 const CONDITION_RANK = { sealed: 0, tester: 1, tester_no_box: 2, unknown: 3 };
-const CONDITION_STRIP_RE = /\b(tester\s*(sin\s*caja|s\/c|no\s*box)?|sin\s*caja|no\s*box|nuevo\s*y?\s*sellado|new(?:\s+and)?\s*sealed|sellado|sealed|nuevo|new)\b/gi;
-const CONCENTRATION_STRIP_RE = /\b(EDP|EDT|EDC|PARFUM|EXTRAIT(?:\s+DE\s+PARFUM)?)\b/gi;
+
+/* Name-cleaning strips ONLY unambiguous packaging/condition phrasing — never
+   "nuevo"/"new"/"sellado"/"sealed" on their own, because those bare words
+   are common enough inside real marketing copy that stripping them risks
+   the same mistake this file already made once (see CONCENTRATION list
+   below). Detecting the condition (above) and cleaning the display name
+   (below) are deliberately different, narrower operations. */
+const CONDITION_STRIP_RE = /\b(tester\s*(sin\s*caja|s\/c|no\s*box)?|sin\s*caja|no\s*box)\b/gi;
+
+/* Only the three universal, unambiguous abbreviations. Earlier this also
+   stripped "PARFUM"/"EXTRAIT" and — far worse — whatever the SKU's own
+   `concentration` field said verbatim. That second rule is how "RASASI
+   HAWAS ELIXIR" (concentration: "Elixir") got mangled into "Rasasi Hawas":
+   for this house "Elixir" is simultaneously the concentration tier AND
+   part of the marketed name, so stripping "the current item's concentration
+   value" is not safe in general. "EDP"/"EDT"/"EDC" are the only tokens that
+   are reliably NEVER part of a real fragrance name, so those are the only
+   ones removed generically; anything else stays untouched. */
+const CONCENTRATION_STRIP_RE = /\b(EDP|EDT|EDC)\b/gi;
 const SIZE_STRIP_RE = /\b\d{1,4}\s?ML\b/gi;
 
 /* Known catalog/supplier prefix codes seen on raw SKU names — from the
@@ -90,26 +110,26 @@ export function detectCondition(rawName = '') {
   return { ...UNKNOWN_CONDITION };
 }
 
-/* Strips a known supplier prefix, the condition phrase and the
-   concentration/size tokens that are already shown as separate metadata,
-   then title-cases the remainder. Deliberately narrow: only a whitelisted
-   prefix letter and only the condition/concentration/size tokens above are
-   removed — nothing else in the name is touched, so a real fragrance name
-   is never mutated by a broad "looks like noise" guess. */
+/* Strips a known supplier prefix, unambiguous condition phrasing (tester /
+   sin caja / no box) and the concentration abbreviation/size tokens that
+   are already shown as separate metadata, then title-cases the remainder.
+   Deliberately conservative: when a token's meaning is ambiguous (it could
+   be real marketing language — "Elixir", "Intense", "Sport", "Le Parfum"…)
+   it is left in the name. A slightly redundant but correct name beats a
+   incorrectly renamed perfume. */
 export function cleanDisplayName(rawName, concentration = '', size = '') {
   let text = String(rawName ?? '').trim();
   if (!text) return '';
+  // concentration is accepted for API-shape compatibility with callers that
+  // pass every SKU field positionally, but is intentionally NOT used to
+  // strip text — see CONCENTRATION_STRIP_RE comment above.
+  void concentration;
 
   const prefixMatch = text.match(/^([A-Z])\s+(?=\S)/);
   if (prefixMatch && KNOWN_SUPPLIER_PREFIXES.has(prefixMatch[1])) {
     text = text.slice(prefixMatch[0].length);
   }
   text = text.replace(CONDITION_STRIP_RE, ' ');
-
-  const concentrationToken = String(concentration ?? '').trim();
-  if (concentrationToken) {
-    text = text.replace(new RegExp(`\\b${_escapeRegExp(concentrationToken)}\\b`, 'gi'), ' ');
-  }
   text = text.replace(CONCENTRATION_STRIP_RE, ' ');
 
   const sizeDigits = String(size ?? '').match(/\d+(?:\.\d+)?/)?.[0];
@@ -120,6 +140,49 @@ export function cleanDisplayName(rawName, concentration = '', size = '') {
 
   text = text.replace(/\s{2,}/g, ' ').trim().replace(/^[-–—,.\s]+|[-–—,.\s]+$/g, '');
   return _titleCaseName(text) || String(rawName ?? '').trim();
+}
+
+/* Size, normalized once to the single customer-facing format ("100 ml"),
+   regardless of whether the source wrote "100mL", "100ML" or "100 ml". */
+export function sizeLabel(size) {
+  const raw = String(size ?? '').trim();
+  if (!raw) return '';
+  const digits = raw.match(/\d+(?:\.\d+)?/)?.[0];
+  return digits ? `${digits} ml` : raw;
+}
+
+/* ── Single source of truth for customer-facing product data ─────────────
+   One normalized object per SKU/variant, fed by the exact same
+   cleanDisplayName/detectCondition/sizeLabel pipeline everywhere a SKU is
+   shown: the result card, the quote sidebar, the mobile drawer and the
+   WhatsApp message. Nothing downstream re-parses the raw supplier name.
+   `originalRecord` keeps the untouched source SKU for backend operations
+   (quoteLines, priceQuoteBasket, submitQuote all key off `sku`/reference,
+   never off anything derived here). */
+export function normalizePresentation(record = {}) {
+  const displayName = cleanDisplayName(record.name, record.concentration, record.size);
+  const size = sizeLabel(record.size);
+  const condition = detectCondition(record.name);
+  const quantity = Number(record.quantity) || 1;
+  const price = Number(record.price) || 0;
+  const lineTotal = Number(record.line_total ?? price * quantity) || 0;
+  return {
+    displayName,
+    concentration: record.concentration ?? '',
+    sizeLabel: size,
+    metaLabel: [record.concentration, size].filter(Boolean).join(' · '),
+    condition: condition.key,
+    // Never surfaced as a badge/label when unknown — see UNKNOWN_CONDITION.
+    conditionLabel: condition.key === 'unknown' ? '' : condition.label,
+    conditionDetail: condition.key === 'unknown' ? '' : condition.detail,
+    price,
+    quantity,
+    lineTotal,
+    available: record.available !== false,
+    sku: record.reference,
+    image: record.image ?? '',
+    originalRecord: record,
+  };
 }
 
 /* Groups SKUs that share the same cleaned name + concentration + size — an
@@ -159,21 +222,56 @@ export function sortQuoteGroups(groups = [], sortKey = 'relevance') {
   return groups;
 }
 
+/* A sort control with a single meaningful order is noise, not a choice —
+   only worth showing once there is more than one card to actually reorder. */
+export function shouldShowSort(groupCount) {
+  return groupCount >= 2;
+}
+
+/* ── The WhatsApp message the customer actually sends ─────────────────────
+   Built entirely from normalized presentation objects (never from a raw
+   supplier record), and returned as a plain JS string — encodeURIComponent
+   at the call site handles UTF-8/URL-encoding correctly on its own, so this
+   never needs (and must never do) any manual escaping that could double-
+   encode or corrupt characters into U+FFFD. `reference` is optional and is
+   only ever a real, non-empty backend-issued id: an empty/falsy value
+   omits the "Referencia:" line entirely rather than printing it blank. */
+export function buildWhatsAppMessage(items = [], subtotal = 0, reference = '') {
+  const lines = items
+    .map(item => `• ${item.quantity} × ${item.displayName} — ${item.metaLabel} — ${formatPrice(item.lineTotal ?? item.price)}`)
+    .join('\n');
+
+  const parts = [
+    'Hola, quiero confirmar disponibilidad de esta cotización en RDECANTS:',
+    '',
+    lines,
+    '',
+    `Subtotal: ${formatPrice(subtotal)}`,
+    'Envío: por confirmar según destino',
+  ];
+
+  const ref = String(reference ?? '').trim();
+  if (ref) parts.push('', `Referencia: ${ref}`);
+
+  return parts.join('\n');
+}
+
 globalThis.document?.addEventListener('DOMContentLoaded', async () => {
   await bootstrapShell();
 
   const input = document.getElementById('quote-search-input');
   const results = document.getElementById('quote-results');
   const basketEl = document.getElementById('quote-basket');
-  const form = document.getElementById('quote-form');
+  const ctaBlock = document.getElementById('quote-cta-block');
   const submit = document.getElementById('quote-submit');
-  const successEl = document.getElementById('quote-success-message');
   const whatsappFallback = document.getElementById('quote-whatsapp-fallback');
-  if (!input || !results || !basketEl || !form || !submit) return;
+  if (!input || !results || !basketEl || !ctaBlock || !submit) return;
 
+  const submitMessage = document.getElementById('quote-submit-message');
   const searchClear = document.getElementById('quote-search-clear');
   const resultsHead = document.getElementById('quote-results-head');
   const resultsCount = document.getElementById('quote-results-count');
+  const sortWrap = document.querySelector('.quote-results-head .sf-sel-wrap');
   const sortSelect = document.getElementById('quote-sort');
   const panel = document.getElementById('quote-panel');
   const panelClose = document.getElementById('quote-panel-close');
@@ -245,19 +343,19 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
 
     if (!basket.length) {
       basketEl.innerHTML = _basketEmpty();
-      form.hidden = true;
+      ctaBlock.hidden = true;
       return;
     }
 
-    if (successEl) {
-      successEl.hidden = true;
-      successEl.textContent = '';
-    }
     if (whatsappFallback) {
       whatsappFallback.hidden = true;
       whatsappFallback.removeAttribute('href');
     }
-    form.hidden = false;
+    if (submitMessage) { submitMessage.hidden = true; submitMessage.textContent = ''; }
+    ctaBlock.hidden = false;
+    const canSubmit = !(pricedBasket.unavailable ?? []).length;
+    submit.disabled = !canSubmit;
+
     const pricedByRef = new Map((pricedBasket.items ?? []).map(item => [item.reference, item]));
     const unavailable = new Set(pricedBasket.unavailable ?? []);
     basketEl.innerHTML = `
@@ -265,13 +363,24 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
         ${basket.map(item => _basketLine(pricedByRef.get(item.reference) ?? item, unavailable.has(item.reference))).join('')}
       </div>
       <div class="quote-total-row"><span>Subtotal</span><strong>${formatPrice(pricedBasket.total, 'Recalculando…')}</strong></div>
-      <div class="quote-total-row quote-total-row--shipping"><span>Envío</span><span>Se calcula después</span></div>
+      <div class="quote-total-row quote-total-row--shipping"><span>Envío</span><span>Se calcula según destino</span></div>
       ${(pricedBasket.unavailable ?? []).length ? '<p class="quote-alert" role="alert">Una o más fragancias ya no están disponibles. Retíralas para continuar.</p>' : ''}`;
 
     primeImageStates(basketEl);
-    basketEl.querySelectorAll('[data-quote-qty]').forEach(control => {
-      control.addEventListener('change', async () => {
-        basket = changeQuoteQuantity(basket, control.dataset.quoteQty, control.value);
+    basketEl.querySelectorAll('[data-quote-qty-dec]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const ref = button.dataset.quoteQtyDec;
+        const current = basket.find(item => item.reference === ref);
+        if (!current || (Number(current.quantity) || 1) <= 1) return;
+        basket = changeQuoteQuantity(basket, ref, (Number(current.quantity) || 1) - 1);
+        await reprice();
+      });
+    });
+    basketEl.querySelectorAll('[data-quote-qty-inc]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const ref = button.dataset.quoteQtyInc;
+        const current = basket.find(item => item.reference === ref);
+        basket = changeQuoteQuantity(basket, ref, (Number(current?.quantity) || 1) + 1);
         await reprice();
       });
     });
@@ -334,6 +443,7 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
     if (resultsHead) {
       resultsHead.hidden = false;
       if (resultsCount) resultsCount.textContent = `${lastItems.length} ${lastItems.length === 1 ? 'resultado' : 'resultados'} para "${lastQuery}"`;
+      if (sortWrap) sortWrap.hidden = !shouldShowSort(lastGroups.length);
     }
     const sorted = sortQuoteGroups(lastGroups, sortSelect?.value ?? 'relevance');
     results.innerHTML = sorted.map(_perfumeCard).join('');
@@ -406,71 +516,64 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
     search('');
   });
 
-  form.addEventListener('submit', async event => {
-    event.preventDefault();
+  /* ── Confirm on WhatsApp — the entire "submit" step ───────────────────
+     No form, no required fields: WhatsApp already identifies the customer.
+     The message is built locally from the already-priced basket (see
+     buildWhatsAppMessage) and the tab opens immediately; a best-effort,
+     non-blocking backend call tries to attach a real reference number but
+     can never delay or fail the handoff — a customer must always reach
+     WhatsApp on this click, regardless of backend availability. */
+  submit.addEventListener('click', async () => {
     if (submitting || !basket.length || pricedBasket.unavailable?.length) return;
-    const message = document.getElementById('quote-submit-message');
     submitting = true;
     submit.disabled = true;
-    submit.textContent = 'Revalidando…';
-    if (message) message.textContent = '';
+    const originalLabel = submit.textContent;
+    submit.textContent = 'Abriendo WhatsApp…';
+    if (submitMessage) { submitMessage.hidden = true; submitMessage.textContent = ''; }
 
-    /* Reserve the tab during the submit gesture, before awaiting the backend.
-       This is the same popup-safe handoff used by decant checkout: once the
-       quote is accepted we can navigate this tab without losing the gesture. */
+    /* Reserve the tab during the click gesture, before any await, so the
+       popup-safe handoff survives whichever branch below actually fills
+       in the URL (same pattern as the rest of the storefront's checkout). */
     const reservedWindow = window.open('', '_blank');
 
     try {
-      const response = await ApiClient.submitQuote({
-        items: quoteLines(basket),
-        customer_name: document.getElementById('quote-name').value.trim(),
-        customer_phone: document.getElementById('quote-phone').value.trim(),
-        expected_total: pricedBasket.total,
-      });
-      Tracker.emit('quote_submitted', { reference: response.reference, itemCount: basket.length });
-      const whatsappUrl = String(response.whatsapp_url ?? '').trim();
-      if (!whatsappUrl) throw new Error('No pudimos abrir WhatsApp. Inténtalo de nuevo.');
+      let reference = '';
+      try {
+        const response = await ApiClient.submitQuote({ items: quoteLines(basket), expected_total: pricedBasket.total });
+        reference = String(response?.reference ?? '').trim();
+      } catch {
+        // Best-effort record only — the WhatsApp handoff below never depends
+        // on this succeeding, so a backend hiccup is silent to the customer.
+      }
 
-      // Keep the form and basket mounted. The completed basket is cleared so
-      // the same page can immediately start a second quote without reloading.
+      const items = basket.map(item => normalizePresentation(item));
+      const message = buildWhatsAppMessage(items, pricedBasket.total, reference);
+      const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+      Tracker.emit('quote_submitted', { reference, itemCount: basket.length });
+
+      if (reservedWindow) reservedWindow.location.href = whatsappUrl;
+      const opened = reservedWindow || window.open(whatsappUrl, '_blank');
+
       basket = [];
       pricedBasket = { items: [], total: 0, unavailable: [] };
       renderBasket();
       syncResultButtons();
       closeQuotePanel();
-      form.reset();
-      if (successEl) {
-        successEl.textContent = 'Solicitud recibida. Roger recibió tu solicitud y confirmará disponibilidad contigo por WhatsApp.';
-        successEl.hidden = false;
-      }
 
-      /* The backend owns the WhatsApp message and URL. Do not rebuild a
-         message here: quote-only data never belongs in frontend copy. */
-      if (reservedWindow) reservedWindow.location.href = whatsappUrl;
-      const opened = reservedWindow || window.open(whatsappUrl, '_blank');
-      if (!opened) {
-        if (whatsappFallback) {
-          whatsappFallback.href = whatsappUrl;
-          whatsappFallback.hidden = false;
-        }
+      if (!opened && whatsappFallback) {
+        whatsappFallback.href = whatsappUrl;
+        whatsappFallback.hidden = false;
       }
-    } catch (error) {
+    } catch {
       reservedWindow?.close?.();
-      if (error.status === 409 && error.data?.basket) {
-        pricedBasket = error.data.basket;
-        const byRef = new Map((pricedBasket.items ?? []).map(item => [item.reference, item]));
-        basket = basket.map(item => ({ ...item, ...(byRef.get(item.reference) ?? {}), quantity: item.quantity }));
-        renderBasket();
-        if (message) message.textContent = pricedBasket.unavailable?.length
-          ? 'Una fragancia dejó de estar disponible. Revisa la lista.'
-          : 'El precio cambió. Revisa el nuevo total y vuelve a enviar para aceptarlo.';
-      } else if (message) {
-        message.textContent = error.message || 'No pudimos enviar la solicitud. Inténtalo de nuevo.';
+      if (submitMessage) {
+        submitMessage.textContent = 'No pudimos abrir WhatsApp. Inténtalo de nuevo.';
+        submitMessage.hidden = false;
       }
     } finally {
       submitting = false;
       submit.disabled = false;
-      submit.textContent = 'Solicitar cotización';
+      submit.textContent = originalLabel;
     }
   });
 
@@ -490,7 +593,7 @@ function _perfumeCard(group) {
       <div class="quote-perfume-headline">
         <div>
           <h3 class="quote-perfume-name">${_escape(group.name)}</h3>
-          <p class="quote-perfume-meta">${_escape([group.concentration, _sizeLabel(group.size)].filter(Boolean).join(' · '))}</p>
+          <p class="quote-perfume-meta">${_escape([group.concentration, sizeLabel(group.size)].filter(Boolean).join(' · '))}</p>
         </div>
         <details class="quote-details">
           <summary>Ver detalles</summary>
@@ -505,48 +608,55 @@ function _perfumeCard(group) {
 }
 
 function _variantRow(variant) {
-  const disabled = !variant.available;
+  const presentation = normalizePresentation(variant);
+  const disabled = !presentation.available;
   return `<div class="quote-variant-row">
     <div class="quote-variant-condition">
-      <span class="quote-condition-badge quote-condition-badge--${variant.condition.key}">${_escape(variant.condition.label)}</span>
-      ${variant.condition.detail ? `<span class="quote-variant-detail">${_escape(variant.condition.detail)}</span>` : ''}
+      ${presentation.conditionLabel ? `<span class="quote-condition-badge quote-condition-badge--${presentation.condition}">${_escape(presentation.conditionLabel)}</span>` : ''}
+      ${presentation.conditionDetail ? `<span class="quote-variant-detail">${_escape(presentation.conditionDetail)}</span>` : ''}
     </div>
-    <strong class="quote-variant-price">${formatPrice(variant.price)}</strong>
-    <button type="button" class="btn-primary quote-variant-add" data-quote-add="${_escape(variant.reference)}"
+    <strong class="quote-variant-price">${formatPrice(presentation.price)}</strong>
+    <button type="button" class="btn-primary quote-variant-add" data-quote-add="${_escape(presentation.sku)}"
       ${disabled ? 'disabled aria-disabled="true"' : ''}
-      aria-label="${disabled ? `${_escape(variant.condition.label)} no disponible` : `Agregar ${_escape(variant.condition.label)} a tu cotización`}">
+      aria-label="${disabled ? `${_escape(presentation.displayName)} no disponible` : `Agregar ${_escape(presentation.displayName)} a tu cotización`}">
       ${disabled ? 'No disponible' : 'Agregar'}
     </button>
   </div>`;
 }
 
 function _detailsBody(group) {
-  const rows = group.variants.map(v => `<li><span>${_escape(v.condition.label)}</span><span>${formatPrice(v.price)}</span><span>${v.available ? 'Disponible' : 'No disponible'}</span></li>`).join('');
+  const rows = group.variants.map(v => {
+    const p = normalizePresentation(v);
+    return `<li><span>${_escape(p.conditionLabel || 'Condición por confirmar')}</span><span>${formatPrice(p.price)}</span><span>${p.available ? 'Disponible' : 'No disponible'}</span></li>`;
+  }).join('');
   return `
     <p><strong>Concentración:</strong> ${_escape(group.concentration || 'No especificada')}</p>
-    <p><strong>Tamaño:</strong> ${_escape(_sizeLabel(group.size) || 'No especificado')}</p>
+    <p><strong>Tamaño:</strong> ${_escape(sizeLabel(group.size) || 'No especificado')}</p>
     <p><strong>Disponibilidad:</strong> Por encargo</p>
     <ul class="quote-details-variants">${rows}</ul>`;
 }
 
 function _basketLine(item, unavailable = false) {
-  const name = cleanDisplayName(item.name, item.concentration, item.size);
-  const condition = detectCondition(item.name);
-  const hasImage = Boolean(item.image);
+  const presentation = normalizePresentation(item);
+  const hasImage = Boolean(presentation.image);
   return `<article class="quote-basket-line${unavailable ? ' is-unavailable' : ''}">
     <div class="quote-basket-thumb${hasImage ? '' : ' img-shell img-failed'}">
-      ${hasImage ? `<img src="${_escape(item.image)}" alt="" loading="lazy" decoding="async">` : ''}
+      ${hasImage ? `<img src="${_escape(presentation.image)}" alt="" loading="lazy" decoding="async">` : ''}
     </div>
     <div class="quote-basket-line-info">
-      <strong>${_escape(name)}</strong>
-      <span>${_escape([condition.label, _sizeLabel(item.size)].filter(Boolean).join(' · '))}</span>
-      <label class="quote-basket-qty">Cantidad
-        <input type="number" inputmode="numeric" min="1" max="10" value="${Number(item.quantity) || 1}" data-quote-qty="${_escape(item.reference)}">
-      </label>
+      <strong>${_escape(presentation.displayName)}</strong>
+      <span>${_escape(presentation.metaLabel)}</span>
+      ${presentation.conditionLabel ? `<span class="quote-condition-badge quote-condition-badge--${presentation.condition} quote-basket-condition">${_escape(presentation.conditionLabel)}</span>` : ''}
+      <div class="quote-qty-stepper" role="group" aria-label="Cantidad de ${_escape(presentation.displayName)}">
+        <span class="quote-qty-caption">Cantidad</span>
+        <button type="button" class="quote-qty-btn" data-quote-qty-dec="${_escape(presentation.sku)}" aria-label="Reducir cantidad" ${presentation.quantity <= 1 ? 'disabled' : ''}>−</button>
+        <span class="quote-qty-value">${presentation.quantity}</span>
+        <button type="button" class="quote-qty-btn" data-quote-qty-inc="${_escape(presentation.sku)}" aria-label="Aumentar cantidad" ${presentation.quantity >= 10 ? 'disabled' : ''}>+</button>
+      </div>
     </div>
     <div class="quote-basket-line-actions">
-      <strong>${unavailable ? 'Ya no disponible' : formatPrice(item.line_total ?? item.price)}</strong>
-      <button type="button" class="quote-remove" data-quote-remove="${_escape(item.reference)}" aria-label="Quitar ${_escape(name)}">Quitar</button>
+      <strong>${unavailable ? 'Ya no disponible' : formatPrice(presentation.lineTotal)}</strong>
+      <button type="button" class="quote-remove" data-quote-remove="${_escape(presentation.sku)}" aria-label="Quitar ${_escape(presentation.displayName)}">Quitar</button>
     </div>
   </article>`;
 }
@@ -570,12 +680,6 @@ function _noResultsState(query) {
 
 function _basketEmpty() { return '<div class="quote-basket-empty"><p>Tu cotización está vacía.</p><span>Agrega uno o varios perfumes y calcularemos el precio completo.</span></div>'; }
 function _searchState(title, copy) { return `<div class="quote-state"><span aria-hidden="true">R</span><h2>${title}</h2><p>${copy}</p></div>`; }
-
-function _sizeLabel(size) {
-  const text = String(size ?? '').trim();
-  if (!text) return '';
-  return /ml/i.test(text) ? text : `${text} ml`;
-}
 
 function _normalizeSize(size) {
   const digits = String(size ?? '').match(/\d+(?:\.\d+)?/);
@@ -601,5 +705,4 @@ function _titleCaseName(text) {
   }).join(' ');
 }
 
-function _escapeRegExp(value) { return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 function _escape(value) { return String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character])); }
