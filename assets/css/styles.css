@@ -144,11 +144,27 @@
 .quote-basket-thumb { width: 48px; height: 48px; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-sunk); flex: 0 0 auto; }
 .quote-basket-thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .quote-basket-thumb.img-failed::after { font-size: 16px; }
-.quote-basket-line-info { display: grid; gap: 3px; min-width: 0; }
+.quote-basket-line-info { display: grid; gap: 4px; min-width: 0; }
 .quote-basket-line-info strong { font-size: 14px; font-weight: 600; }
 .quote-basket-line-info span { font-size: 12px; color: var(--ink-soft); }
-.quote-basket-qty { display: flex; align-items: center; gap: 6px; margin-top: 2px; font-size: 12px; color: var(--ink-soft); }
-.quote-basket-qty input { width: 52px; min-height: 32px; border: 1px solid var(--border); border-radius: 8px; padding: 4px 6px; font: inherit; font-size: 13px; }
+.quote-basket-condition { margin-top: 1px; }
+
+/* Compact [-] 1 [+] stepper — replaces the old raw number input. Floors at
+   1 (removal stays exclusively the "Quitar" link's job, never a side effect
+   of decrementing) and caps at 10, matching changeQuoteQuantity. */
+.quote-qty-stepper { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.quote-qty-caption { font-size: 12px; color: var(--ink-soft); margin-right: 2px; }
+.quote-qty-btn {
+  width: 26px; height: 26px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--ink);
+  font-size: 14px; line-height: 1; cursor: pointer;
+}
+.quote-qty-btn:hover:not(:disabled) { border-color: var(--ink); }
+.quote-qty-btn:disabled { color: var(--ink-faint); border-color: var(--line-soft); cursor: not-allowed; }
+.quote-qty-value { min-width: 18px; text-align: center; font-size: 13px; font-weight: 600; }
+
 .quote-basket-line-actions { display: grid; justify-items: end; gap: 6px; }
 .quote-basket-line-actions strong { font-size: 14px; font-weight: 600; white-space: nowrap; }
 .quote-remove { border: 0; background: transparent; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font-size: 12px; color: var(--ink-soft); }
@@ -158,18 +174,12 @@
 .quote-total-row { display: flex; justify-content: space-between; gap: 18px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line-soft); font-size: 15px; }
 .quote-total-row--shipping { margin-top: 0; padding-top: 6px; border-top: 0; font-size: 13px; color: var(--ink-soft); }
 
-.quote-form { display: grid; gap: 12px; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--border); }
-.quote-form h3 { margin: 0; font-size: 14px; font-weight: 600; }
-.quote-form label { display: grid; gap: 6px; font-size: 13px; font-weight: 600; }
-.quote-form input { min-height: 46px; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0 12px; font: inherit; }
+/* ── CTA block — a summary's last line, not a checkout form ──────────── */
+.quote-cta-block { display: grid; gap: 10px; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--border); }
 .quote-submit-btn { width: 100%; }
-.quote-form-note { margin: 0; font-size: 12px; color: var(--ink-soft); }
+.quote-form-note { margin: 0; font-size: 12px; color: var(--ink-soft); text-align: center; }
 .quote-alert { color: #8b251e; font-size: 13px; margin: 0; }
-.quote-success { padding: 10px 0; font-size: 13px; }
-.quote-whatsapp-fallback { width: 100%; margin-top: 8px; }
-
-.quote-panel-trust { list-style: none; margin: 18px 0 0; padding: 16px 0 0; border-top: 1px solid var(--border); display: grid; gap: 6px; font-size: 12.5px; color: var(--ink-soft); }
-.quote-panel-trust li { display: flex; gap: 6px; }
+.quote-whatsapp-fallback { width: 100%; }
 
 .quote-panel-overlay { display: none; }
 .quote-mobile-bar { display: none; }
