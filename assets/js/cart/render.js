@@ -4,7 +4,7 @@
    ============================================================= */
 
 import { Cart }      from './cart.js';
-import { Discount, API_DOWN_MSG } from './discount.js';
+import { Discount, API_DOWN_MSG, STALE_CODE_MSG } from './discount.js';
 import { Attribution, parseAttributionParams, normalizeCampaignCode } from './attribution.js';
 import { maybeAutoApplyPromo, resetAutoApplyGuard, markAutoApplyDone } from './campaign.js';
 import { sendCheckoutWhatsApp,
@@ -585,7 +585,10 @@ function _scheduleRevalidation() {
     if (!Discount.isApplied() || !Cart.items.length) return;
     const result = await Discount.revalidate(Cart.items, Cart.total());
     if (result.status === 'invalid') {
-      _setDiscountMessage('Tu código ya no aplica a este pedido. Puedes continuar sin descuento.', 'invalid');
+      /* The backend's own sentence, not ours. For a scoped code it is the only
+         one that tells the customer something they can act on — "no aplica a
+         los productos de tu carrito" points at the cart, "ya expiró" does not. */
+      _setDiscountMessage(result.message || STALE_CODE_MSG, 'invalid');
       showToast('Actualizamos tu total: el código ya no aplica.');
     } else if (result.status === 'error') {
       _setDiscountMessage('No pudimos revalidar el código. Continúa y lo confirmamos por WhatsApp.', 'error');
