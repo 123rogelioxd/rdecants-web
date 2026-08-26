@@ -160,7 +160,13 @@ async function _performCheckout(phoneNumber, reservedWindow = null) {
     }
   }
 
-  const messageText = buildWhatsAppMessage(orderItems, total, data, '', discount);
+  /* When the order already exists (the bottle path), its numbers outrank the
+     preview: R Supply OS may have priced the cart differently in the seconds
+     since — a bottle repriced, or someone else taking the last redemption of a
+     one-use code. Promising the preview total in a WhatsApp message the
+     customer keeps, after the backend has already said otherwise, is a number
+     nobody can honour. */
+  const messageText = buildWhatsAppMessage(orderItems, total, data, '', discount, recordedOrder);
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(messageText)}`;
 
   /* 1) WhatsApp first. */
@@ -388,7 +394,11 @@ async function _buildOrderItem(item) {
   };
 }
 
-export function buildWhatsAppMessage(items, total, data, folio = '', discount = null) {
+/* `order` is the Web Order R Supply OS actually created, when there is one. It
+   is the pricing authority; `total` + `discount` are the last PREVIEW and are
+   used only when no order has been created yet (the decant path, where the
+   order is written in the background after the handoff). */
+export function buildWhatsAppMessage(items, total, data, folio = '', discount = null, order = null) {
   const hasBottle = items.some(item => item.type === 'bottle');
   const hasDecant = items.some(item => item.type !== 'bottle' && item.type !== 'pack');
   const lines = [
@@ -403,29 +413,35 @@ export function buildWhatsAppMessage(items, total, data, folio = '', discount = 
     lines.push(`• ${_whatsAppItemLine(item)}`);
   });
 
-  /* `total` is the SUBTOTAL (Cart.total()). With one or two valid previews we
-     show the per-code breakdown; the final total is only an estimate — R Supply
-     OS confirms it. `discount` may be a single object (legacy) or a list. */
-  const applied = _normalizeDiscountList(discount);
-  const totalDiscount = applied.reduce((sum, d) => sum + _money(d.amount), 0);
+  const confirmed = _orderPricing(order);
 
-  if (applied.length && totalDiscount > 0) {
-    /* One code: honor its preview total. Two codes: subtotal − sum. */
-    const finalTotal = (applied.length === 1 && _money(applied[0].total) > 0)
-      ? _money(applied[0].total)
-      : Math.max(0, _money(total) - totalDiscount);
-    lines.push('');
-    lines.push(`Subtotal: ${formatPrice(total, 'Por confirmar')}`);
-    applied.forEach(d => {
-      lines.push(`Código: ${d.code}`);
-      lines.push(`Descuento: -${formatPrice(_money(d.amount), '$0')}`);
-    });
-    if (applied.length > 1) {
-      lines.push(`Descuento total: -${formatPrice(totalDiscount, '$0')}`);
-    }
-    lines.push(`Total: ${formatPrice(finalTotal, 'Por confirmar')}`);
+  if (confirmed) {
+    lines.push(...confirmed);
   } else {
-    lines.push('', `Total: ${formatPrice(total, 'Por confirmar')}`);
+    /* No order yet. `total` is the SUBTOTAL (Cart.total()) and the amounts are
+       the last valid PREVIEW; R Supply OS confirms them when it writes the
+       order. `discount` may be a single object (legacy) or a list. */
+    const applied = _normalizeDiscountList(discount);
+    const totalDiscount = applied.reduce((sum, d) => sum + _money(d.amount), 0);
+
+    if (applied.length && totalDiscount > 0) {
+      /* One code: honor its preview total. Two codes: subtotal − sum. */
+      const finalTotal = (applied.length === 1 && _money(applied[0].total) > 0)
+        ? _money(applied[0].total)
+        : Math.max(0, _money(total) - totalDiscount);
+      lines.push('');
+      lines.push(`Subtotal: ${formatPrice(total, 'Por confirmar')}`);
+      applied.forEach(d => {
+        lines.push(`Código: ${d.code}`);
+        lines.push(`Descuento: -${formatPrice(_money(d.amount), '$0')}`);
+      });
+      if (applied.length > 1) {
+        lines.push(`Descuento total: -${formatPrice(totalDiscount, '$0')}`);
+      }
+      lines.push(`Total: ${formatPrice(finalTotal, 'Por confirmar')}`);
+    } else {
+      lines.push('', `Total: ${formatPrice(total, 'Por confirmar')}`);
+    }
   }
 
   if (data.name) {
@@ -630,6 +646,57 @@ function _formatMl(value) {
 /* Normalize the discount argument to a list of { code, amount, total } with a
    positive amount. Accepts a single object (legacy) or an array of applied
    coupons — so callers and the WhatsApp message support one or two codes. */
+/* The money block for an order R Supply OS has already created, or null when
+   there is no order to read.
+
+   Every figure is the backend's: the subtotal it resolved, the per-coupon
+   amounts IT decided (a scoped code's amount is a share of the cart, and only
+   the backend knows which share), and the total it will charge. Nothing here
+   recomputes a percentage — that is the whole reason the block exists.
+
+   `discount` on the order is the TOTAL saving and can exceed the coupons when a
+   pack is involved; the extra line makes the arithmetic add up on screen
+   instead of leaving the customer with a total they cannot reconcile. */
+function _orderPricing(order) {
+  if (!order) return null;
+
+  const subtotal = _money(order.subtotal);
+  const total = _money(order.total);
+
+  /* Only an order with no usable numbers at all falls back to the preview. */
+  if (subtotal <= 0 && total <= 0) return null;
+
+  const totalDiscount = _money(order.discount ?? order.total_discount);
+
+  /* An order that came back with NO discount is the answer, not a reason to go
+     looking for a better one. This is the case that matters most: the customer
+     previewed a one-use code, somebody else redeemed it a second later, and the
+     order was written at full price. Falling through to the preview here would
+     hand them a WhatsApp message promising a discount the order does not have. */
+  if (totalDiscount <= 0) {
+    return ['', `Total: ${formatPrice(total || subtotal, 'Por confirmar')}`];
+  }
+
+  const coupons = (Array.isArray(order.coupons) ? order.coupons : [])
+    .filter(c => c && c.code && _money(c.discount_amount ?? c.amount) > 0);
+
+  const lines = ['', `Subtotal: ${formatPrice(subtotal, 'Por confirmar')}`];
+
+  coupons.forEach(c => {
+    lines.push(`Código: ${c.code}`);
+    lines.push(`Descuento: -${formatPrice(_money(c.discount_amount ?? c.amount), '$0')}`);
+  });
+
+  const couponTotal = coupons.reduce((sum, c) => sum + _money(c.discount_amount ?? c.amount), 0);
+  if (coupons.length !== 1 || couponTotal !== totalDiscount) {
+    lines.push(`Descuento total: -${formatPrice(totalDiscount, '$0')}`);
+  }
+
+  lines.push(`Total: ${formatPrice(total, 'Por confirmar')}`);
+
+  return lines;
+}
+
 function _normalizeDiscountList(discount) {
   const list = Array.isArray(discount) ? discount : (discount ? [discount] : []);
   return list

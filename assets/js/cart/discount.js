@@ -26,6 +26,9 @@ export const MAX_COUPONS = 2;
 /* Customer-safe copy — never leak technical/validation jargon. */
 export const API_DOWN_MSG = 'No pudimos validar el código ahorita. Puedes continuar sin descuento.';
 const DEFAULT_INVALID_MSG = 'Ese código no es válido o ya expiró.';
+/* Fallback when a code stops applying after a cart change and the backend gave
+   no reason of its own. */
+export const STALE_CODE_MSG = 'Tu código ya no aplica a este pedido. Puedes continuar sin descuento.';
 
 /* Applied coupons the backend confirmed, ordered by calculation sequence.
    Each: { code, normalizedCode, amount, sequence } */
@@ -114,7 +117,14 @@ export const Discount = {
 
   /* Re-preview the applied set (cart changed). On success refresh amounts; any
      code that no longer validates is dropped so the customer never sees a stale
-     total. Returns 'none' | 'valid' | 'invalid' | 'error'. */
+     total. Returns 'none' | 'valid' | 'invalid' | 'error'.
+
+     A dropped code now carries the backend's OWN reason. That matters most for a
+     scoped promotion: "this code doesn't apply to the products in your cart" is
+     a different situation from "expired", and it is actionable — put a sealed
+     bottle back and the code works again. Inventing one generic sentence here
+     would throw that away, and the storefront has no way to reconstruct it
+     because it never knows what a code covers. */
   async revalidate(items = [], subtotal = 0) {
     if (!_applied.length) return { status: 'none' };
 
@@ -123,8 +133,12 @@ export const Discount = {
     if (parsed.status === 'error') return { status: 'error', message: API_DOWN_MSG };
 
     _store(parsed.applied);
-    const dropped = before.some(c => !parsed.applied.find(a => a.code === c));
-    return { status: dropped ? 'invalid' : 'valid' };
+
+    const dropped = before.filter(c => !parsed.applied.find(a => a.code === c));
+    if (!dropped.length) return { status: 'valid' };
+
+    const reason = parsed.rejected.find(r => dropped.includes(r.code));
+    return { status: 'invalid', dropped, message: reason?.message || STALE_CODE_MSG };
   },
 
   clear() { if (_applied.length) _store([]); },
