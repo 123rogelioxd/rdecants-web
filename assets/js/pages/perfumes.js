@@ -42,7 +42,7 @@ export function bottleOfferTypes(product = {}) {
  * button that silently picks one is picking a size and a price for somebody.
  */
 export function bottleAffordance(product = {}) {
-  return product.purchase?.bottles ?? { mode: 'sold_out', cta: 'Agotado', count: 0, direct: null, sizes: [], choices: [] };
+  return product.purchase?.bottles ?? { mode: 'sold_out', cta: null, count: 0, direct: null, sizes: [], choices: [] };
 }
 
 /**

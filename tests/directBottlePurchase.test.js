@@ -146,8 +146,14 @@ test('an out-of-stock bottle is never addable', () => {
   const affordance = bottleAffordance(product);
 
   assert.equal(affordance.mode, 'sold_out');
-  assert.equal(affordance.cta, 'Agotado');
   assert.equal(affordance.direct, null);
+
+  /* No copy for an empty channel. "Agotado" reads as "these ran out", which is
+     false of every decant-only perfume — and shipping the word anyway put it
+     inside the payload of perfectly healthy products, where no caller could
+     tell it apart from a real sell-out. `mode` is the fact; the page that
+     needs a word supplies its own. */
+  assert.equal(affordance.cta, null);
 });
 
 // ── A small presentation that is genuinely small ─────────────────────

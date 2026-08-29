@@ -393,9 +393,12 @@ function _deriveAffordance(choices) {
 
   return {
     mode,
+    /* Null for an empty channel, matching PurchaseAffordance: "Agotado" reads
+       as "these ran out", which is false of a perfume this shop simply does not
+       bottle. The page that needs a word for an empty channel supplies its own. */
     cta: mode === 'add_to_cart'
       ? 'Agregar al carrito'
-      : (mode === 'choose_presentation' ? 'Elegir presentación' : 'Agotado'),
+      : (mode === 'choose_presentation' ? 'Elegir presentación' : null),
     count: choices.length,
     direct: mode === 'add_to_cart' ? choices[0] : null,
     from_price: choices.length ? Math.min(...choices.map(choice => Number(choice.price))) : null,
