@@ -284,6 +284,7 @@ function _mapProduct(p) {
     variants,
     bottles,
     offer_kinds: _mapOfferKinds(p.offer_kinds, variants, bottles),
+    purchase: _mapPurchase(p.purchase, variants, bottles),
   };
 }
 
@@ -294,17 +295,113 @@ function _mapBottleOffer(raw) {
   const stock = _safeStock(raw.stock);
   if (!offerKey || !Number.isFinite(price) || price <= 0 || stock <= 0) return null;
 
+  const sealed = Boolean(raw.sealed);
+  const bottleMl = Number(raw.bottle_ml);
+  const ml = Number(raw.ml);
+
   return {
     offer_key: offerKey,
-    ml: Number(raw.ml),
-    bottle_ml: Number(raw.bottle_ml),
+    /* What this object IS, in the same vocabulary R Supply OS uses on the
+       operator's own screen. A size means nothing without it: 100 is a flacon
+       here and a pour on a decant. */
+    kind: String(raw.kind ?? (sealed ? 'bottle' : 'partial')),
+    ml,
+    bottle_ml: bottleMl,
+    /* The size a BUYER chooses by: the flacon for a sealed bottle, what is
+       actually in it for a part-used one. */
+    size_ml: Number.isFinite(Number(raw.size_ml)) ? Number(raw.size_ml) : (sealed ? bottleMl : ml),
     remaining_percent: raw.remaining_percent === null ? null : Number(raw.remaining_percent),
     condition: String(raw.condition ?? ''),
     condition_label: String(raw.condition_label ?? 'Botella'),
-    sealed: Boolean(raw.sealed),
+    sealed,
     price,
     stock,
     label: String(raw.label ?? raw.condition_label ?? 'Botella'),
+    size_label: String(raw.size_label ?? (Number.isFinite(bottleMl) && bottleMl > 0 ? `${bottleMl} ml` : 'Botella')),
+  };
+}
+
+/**
+ * What the CTA on this product is allowed to do.
+ *
+ * R Supply OS decides this next to the inventory and sends it, because "is
+ * there anything left to choose" is a fact about stock and not something a
+ * card can infer from a price range. The storefront used to guess, and got it
+ * wrong in the most expensive direction: a perfume with exactly ONE bottle on
+ * the shelf showed "Desde $1,990 · [Ver ofertas]" and sent a customer who had
+ * already decided to a product page to pick from a list of one.
+ *
+ * The derived branch is the compatibility path only, for an API that has not
+ * shipped `purchase` yet. It applies the same rule — one choice is the answer,
+ * two is a question — so the two can never mean different things.
+ */
+function _mapPurchase(raw, variants, bottles) {
+  if (raw && typeof raw === 'object' && raw.mode) {
+    return {
+      ...raw,
+      bottles: raw.bottles ?? _deriveAffordance(_bottleChoices(bottles)),
+      decants: raw.decants ?? _deriveAffordance(_decantChoices(variants)),
+    };
+  }
+
+  const bottleChoices = _bottleChoices(bottles);
+  const decantChoices = _decantChoices(variants);
+
+  return {
+    ..._deriveAffordance([...bottleChoices, ...decantChoices]),
+    bottles: _deriveAffordance(bottleChoices),
+    decants: _deriveAffordance(decantChoices),
+  };
+}
+
+function _bottleChoices(bottles) {
+  return (bottles ?? []).map(offer => ({
+    kind: offer.kind,
+    offer_key: offer.offer_key,
+    variant_id: null,
+    size_ml: offer.size_ml,
+    bottle_ml: offer.bottle_ml,
+    price: offer.price,
+    stock: offer.stock,
+    condition_label: offer.condition_label,
+    presentation: offer.label,
+    size_label: offer.size_label,
+  }));
+}
+
+function _decantChoices(variants) {
+  return (variants ?? [])
+    .filter(variant => !variant.soldOut && variant.availability > 0)
+    .map(variant => ({
+      kind: 'decant',
+      offer_key: null,
+      variant_id: variant.variant_id ?? variant.id ?? null,
+      size_ml: variant.size,
+      bottle_ml: null,
+      price: variant.price,
+      stock: variant.availability,
+      condition_label: null,
+      presentation: `${variant.size} ml`,
+      size_label: `${variant.size} ml`,
+    }));
+}
+
+function _deriveAffordance(choices) {
+  const mode = choices.length === 0
+    ? 'sold_out'
+    : (choices.length === 1 ? 'add_to_cart' : 'choose_presentation');
+
+  return {
+    mode,
+    cta: mode === 'add_to_cart'
+      ? 'Agregar al carrito'
+      : (mode === 'choose_presentation' ? 'Elegir presentación' : 'Agotado'),
+    count: choices.length,
+    direct: mode === 'add_to_cart' ? choices[0] : null,
+    from_price: choices.length ? Math.min(...choices.map(choice => Number(choice.price))) : null,
+    choices,
+    sizes: [...new Set(choices.map(choice => choice.size_ml).filter(Number.isFinite))].sort((a, b) => a - b),
+    condition_labels: [...new Set(choices.map(choice => choice.condition_label).filter(Boolean))],
   };
 }
 

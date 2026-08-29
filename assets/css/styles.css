@@ -36,12 +36,32 @@
 .bottle-card-price { font-weight: 700; }
 .bottle-card-types { display: flex; flex-wrap: wrap; gap: 6px; min-height: 30px; }
 .bottle-card-types span { border: 1px solid var(--border, #ddd6ca); border-radius: 999px; padding: 5px 9px; font-size: .75rem; }
-.bottle-card-cta { width: 100%; margin-top: 8px; text-align: center; }
+/* What the customer is actually buying: "100 ml · Nuevo sellado" for a single
+   bottle, "50 ml / 100 ml · Nuevo sellado" when there is a choice to make.
+   The card used to show only a price floor and a condition badge, which is the
+   least useful half of what the shop knows about the object. */
+.bottle-card-presentation { margin: 0; color: var(--muted, #6b665e); font-size: .88rem; }
+/* The CTA sits OUTSIDE the card's link now: with one bottle in stock it buys
+   that bottle, and a button nested inside an anchor cannot do that. */
+.bottle-card-actions { padding: 0 20px 20px; }
+.bottle-card-cta { width: 100%; text-align: center; }
+.bottle-card-cta[disabled] { opacity: .55; cursor: not-allowed; }
+.bottle-card-picker { display: flex; flex-direction: column; gap: 6px; padding: 0 20px 20px; }
+.bottle-card-picker[hidden] { display: none; }
+.bottle-card-choice {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  width: 100%; min-height: 46px; padding: 8px 14px;
+  font: inherit; color: inherit; text-align: left; cursor: pointer;
+  background: var(--surface, #fffdf8);
+  border: 1px solid var(--border, #ddd6ca); border-radius: 12px;
+}
+.bottle-card-choice:hover { border-color: var(--ink, #1b1a17); }
 
 /* ── Canonical PDP bottle offers and cross-sell ─────────────── */
 .pdp-bottle-section { max-width: 1180px; margin: 24px auto 0; padding: clamp(24px, 5vw, 54px); border: 1px solid var(--border, #ddd6ca); border-radius: 24px; background: var(--surface, #fffdf8); }
 .pdp-bottle-head > * { margin-top: 0; }
 .pdp-bottle-head p:last-child { color: var(--muted, #6b665e); max-width: 680px; }
+.pdp-bottle-soldout { font-weight: 700; color: var(--muted, #6b665e); }
 .pdp-bottle-list { display: grid; gap: 10px; margin-top: 22px; }
 .pdp-bottle-offer { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 16px; border: 1px solid var(--border, #ddd6ca); border-radius: 14px; }
 .pdp-bottle-offer-copy { display: grid; gap: 4px; }

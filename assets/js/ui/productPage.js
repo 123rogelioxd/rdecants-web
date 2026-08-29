@@ -165,7 +165,7 @@ export function buildProductPageHtml(product) {
             ${lowestPrice !== null ? `
               <p class="pdp-value-prop">Una botella completa cuesta miles — pruébalo desde ${formatPrice(lowestPrice)}.</p>
             ` : ''}` : bottles.length
-              ? _bottleOfferRows(product, bottles, { heading: 'Elige tu botella' })
+              ? _bottleOfferRows(product, bottles, { heading: bottles.length === 1 ? 'Disponible ahora' : 'Elige tu botella' })
               : '<div class="pdp-price-consult">Precio disponible por consulta personalizada.</div>'}
           </div>
         </div>
@@ -290,7 +290,27 @@ export function hydrateProductPage(root, product, deps = {}) {
   _setupReturningLine(root, product, deps);
 }
 
+/**
+ * The bottles of this perfume, described as what they are.
+ *
+ * ── Two things this used to get wrong ──────────────────────────────────────
+ * It printed whatever `label` the API happened to send, which is how a $1,990
+ * flacon came to be advertised as "1 ml · Nuevo sellado" on a page headed
+ * "Perfume completo". The label is now the canonical presentation, derived by
+ * R Supply OS from the same physical row that Venta rápida sells, so the two
+ * screens cannot disagree about what the object is.
+ *
+ * And it told every visitor "Roger te confirma existencia y precio antes de
+ * apartarla" — directly underneath a known price, a known stock count and an
+ * Add-to-cart button. That sentence belongs to the quote flow, where the price
+ * genuinely is not known yet. On an inventory-backed offer it contradicts the
+ * page it sits on, so the copy now follows the state: one bottle is bought,
+ * several are chosen between, none is sold out.
+ */
 function _bottleOfferRows(product, bottles, { heading = 'Botellas disponibles', crossSell = false } = {}) {
+  const affordance = product.purchase?.bottles ?? null;
+  const single = bottles.length === 1 ? bottles[0] : null;
+
   const rows = bottles.map(offer => `
     <article class="pdp-bottle-offer">
       <div class="pdp-bottle-offer-copy">
@@ -301,7 +321,7 @@ function _bottleOfferRows(product, bottles, { heading = 'Botellas disponibles', 
       <button class="btn-primary pdp-bottle-add" type="button"
         data-bottle-offer="${_escape(offer.offer_key)}"
         aria-label="Agregar ${_escape(product.name)}, ${_escape(offer.label)} al carrito">
-        Agregar botella
+        Agregar al carrito
       </button>
     </article>`).join('');
 
@@ -313,11 +333,21 @@ function _bottleOfferRows(product, bottles, { heading = 'Botellas disponibles', 
        </div>`
     : '';
 
+  // One bottle needs no heading that asks the customer to choose, and the
+  // page can simply say what it is.
+  const title = single && !crossSell ? _escape(single.label) : _escape(heading);
+  const lede = bottles.length === 0
+    ? 'Ahora mismo no hay botellas de este perfume.'
+    : (single
+      ? 'Disponible ahora. Se envía tal cual la ves aquí.'
+      : `${bottles.length} presentaciones disponibles ahora. Elige la tuya.`);
+
   return `
     <div class="pdp-bottle-head">
       <p class="pdp-kicker">Perfume completo</p>
-      <h2 class="pdp-section-h">${_escape(heading)}</h2>
-      <p>Elige entre las ofertas disponibles hoy. Roger te confirma existencia y precio antes de apartarla.</p>
+      <h2 class="pdp-section-h">${title}</h2>
+      <p>${lede}</p>
+      ${affordance && affordance.mode === 'sold_out' ? '<p class="pdp-bottle-soldout">Agotado</p>' : ''}
     </div>
     <div class="pdp-bottle-list">${rows}</div>
     ${tryFirst}`;
