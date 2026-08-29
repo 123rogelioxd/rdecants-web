@@ -135,8 +135,11 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
       // Feedback on the button itself: the cart drawer already announces the
       // add, and a customer who is scanning a grid should not have to look
       // away from the card they just pressed to know it worked.
-      button.textContent = added ? 'Agregado ✓' : original;
-      Tracker.emit('perfumes_add_to_cart', { productId, offerKey, added: Boolean(added) });
+      //
+      // No event is emitted here on purpose. `Cart.addBottle` already fires
+      // `bottle_added_to_cart` for every successful add, wherever it came
+      // from, and a second name for one action would either double-count it or
+      // — being absent from API_EVENT_MAP — go nowhere at all.
     } finally {
       setTimeout(() => {
         button.disabled = false;
