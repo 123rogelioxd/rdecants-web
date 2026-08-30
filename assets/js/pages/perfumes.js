@@ -70,6 +70,24 @@ export function bottlePresentationLine(product = {}) {
     .join(' · ');
 }
 
+/**
+ * Confirm the add on the button the customer actually pressed.
+ *
+ * The cart drawer raises a toast and the header badge ticks up, but both are
+ * away from the thumb that just tapped: in a grid of thirteen cards, the
+ * fastest confirmation is the one on the card itself.
+ *
+ * Exported, and covered by a test, because this lived inline once and was
+ * deleted by accident while an unrelated line beside it was being removed —
+ * the button went on working and simply stopped saying so, which nothing
+ * caught.
+ */
+export function applyAddFeedback(button, added, original) {
+  button.textContent = added ? 'Agregado ✓' : original;
+
+  return button.textContent;
+}
+
 globalThis.document?.addEventListener('DOMContentLoaded', async () => {
   await bootstrapShell();
   const grid = document.getElementById('perfumes-grid');
@@ -132,10 +150,7 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
     const original = button.textContent;
     try {
       const added = await Cart.addBottle(productId, offerKey);
-      // Feedback on the button itself: the cart drawer already announces the
-      // add, and a customer who is scanning a grid should not have to look
-      // away from the card they just pressed to know it worked.
-      //
+      applyAddFeedback(button, added, original);
       // No event is emitted here on purpose. `Cart.addBottle` already fires
       // `bottle_added_to_cart` for every successful add, wherever it came
       // from, and a second name for one action would either double-count it or

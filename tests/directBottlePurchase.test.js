@@ -6,7 +6,7 @@ globalThis.localStorage = globalThis.localStorage ?? { getItem() { return null; 
 Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { userAgent: 'node-test' } });
 
 const { mapApiProduct } = await import('../assets/js/providers/catalog.js');
-const { bottleAffordance, bottlePresentationLine } = await import('../assets/js/pages/perfumes.js');
+const { bottleAffordance, bottlePresentationLine, applyAddFeedback } = await import('../assets/js/pages/perfumes.js');
 const { buildProductPageHtml } = await import('../assets/js/ui/productPage.js');
 
 /**
@@ -193,4 +193,25 @@ test('a partial bottle is chosen by what is left in it, not by the flacon', () =
   assert.equal(product.bottles[0].size_ml, 62);
   assert.equal(product.bottles[0].bottle_ml, 100);
   assert.equal(bottlePresentationLine(product), '62 ml de 100 ml · Tester · 62%');
+});
+
+// ── The button says so ───────────────────────────────────────────────
+
+test('a successful add is confirmed on the button the customer pressed', () => {
+  /* This regressed in production the day it shipped: the assignment lived
+     inline in the click handler and was deleted by accident while an unrelated
+     line beside it was removed. The add kept working and simply stopped saying
+     so, and nothing caught it — the toast and the badge both still fired, so
+     every other signal looked healthy. */
+  const button = { textContent: 'Agregar al carrito' };
+
+  assert.equal(applyAddFeedback(button, true, 'Agregar al carrito'), 'Agregado ✓');
+  assert.equal(button.textContent, 'Agregado ✓');
+});
+
+test('a refused add leaves the button as it was', () => {
+  const button = { textContent: 'Agregar al carrito' };
+
+  applyAddFeedback(button, false, 'Agregar al carrito');
+  assert.equal(button.textContent, 'Agregar al carrito', 'nothing was added, so nothing is confirmed');
 });
