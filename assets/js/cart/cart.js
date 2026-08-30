@@ -125,7 +125,10 @@ export const Cart = {
       type: 'bottle',
       name: product.name,
       house: product.house,
-      size: offer.ml,
+      // The size the customer CHOSE by: the flacon for a sealed bottle, what
+      // is actually in it for a part-used one. `ml` alone said "100" for both
+      // a sealed 100 ml and a 100 ml flacon holding 62.
+      size: Number.isFinite(Number(offer.size_ml)) ? Number(offer.size_ml) : offer.ml,
       offer_label: offer.label,
       condition_label: offer.condition_label,
       price: offer.price,

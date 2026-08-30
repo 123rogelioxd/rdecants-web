@@ -50,8 +50,15 @@ test('the canonical PDP renders bottle offers and both cross-sell directions', (
   assert.match(html, /54 ml de 60 ml · Tester · 90%/);
   assert.match(html, /data-bottle-offer="tester_parcial\|60\|54\|1900"/);
   assert.match(html, /3|5|10/);
-  assert.match(html, /Roger te confirma existencia y precio antes de apartarla\./);
   assert.doesNotMatch(html, /R Supply OS/);
+
+  /* §20. The page prints a price, a stock count and an Add-to-cart button;
+     telling the same visitor "Roger te confirma existencia y precio antes de
+     apartarla" contradicts all three. That sentence belongs to the quote flow,
+     where the price genuinely is not known yet. */
+  assert.doesNotMatch(html, /Roger te confirma existencia y precio/);
+  assert.match(html, /3 presentaciones disponibles ahora/);
+  assert.doesNotMatch(html, /Agregar botella/, 'One verb for one action, everywhere.');
 });
 
 test('bottles do not masquerade as decant millilitres in client availability', () => {
