@@ -121,3 +121,10 @@ test('Perfumes is a first-class nav page; conditions are filters, not top-level 
   assert.match(html, />Ayúdame a elegir</);
   assert.doesNotMatch(html, /href="\/(sellados|testers|parciales)/i);
 });
+
+test('the direct bottle CTA visibly confirms a successful add before resetting', () => {
+  const source = readFileSync(new URL('../assets/js/pages/perfumes.js', import.meta.url), 'utf8');
+
+  assert.match(source, /const added = await Cart\.addBottle\(productId, offerKey\);\s+if \(added\) button\.textContent = 'Agregado ✓';/);
+  assert.match(source, /setTimeout\(\(\) => \{\s+button\.disabled = false;\s+button\.textContent = original;\s+\}, 1400\);/);
+});
