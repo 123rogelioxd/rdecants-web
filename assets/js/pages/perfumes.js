@@ -132,6 +132,7 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
     const original = button.textContent;
     try {
       const added = await Cart.addBottle(productId, offerKey);
+      if (added) button.textContent = 'Agregado ✓';
       // Feedback on the button itself: the cart drawer already announces the
       // add, and a customer who is scanning a grid should not have to look
       // away from the card they just pressed to know it worked.
