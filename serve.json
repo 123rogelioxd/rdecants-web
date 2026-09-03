@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/perfumes", "destination": "/perfumes.html" },
+    { "source": "/perfume/:slug", "destination": "/product.html" }
+  ]
+}
