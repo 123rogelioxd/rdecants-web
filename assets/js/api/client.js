@@ -95,4 +95,10 @@ export const ApiClient = {
   searchQuoteCatalog: (query, limit = 24) => _get(`/api/web/quote/search?q=${encodeURIComponent(query)}&limit=${limit}`),
   priceQuoteBasket:   (items) => _post('/api/web/quote/price', { items }),
   submitQuote:        (payload) => _post('/api/web/quote', payload),
+  /* Cross-sell backed by real purchase behaviour (co-purchase, repeat-buy) —
+     the one signal a client-side scorer structurally cannot see, because
+     purchase history is private. Read-only; the caller decides what to do
+     with an empty or failed result, so this never blocks the PDP's own
+     already-working local recommendations. */
+  getSimilarProducts: (productId, limit = 4) => _get(`/api/web/products/${encodeURIComponent(productId)}/similar?limit=${limit}`),
 };

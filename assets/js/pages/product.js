@@ -15,6 +15,7 @@ import {
   readSlugFromLocation,
   findProductBySlug,
   setProductSeo,
+  upgradeRelatedWithRealSignal,
 } from '../ui/productPage.js';
 
 /* ── Bootstrap ──────────────────────────────────────────────── */
@@ -53,6 +54,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   hydrateProductPage(root, product);
   renderCollectionPairs(root, product, products);
   renderRelated(root, product, products);
+  // Fire-and-forget: the local heuristic above already rendered the section.
+  // This only upgrades it in place if R Supply OS's real-behaviour engine
+  // has something to say for this product.
+  upgradeRelatedWithRealSignal(root, product, products);
 
   AppState.set('initialized', true);
   Tracker.emit('page_view', { path: window.location.pathname, productId: product.id });
