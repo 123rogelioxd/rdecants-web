@@ -11,6 +11,7 @@
 
 import { Cart }                    from '../cart/cart.js';
 import { setupCheckout }           from '../cart/checkout.js';
+import { setupDeliveryPanel }      from '../ui/deliveryPanel.js';
 import { renderCart, updateCartCount,
          openCart, closeCart, toggleCart, sendWhatsApp,
          setupDiscountControls,
@@ -130,6 +131,9 @@ export async function bootstrapShell() {
   setupImageStates();
   setupCheckout();
   setupDiscountControls();
+  /* Re-renders the cart so the shipping line and grand total move with the
+     customer's delivery choice. */
+  setupDeliveryPanel(() => renderCart());
   await Cart.reconcile({ silent: true });
   renderCart();
   updateCartCount();

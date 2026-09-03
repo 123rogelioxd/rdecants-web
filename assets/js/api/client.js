@@ -82,6 +82,13 @@ export const ApiClient = {
      transport failure. */
   getPromotion:       () => _get('/api/web/promotion'),
   createWebOrder:     (payload) => _post('/api/web/orders', payload),
+  /* Delivery. Both are READS: quoting creates no shipment, reserves no stock
+     and consumes no coupon. The quote sends the cart as identity + quantity,
+     exactly like the order does — R Supply OS reprices it, because the local
+     tariff has a free-delivery threshold and a browser that could state its own
+     total could state its way past it. */
+  getDeliveryOptions: () => _get('/api/web/delivery/options'),
+  quoteDelivery:      (payload) => _postSafe('/api/web/delivery/quote', payload),
   /* Discount PREVIEW only — R Supply OS is the source of truth and recalculates
      during Web Order creation. The storefront never computes discounts itself. */
   previewDiscount:    (payload) => _postSafe('/api/web/discounts/preview', payload),

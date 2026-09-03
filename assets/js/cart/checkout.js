@@ -6,6 +6,7 @@
 import { Cart }      from './cart.js';
 import { Discount }  from './discount.js';
 import { Attribution } from './attribution.js';
+import { Delivery } from './delivery.js';
 import { ApiClient } from '../api/client.js';
 import { CatalogProvider } from '../providers/catalog.js';
 import { Tracker }   from '../tracking/tracker.js';
@@ -16,6 +17,16 @@ import { getShippingState } from './momentum.js';
 const STORAGE_KEY = 'rdecants_checkout_customer';
 const LAST_ORDER_KEY = 'rdecants_last_web_order_folio';
 const LAST_FIRED_KEY = 'rdecants_checkout_last_fired_at';
+/* Survives reloads within the tab so a refresh mid-submit still replays
+   the same attempt instead of creating a second order. */
+const ATTEMPT_KEY = 'rdecants_checkout_attempt_key';
+
+/* Customer-facing names for the three delivery modes R Supply OS knows. */
+const DELIVERY_LABELS = {
+  pickup: 'Recoger en tienda',
+  local: 'Entrega local',
+  national: 'Envío',
+};
 const APP_VERSION = '1.0.5';
 
 /* Debounce window between consecutive WhatsApp checkout submissions.
@@ -119,6 +130,25 @@ async function _performCheckout(phoneNumber, reservedWindow = null) {
     return;
   }
 
+  /* ── A destination that has not been answered is not a checkout ──────────
+     The customer may proceed on a MANUAL quote — agreeing to have the cost
+     confirmed is a real choice, and blocking them over a number nobody can
+     produce would simply lose the order. What must not happen is an order
+     leaving with a national address no courier could use, or with a quote the
+     customer started and never got an answer to: both put the business back to
+     asking for the address over WhatsApp.
+
+     Choosing no mode at all stays allowed, so a cart built before this panel
+     existed still checks out exactly as it did. */
+  if (Delivery.mode && !Delivery.isReady()) {
+    reservedWindow?.close?.();
+    const message = _deliveryBlockedMessage();
+    _showMessage(message, 'error');
+    showToast(message);
+    document.getElementById('delivery-panel')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
   const data = readCheckoutData();
   saveCheckoutData(data);
   _clearError();
@@ -141,80 +171,131 @@ async function _performCheckout(phoneNumber, reservedWindow = null) {
   const attribution = Attribution.forOrder();
   if (Object.keys(attribution).length) Tracker.campaignCheckoutAttributed(Attribution.forTracking());
 
-  /* A bottle is a unique physical object. Before opening WhatsApp we ask the
-     backend to revalidate its opaque offer against live inventory and create
-     the canonical pending order. This is the one checkout exception to the
-     decant flow's background write: "that bottle just sold" must reach the
-     customer while they can still act on it, not disappear into a log. */
+  /* ── The order is created BEFORE WhatsApp, for every cart ────────────────
+     This used to be bottle-only: a decant checkout opened WhatsApp first and
+     wrote the order afterwards, fire-and-forget. When that write failed the
+     customer never knew, and the only surviving record of the sale was a chat
+     message the business then had to read back into an order by hand — the
+     exact manual reconstruction this system exists to remove.
+
+     Order-first makes the folio the thing being discussed rather than the
+     conversation being the order. It also means every checkout gets what only
+     bottles got before: live revalidation, server-recalculated money, and a
+     real error while the customer can still act on it.
+
+     The popup still opens synchronously from the click (`reservedWindow`) and
+     is only NAVIGATED after the await, because iOS Safari refuses a
+     window.open() that happens after an async boundary. That is the same
+     mechanism the bottle path already proved. */
   let recordedOrder = null;
-  if (orderItems.some(item => item.type === 'bottle')) {
-    try {
-      recordedOrder = await _submitWebOrder(orderItems, data, total, discount, attribution);
-    } catch (error) {
-      reservedWindow?.close?.();
-      const message = _customerBottleError(error);
-      _showMessage(message, 'error');
-      showToast(message);
-      Tracker.backgroundOrderFailure(String(error?.message || 'bottle_unavailable'), total);
-      return;
-    }
+  try {
+    recordedOrder = await _submitWebOrder(orderItems, data, total, discount, attribution);
+  } catch (error) {
+    reservedWindow?.close?.();
+    _logCheckoutError(error);
+    const message = _customerOrderError(error);
+    _showMessage(message, 'error');
+    showToast(message);
+    Tracker.backgroundOrderFailure(String(error?.message || 'order_failed'), total);
+    /* Cart, discount and attribution are all left intact so a retry is one tap
+       and nothing the customer chose is lost. */
+    return;
   }
 
-  /* When the order already exists (the bottle path), its numbers outrank the
-     preview: R Supply OS may have priced the cart differently in the seconds
-     since — a bottle repriced, or someone else taking the last redemption of a
-     one-use code. Promising the preview total in a WhatsApp message the
-     customer keeps, after the backend has already said otherwise, is a number
-     nobody can honour. */
-  const messageText = buildWhatsAppMessage(orderItems, total, data, '', discount, recordedOrder);
+  /* The order's numbers outrank the preview: R Supply OS may have priced the
+     cart differently in the seconds since — a bottle repriced, or someone else
+     taking the last redemption of a one-use code. Promising the preview total
+     in a WhatsApp message the customer keeps, after the backend has already
+     said otherwise, is a number nobody can honour. */
+  const messageText = buildWhatsAppMessage(orderItems, total, data, recordedOrder?.folio || '', discount, recordedOrder);
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(messageText)}`;
 
-  /* 1) WhatsApp first. */
   _markFired();
   if (reservedWindow) reservedWindow.location.href = whatsappUrl;
   const opened = reservedWindow || window.open(whatsappUrl, '_blank');
 
-  if (!opened) {
-    /* Popup blocked — keep the cart, discount AND attribution intact, offer a
-       manual link, still try to record the order in the background. No lost
-       carts, no lost campaign credit. */
-    _showManualWhatsApp(whatsappUrl);
-    if (!recordedOrder) _createOrderInBackground(orderItems, data, total, discount, attribution);
-    return;
-  }
-
-  /* 2) Launch succeeded → the customer's job is done. Clear the cart, the
-     applied discount AND the campaign attribution (all belong to the order we
-     just handed off), then record the order in the background. */
-  _showMessage('Listo, te llevamos a WhatsApp para finalizar tu pedido.', 'success');
-  showToast('Listo, abrimos WhatsApp para finalizar tu pedido.');
+  /* The order exists either way now, so both branches clear the cart. A blocked
+     popup is a browser inconvenience, not a failed purchase, and leaving the
+     cart full would invite a second order for merchandise already reserved
+     under a folio the customer is holding. */
   Cart.clear();
   Discount.clear();
   Attribution.clear();
-  if (!recordedOrder) _createOrderInBackground(orderItems, data, total, discount, attribution);
+  /* The address is kept — customers reorder to the same place — but the price
+     is not: it belonged to the parcel that just shipped. */
+  Delivery.clearQuote();
+  _clearCheckoutAttempt();
+
+  if (!opened) {
+    _showManualWhatsApp(whatsappUrl);
+    return;
+  }
+
+  _showMessage('Listo, te llevamos a WhatsApp para finalizar tu pedido.', 'success');
+  showToast('Listo, abrimos WhatsApp para finalizar tu pedido.');
 }
 
-/* Records the system order WITHOUT ever blocking the customer or showing them
-   an error. On failure: log + emit background_order_failure (the admin-notify
-   path). The customer never sees a system error. */
-async function _createOrderInBackground(items, data, total, discount = null, attribution = {}) {
-  try {
-    /* A pure-pack order used to be dropped here — the old packs were a
-       hardcoded list with no resolvable products, so there was nothing to
-       send and the sale was "coordinated in chat". Packs are now real,
-       server-resolved products with a server-derived discount, so a cart of
-       nothing but packs is an ordinary order. */
-    const hasSomethingToOrder = items.length > 0;
-    if (!hasSomethingToOrder) return;
+/* One idempotency key per CHECKOUT ATTEMPT, not per click.
 
-    /* Forward ONLY the code + campaign attribution — R Supply OS validates,
-       resolves the campaign and recalculates. We never send the previewed
-       amount/total as truth. */
-    await _submitWebOrder(items, data, total, discount, attribution);
-  } catch (error) {
-    _logCheckoutError(error);
-    Tracker.backgroundOrderFailure(String(error?.message || 'error'), total);
+   It is minted on the first submit and kept in sessionStorage until that
+   attempt succeeds, so a double tap, a retry after a timeout, and a browser
+   replaying the request all carry the SAME key and resolve to the one order R
+   Supply OS already created. Clearing it on success is what makes the customer's
+   next, genuinely different cart a new order rather than a replay of this one. */
+function _checkoutAttemptKey() {
+  try {
+    const existing = sessionStorage.getItem(ATTEMPT_KEY);
+    if (existing) return existing;
+
+    const key = (globalThis.crypto?.randomUUID?.())
+      || `rd-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+    sessionStorage.setItem(ATTEMPT_KEY, key);
+    return key;
+  } catch {
+    /* sessionStorage unavailable (private mode, embedded webview). Without a
+       stable key we cannot promise idempotency, so we send none rather than a
+       fresh one per attempt — a per-attempt key would defeat the guard on the
+       server while looking like it worked. */
+    return null;
   }
+}
+
+function _clearCheckoutAttempt() {
+  try {
+    sessionStorage.removeItem(ATTEMPT_KEY);
+  } catch { /* nothing to clear */ }
+}
+
+/* Why the delivery is not ready yet, named specifically.
+
+   "Completa los datos de entrega" would be true for all three cases and useful
+   for none of them: the customer cannot tell whether they missed a field, a
+   zone, or the quote button. */
+function _deliveryBlockedMessage() {
+  const missing = Delivery.missingAddressFields();
+
+  if (missing.length) return 'Completa tu dirección de envío para continuar.';
+  if (Delivery.mode === 'local' && !Delivery.state.zoneKey) return 'Elige tu zona de entrega para continuar.';
+
+  return 'Calcula el costo de entrega para continuar.';
+}
+
+/* What the customer is told when the order could not be created.
+
+   Every branch keeps the cart and invites a retry. None of them offers a
+   WhatsApp fallback: reaching the business with an unrecorded cart is how the
+   business ends up rebuilding the order by hand, which is the failure this
+   whole flow removes. */
+function _customerOrderError(error) {
+  const message = String(error?.data?.message || error?.message || '').trim();
+
+  if (/precio/i.test(message)) return 'El precio de una botella cambió. Actualiza la página y confirma el nuevo precio.';
+  if (/contenido|mililit|parcial/i.test(message)) return 'Cambió el contenido de una botella parcial. Actualiza la página para ver la cantidad actual.';
+  if (/disponible|vendi|offer|oferta|agotad/i.test(message)) return 'Un producto de tu carrito acaba de agotarse. Actualiza la página para ver las opciones actuales.';
+  if (/envio|env[ií]o|cotizaci[oó]n/i.test(message)) return 'La cotización de envío expiró. Vuelve a calcular el envío para confirmar el precio.';
+  if (/codigo postal|c[oó]digo postal|zona/i.test(message)) return 'Revisa los datos de entrega antes de continuar.';
+
+  return 'No pudimos registrar tu pedido ahora. Tu carrito sigue guardado; inténtalo de nuevo.';
 }
 
 async function _submitWebOrder(items, data, total, discount = null, attribution = {}) {
@@ -224,8 +305,17 @@ async function _submitWebOrder(items, data, total, discount = null, attribution 
   const packs = items
     .filter(item => item.type === 'pack')
     .map(item => ({ pack_id: item.pack_id, quantity: Number(item.qty) || 1 }));
-  const payload = await buildWebOrderPayload(items, data, { couponCodes, attribution, packs });
-  if (!payload.items.length && !payload.packs?.length) return null;
+  const payload = await buildWebOrderPayload(items, data, {
+    couponCodes,
+    attribution,
+    packs,
+    idempotencyKey: _checkoutAttemptKey(),
+    delivery: Delivery.forOrder(),
+  });
+
+  if (!payload.items.length && !payload.packs?.length) {
+    throw new Error('Tu carrito quedó vacío. Agrega una fragancia e inténtalo de nuevo.');
+  }
 
   const response = await ApiClient.createWebOrder(payload);
   const order = response?.order;
@@ -307,6 +397,14 @@ export async function buildWebOrderPayload(items, data, options = {}) {
     items: orderItems,
     ...(packs.length ? { packs } : {}),
     notes: data.notes || null,
+    ...(options.idempotencyKey ? { idempotency_key: options.idempotencyKey } : {}),
+    /* Where it goes and which option was chosen — identity and a signed token,
+       never an amount. R Supply OS recomputes a local fee from the tariff and
+       unseals a national one from a token it signed itself.
+
+       `delivery: null` is omitted rather than sent, so a cart quoted before a
+       destination was chosen keeps the exact payload shape it has today. */
+    ...(options.delivery ? { delivery: options.delivery } : {}),
     metadata: {
       source: 'rdecants-web',
       user_agent: navigator.userAgent,
@@ -444,6 +542,18 @@ export function buildWhatsAppMessage(items, total, data, folio = '', discount = 
     }
   }
 
+  /* ── The reference that makes this message unnecessary to decode ─────────
+     R Supply OS already holds every line, price, discount and address under
+     this folio. The business reads the folio and opens the order; it never
+     rebuilds the cart from the text above, which is there so the CUSTOMER has
+     a record of what they asked for.
+
+     Phrased as a sentence rather than a "Folio:" field on purpose — this is a
+     message a person sends, not a form they fill in. */
+  if (folio) {
+    lines.push('', `Mi pedido es ${folio}.`);
+  }
+
   if (data.name) {
     lines.push('', `Mi nombre es ${data.name}.`);
   }
@@ -455,14 +565,6 @@ export function buildWhatsAppMessage(items, total, data, folio = '', discount = 
   lines.push('', 'Quedo pendiente de disponibilidad y detalles de compra.');
 
   return lines.join('\n');
-}
-
-function _customerBottleError(error) {
-  const message = String(error?.data?.message || error?.message || '').trim();
-  if (/precio/i.test(message)) return 'El precio de esa botella cambió. Actualiza la página y confirma el nuevo precio.';
-  if (/contenido|mililit|parcial/i.test(message)) return 'Cambió el contenido de esa botella parcial. Actualiza la página para ver la cantidad actual.';
-  if (/disponible|vendi|offer|oferta/i.test(message)) return 'Esa botella acaba de venderse o ya no está disponible. Actualiza la página para ver las opciones actuales.';
-  return 'No pudimos confirmar esa botella ahora. Tu carrito sigue guardado; inténtalo de nuevo.';
 }
 
 export function syncCheckoutAvailability() {
@@ -674,7 +776,8 @@ function _orderPricing(order) {
      order was written at full price. Falling through to the preview here would
      hand them a WhatsApp message promising a discount the order does not have. */
   if (totalDiscount <= 0) {
-    return ['', `Total: ${formatPrice(total || subtotal, 'Por confirmar')}`];
+    return ['', `Total: ${formatPrice(total || subtotal, 'Por confirmar')}`]
+      .concat(_orderDelivery(order));
   }
 
   const coupons = (Array.isArray(order.coupons) ? order.coupons : [])
@@ -693,6 +796,33 @@ function _orderPricing(order) {
   }
 
   lines.push(`Total: ${formatPrice(total, 'Por confirmar')}`);
+
+  return lines.concat(_orderDelivery(order));
+}
+
+/* The delivery half of the money, appended to whichever pricing branch ran.
+
+   Only ever built from the ORDER, never from a preview: a shipping figure the
+   server did not write is a figure nobody has to honour.
+
+   The unpriced case says so in words instead of showing $0. An order awaiting a
+   manual quote genuinely has no final total, and a WhatsApp message that
+   printed one would be the customer's evidence for a price we never agreed. */
+function _orderDelivery(order) {
+  const delivery = order?.delivery;
+  if (!delivery || !delivery.mode) return [];
+
+  const label = DELIVERY_LABELS[delivery.mode] || 'Entrega';
+
+  if (delivery.requires_manual_quote || delivery.shipping_cost === null || delivery.shipping_cost === undefined) {
+    return ['', `${label}: por confirmar`];
+  }
+
+  const shipping = _money(delivery.shipping_cost);
+  const lines = ['', `${label}: ${shipping > 0 ? formatPrice(shipping, '$0') : 'sin costo'}`];
+
+  const grandTotal = _money(order.grand_total);
+  if (grandTotal > 0) lines.push(`Total con envío: ${formatPrice(grandTotal, 'Por confirmar')}`);
 
   return lines;
 }
@@ -764,8 +894,10 @@ function _presentationText(item) {
   return item.size ? `${item.size}ml` : 'Por confirmar';
 }
 
+/* Field-level detail for a rejected order. The customer gets a sentence they
+   can act on; this is the part a developer needs and they do not. */
 function _logCheckoutError(error) {
   if (error?.status === 422 && error?.data) {
-    console.error('[RDecants] background order validation failed:', error.data);
+    console.error('[RDecants] order validation failed:', error.data);
   }
 }
