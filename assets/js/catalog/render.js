@@ -279,9 +279,22 @@ function _buildCard(p, absoluteIndex, { guided, recById } = {}) {
   card.setAttribute('tabindex',   '0');
   card.setAttribute('aria-label', `Ver detalle de ${p.name}`);
 
+  /* "Más vendido" — real completed-sale volume from R Supply OS
+     (WebCatalogService::bestsellerIds()), never a claim invented here.
+     hasHighDemand() already existed and was already wired through
+     getScarcityDisplay() for exactly this signal; nothing rendered it. It
+     shares the urgency badge's single corner slot rather than adding a
+     second one — availability still outranks it, matching the editorial
+     badge's own rule just above that real facts never compete for the
+     shopper's attention. */
+  const demandHtml = !isUrgent && stockState.demand
+    ? `<span class="card-badge card-badge--demand">Más vendido</span>`
+    : '';
+
   card.innerHTML = `
     ${rankHtml}
     ${!rankHtml && isUrgent ? `<span class="card-badge ${stockState.badgeClass}">${stockState.label}</span>` : ''}
+    ${!rankHtml && !isUrgent ? demandHtml : ''}
     <div class="card-img-wrap${p.image ? '' : ' img-shell img-failed'}" style="--img-initial:${_brandInitialCss(p)}">
       ${p.image
         ? `<img src="${p.image}" alt="${p.name}" width="400" height="500" loading="lazy" decoding="async">`

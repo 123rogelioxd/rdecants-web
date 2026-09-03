@@ -709,6 +709,18 @@
   border-color: var(--ink);
 }
 
+/* "Más vendido" — real completed-sale volume, never editorial opinion or
+   invented urgency. Deliberately its own quiet accent rather than reusing
+   .danger (scarcity) or .trend (low-stock gray): a customer must not read
+   this as a stock warning, and it must not compete visually with editorial's
+   inverted-ink treatment above. It only ever renders when availability is
+   healthy — see catalog/render.js. */
+.card-badge--demand {
+  background: rgba(var(--accent-rgb), 0.1);
+  color: var(--accent);
+  border-color: rgba(var(--accent-rgb), 0.35);
+}
+
 .card-img-wrap {
   position: relative;
   aspect-ratio: 4 / 5;
