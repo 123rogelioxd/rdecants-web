@@ -22,6 +22,8 @@ import { mountCartDrawer }         from '../ui/cartDrawer.js';
 import { setupImageStates }        from '../ui/images.js';
 import { openProductModal,
          closeProductModal }       from '../ui/modal.js';
+import { openBottleQuickView,
+         closeBottleQuickView }    from '../ui/bottleQuickView.js';
 import { SearchBar }               from '../ui/searchbar.js';
 import { Personalization }         from '../recommendations/personalization.js';
 import { CatalogProvider }         from '../providers/catalog.js';
@@ -49,6 +51,7 @@ export function installBridge() {
   window.__rd.ui = {
     openCart, closeCart, toggleCart, sendWhatsApp,
     openProductModal, closeProductModal,
+    openBottleQuickView, closeBottleQuickView,
     clearSearch: () => SearchBar.clearAll(),
     clearGuide:  () => SearchBar.clearGuide(),
     relaxGuide:  (dimension) => SearchBar.relaxGuide(dimension),

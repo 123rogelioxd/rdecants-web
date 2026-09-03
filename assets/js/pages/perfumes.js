@@ -5,6 +5,7 @@ import { formatPrice } from '../utils/prices.js';
 import { Cart } from '../cart/cart.js';
 import { productPageUrl } from '../ui/productPage.js';
 import { primeImageStates } from '../ui/images.js';
+import { openBottleQuickView } from '../ui/bottleQuickView.js';
 
 const FILTERS = ['all', 'sealed', 'tester', 'partial'];
 
@@ -127,6 +128,16 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
   // Click → cart, with no page in between. Delegated so it survives every
   // re-render the filters trigger.
   grid.addEventListener('click', async event => {
+    const quickViewBtn = event.target.closest('[data-quick-view]');
+
+    if (quickViewBtn) {
+      const card = quickViewBtn.closest('.bottle-card');
+      const productId = card?.dataset.product;
+      const product = products.find(p => String(p.id) === productId);
+      if (product) openBottleQuickView(product);
+      return;
+    }
+
     const picker = event.target.closest('[data-toggle-picker]');
 
     if (picker) {
@@ -214,6 +225,13 @@ function _card(product) {
             : 'Consulta disponibilidad'}</p>
         </div>
       </a>
+      <button type="button" class="bottle-card-quickview" data-quick-view
+        aria-label="Vista rápida de ${_escape(product.name)}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="16" height="16" aria-hidden="true">
+          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+      </button>
       <div class="bottle-card-actions">
         ${_cta(product, affordance)}
       </div>
