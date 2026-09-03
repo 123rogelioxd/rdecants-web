@@ -5,6 +5,7 @@ import { formatPrice } from '../utils/prices.js';
 import { Cart } from '../cart/cart.js';
 import { productPageUrl } from '../ui/productPage.js';
 import { primeImageStates } from '../ui/images.js';
+import { openBottleQuickView } from '../ui/bottleQuickView.js';
 
 const FILTERS = ['all', 'sealed', 'tester', 'partial'];
 
@@ -70,6 +71,24 @@ export function bottlePresentationLine(product = {}) {
     .join(' · ');
 }
 
+/**
+ * Confirm the add on the button the customer actually pressed.
+ *
+ * The cart drawer raises a toast and the header badge ticks up, but both are
+ * away from the thumb that just tapped: in a grid of thirteen cards, the
+ * fastest confirmation is the one on the card itself.
+ *
+ * Exported, and covered by a test, because this lived inline once and was
+ * deleted by accident while an unrelated line beside it was being removed —
+ * the button went on working and simply stopped saying so, which nothing
+ * caught.
+ */
+export function applyAddFeedback(button, added, original) {
+  button.textContent = added ? 'Agregado ✓' : original;
+
+  return button.textContent;
+}
+
 globalThis.document?.addEventListener('DOMContentLoaded', async () => {
   await bootstrapShell();
   const grid = document.getElementById('perfumes-grid');
@@ -109,6 +128,16 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
   // Click → cart, with no page in between. Delegated so it survives every
   // re-render the filters trigger.
   grid.addEventListener('click', async event => {
+    const quickViewBtn = event.target.closest('[data-quick-view]');
+
+    if (quickViewBtn) {
+      const card = quickViewBtn.closest('.bottle-card');
+      const productId = card?.dataset.product;
+      const product = products.find(p => String(p.id) === productId);
+      if (product) openBottleQuickView(product);
+      return;
+    }
+
     const picker = event.target.closest('[data-toggle-picker]');
 
     if (picker) {
@@ -132,11 +161,7 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
     const original = button.textContent;
     try {
       const added = await Cart.addBottle(productId, offerKey);
-      if (added) button.textContent = 'Agregado ✓';
-      // Feedback on the button itself: the cart drawer already announces the
-      // add, and a customer who is scanning a grid should not have to look
-      // away from the card they just pressed to know it worked.
-      //
+      applyAddFeedback(button, added, original);
       // No event is emitted here on purpose. `Cart.addBottle` already fires
       // `bottle_added_to_cart` for every successful add, wherever it came
       // from, and a second name for one action would either double-count it or
@@ -200,6 +225,13 @@ function _card(product) {
             : 'Consulta disponibilidad'}</p>
         </div>
       </a>
+      <button type="button" class="bottle-card-quickview" data-quick-view
+        aria-label="Vista rápida de ${_escape(product.name)}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="16" height="16" aria-hidden="true">
+          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+      </button>
       <div class="bottle-card-actions">
         ${_cta(product, affordance)}
       </div>

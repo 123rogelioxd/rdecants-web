@@ -11,6 +11,7 @@
 
 import { Cart }                    from '../cart/cart.js';
 import { setupCheckout }           from '../cart/checkout.js';
+import { setupDeliveryPanel }      from '../ui/deliveryPanel.js';
 import { renderCart, updateCartCount,
          openCart, closeCart, toggleCart, sendWhatsApp,
          setupDiscountControls,
@@ -21,6 +22,8 @@ import { mountCartDrawer }         from '../ui/cartDrawer.js';
 import { setupImageStates }        from '../ui/images.js';
 import { openProductModal,
          closeProductModal }       from '../ui/modal.js';
+import { openBottleQuickView,
+         closeBottleQuickView }    from '../ui/bottleQuickView.js';
 import { SearchBar }               from '../ui/searchbar.js';
 import { Personalization }         from '../recommendations/personalization.js';
 import { CatalogProvider }         from '../providers/catalog.js';
@@ -48,6 +51,7 @@ export function installBridge() {
   window.__rd.ui = {
     openCart, closeCart, toggleCart, sendWhatsApp,
     openProductModal, closeProductModal,
+    openBottleQuickView, closeBottleQuickView,
     clearSearch: () => SearchBar.clearAll(),
     clearGuide:  () => SearchBar.clearGuide(),
     relaxGuide:  (dimension) => SearchBar.relaxGuide(dimension),
@@ -130,6 +134,9 @@ export async function bootstrapShell() {
   setupImageStates();
   setupCheckout();
   setupDiscountControls();
+  /* Re-renders the cart so the shipping line and grand total move with the
+     customer's delivery choice. */
+  setupDeliveryPanel(() => renderCart());
   await Cart.reconcile({ silent: true });
   renderCart();
   updateCartCount();
