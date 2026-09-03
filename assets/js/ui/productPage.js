@@ -489,6 +489,135 @@ export function findProductBySlug(products, slug) {
   );
 }
 
+/* ── SEO: title, description, canonical, structured data ────────
+   The PDP is client-rendered — the static HTML a non-JS crawler sees is a
+   generic "Fragancia — RDecants" shell (see product.html). Googlebot does
+   execute JS and re-crawls after render, so this is a real improvement for
+   the crawler that matters most, even though it does nothing for a crawler
+   that does not run scripts — that gap needs prerendering to close, which is
+   a build/infrastructure change out of scope here (see project notes).
+
+   Every value below comes from the product object the catalog API already
+   returned. Nothing here invents a rating, a review count, or a price the
+   product does not carry — the brief is explicit that fabricated review/
+   rating markup is worse than none. */
+export function setProductSeo(product, { origin = 'https://rdecants.com' } = {}) {
+  if (typeof document === 'undefined' || !product) return;
+
+  const url = `${origin}${productPageUrl(product)}`;
+  const house = product.house ? String(product.house) : '';
+  const displayName = [house, product.name].filter(Boolean).join(' ');
+  const description = _seoDescription(product);
+
+  document.title = `${product.name}${house ? ` — ${house}` : ''} | RDecants`;
+  _setMetaContent('name', 'description', description);
+  _setMetaContent('property', 'og:title', `${displayName} — RDecants`);
+  _setMetaContent('property', 'og:description', description);
+  _setMetaContent('property', 'og:url', url);
+  if (product.image) _setMetaContent('property', 'og:image', product.image);
+
+  const canonical = document.querySelector('link[rel="canonical"]');
+  if (canonical) canonical.setAttribute('href', url);
+
+  _setJsonLd('pdp-product-jsonld', _productJsonLd(product, url, description));
+  _setJsonLd('pdp-breadcrumb-jsonld', _breadcrumbJsonLd(product, origin, url));
+}
+
+function _seoDescription(product) {
+  const summary = typeof product?.desc === 'string' ? product.desc.trim() : '';
+  if (summary) return summary.length > 300 ? `${summary.slice(0, 297)}...` : summary;
+
+  const house = product?.house ? `${product.house} ` : '';
+  return `${house}${product?.name ?? 'Fragancia'} en decant — perfumes originales desde 3 ml, envíos a todo México.`;
+}
+
+/**
+ * schema.org Product + Offer (AggregateOffer when more than one size is
+ * orderable — a decant is genuinely sold at several real prices, and picking
+ * one arbitrarily to satisfy a single-Offer shape would misstate the rest).
+ * No `aggregateRating`/`review`: this catalog carries neither, and inventing
+ * either is exactly the "fake ratings" the project rules forbid.
+ */
+function _productJsonLd(product, url, description) {
+  const variants = getValidVariants(product).filter(v => !v.soldOut && v.price > 0);
+  const prices = variants.map(v => v.price);
+
+  const ld = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    description,
+    url,
+    sku: String(product.id ?? product.product_id ?? ''),
+  };
+
+  if (product.house) ld.brand = { '@type': 'Brand', name: product.house };
+  if (product.image) ld.image = [product.image];
+
+  if (prices.length) {
+    const currency = 'MXN';
+    const availability = (product.stock ?? 0) > 0
+      ? 'https://schema.org/InStock'
+      : 'https://schema.org/OutOfStock';
+
+    ld.offers = prices.length === 1
+      ? {
+          '@type': 'Offer', url, priceCurrency: currency, price: prices[0], availability,
+        }
+      : {
+          '@type': 'AggregateOffer',
+          url,
+          priceCurrency: currency,
+          lowPrice: Math.min(...prices),
+          highPrice: Math.max(...prices),
+          offerCount: prices.length,
+          availability,
+        };
+  }
+
+  return ld;
+}
+
+function _breadcrumbJsonLd(product, origin, url) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Inicio', item: origin },
+      { '@type': 'ListItem', position: 2, name: 'Catálogo', item: `${origin}/catalogo.html` },
+      { '@type': 'ListItem', position: 3, name: product.name, item: url },
+    ],
+  };
+}
+
+function _setMetaContent(attr, key, value) {
+  if (!value) return;
+  const el = document.querySelector(`meta[${attr}="${key}"]`);
+  if (el) {
+    el.setAttribute('content', value);
+    return;
+  }
+  const created = document.createElement('meta');
+  created.setAttribute(attr, key);
+  created.setAttribute('content', value);
+  document.head.appendChild(created);
+}
+
+/* JSON.stringify already escapes for JSON; the one extra step a JSON blob
+   embedded in a <script> tag needs is neutralising a literal "</script>"
+   inside a string value (e.g. a product description), which would otherwise
+   close the tag early and inject whatever follows as raw HTML. */
+function _setJsonLd(id, data) {
+  let el = document.getElementById(id);
+  if (!el) {
+    el = document.createElement('script');
+    el.id = id;
+    el.type = 'application/ld+json';
+    document.head.appendChild(el);
+  }
+  el.textContent = JSON.stringify(data).replace(/</g, '\\u003c');
+}
+
 /* ── Editorial blocks ───────────────────────────────────────── */
 
 /* Single fused sell/guide section. Merges what used to be three

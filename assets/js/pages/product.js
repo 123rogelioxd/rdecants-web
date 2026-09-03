@@ -14,6 +14,7 @@ import {
   renderCollectionPairs,
   readSlugFromLocation,
   findProductBySlug,
+  setProductSeo,
 } from '../ui/productPage.js';
 
 /* ── Bootstrap ──────────────────────────────────────────────── */
@@ -47,7 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  document.title = `${product.name} — ${product.house ?? 'RDecants'}`;
+  setProductSeo(product);
   Tracker.productPdpView(product);
   hydrateProductPage(root, product);
   renderCollectionPairs(root, product, products);
