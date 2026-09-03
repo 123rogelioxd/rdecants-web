@@ -26,6 +26,7 @@ const ASSET_VERSION = '2026.09.03.3';
 const ENTRY_POINTS = [
   'index.html', 'catalogo.html', 'elegir.html', 'ayuda.html',
   'product.html', 'mood.html', 'perfumes.html', 'cotiza.html',
+  'privacidad.html', 'terminos.html',
 ];
 
 test('HTML entry points declare no-cache metadata and current asset version', () => {
