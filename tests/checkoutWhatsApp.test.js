@@ -42,12 +42,18 @@ test('buildWhatsAppMessage creates a natural customer WhatsApp message', () => {
     '',
     'Total: $570 MXN',
     '',
+    /* The order reference. R Supply OS holds every line, price and address
+       under this folio, so the business opens the order instead of reading the
+       cart back out of the chat. */
+    'Mi pedido es WEB-20260603-0002.',
+    '',
     'Mi nombre es Roger.',
     '',
     'Quedo pendiente de disponibilidad y detalles de compra.',
   ].join('\n'));
 
-  assert.doesNotMatch(message, /Folio|Casa|Presentaci[oó]n|Cantidad|Solo a|Producto:/);
+  /* Still a message a person would send: no form-field labels. */
+  assert.doesNotMatch(message, /Folio:|Casa|Presentaci[oó]n|Cantidad|Solo a|Producto:/);
 });
 
 test('buildWhatsAppMessage uses singular copy for one decant', () => {
@@ -257,4 +263,90 @@ test('buildWebOrderPayload keeps existing order payload shape when product has g
   } finally {
     CatalogProvider.getProductById = originalGetProductById;
   }
+});
+
+test('buildWhatsAppMessage omits the order reference when there is no folio', () => {
+  const message = buildWhatsAppMessage(
+    [{ name: 'VICTORY', house: 'INVICTUS', size: 5, price: 170, qty: 1 }],
+    170,
+    { name: 'Roger' },
+  );
+
+  assert.doesNotMatch(message, /Mi pedido es/);
+});
+
+test('buildWhatsAppMessage states a priced delivery and the total with shipping', () => {
+  const message = buildWhatsAppMessage(
+    [{ name: 'VICTORY', house: 'INVICTUS', size: 5, price: 170, qty: 1 }],
+    170,
+    { name: 'Roger' },
+    'RD-02631',
+    null,
+    {
+      subtotal: 170,
+      total: 170,
+      discount: 0,
+      grand_total: 320,
+      delivery: { mode: 'national', shipping_cost: 150, requires_manual_quote: false },
+    },
+  );
+
+  assert.match(message, /Envío: \$150/);
+  assert.match(message, /Total con envío: \$320/);
+  assert.match(message, /Mi pedido es RD-02631\./);
+});
+
+/* The regression that matters most in this file: an order whose shipping
+   nobody has priced must not produce a message promising a total. */
+test('buildWhatsAppMessage never prints $0 or a total for an unpriced delivery', () => {
+  const message = buildWhatsAppMessage(
+    [{ name: 'VICTORY', house: 'INVICTUS', size: 5, price: 170, qty: 1 }],
+    170,
+    { name: 'Roger' },
+    'RD-02631',
+    null,
+    {
+      subtotal: 170,
+      total: 170,
+      discount: 0,
+      grand_total: null,
+      delivery: { mode: 'national', shipping_cost: null, requires_manual_quote: true },
+    },
+  );
+
+  assert.match(message, /Envío: por confirmar/);
+  assert.doesNotMatch(message, /Total con envío/);
+  assert.doesNotMatch(message, /Envío: \$0/);
+});
+
+test('buildWhatsAppMessage says a free delivery costs nothing rather than $0', () => {
+  const message = buildWhatsAppMessage(
+    [{ name: 'VICTORY', house: 'INVICTUS', size: 5, price: 300, qty: 1 }],
+    300,
+    { name: 'Roger' },
+    'RD-02631',
+    null,
+    {
+      subtotal: 300,
+      total: 300,
+      discount: 0,
+      grand_total: 300,
+      delivery: { mode: 'local', shipping_cost: 0, requires_manual_quote: false },
+    },
+  );
+
+  assert.match(message, /Entrega local: sin costo/);
+});
+
+test('buildWhatsAppMessage omits delivery entirely when the order has no mode', () => {
+  const message = buildWhatsAppMessage(
+    [{ name: 'VICTORY', house: 'INVICTUS', size: 5, price: 170, qty: 1 }],
+    170,
+    { name: 'Roger' },
+    'RD-02631',
+    null,
+    { subtotal: 170, total: 170, discount: 0, delivery: { mode: null } },
+  );
+
+  assert.doesNotMatch(message, /Env[ií]o|Entrega local|Recoger/);
 });

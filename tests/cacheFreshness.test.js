@@ -21,11 +21,12 @@ test('catalog API GET requests bypass browser caches', () => {
    real device when this query string moves. Keep it in lockstep with the
    VERSION file and every entry point — a page left behind serves last year's
    CSS against this year's markup. */
-const ASSET_VERSION = '2026.08.26.1';
+const ASSET_VERSION = '2026.09.03.3';
 
 const ENTRY_POINTS = [
   'index.html', 'catalogo.html', 'elegir.html', 'ayuda.html',
   'product.html', 'mood.html', 'perfumes.html', 'cotiza.html',
+  'privacidad.html', 'terminos.html',
 ];
 
 test('HTML entry points declare no-cache metadata and current asset version', () => {

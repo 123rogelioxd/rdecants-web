@@ -125,6 +125,12 @@ test('Perfumes is a first-class nav page; conditions are filters, not top-level 
 test('the direct bottle CTA visibly confirms a successful add before resetting', () => {
   const source = readFileSync(new URL('../assets/js/pages/perfumes.js', import.meta.url), 'utf8');
 
-  assert.match(source, /const added = await Cart\.addBottle\(productId, offerKey\);\s+if \(added\) button\.textContent = 'Agregado ✓';/);
+  // The confirmation itself is applyAddFeedback() — extracted into its own
+  // exported, directly-tested function (see directBottlePurchase.test.js's
+  // "confirms a successful add" / "a refused add leaves the button as it
+  // was") after this exact assignment was deleted by accident once already
+  // and nothing here caught it. This test only pins that the click handler
+  // still calls it, and still resets the button afterward.
+  assert.match(source, /const added = await Cart\.addBottle\(productId, offerKey\);\s+applyAddFeedback\(button, added, original\);/);
   assert.match(source, /setTimeout\(\(\) => \{\s+button\.disabled = false;\s+button\.textContent = original;\s+\}, 1400\);/);
 });

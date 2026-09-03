@@ -82,10 +82,23 @@ export const ApiClient = {
      transport failure. */
   getPromotion:       () => _get('/api/web/promotion'),
   createWebOrder:     (payload) => _post('/api/web/orders', payload),
+  /* Delivery. Both are READS: quoting creates no shipment, reserves no stock
+     and consumes no coupon. The quote sends the cart as identity + quantity,
+     exactly like the order does — R Supply OS reprices it, because the local
+     tariff has a free-delivery threshold and a browser that could state its own
+     total could state its way past it. */
+  getDeliveryOptions: () => _get('/api/web/delivery/options'),
+  quoteDelivery:      (payload) => _postSafe('/api/web/delivery/quote', payload),
   /* Discount PREVIEW only — R Supply OS is the source of truth and recalculates
      during Web Order creation. The storefront never computes discounts itself. */
   previewDiscount:    (payload) => _postSafe('/api/web/discounts/preview', payload),
   searchQuoteCatalog: (query, limit = 24) => _get(`/api/web/quote/search?q=${encodeURIComponent(query)}&limit=${limit}`),
   priceQuoteBasket:   (items) => _post('/api/web/quote/price', { items }),
   submitQuote:        (payload) => _post('/api/web/quote', payload),
+  /* Cross-sell backed by real purchase behaviour (co-purchase, repeat-buy) —
+     the one signal a client-side scorer structurally cannot see, because
+     purchase history is private. Read-only; the caller decides what to do
+     with an empty or failed result, so this never blocks the PDP's own
+     already-working local recommendations. */
+  getSimilarProducts: (productId, limit = 4) => _get(`/api/web/products/${encodeURIComponent(productId)}/similar?limit=${limit}`),
 };

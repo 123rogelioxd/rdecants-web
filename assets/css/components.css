@@ -709,6 +709,18 @@
   border-color: var(--ink);
 }
 
+/* "Más vendido" — real completed-sale volume, never editorial opinion or
+   invented urgency. Deliberately its own quiet accent rather than reusing
+   .danger (scarcity) or .trend (low-stock gray): a customer must not read
+   this as a stock warning, and it must not compete visually with editorial's
+   inverted-ink treatment above. It only ever renders when availability is
+   healthy — see catalog/render.js. */
+.card-badge--demand {
+  background: rgba(var(--accent-rgb), 0.1);
+  color: var(--accent);
+  border-color: rgba(var(--accent-rgb), 0.35);
+}
+
 .card-img-wrap {
   position: relative;
   aspect-ratio: 4 / 5;
@@ -10643,3 +10655,419 @@ body.rd-searching .quick-gender { display: none; }
 }
 .cart-pack-was  { font-size: 12px; color: var(--ink-faint); text-decoration: line-through; }
 .cart-pack-save { font-size: 11px; color: var(--bronze-ink); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   DELIVERY PANEL — cart drawer
+   Where the order goes and what R Supply OS charges to take it there.
+
+   Mobile-first: the mode chips are a 3-up row that stays thumb-reachable, the
+   address grid collapses to one column under 420px, and every control clears
+   44px so it can be hit one-handed.
+
+   Note the two distinct "no price" presentations. `--manual` is an order whose
+   delivery nobody has priced yet and says so in words; it is deliberately NOT
+   styled like a $0, because an order awaiting a manual quote has no final
+   total and must never look like a free one.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.delivery-panel {
+  margin-bottom: 16px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(25, 24, 22, 0.02);
+}
+
+.delivery-title {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 10px;
+}
+
+.delivery-modes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.delivery-mode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 56px;
+  padding: 8px 6px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color .25s ease, background .25s ease;
+}
+
+.delivery-mode:focus-visible {
+  outline: 2px solid rgba(var(--accent-rgb), .6);
+  outline-offset: 2px;
+}
+
+.delivery-mode.is-active {
+  border-color: rgba(var(--accent-rgb), .65);
+  background: rgba(var(--accent-rgb), .08);
+}
+
+.delivery-mode-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+.delivery-mode-hint {
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  line-height: 1.2;
+}
+
+.delivery-block { margin-bottom: 4px; }
+
+.delivery-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 10px;
+}
+
+.delivery-field--wide { grid-column: 1 / -1; }
+
+.delivery-field {
+  display: block;
+  min-width: 0;
+}
+
+.delivery-field > span {
+  display: block;
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin-bottom: 4px;
+}
+
+@media (max-width: 420px) {
+  .delivery-grid { grid-template-columns: 1fr; }
+}
+
+.delivery-quote-btn {
+  width: 100%;
+  min-height: 44px;
+  padding: 11px 14px;
+  border: 1px solid rgba(var(--accent-rgb), .5);
+  border-radius: 10px;
+  background: rgba(var(--accent-rgb), .1);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .25s ease, opacity .25s ease;
+}
+
+.delivery-quote-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.delivery-options {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.delivery-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color .25s ease, background .25s ease;
+}
+
+.delivery-option.is-active {
+  border-color: rgba(var(--accent-rgb), .65);
+  background: rgba(var(--accent-rgb), .08);
+}
+
+.delivery-option:focus-visible {
+  outline: 2px solid rgba(var(--accent-rgb), .6);
+  outline-offset: 2px;
+}
+
+.delivery-option-main { display: grid; gap: 2px; min-width: 0; }
+
+.delivery-option-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.delivery-option-eta {
+  font-size: 11px;
+  color: var(--ink-faint);
+}
+
+.delivery-option-price {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.delivery-msg {
+  margin: 10px 0 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+.delivery-msg[data-tone="warn"] { color: #8a6a1f; }
+.delivery-msg[data-tone="error"] { color: #b3261e; }
+
+/* The grand total, only ever rendered when every part of it is a real price. */
+.cart-total-note {
+  margin: 6px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: right;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   BOTTLE QUICK VIEW
+   A lightweight detail overlay for one physical bottle offer — condition,
+   real fill level, price, one Add action. Desktop: centered card, mirroring
+   the decant quick view's own shell. Mobile: a true bottom sheet, per the
+   same pattern .pdm-modal already uses below.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.bqv-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 950;
+  background: rgba(25, 24, 22, 0);
+  backdrop-filter: blur(0px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(12px, 3vw, 40px);
+  pointer-events: none;
+  transition: background 0.35s ease, backdrop-filter 0.35s ease;
+  overflow-y: auto;
+}
+
+.bqv-overlay--open {
+  background: rgba(25, 24, 22, 0.3);
+  backdrop-filter: blur(6px) saturate(0.8);
+  pointer-events: all;
+}
+
+.bqv-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  max-height: 90dvh;
+  overflow-y: auto;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  transform: scale(0.94) translateY(20px);
+  transition: opacity 0.32s cubic-bezier(0.19, 1, 0.22, 1),
+              transform 0.32s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.bqv-sheet--open {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+.bqv-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 10;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.bqv-img-wrap {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: var(--bg-sunk);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.bqv-img { max-width: 78%; max-height: 88%; object-fit: contain; }
+
+.bqv-img-wrap--fallback { background: var(--bg-sunk); }
+
+/* Real condition, always visible — never just implied by a filter chip
+   the customer already clicked past. */
+.bqv-condition-chip {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  padding: 5px 10px;
+  border-radius: 999px;
+}
+
+.bqv-info { padding: 20px 22px 22px; }
+
+.bqv-house {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
+  color: var(--ink-soft);
+  margin: 0 0 6px;
+}
+
+.bqv-name {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.15;
+  margin: 0 0 10px;
+}
+
+.bqv-size {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin: 0 0 12px;
+}
+
+/* The one measured fact worth its own line: how much is actually left in a
+   partial bottle. Never rendered for sealed/tester — there is nothing real
+   to show, and an empty bar would read as data. */
+.bqv-fill { margin: 0 0 14px; }
+
+.bqv-fill-track {
+  height: 6px;
+  background: var(--bg-sunk);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.bqv-fill-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+}
+
+.bqv-fill-label {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.bqv-siblings {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+  margin-bottom: 16px;
+}
+
+.bqv-siblings-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-soft);
+  margin: 0 0 8px;
+}
+
+.bqv-sibling-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 10px);
+  color: var(--ink);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.bqv-sibling-btn:hover,
+.bqv-sibling-btn:focus-visible { border-color: var(--accent); }
+
+.bqv-buybar { border-top: 1px solid var(--border); padding-top: 16px; }
+
+.bqv-price-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.bqv-price { font-size: 20px; font-weight: 600; color: var(--ink); }
+
+.bqv-soldout {
+  font-size: 12px;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.bqv-btn-add { width: 100%; margin-bottom: 10px; }
+
+.bqv-details-link {
+  display: block;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 768px) {
+  .bqv-overlay {
+    align-items: flex-end;
+    height: 100dvh;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .bqv-sheet {
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    max-width: 100%;
+    max-height: 90dvh;
+    transform: scale(1) translateY(60px);
+    padding-bottom: var(--safe-b);
+  }
+
+  .bqv-sheet--open { transform: scale(1) translateY(0); }
+
+  .bqv-img-wrap { aspect-ratio: 16 / 9; }
+}

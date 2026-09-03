@@ -22,6 +22,7 @@
    ============================================================= */
 
 import { primeImageStates } from './images.js';
+import { ApiClient } from '../api/client.js';
 import { genderBadgeHtml } from './genderBadge.js';
 import { Tracker } from '../tracking/tracker.js';
 import {
@@ -385,10 +386,17 @@ export function renderRelated(root, seed, products) {
     return;
   }
 
+  _paintRelated(slot, row, related, RELATED_RAIL);
+}
+
+const RELATED_RAIL = { railId: 'pdp_related', railTitle: 'Si te gusta esto...' };
+const RELATED_RAIL_REAL = { railId: 'pdp_related_real', railTitle: 'También te puede interesar' };
+
+function _paintRelated(slot, row, related, rail) {
   row.innerHTML = related.map(_relatedCard).join('');
   slot.hidden = false;
 
-  Tracker.recommendationView(related, { railId: 'pdp_related', railTitle: 'Si te gusta esto...' });
+  Tracker.recommendationView(related, rail);
   primeImageStates(slot);
 
   row.querySelectorAll('.pdp-related-card').forEach(card => {
@@ -396,10 +404,57 @@ export function renderRelated(root, seed, products) {
       const product = related.find(item => String(item.id) === card.dataset.productId);
       if (!product) return;
       const position = Number(card.dataset.position) + 1;
-      Tracker.recommendationClicked(product, position, { railId: 'pdp_related', railTitle: 'Si te gusta esto...' });
+      Tracker.recommendationClicked(product, position, rail);
       window.location.href = productPageUrl(product);
     });
   });
+}
+
+/**
+ * Upgrade the "Si te gusta esto..." rail with the ONE signal
+ * getRelatedProducts() structurally cannot see: real purchase behaviour
+ * (co-purchase, repeat-buy), from R Supply OS's server-side recommendation
+ * engine.
+ *
+ * Deliberately called AFTER renderRelated(), never instead of it: the local
+ * heuristic already rendered synchronously from data already in memory, so
+ * the section is never empty and never waits on a network round trip. This
+ * only swaps the content in — and only when the engine actually had
+ * something to say for this product — never leaves the section worse off
+ * than the local heuristic already made it.
+ *
+ * Every candidate the API returns has already been through
+ * Producto::visiblesWeb() and the SAME WebProductTransformer the rest of the
+ * catalog uses (see StorefrontRecommendationService), so it is matched back
+ * to the already-normalized local `products` entry by id — never rendered
+ * from the raw API shape directly, which would risk a second, divergent
+ * normalization path for the same card markup.
+ */
+export async function upgradeRelatedWithRealSignal(root, seed, products) {
+  const slot = root.querySelector('#pdp-related');
+  const row = root.querySelector('#pdp-related-row');
+  if (!slot || !row) return;
+
+  const productId = seed?.product_id ?? seed?.id;
+  if (!productId) return;
+
+  let response;
+  try {
+    response = await ApiClient.getSimilarProducts(productId, 4);
+  } catch {
+    return; // Network/engine failure — the local heuristic already rendered.
+  }
+
+  const candidateIds = Array.isArray(response?.similar)
+    ? response.similar.map(p => String(p.id))
+    : [];
+  if (!candidateIds.length) return;
+
+  const byId = new Map(products.map(p => [String(p.id), p]));
+  const real = candidateIds.map(id => byId.get(id)).filter(Boolean);
+  if (!real.length) return;
+
+  _paintRelated(slot, row, real, RELATED_RAIL_REAL);
 }
 
 /* ── PDP "Combina bien con" (collection pairs) ───────────────── */
@@ -487,6 +542,135 @@ export function findProductBySlug(products, slug) {
     products.find(p => String(p?.id ?? '').toLowerCase() === target) ||
     null
   );
+}
+
+/* ── SEO: title, description, canonical, structured data ────────
+   The PDP is client-rendered — the static HTML a non-JS crawler sees is a
+   generic "Fragancia — RDecants" shell (see product.html). Googlebot does
+   execute JS and re-crawls after render, so this is a real improvement for
+   the crawler that matters most, even though it does nothing for a crawler
+   that does not run scripts — that gap needs prerendering to close, which is
+   a build/infrastructure change out of scope here (see project notes).
+
+   Every value below comes from the product object the catalog API already
+   returned. Nothing here invents a rating, a review count, or a price the
+   product does not carry — the brief is explicit that fabricated review/
+   rating markup is worse than none. */
+export function setProductSeo(product, { origin = 'https://rdecants.com' } = {}) {
+  if (typeof document === 'undefined' || !product) return;
+
+  const url = `${origin}${productPageUrl(product)}`;
+  const house = product.house ? String(product.house) : '';
+  const displayName = [house, product.name].filter(Boolean).join(' ');
+  const description = _seoDescription(product);
+
+  document.title = `${product.name}${house ? ` — ${house}` : ''} | RDecants`;
+  _setMetaContent('name', 'description', description);
+  _setMetaContent('property', 'og:title', `${displayName} — RDecants`);
+  _setMetaContent('property', 'og:description', description);
+  _setMetaContent('property', 'og:url', url);
+  if (product.image) _setMetaContent('property', 'og:image', product.image);
+
+  const canonical = document.querySelector('link[rel="canonical"]');
+  if (canonical) canonical.setAttribute('href', url);
+
+  _setJsonLd('pdp-product-jsonld', _productJsonLd(product, url, description));
+  _setJsonLd('pdp-breadcrumb-jsonld', _breadcrumbJsonLd(product, origin, url));
+}
+
+function _seoDescription(product) {
+  const summary = typeof product?.desc === 'string' ? product.desc.trim() : '';
+  if (summary) return summary.length > 300 ? `${summary.slice(0, 297)}...` : summary;
+
+  const house = product?.house ? `${product.house} ` : '';
+  return `${house}${product?.name ?? 'Fragancia'} en decant — perfumes originales desde 3 ml, envíos a todo México.`;
+}
+
+/**
+ * schema.org Product + Offer (AggregateOffer when more than one size is
+ * orderable — a decant is genuinely sold at several real prices, and picking
+ * one arbitrarily to satisfy a single-Offer shape would misstate the rest).
+ * No `aggregateRating`/`review`: this catalog carries neither, and inventing
+ * either is exactly the "fake ratings" the project rules forbid.
+ */
+function _productJsonLd(product, url, description) {
+  const variants = getValidVariants(product).filter(v => !v.soldOut && v.price > 0);
+  const prices = variants.map(v => v.price);
+
+  const ld = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    description,
+    url,
+    sku: String(product.id ?? product.product_id ?? ''),
+  };
+
+  if (product.house) ld.brand = { '@type': 'Brand', name: product.house };
+  if (product.image) ld.image = [product.image];
+
+  if (prices.length) {
+    const currency = 'MXN';
+    const availability = (product.stock ?? 0) > 0
+      ? 'https://schema.org/InStock'
+      : 'https://schema.org/OutOfStock';
+
+    ld.offers = prices.length === 1
+      ? {
+          '@type': 'Offer', url, priceCurrency: currency, price: prices[0], availability,
+        }
+      : {
+          '@type': 'AggregateOffer',
+          url,
+          priceCurrency: currency,
+          lowPrice: Math.min(...prices),
+          highPrice: Math.max(...prices),
+          offerCount: prices.length,
+          availability,
+        };
+  }
+
+  return ld;
+}
+
+function _breadcrumbJsonLd(product, origin, url) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Inicio', item: origin },
+      { '@type': 'ListItem', position: 2, name: 'Catálogo', item: `${origin}/catalogo.html` },
+      { '@type': 'ListItem', position: 3, name: product.name, item: url },
+    ],
+  };
+}
+
+function _setMetaContent(attr, key, value) {
+  if (!value) return;
+  const el = document.querySelector(`meta[${attr}="${key}"]`);
+  if (el) {
+    el.setAttribute('content', value);
+    return;
+  }
+  const created = document.createElement('meta');
+  created.setAttribute(attr, key);
+  created.setAttribute('content', value);
+  document.head.appendChild(created);
+}
+
+/* JSON.stringify already escapes for JSON; the one extra step a JSON blob
+   embedded in a <script> tag needs is neutralising a literal "</script>"
+   inside a string value (e.g. a product description), which would otherwise
+   close the tag early and inject whatever follows as raw HTML. */
+function _setJsonLd(id, data) {
+  let el = document.getElementById(id);
+  if (!el) {
+    el = document.createElement('script');
+    el.id = id;
+    el.type = 'application/ld+json';
+    document.head.appendChild(el);
+  }
+  el.textContent = JSON.stringify(data).replace(/</g, '\\u003c');
 }
 
 /* ── Editorial blocks ───────────────────────────────────────── */

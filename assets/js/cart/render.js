@@ -10,6 +10,7 @@ import { maybeAutoApplyPromo, resetAutoApplyGuard, markAutoApplyDone } from './c
 import { sendCheckoutWhatsApp,
          syncCheckoutAvailability,
          trackCheckoutStarted } from './checkout.js';
+import { renderDeliverySummary } from '../ui/deliveryPanel.js';
 import { EventBus }  from '../core/events.js';
 import { Tracker }   from '../tracking/tracker.js';
 import { showToast } from '../ui/toast.js';
@@ -317,6 +318,11 @@ function _renderSummary() {
 
   const totalEl = document.getElementById('cart-total');
   if (totalEl) totalEl.textContent = finalTotal;
+
+  /* Delivery sits below the merchandise total and is rendered from the
+     Delivery state, never computed here. `finalTotal` is the merchandise the
+     customer actually pays for — the base a grand total is built on. */
+  renderDeliverySummary(finalTotal);
 }
 
 /* ── Discount panel: toggle ⇄ input ⇄ applied badge, transient messages ──

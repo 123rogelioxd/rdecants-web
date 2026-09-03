@@ -25,10 +25,30 @@
 .bottle-filters button.is-active { background: var(--ink, #171713); border-color: var(--ink, #171713); color: #fff; }
 .bottle-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
 .bottle-grid > .premium-empty { grid-column: 1 / -1; }
-.bottle-card { min-width: 0; border: 1px solid var(--border, #ddd6ca); border-radius: 20px; overflow: hidden; background: var(--surface, #fffdf8); }
+.bottle-card { position: relative; min-width: 0; border: 1px solid var(--border, #ddd6ca); border-radius: 20px; overflow: hidden; background: var(--surface, #fffdf8); }
 .bottle-card-link { display: block; height: 100%; color: inherit; text-decoration: none; }
 .bottle-card-image { aspect-ratio: 4 / 5; background: #ede8dd; overflow: hidden; }
 .bottle-card-image img { width: 100%; height: 100%; object-fit: contain; display: block; }
+/* Opens the bottle quick view (real condition, fill level, price) without
+   leaving the grid. Sits over the image corner rather than competing with the
+   buy/choose button below, which stays the card's one unambiguous action. */
+.bottle-card-quickview {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  background: var(--surface, #fffdf8);
+  border: 1px solid var(--border, #ddd6ca);
+  border-radius: 50%;
+  color: var(--ink, #171713);
+  cursor: pointer;
+}
+.bottle-card-quickview:hover,
+.bottle-card-quickview:focus-visible { border-color: var(--accent, #8a6a1f); }
 .bottle-card-body { display: flex; flex-direction: column; align-items: flex-start; gap: 9px; padding: 20px; }
 .bottle-card-house, .bottle-card-name, .bottle-card-price { margin: 0; }
 .bottle-card-house { color: var(--muted, #6b665e); font-size: .76rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
