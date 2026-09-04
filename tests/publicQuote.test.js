@@ -50,23 +50,22 @@ test('public quote UI never renders supplier internals', () => {
   }
 });
 
-/* ── No form: WhatsApp already identifies the customer ───────────────── */
+/* ── A structured RSupplyOS record, with a folio, before WhatsApp ─────── */
 
-test('the quote panel never asks for a name or phone number before WhatsApp', () => {
+test('the quote panel requires a name and phone before it can be confirmed', () => {
   const html = quoteHtml();
   const source = quoteSource();
 
-  assert.doesNotMatch(html, /id="quote-name"/);
-  assert.doesNotMatch(html, /id="quote-phone"/);
-  assert.doesNotMatch(html, /<label[^>]*>Nombre/);
-  assert.doesNotMatch(html, /<label[^>]*>Tel[eé]fono/);
-  assert.doesNotMatch(html, /<form[^>]*id="quote-form"/, 'the panel is a summary, not a checkout form');
+  assert.match(html, /id="quote-customer-name"/);
+  assert.match(html, /id="quote-customer-phone"/);
 
-  // The click handler must never require those fields to exist.
-  assert.doesNotMatch(source, /customer_name/);
-  assert.doesNotMatch(source, /customer_phone/);
-  assert.doesNotMatch(source, /getElementById\('quote-name'\)/);
-  assert.doesNotMatch(source, /getElementById\('quote-phone'\)/);
+  // The click handler must actually require them — this was the real bug:
+  // the backend has always required both, but the storefront never sent
+  // them, so every submission 422'd and silently fell through to a
+  // locally-built, folio-less WhatsApp message.
+  assert.match(source, /customer_name/);
+  assert.match(source, /customer_phone/);
+  assert.match(source, /customerName\.length < 2/);
 });
 
 test('the primary CTA is "Confirmar por WhatsApp", never "Solicitar cotización"', () => {
@@ -76,19 +75,28 @@ test('the primary CTA is "Confirmar por WhatsApp", never "Solicitar cotización"
   assert.doesNotMatch(quoteSource(), /Solicitar cotización/);
 });
 
-test('WhatsApp handoff is built locally and never blocked by the backend', () => {
+test('WhatsApp handoff requires the backend to create a structured request first', () => {
   const source = quoteSource();
 
   assert.match(source, /window\.open\('', '_blank'\)/, 'reserves the popup during the click gesture');
-  assert.match(source, /buildWhatsAppMessage\(/, 'the storefront builds its own clean message');
-  assert.doesNotMatch(source, /response\.whatsapp_url/, 'no longer depends on a backend-built message/url');
-  assert.doesNotMatch(source, /Solicitud recibida/);
-  assert.doesNotMatch(source, /Roger recibió tu solicitud/);
-  assert.match(quoteHtml(), /Continuar por WhatsApp/, 'popup-blocked fallback link stays available');
+  assert.match(source, /response\?\.\s*whatsapp_url/, 'uses the folio-bearing message/url the backend already built');
+  assert.match(source, /reservedWindow\?\.close\?\.\(\)/, 'a failed submission closes the reserved tab rather than navigating it anywhere');
 
-  // The backend record is best-effort: any failure must be swallowed, never
-  // surfaced as a reason WhatsApp doesn't open.
-  assert.match(source, /catch \{[\s\S]{0,40}\/\/ Best-effort record only/);
+  // No swallowed-failure path: a rejected/failed submission must not still
+  // reach WhatsApp on a locally-built message with no backend record.
+  assert.doesNotMatch(source, /Best-effort record only/);
+  assert.match(quoteHtml(), /Continuar por WhatsApp/, 'popup-blocked fallback link stays available (once a folio exists)');
+});
+
+test('a failed submission never opens WhatsApp on a locally-built message', () => {
+  const source = quoteSource();
+  const submitBlock = source.slice(source.indexOf("submit.addEventListener('click'"));
+
+  // The only two `window.open` calls in the submit handler are: reserving
+  // the tab before the request, and (still inside the try block) navigating
+  // it to the backend's own URL. There is no second, catch-block open.
+  const catchBlock = submitBlock.slice(submitBlock.indexOf('} catch'));
+  assert.doesNotMatch(catchBlock.slice(0, catchBlock.indexOf('} finally')), /window\.open/);
 });
 
 test('quote result images use the shared no-broken-image fallback', () => {
@@ -104,9 +112,12 @@ test('quote result images use the shared no-broken-image fallback', () => {
   assert.match(css, /\.bottle-card-image img \{[^}]*object-fit: contain/);
 });
 
-test('submission never requires customer data and cannot gate the WhatsApp handoff on its own success', () => {
+test('submission sends customer data and delivery, and the handoff waits on its success', () => {
   const source = quoteSource();
-  assert.match(source, /ApiClient\.submitQuote\(\{ items: quoteLines\(basket\), expected_total: pricedBasket\.total \}\)/);
+  assert.match(source, /ApiClient\.submitQuote\(\{/);
+  assert.match(source, /customer_name: customerName/);
+  assert.match(source, /customer_phone: customerPhone/);
+  assert.match(source, /await ApiClient\.submitQuote/, 'the handoff waits on the backend call rather than firing WhatsApp regardless');
 });
 
 /* ── Grouped result cards: cleaning, condition detection, grouping ──── */

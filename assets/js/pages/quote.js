@@ -4,6 +4,7 @@ import { normalizeApiImageUrl } from '../api/config.js';
 import { Tracker } from '../tracking/tracker.js';
 import { primeImageStates } from '../ui/images.js';
 import { formatPrice } from '../utils/prices.js';
+import { bindAddressForm } from '../cart/address.js';
 
 export const MIN_QUOTE_QUERY = 2;
 export const QUOTE_DEBOUNCE_MS = 350;
@@ -228,7 +229,15 @@ export function shouldShowSort(groupCount) {
   return groupCount >= 2;
 }
 
-/* ── The WhatsApp message the customer actually sends ─────────────────────
+/* ── The WhatsApp message this page used to build itself ──────────────────
+   No longer wired into the live submit handoff: PublicQuoteController::store()
+   now builds and returns whatsapp_message/whatsapp_url from the SAME
+   structured request it just created (folio, delivery, real figures), and
+   the submit handler uses that rather than reconstructing its own — the
+   backend record is otherwise nothing more than a receipt nobody reads.
+   Kept exported (and tested) as the reference for what that shape looks
+   like; not deleted, since removing it is not part of closing this loop.
+
    Built entirely from normalized presentation objects (never from a raw
    supplier record), and returned as a plain JS string — encodeURIComponent
    at the call site handles UTF-8/URL-encoding correctly on its own, so this
@@ -516,39 +525,90 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
     search('');
   });
 
+  /* ── Delivery: local/national, resolved the same postal-code-first way
+     checkout does (see cart/address.js). This page keeps its own small
+     address state — separate from the cart drawer's Delivery singleton,
+     because this is a different structured record (a
+     SourcingCatalogQuoteRequest, not a WebOrder). National always ends up
+     "por confirmar" here: a sourcing request has no measured parcel yet, so
+     the backend deliberately does not guess one — see
+     PublicQuoteSubmissionService::resolveDelivery(). */
+  const deliveryModes = document.getElementById('quote-delivery-modes');
+  const addressBlock = document.getElementById('quote-address-block');
+  let deliveryMode = null;
+  let deliveryAddress = {};
+
+  deliveryModes?.querySelectorAll('.delivery-mode').forEach(button => {
+    button.addEventListener('click', () => {
+      deliveryMode = button.dataset.mode;
+      deliveryModes.querySelectorAll('.delivery-mode').forEach(b => {
+        const active = b === button;
+        b.setAttribute('aria-checked', String(active));
+        b.classList.toggle('is-active', active);
+      });
+      if (addressBlock) addressBlock.hidden = false;
+    });
+  });
+
+  if (addressBlock) {
+    bindAddressForm(addressBlock, {
+      onFieldChange: (field, value) => {
+        if (value) deliveryAddress[field] = value;
+        else delete deliveryAddress[field];
+      },
+      onChange: () => {},
+    });
+  }
+
   /* ── Confirm on WhatsApp — the entire "submit" step ───────────────────
-     No form, no required fields: WhatsApp already identifies the customer.
-     The message is built locally from the already-priced basket (see
-     buildWhatsAppMessage) and the tab opens immediately; a best-effort,
-     non-blocking backend call tries to attach a real reference number but
-     can never delay or fail the handoff — a customer must always reach
-     WhatsApp on this click, regardless of backend availability. */
+     The final CTA must not navigate to WhatsApp unless RSupplyOS actually
+     created the structured request and returned its folio. Delivery pricing
+     may stay unanswered ("por confirmar") — that is a legitimate outcome —
+     but a request that never got recorded is not, and this must never fall
+     back to a locally-built, folio-less WhatsApp message. */
   submit.addEventListener('click', async () => {
     if (submitting || !basket.length || pricedBasket.unavailable?.length) return;
+
+    const customerName = document.getElementById('quote-customer-name')?.value.trim() || '';
+    const customerPhone = document.getElementById('quote-customer-phone')?.value.trim() || '';
+
+    if (customerName.length < 2 || customerPhone.length < 7) {
+      if (submitMessage) {
+        submitMessage.textContent = 'Escribe tu nombre y teléfono para confirmar.';
+        submitMessage.hidden = false;
+      }
+      return;
+    }
+
     submitting = true;
     submit.disabled = true;
     const originalLabel = submit.textContent;
-    submit.textContent = 'Abriendo WhatsApp…';
+    submit.textContent = 'Enviando…';
     if (submitMessage) { submitMessage.hidden = true; submitMessage.textContent = ''; }
 
     /* Reserve the tab during the click gesture, before any await, so the
-       popup-safe handoff survives whichever branch below actually fills
-       in the URL (same pattern as the rest of the storefront's checkout). */
+       popup-safe handoff survives the request below (same pattern as the
+       rest of the storefront's checkout) — but it is only ever NAVIGATED
+       once the backend confirms the request was created; on failure it is
+       closed, never left pointing at a stateless WhatsApp message. */
     const reservedWindow = window.open('', '_blank');
 
     try {
-      let reference = '';
-      try {
-        const response = await ApiClient.submitQuote({ items: quoteLines(basket), expected_total: pricedBasket.total });
-        reference = String(response?.reference ?? '').trim();
-      } catch {
-        // Best-effort record only — the WhatsApp handoff below never depends
-        // on this succeeding, so a backend hiccup is silent to the customer.
+      const response = await ApiClient.submitQuote({
+        items: quoteLines(basket),
+        expected_total: pricedBasket.total,
+        customer_name: customerName,
+        customer_phone: customerPhone,
+        ...(deliveryMode ? { delivery: { mode: deliveryMode, address: deliveryAddress } } : {}),
+      });
+
+      const reference = String(response?.reference ?? '').trim();
+      const whatsappUrl = String(response?.whatsapp_url ?? '').trim();
+
+      if (!reference || !whatsappUrl) {
+        throw new Error('missing_reference');
       }
 
-      const items = basket.map(item => normalizePresentation(item));
-      const message = buildWhatsAppMessage(items, pricedBasket.total, reference);
-      const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
       Tracker.emit('quote_submitted', { reference, itemCount: basket.length });
 
       if (reservedWindow) reservedWindow.location.href = whatsappUrl;
@@ -564,10 +624,13 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
         whatsappFallback.href = whatsappUrl;
         whatsappFallback.hidden = false;
       }
-    } catch {
+    } catch (error) {
+      /* The basket, name/phone and delivery choice are all left exactly as
+         typed — a retry is one tap, and nothing here quietly reaches
+         WhatsApp with no backend record behind it. */
       reservedWindow?.close?.();
       if (submitMessage) {
-        submitMessage.textContent = 'No pudimos abrir WhatsApp. Inténtalo de nuevo.';
+        submitMessage.textContent = _submitErrorMessage(error);
         submitMessage.hidden = false;
       }
     } finally {
@@ -680,6 +743,21 @@ function _noResultsState(query) {
 
 function _basketEmpty() { return '<div class="quote-basket-empty"><p>Tu cotización está vacía.</p><span>Agrega uno o varios perfumes y calcularemos el precio completo.</span></div>'; }
 function _searchState(title, copy) { return `<div class="quote-state"><span aria-hidden="true">R</span><h2>${title}</h2><p>${copy}</p></div>`; }
+
+/* What the customer is told when the structured request could not be
+   created. Every branch keeps the basket, the name/phone and the delivery
+   choice intact and invites a retry — none of them falls through to
+   WhatsApp, which is the whole point: reaching Roger with an unrecorded
+   basket is how a "cotización" ends up rebuilt by hand from a chat message. */
+function _submitErrorMessage(error) {
+  const message = String(error?.data?.message || error?.message || '').trim();
+
+  if (/nombre|tel[eé]fono/i.test(message)) return 'Revisa tu nombre y teléfono e inténtalo de nuevo.';
+  if (/cambi|disponib|agot/i.test(message)) return 'Tu lista cambió. Actualiza la página y revisa los precios.';
+  if (/postal|colonia|envio|env[ií]o/i.test(message)) return 'Revisa los datos de entrega antes de continuar.';
+
+  return 'No pudimos registrar tu cotización ahora. Tu lista sigue guardada; inténtalo de nuevo.';
+}
 
 function _normalizeSize(size) {
   const digits = String(size ?? '').match(/\d+(?:\.\d+)?/);
