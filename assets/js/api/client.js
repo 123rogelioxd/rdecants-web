@@ -88,6 +88,9 @@ export const ApiClient = {
      tariff has a free-delivery threshold and a browser that could state its own
      total could state its way past it. */
   getDeliveryOptions: () => _get('/api/web/delivery/options'),
+  /* Postal code -> state/municipio/colonias. Always answers 200 — `ok: false`
+     means the code is not in the catalog (real gaps exist), not an error. */
+  getPostalCode:      (postalCode) => _get(`/api/web/address/postal-code/${encodeURIComponent(postalCode)}`),
   quoteDelivery:      (payload) => _postSafe('/api/web/delivery/quote', payload),
   /* Discount PREVIEW only — R Supply OS is the source of truth and recalculates
      during Web Order creation. The storefront never computes discounts itself. */

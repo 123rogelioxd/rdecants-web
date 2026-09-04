@@ -187,7 +187,7 @@ test('switching mode throws away the price', async () => {
   assert.equal(Delivery.cost, null);
 });
 
-test('switching zone throws away the price', async () => {
+test('switching colonia throws away the price', async () => {
   stubQuote({
     ok: true,
     status: 200,
@@ -202,11 +202,12 @@ test('switching zone throws away the price', async () => {
   });
 
   Delivery.setMode(DELIVERY_MODES.LOCAL);
-  Delivery.setZone('san_dionisio');
+  Delivery.setAddressField('postal_code', '68000');
+  Delivery.setAddressField('neighborhood', 'San Dionisio');
   await Delivery.quote(cart);
   assert.equal(Delivery.cost, 30);
 
-  Delivery.setZone('valle');
+  Delivery.setAddressField('neighborhood', 'Otra Colonia');
 
   assert.equal(Delivery.isPriced(), false);
 });
@@ -239,9 +240,20 @@ test('national is not ready before a quote has been answered', () => {
   assert.equal(Delivery.isReady(), false, 'an unanswered quote is not a delivery');
 });
 
-test('local is not ready without a zone', () => {
+test('local is not ready without a complete address', () => {
   Delivery.setMode(DELIVERY_MODES.LOCAL);
   assert.equal(Delivery.isReady(), false);
+
+  Delivery.setAddressField('postal_code', '68000');
+  Delivery.setAddressField('neighborhood', 'Centro');
+  assert.equal(Delivery.isReady(), false, 'a colonia alone is not enough — local needs a real street too, for the repartidor');
+});
+
+test('local is not ready before a quote has been answered', () => {
+  Delivery.setMode(DELIVERY_MODES.LOCAL);
+  applyAddress();
+
+  assert.equal(Delivery.isReady(), false, 'an unanswered quote is not a delivery');
 });
 
 test('no mode chosen is never ready', () => {
@@ -282,12 +294,16 @@ test('a manual national order sends no token at all', async () => {
   assert.equal(payload.mode, 'national');
 });
 
-test('a local order sends the zone key, not the label', async () => {
+test('a local order sends the address, never a zone the customer picked', async () => {
   Delivery.setMode(DELIVERY_MODES.LOCAL);
-  Delivery.setZone('san_dionisio');
+  applyAddress();
 
-  assert.equal(Delivery.forOrder().zone_key, 'san_dionisio');
-  assert.equal('address' in Delivery.forOrder(), false);
+  const payload = Delivery.forOrder();
+
+  assert.equal(payload.mode, 'local');
+  assert.equal(payload.address.postal_code, '68000');
+  assert.equal(payload.address.neighborhood, 'Centro');
+  assert.equal('zone_key' in payload, false, 'the zone is resolved server-side from the address, never sent by the customer');
 });
 
 test('no mode produces no delivery block', () => {

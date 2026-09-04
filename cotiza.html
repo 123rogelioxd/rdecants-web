@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <script>
     (function () {
-      var BUILD = '2026.09.03.3';
+      var BUILD = '2026.09.03.4';
       var installed = navigator.standalone === true ||
         (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
       if (!installed || !window.fetch) return;
@@ -40,20 +40,20 @@
   <title>Cotiza tu perfume — RDecants</title>
   <meta name="description" content="Busca perfumes por encargo y solicita una cotización RDecants.">
   <meta name="theme-color" content="#F5F1E8">
-  <link rel="icon" href="/favicon.ico?v=2026.09.03.3" sizes="any">
-  <link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/favicon-32.png?v=2026.09.03.3">
-  <link rel="icon" type="image/png" sizes="16x16" href="/assets/brand/favicon-16.png?v=2026.09.03.3">
-  <link rel="apple-touch-icon" sizes="180x180" href="/assets/brand/apple-touch-icon.png?v=2026.09.03.3">
-  <link rel="manifest" href="/site.webmanifest?v=2026.09.03.3">
+  <link rel="icon" href="/favicon.ico?v=2026.09.03.4" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/favicon-32.png?v=2026.09.03.4">
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/brand/favicon-16.png?v=2026.09.03.4">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/brand/apple-touch-icon.png?v=2026.09.03.4">
+  <link rel="manifest" href="/site.webmanifest?v=2026.09.03.4">
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/assets/css/tokens.css?v=2026.09.03.3"><link rel="stylesheet" href="/assets/css/animations.css?v=2026.09.03.3"><link rel="stylesheet" href="/assets/css/components.css?v=2026.09.03.3"><link rel="stylesheet" href="/assets/css/styles.css?v=2026.09.03.3">
+  <link rel="stylesheet" href="/assets/css/tokens.css?v=2026.09.03.4"><link rel="stylesheet" href="/assets/css/animations.css?v=2026.09.03.4"><link rel="stylesheet" href="/assets/css/components.css?v=2026.09.03.4"><link rel="stylesheet" href="/assets/css/styles.css?v=2026.09.03.4">
 </head>
 <body class="quote-body">
   <p class="infobar">Perfumes originales por encargo · Precio final RDECANTS</p>
   <header class="header">
     <button class="nav-toggle" id="nav-toggle" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="nav-drawer">☰</button>
-    <a href="/" class="header-logo" aria-label="RDecants — inicio"><img class="logo-mark" src="/assets/brand/rdecants-monogram.png?v=2026.09.03.3" alt="RDecants" width="240" height="171"><span class="logo-text">RDECANTS</span></a>
+    <a href="/" class="header-logo" aria-label="RDecants — inicio"><img class="logo-mark" src="/assets/brand/rdecants-monogram.png?v=2026.09.03.4" alt="RDecants" width="240" height="171"><span class="logo-text">RDECANTS</span></a>
     <nav class="header-nav" aria-label="Navegación principal"><a class="header-nav-link" href="/catalogo.html">Catálogo</a><a class="header-nav-link" href="/perfumes.html">Perfumes</a><a class="header-nav-link" href="/cotiza.html" aria-current="page">Cotiza tu perfume</a><a class="nav-cta" href="/elegir.html"><span aria-hidden="true">✦</span> Ayúdame a elegir</a></nav>
     <div class="header-actions"><button class="icon-btn" type="button" onclick="toggleCart()" aria-label="Abrir carrito">Bolsa <span class="cart-badge" id="cart-count">0</span></button></div>
   </header>
@@ -133,10 +133,87 @@
           <div class="quote-panel-scroll">
             <div id="quote-basket" aria-live="polite"></div>
 
-            <!-- No name/phone form: WhatsApp already identifies the customer.
-                 The whole point of this panel is search -> choose -> add ->
-                 review -> WhatsApp, with nothing to fill in beforehand. -->
+            <!-- The final CTA must first create a real RSupplyOS record with a
+                 folio — WhatsApp only references it afterward. Name and phone
+                 are collected here because the backend requires both to write
+                 that record; nothing here is optional decoration. -->
             <div id="quote-cta-block" class="quote-cta-block" hidden>
+              <div class="delivery-grid">
+                <label class="delivery-field delivery-field--wide" for="quote-customer-name">
+                  <span>Tu nombre</span>
+                  <input class="checkout-field" id="quote-customer-name" type="text" autocomplete="name" placeholder="Nombre completo">
+                </label>
+                <label class="delivery-field delivery-field--wide" for="quote-customer-phone">
+                  <span>Teléfono</span>
+                  <input class="checkout-field" id="quote-customer-phone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="10 dígitos">
+                </label>
+              </div>
+
+              <div class="delivery-modes" id="quote-delivery-modes" role="radiogroup" aria-label="Forma de entrega">
+                <button type="button" class="delivery-mode" data-mode="local" role="radio" aria-checked="false">
+                  <span class="delivery-mode-label">Entrega local</span>
+                  <span class="delivery-mode-hint">Oaxaca y valle</span>
+                </button>
+                <button type="button" class="delivery-mode" data-mode="national" role="radio" aria-checked="false">
+                  <span class="delivery-mode-label">Envío</span>
+                  <span class="delivery-mode-hint">A todo México</span>
+                </button>
+              </div>
+
+              <!-- Same shared shape as the cart drawer's address form — see
+                   assets/js/cart/address.js. -->
+              <div class="delivery-block" id="quote-address-block" hidden data-address-root>
+                <div class="delivery-grid">
+                  <label class="delivery-field" for="quote-postal-code">
+                    <span>Código postal</span>
+                    <input class="checkout-field" id="quote-postal-code" data-address="postal_code"
+                           type="text" inputmode="numeric" autocomplete="postal-code" maxlength="5" placeholder="68000">
+                  </label>
+
+                  <p class="delivery-location-hint" data-address-location hidden></p>
+
+                  <label class="delivery-field delivery-field--wide" data-address-colonia-select-wrap hidden>
+                    <span>Colonia</span>
+                    <select class="checkout-field" data-address-colonia-select>
+                      <option value="">Elige tu colonia</option>
+                    </select>
+                  </label>
+                  <label class="delivery-field delivery-field--wide" for="quote-neighborhood" data-address-colonia-manual-wrap hidden>
+                    <span>Colonia</span>
+                    <input class="checkout-field" id="quote-neighborhood" data-address="neighborhood"
+                           type="text" autocomplete="address-level3" placeholder="Centro">
+                  </label>
+
+                  <label class="delivery-field delivery-field--wide" for="quote-street">
+                    <span>Calle</span>
+                    <input class="checkout-field" id="quote-street" data-address="street"
+                           type="text" autocomplete="address-line1" placeholder="Calle Independencia">
+                  </label>
+                  <label class="delivery-field" for="quote-exterior">
+                    <span>Número ext.</span>
+                    <input class="checkout-field" id="quote-exterior" data-address="exterior_number" type="text" placeholder="101">
+                  </label>
+                </div>
+
+                <button type="button" class="delivery-more-toggle" data-address-more-toggle aria-expanded="false">
+                  + Interior / depto. (opcional)
+                </button>
+                <div class="delivery-grid delivery-more" data-address-more hidden>
+                  <label class="delivery-field" for="quote-interior">
+                    <span>Interior / depto.</span>
+                    <input class="checkout-field" id="quote-interior" data-address="interior_number" type="text" placeholder="3">
+                  </label>
+                  <label class="delivery-field" for="quote-city" data-address-city-wrap hidden>
+                    <span>Ciudad</span>
+                    <input class="checkout-field" id="quote-city" data-address="city" type="text" autocomplete="address-level2" placeholder="Oaxaca de Juárez">
+                  </label>
+                  <label class="delivery-field" for="quote-state" data-address-state-wrap hidden>
+                    <span>Estado</span>
+                    <input class="checkout-field" id="quote-state" data-address="state" type="text" autocomplete="address-level1" placeholder="Oaxaca">
+                  </label>
+                </div>
+              </div>
+
               <p id="quote-submit-message" class="quote-alert" role="alert" aria-live="assertive" hidden></p>
               <button id="quote-submit" class="btn-primary quote-submit-btn" type="button">Confirmar por WhatsApp</button>
               <a id="quote-whatsapp-fallback" class="btn-primary quote-whatsapp-fallback" href="#" target="_blank" rel="noopener" hidden>Continuar por WhatsApp</a>
@@ -160,6 +237,6 @@
   </main>
   <footer class="footer"><div class="container"><div><p class="footer-logo">RDECANTS</p><p class="footer-tagline">Decants y perfumes originales</p></div><nav class="footer-links"><a href="/catalogo.html">Catálogo</a><a href="/perfumes.html">Perfumes</a><a href="/cotiza.html">Cotiza tu perfume</a><a href="/elegir.html">Ayúdame a elegir</a><a href="/ayuda.html">Ayuda</a><a href="/privacidad.html">Privacidad</a><a href="/terminos.html">Términos</a></nav><div class="footer-legal"><span>© 2026 RDECANTS</span><span>Precios en MXN</span></div></div></footer>
   <a class="whatsapp-float" href="https://wa.me/5219516513018" target="_blank" rel="noopener" aria-label="Contactar por WhatsApp">WA</a><div id="toast" class="toast" aria-live="polite"></div>
-  <script type="module" src="/assets/js/pages/quote.js?v=2026.09.03.3"></script>
+  <script type="module" src="/assets/js/pages/quote.js?v=2026.09.03.4"></script>
 </body>
 </html>

@@ -15,10 +15,12 @@ import { Delivery, DELIVERY_MODES } from '../cart/delivery.js';
 import { Discount } from '../cart/discount.js';
 import { formatPrice } from '../utils/prices.js';
 import { buildWebOrderPayload, readCheckoutData } from '../cart/checkout.js';
+import { bindAddressForm } from '../cart/address.js';
 
 let _wired = false;
 let _quoteInFlight = false;
 let _onChange = () => {};
+let _addressForm = null;
 
 const $ = id => document.getElementById(id);
 
@@ -32,12 +34,23 @@ export function setupDeliveryPanel(onChange = () => {}) {
   Delivery.init();
 
   _wireModes();
-  _wireZone();
-  _wireAddress();
+  _wireAddressForm();
   $('delivery-quote-btn')?.addEventListener('click', () => _requestQuote());
 
+  _loadModes();
   _hydrate();
   renderDeliveryPanel();
+}
+
+/* Hides any delivery-mode button R Supply OS is not currently offering (e.g.
+   pickup, while there is no physical customer-facing store). Nothing about
+   which modes exist is hardcoded here; the backend decides. */
+async function _loadModes() {
+  const modes = await Delivery.modes();
+
+  document.querySelectorAll('#delivery-modes .delivery-mode').forEach(button => {
+    if (!modes.includes(button.dataset.mode)) button.setAttribute('hidden', '');
+  });
 }
 
 /* ── Wiring ──────────────────────────────────────────────────────────────── */
@@ -51,28 +64,37 @@ function _wireModes() {
 
       /* Pickup has nothing to ask and nothing to quote — the zero is known the
          moment it is chosen, so the customer is not made to press a button
-         that could only produce an answer we already have. */
+         that could only produce an answer we already have. Local re-quotes
+         immediately when the address was already complete (e.g. the customer
+         filled it in under National first, then switched) — otherwise
+         switching modes would leave a stale "Por confirmar" from the mode
+         they just left. */
       if (Delivery.mode === DELIVERY_MODES.PICKUP) _requestQuote();
+      if (Delivery.mode === DELIVERY_MODES.LOCAL && Delivery.address.postal_code && Delivery.address.neighborhood) {
+        _requestQuote();
+      }
     });
   });
 }
 
-function _wireZone() {
-  $('delivery-zone')?.addEventListener('change', event => {
-    Delivery.setZone(event.target.value || null);
-    renderDeliveryPanel();
-    _onChange();
-    if (Delivery.mode === DELIVERY_MODES.LOCAL && event.target.value) _requestQuote();
-  });
-}
+/* One address form, shared by Local and National (see cart/address.js) —
+   the zone concept never reaches the customer. Local auto-quotes as soon as
+   a colonia resolves, the same "no button needed" treatment pickup already
+   got, because resolving a zone is a database lookup, not a carrier call.
+   National still needs the explicit "Calcular envío" button below. */
+function _wireAddressForm() {
+  const root = document.querySelector('#delivery-address-block');
+  if (!root) return;
 
-function _wireAddress() {
-  document.querySelectorAll('#delivery-national [data-address]').forEach(input => {
-    input.addEventListener('input', () => {
-      Delivery.setAddressField(input.dataset.address, input.value);
+  _addressForm = bindAddressForm(root, {
+    onFieldChange: (field, value) => Delivery.setAddressField(field, value),
+    onChange: () => {
       renderDeliveryPanel();
       _onChange();
-    });
+      if (Delivery.mode === DELIVERY_MODES.LOCAL && Delivery.address.postal_code && Delivery.address.neighborhood) {
+        _requestQuote();
+      }
+    },
   });
 }
 
@@ -86,32 +108,12 @@ function _hydrate() {
     if (button) button.setAttribute('aria-checked', 'true');
   }
 
-  document.querySelectorAll('#delivery-national [data-address]').forEach(input => {
+  document.querySelectorAll('#delivery-address-block [data-address]').forEach(input => {
     const value = state.address[input.dataset.address];
     if (value) input.value = value;
   });
 
-  _loadZones();
-}
-
-async function _loadZones() {
-  const select = $('delivery-zone');
-  if (!select) return;
-
-  const zones = await Delivery.zones();
-
-  /* No configured zones means local delivery is not something this shop
-     offers today. Hiding the mode is more honest than offering a picker with
-     nothing in it. */
-  if (!zones.length) {
-    document.querySelector('#delivery-modes .delivery-mode[data-mode="local"]')?.setAttribute('hidden', '');
-    return;
-  }
-
-  const selected = Delivery.state.zoneKey;
-
-  select.innerHTML = '<option value="">Elige tu zona</option>'
-    + zones.map(zone => `<option value="${_escape(zone.key)}"${zone.key === selected ? ' selected' : ''}>${_escape(zone.label)}</option>`).join('');
+  if (state.address.postal_code) _addressForm?.hydrate(state.address.postal_code);
 }
 
 /* ── Quoting ─────────────────────────────────────────────────────────────── */
@@ -129,7 +131,9 @@ async function _requestQuote() {
     return;
   }
 
-  if (mode === DELIVERY_MODES.LOCAL && !Delivery.state.zoneKey) return;
+  /* Local resolves its zone from the colonia — nothing to quote before one
+     is chosen. */
+  if (mode === DELIVERY_MODES.LOCAL && (!Delivery.address.postal_code || !Delivery.address.neighborhood)) return;
 
   const items = Cart.items;
   if (!items.length) return;
@@ -182,8 +186,7 @@ export function renderDeliveryPanel() {
     button.classList.toggle('is-active', active);
   });
 
-  _toggle($('delivery-local'), mode === DELIVERY_MODES.LOCAL);
-  _toggle($('delivery-national'), mode === DELIVERY_MODES.NATIONAL);
+  _toggle($('delivery-address-block'), mode === DELIVERY_MODES.LOCAL || mode === DELIVERY_MODES.NATIONAL);
 
   _renderQuoteButton(mode);
   _renderOptions();
@@ -255,11 +258,11 @@ function _renderMessage(mode) {
     return;
   }
 
-  if (mode === DELIVERY_MODES.NATIONAL) {
+  if (mode === DELIVERY_MODES.NATIONAL || mode === DELIVERY_MODES.LOCAL) {
     const missing = Delivery.missingAddressFields();
 
     if (missing.length && Delivery.address.postal_code) {
-      _message('Completa tu dirección para generar la guía.', 'neutral');
+      _message('Completa tu dirección para continuar.', 'neutral');
       return;
     }
   }
