@@ -11,7 +11,7 @@ import { ApiClient } from '../api/client.js';
 import { CatalogProvider } from '../providers/catalog.js';
 import { Tracker }   from '../tracking/tracker.js';
 import { showToast } from '../ui/toast.js';
-import { formatPrice, getVariantForSize } from '../utils/prices.js';
+import { getVariantForSize } from '../utils/prices.js';
 import { getShippingState } from './momentum.js';
 
 const STORAGE_KEY = 'rdecants_checkout_customer';
@@ -21,20 +21,15 @@ const LAST_FIRED_KEY = 'rdecants_checkout_last_fired_at';
    the same attempt instead of creating a second order. */
 const ATTEMPT_KEY = 'rdecants_checkout_attempt_key';
 
-/* Customer-facing names for the three delivery modes R Supply OS knows. */
-const DELIVERY_LABELS = {
-  pickup: 'Recoger en tienda',
-  local: 'Entrega local',
-  national: 'Envío',
-};
 const APP_VERSION = '1.0.5';
 
 /* Debounce window between consecutive WhatsApp checkout submissions.
    Prevents double-taps and bfcache restores from re-firing the order. */
 const CHECKOUT_LOCK_MS = 4000;
 
+/* Only the notes textarea lives in the checkout panel now. Name and phone are
+   asked once, in the delivery block — see readCheckoutData(). */
 const FIELD_IDS = {
-  name:  'checkout-name',
   notes: 'checkout-notes',
 };
 
@@ -207,7 +202,7 @@ async function _performCheckout(phoneNumber, reservedWindow = null) {
      taking the last redemption of a one-use code. Promising the preview total
      in a WhatsApp message the customer keeps, after the backend has already
      said otherwise, is a number nobody can honour. */
-  const messageText = buildWhatsAppMessage(orderItems, total, data, recordedOrder?.folio || '', discount, recordedOrder);
+  const messageText = buildWhatsAppMessage(recordedOrder.folio);
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(messageText)}`;
 
   _markFired();
@@ -357,15 +352,42 @@ function _markFired() {
   } catch { /* sessionStorage unavailable — best-effort lock */ }
 }
 
+/* WHO this order is for — read from the one place the customer typed it.
+
+   ── The bug this function used to be ─────────────────────────────────────
+   It returned `{ name, notes }` and nothing else. `name` came from a separate
+   "Tu nombre (opcional)" input at the top of the drawer, and there was no
+   phone field anywhere in it — the customer's real name and phone went into
+   the delivery block, into `Delivery.address.recipient` / `.phone`, and stayed
+   there. So `payload.customer.name` was whatever was typed in the optional box
+   (usually nothing) and `payload.customer.phone` was ALWAYS undefined.
+
+   The result was an order in R Supply OS reading «Sin nombre» with no phone,
+   for a customer who had filled in every field the form asked them for — and a
+   business back to rebuilding the order out of a WhatsApp thread.
+
+   The duplicate input is gone. The delivery block already asks "Quién recibe"
+   and "Teléfono", and for a normal storefront checkout the recipient IS the
+   customer. R Supply OS enforces the same mapping server-side, because a rule
+   that lives only here would hold only for browsers that reloaded. */
 export function readCheckoutData() {
+  const address = Delivery.address;
+
   return {
-    name:  _field('name')?.value.trim() || '',
+    name:  (address.recipient || '').trim(),
+    phone: (address.phone || '').trim(),
     notes: _field('notes')?.value.trim() || '',
   };
 }
 
+/* Only the NOTE is persisted here.
+
+   Name and phone live in the delivery address, which Delivery already
+   remembers under its own key. Writing them a second time would create two
+   copies of the same fact that could disagree the moment the customer edits
+   one of them — and this is the copy nothing reads back. */
 export function saveCheckoutData(data = readCheckoutData()) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ notes: data.notes || '' }));
 }
 
 export function validateCheckout() {
@@ -491,79 +513,44 @@ async function _buildOrderItem(item) {
   };
 }
 
-/* `order` is the Web Order R Supply OS actually created, when there is one. It
-   is the pricing authority; `total` + `discount` are the last PREVIEW and are
-   used only when no order has been created yet (the decant path, where the
-   order is written in the background after the handoff). */
-export function buildWhatsAppMessage(items, total, data, folio = '', discount = null, order = null) {
-  const hasBottle = items.some(item => item.type === 'bottle');
-  const hasDecant = items.some(item => item.type !== 'bottle' && item.type !== 'pack');
-  const lines = [
-    'Hola 👋',
-    '',
-    items.length === 1
-      ? (hasBottle ? 'Me interesa esta botella:' : 'Me interesa este decant:')
-      : (hasBottle && hasDecant ? 'Me interesan estos perfumes:' : hasBottle ? 'Me interesan estas botellas:' : 'Me interesan estos decants:'),
-  ];
+/* The message the customer sends: one sentence and a folio.
 
-  items.forEach(item => {
-    lines.push(`• ${_whatsAppItemLine(item)}`);
-  });
+   ── Why it stopped being the order ───────────────────────────────────────
+   It used to rebuild the whole cart in text: every line, every presentation,
+   the subtotal, each coupon, the total, the customer's name. That made the
+   chat a SECOND copy of a record R Supply OS already holds — one that could
+   disagree with the real order (a coupon consumed a second earlier, a bottle
+   repriced), that a person had to read back by hand, and that the business
+   ended up treating as the order itself.
 
-  const confirmed = _orderPricing(order);
+   By the time this runs the backend record exists: priced, reserved, routed to
+   Operación or Guías, with the address attached. The folio is the whole
+   message because it is the only thing the order cannot say for itself — that
+   this particular person is ready to go ahead.
 
-  if (confirmed) {
-    lines.push(...confirmed);
-  } else {
-    /* No order yet. `total` is the SUBTOTAL (Cart.total()) and the amounts are
-       the last valid PREVIEW; R Supply OS confirms them when it writes the
-       order. `discount` may be a single object (legacy) or a list. */
-    const applied = _normalizeDiscountList(discount);
-    const totalDiscount = applied.reduce((sum, d) => sum + _money(d.amount), 0);
+   Three things deliberately went with it:
 
-    if (applied.length && totalDiscount > 0) {
-      /* One code: honor its preview total. Two codes: subtotal − sum. */
-      const finalTotal = (applied.length === 1 && _money(applied[0].total) > 0)
-        ? _money(applied[0].total)
-        : Math.max(0, _money(total) - totalDiscount);
-      lines.push('');
-      lines.push(`Subtotal: ${formatPrice(total, 'Por confirmar')}`);
-      applied.forEach(d => {
-        lines.push(`Código: ${d.code}`);
-        lines.push(`Descuento: -${formatPrice(_money(d.amount), '$0')}`);
-      });
-      if (applied.length > 1) {
-        lines.push(`Descuento total: -${formatPrice(totalDiscount, '$0')}`);
-      }
-      lines.push(`Total: ${formatPrice(finalTotal, 'Por confirmar')}`);
-    } else {
-      lines.push('', `Total: ${formatPrice(total, 'Por confirmar')}`);
-    }
-  }
+     • The opening emoji. It reached real customers as "Hola" followed by a
+       replacement character — one byte of a four-byte codepoint surviving a
+       transport that was not treating the text as UTF-8. Nothing here needs a
+       character outside ASCII, so the class of bug is gone rather than patched.
 
-  /* ── The reference that makes this message unnecessary to decode ─────────
-     R Supply OS already holds every line, price, discount and address under
-     this folio. The business reads the folio and opens the order; it never
-     rebuilds the cart from the text above, which is there so the CUSTOMER has
-     a record of what they asked for.
+     • "Quedo pendiente de disponibilidad." Availability is not pending — it
+       was validated and physically reserved before this string was built.
 
-     Phrased as a sentence rather than a "Folio:" field on purpose — this is a
-     message a person sends, not a form they fill in. */
-  if (folio) {
-    lines.push('', `Mi pedido es ${folio}.`);
-  }
+     • The name line. R Supply OS has the customer's name; printing it back at
+       them was only ever a way for a missing one to be announced.
 
-  if (data.name) {
-    lines.push('', `Mi nombre es ${data.name}.`);
-  }
+   `folio` is required in practice. A message with no folio would be exactly the
+   unrecorded order this flow exists to eliminate, and the caller never reaches
+   here without one — _performCheckout returns on a failed order and never
+   opens WhatsApp. The fallback is a last defence, not a supported path. */
+export function buildWhatsAppMessage(folio = '') {
+  const reference = String(folio || '').trim();
 
-  if (data.notes) {
-    lines.push('', 'Notas:', data.notes);
-  }
-
-  lines.push('', 'Quedo pendiente de disponibilidad y detalles de compra.');
-
-  return lines.join('\n');
+  return reference
+    ? `Hola, quiero confirmar mi pedido ${reference}.`
+    : 'Hola, quiero confirmar mi pedido.';
 }
 
 export function syncCheckoutAvailability() {
@@ -660,9 +647,6 @@ function _showError(error) {
   _clearError();
   error.field?.classList.add('checkout-field--error');
   error.field?.setAttribute('aria-invalid', 'true');
-  if (error.key === 'name') {
-    _showNameMessage(error.message, 'error');
-  }
   _showMessage(error.message, 'error');
 }
 
@@ -692,8 +676,6 @@ function _clearError() {
     fallbackEl.hidden = true;
     fallbackEl.innerHTML = '';
   }
-
-  _showNameMessage('', 'neutral');
 }
 
 function _field(key) {
@@ -713,13 +695,6 @@ export function getCheckoutButtonLabel({ isEmpty = false } = {}) {
 
 export function getCheckoutButtonState({ isEmpty = false } = {}) {
   return isEmpty ? 'empty' : 'ready';
-}
-
-function _showNameMessage(message, tone = 'neutral') {
-  const el = document.getElementById('checkout-name-error');
-  if (!el) return;
-  el.textContent = message;
-  el.dataset.tone = tone;
 }
 
 function _validVariantId(value) {
@@ -742,155 +717,6 @@ function _formatMl(value) {
   const number = Number(value);
   if (!Number.isFinite(number)) return '0';
   return Number.isInteger(number) ? String(number) : number.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
-}
-
-/* Normalize the discount argument to a list of { code, amount, total } with a
-   positive amount. Accepts a single object (legacy) or an array of applied
-   coupons — so callers and the WhatsApp message support one or two codes. */
-/* The money block for an order R Supply OS has already created, or null when
-   there is no order to read.
-
-   Every figure is the backend's: the subtotal it resolved, the per-coupon
-   amounts IT decided (a scoped code's amount is a share of the cart, and only
-   the backend knows which share), and the total it will charge. Nothing here
-   recomputes a percentage — that is the whole reason the block exists.
-
-   `discount` on the order is the TOTAL saving and can exceed the coupons when a
-   pack is involved; the extra line makes the arithmetic add up on screen
-   instead of leaving the customer with a total they cannot reconcile. */
-function _orderPricing(order) {
-  if (!order) return null;
-
-  const subtotal = _money(order.subtotal);
-  const total = _money(order.total);
-
-  /* Only an order with no usable numbers at all falls back to the preview. */
-  if (subtotal <= 0 && total <= 0) return null;
-
-  const totalDiscount = _money(order.discount ?? order.total_discount);
-
-  /* An order that came back with NO discount is the answer, not a reason to go
-     looking for a better one. This is the case that matters most: the customer
-     previewed a one-use code, somebody else redeemed it a second later, and the
-     order was written at full price. Falling through to the preview here would
-     hand them a WhatsApp message promising a discount the order does not have. */
-  if (totalDiscount <= 0) {
-    return ['', `Total: ${formatPrice(total || subtotal, 'Por confirmar')}`]
-      .concat(_orderDelivery(order));
-  }
-
-  const coupons = (Array.isArray(order.coupons) ? order.coupons : [])
-    .filter(c => c && c.code && _money(c.discount_amount ?? c.amount) > 0);
-
-  const lines = ['', `Subtotal: ${formatPrice(subtotal, 'Por confirmar')}`];
-
-  coupons.forEach(c => {
-    lines.push(`Código: ${c.code}`);
-    lines.push(`Descuento: -${formatPrice(_money(c.discount_amount ?? c.amount), '$0')}`);
-  });
-
-  const couponTotal = coupons.reduce((sum, c) => sum + _money(c.discount_amount ?? c.amount), 0);
-  if (coupons.length !== 1 || couponTotal !== totalDiscount) {
-    lines.push(`Descuento total: -${formatPrice(totalDiscount, '$0')}`);
-  }
-
-  lines.push(`Total: ${formatPrice(total, 'Por confirmar')}`);
-
-  return lines.concat(_orderDelivery(order));
-}
-
-/* The delivery half of the money, appended to whichever pricing branch ran.
-
-   Only ever built from the ORDER, never from a preview: a shipping figure the
-   server did not write is a figure nobody has to honour.
-
-   The unpriced case says so in words instead of showing $0. An order awaiting a
-   manual quote genuinely has no final total, and a WhatsApp message that
-   printed one would be the customer's evidence for a price we never agreed. */
-function _orderDelivery(order) {
-  const delivery = order?.delivery;
-  if (!delivery || !delivery.mode) return [];
-
-  const label = DELIVERY_LABELS[delivery.mode] || 'Entrega';
-
-  if (delivery.requires_manual_quote || delivery.shipping_cost === null || delivery.shipping_cost === undefined) {
-    return ['', `${label}: por confirmar`];
-  }
-
-  const shipping = _money(delivery.shipping_cost);
-  const lines = ['', `${label}: ${shipping > 0 ? formatPrice(shipping, '$0') : 'sin costo'}`];
-
-  const grandTotal = _money(order.grand_total);
-  if (grandTotal > 0) lines.push(`Total con envío: ${formatPrice(grandTotal, 'Por confirmar')}`);
-
-  return lines;
-}
-
-function _normalizeDiscountList(discount) {
-  const list = Array.isArray(discount) ? discount : (discount ? [discount] : []);
-  return list
-    .filter(d => d && (d.code || d.normalizedCode) && _money(d.amount) > 0)
-    .map(d => ({ code: d.normalizedCode || d.code, amount: _money(d.amount), total: _money(d.total) }));
-}
-
-function _whatsAppItemLine(item) {
-  const qty = Number(item.qty) || 1;
-  const quantityText = qty > 1 ? ` — x${qty}` : '';
-
-  /* A pack is one line plus its contents, indented. The customer is telling
-     Roger what is in the box, and "Pack Todo Terreno — 3 × 3 ml — $399" on its
-     own would leave him asking which three. The saving is stated here because
-     the price above it is already the discounted one, and an unexplained $399
-     against three decants that add to $450 reads as an error. */
-  if (item.type === 'pack') {
-    const header = `${_humanizeProductText(item.name)} — ${item.size} — ${_lineItemPrice(item.price)}${quantityText}`;
-    const contents = (item.items ?? [])
-      .map(entry => `\n   · ${_whatsAppProductName(entry)}`)
-      .join('');
-    const saving = Number(item.savings) > 0
-      ? `\n   (antes ${_lineItemPrice(item.normal_price)}, ahorras ${_lineItemPrice(item.savings)})`
-      : '';
-
-    return `${header}${contents}${saving}`;
-  }
-
-  if (item.type === 'bottle') {
-    return `${_whatsAppProductName(item)} — Botella ${item.offer_label || item.condition_label || ''} — ${_lineItemPrice(item.price)}`;
-  }
-
-  return `${_whatsAppProductName(item)} — ${_presentationText(item)} — ${_lineItemPrice(item.price)}${quantityText}`;
-}
-
-function _whatsAppProductName(item) {
-  const name = _humanizeProductText(item.name);
-  const house = _humanizeProductText(item.house);
-
-  if (!house || house === 'Pack') return name || 'Producto por confirmar';
-  if (!name) return house;
-  if (name.toLowerCase().includes(house.toLowerCase())) return name;
-  if (name.trim().split(/\s+/).length === 1) return `${house} ${name}`;
-
-  return name;
-}
-
-function _lineItemPrice(value) {
-  return formatPrice(value, 'Por confirmar').replace(/\s*MXN$/, '');
-}
-
-function _humanizeProductText(value) {
-  const text = String(value ?? '').trim().replace(/\s+/g, ' ');
-  if (!text) return '';
-  if (text !== text.toUpperCase()) return text;
-
-  return text
-    .toLowerCase()
-    .replace(/(^|\s)(\S)/g, (_, prefix, letter) => `${prefix}${letter.toUpperCase()}`);
-}
-
-function _presentationText(item) {
-  if (item.type === 'pack') return 'Pack';
-  if (item.type === 'bottle') return `Botella ${item.offer_label || item.condition_label || ''}`.trim();
-  return item.size ? `${item.size}ml` : 'Por confirmar';
 }
 
 /* Field-level detail for a rejected order. The customer gets a sentence they

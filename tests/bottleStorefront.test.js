@@ -103,14 +103,23 @@ test('discount preview sends the same opaque bottle identity as checkout', () =>
   assert.equal('variant_id' in payload.items[0], false);
 });
 
-test('WhatsApp distinguishes a mixed bottle and decant cart', () => {
-  const message = buildWhatsAppMessage([
-    { type: 'product', name: 'Sauvage Elixir', house: 'Dior', size: 5, price: 300, qty: 1 },
-    { type: 'bottle', name: 'Le Beau', house: 'JPG', offer_label: '125 ml · Tester nuevo', price: 2200, qty: 1 },
-  ], 2500, {});
-  assert.match(message, /Me interesan estos perfumes/);
-  assert.match(message, /Sauvage Elixir — 5ml/);
-  assert.match(message, /Le Beau — Botella 125 ml · Tester nuevo/);
+/* A mixed cart is distinguished by the ORDER, not by the chat message.
+
+   This test used to assert that the WhatsApp text spelled out "Sauvage Elixir
+   — 5ml" beside "Le Beau — Botella 125 ml · Tester nuevo", because a 5 ml
+   decant and a 125 ml flacon of comparable-looking names are two orders of
+   magnitude of money apart. That distinction is now carried where it belongs:
+   the payload names each line's identity precisely, and R Supply OS resolves
+   it. The message is a folio.
+
+   What is still worth asserting is that the PAYLOAD keeps the two apart — a
+   bottle travels as an offer_key with no variant, a decant as a variant with
+   millilitres — which is exactly what the tests above this one cover. */
+test('the WhatsApp handoff for a mixed cart is the folio, not a line list', () => {
+  const message = buildWhatsAppMessage('WEB-20260904-0007');
+
+  assert.equal(message, 'Hola, quiero confirmar mi pedido WEB-20260904-0007.');
+  assert.ok(!/Botella|5ml|Me interesan/.test(message));
 });
 
 test('Perfumes is a first-class nav page; conditions are filters, not top-level pages', () => {

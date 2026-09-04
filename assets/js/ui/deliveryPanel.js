@@ -21,6 +21,17 @@ let _wired = false;
 let _quoteInFlight = false;
 let _onChange = () => {};
 let _addressForm = null;
+let _autoQuoteTimer = null;
+
+/* How long the street field settles before we ask for a price.
+
+   Local delivery now prices itself from a ROAD ROUTE, which means a geocode
+   and a routing call behind the endpoint. Firing on every keystroke of
+   "Avenida Ferrocarril" would be seventeen billed lookups for one address and
+   would spend the throttle the endpoint is behind. Long enough that a typist
+   finishes the word; short enough that the price appears while they are still
+   looking at the field. */
+const AUTO_QUOTE_DEBOUNCE_MS = 700;
 
 const $ = id => document.getElementById(id);
 
@@ -70,9 +81,7 @@ function _wireModes() {
          switching modes would leave a stale "Por confirmar" from the mode
          they just left. */
       if (Delivery.mode === DELIVERY_MODES.PICKUP) _requestQuote();
-      if (Delivery.mode === DELIVERY_MODES.LOCAL && Delivery.address.postal_code && Delivery.address.neighborhood) {
-        _requestQuote();
-      }
+      if (Delivery.mode === DELIVERY_MODES.LOCAL && Delivery.canQuoteAddress()) _requestQuote();
     });
   });
 }
@@ -91,11 +100,22 @@ function _wireAddressForm() {
     onChange: () => {
       renderDeliveryPanel();
       _onChange();
-      if (Delivery.mode === DELIVERY_MODES.LOCAL && Delivery.address.postal_code && Delivery.address.neighborhood) {
-        _requestQuote();
-      }
+      _scheduleLocalAutoQuote();
     },
   });
+}
+
+/* Ask for the local price as soon as the address can answer, and not before.
+
+   The customer never presses anything and never sees a zone, a distance or a
+   band — they type where they live and a number appears. That is the whole
+   customer-facing surface of the automatic pricing behind it. */
+function _scheduleLocalAutoQuote() {
+  clearTimeout(_autoQuoteTimer);
+
+  if (Delivery.mode !== DELIVERY_MODES.LOCAL || !Delivery.canQuoteAddress()) return;
+
+  _autoQuoteTimer = setTimeout(() => _requestQuote(), AUTO_QUOTE_DEBOUNCE_MS);
 }
 
 /* Restore what the customer typed last time. The quote is deliberately NOT
@@ -131,9 +151,10 @@ async function _requestQuote() {
     return;
   }
 
-  /* Local resolves its zone from the colonia — nothing to quote before one
-     is chosen. */
-  if (mode === DELIVERY_MODES.LOCAL && (!Delivery.address.postal_code || !Delivery.address.neighborhood)) return;
+  /* Local needs a house, not just a colonia: with no zone covering the
+     address the price comes from a road route, and a postal-code centroid is
+     the middle of a neighbourhood nobody lives at. */
+  if (mode === DELIVERY_MODES.LOCAL && !Delivery.canQuoteAddress()) return;
 
   const items = Cart.items;
   if (!items.length) return;

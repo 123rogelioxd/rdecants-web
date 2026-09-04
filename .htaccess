@@ -27,6 +27,18 @@ Options -MultiViews
     # no caching policy at all, so WebKit fell back to heuristic freshness and
     # an iOS home-screen web app could pin an old copy indefinitely.
     AddType application/manifest+json .webmanifest
+
+    # ── Declare the encoding of everything we author ──────────────────
+    # Every source file in this repo is UTF-8. Without these, LiteSpeed serves
+    # them with no charset parameter and the browser is left to guess — which
+    # is how a customer's WhatsApp message once opened with "Hola" followed by
+    # a replacement character instead of an emoji: one byte of a multi-byte
+    # codepoint decoded as if it were Latin-1.
+    #
+    # The message that caused it no longer uses a non-ASCII character at all
+    # (see cart/checkout.js), so this is defence for the rest of the site —
+    # every product name, every price label, every accented word in the UI.
+    AddCharset UTF-8 .js .css .json .webmanifest .svg
 </IfModule>
 
 <IfModule mod_headers.c>

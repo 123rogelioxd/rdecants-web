@@ -254,73 +254,32 @@ test('a discount saved by an older build is still read as one applied code', asy
   assert.equal(Reloaded.amount(), 44);
   _store.delete('rdecants_discount');
 });
+// ═════════════════════════════════════════════════════════════════
+//  The WhatsApp message no longer quotes anything
+// ═════════════════════════════════════════════════════════════════
+//
+// Four tests lived here, all protecting the same thing: that the message
+// printed the BACKEND's figures rather than a stale preview's. The hardest one
+// was "an order whose coupon was refused after all quotes no discount at all"
+// — somebody else took the last redemption between the preview and the write,
+// and the customer must not be handed a message promising a discount their
+// order does not have.
+//
+// That whole class of bug is gone rather than fixed: the message quotes no
+// figure at all. There is no preview to go stale, no coupon line to contradict
+// the ledger, and no total to promise. R Supply OS holds all of it under the
+// folio, and the folio is the message.
+//
+// The scoped-discount behaviour those tests were really about — which lines a
+// code applies to, and what it takes off — is asserted above, against the
+// Discount module and the payload, where it is decided.
 
-// ══════════════════════════════════════════════════════════════════
-//  The WhatsApp message quotes the backend
-// ══════════════════════════════════════════════════════════════════
+test('the message quotes no money, so no preview can go stale in it', () => {
+  const message = buildWhatsAppMessage('WEB-20260904-0004');
 
-test('with a created order the message uses the order totals, not the preview', () => {
-  const message = buildWhatsAppMessage(
-    [{ name: 'SAUVAGE ELIXIR', house: 'DIOR', size: 100, price: 1500, qty: 1, type: 'bottle', label: '100ml' }],
-    1850,                                        // the preview subtotal
-    { name: 'Roger' },
-    '',
-    [{ code: 'PRIMERO5', amount: 92, total: 1758 }],   // a STALE preview
-    { subtotal: 1850, discount: 75, total: 1775, coupons: [{ code: 'PRIMERO5', discount_amount: 75 }] },
-  );
+  assert.equal(message, 'Hola, quiero confirmar mi pedido WEB-20260904-0004.');
 
-  assert.ok(message.includes('Subtotal: $1,850 MXN'));
-  assert.ok(message.includes('Código: PRIMERO5'));
-  assert.ok(message.includes('Descuento: -$75 MXN'), 'the order amount wins over the preview');
-  assert.ok(message.includes('Total: $1,775 MXN'));
-  assert.equal(message.includes('$92'), false, 'a superseded preview amount must not reach the customer');
-  assert.equal(message.includes('$1,758'), false);
-});
-
-test('without a created order the message still quotes the last valid preview', () => {
-  const message = buildWhatsAppMessage(
-    [{ name: 'VICTORY', house: 'INVICTUS', size: 5, price: 170, qty: 1 }],
-    570,
-    { name: 'Roger' },
-    '',
-    [{ code: 'VIP8', amount: 44, total: 526 }],
-  );
-
-  assert.ok(message.includes('Subtotal: $570 MXN'));
-  assert.ok(message.includes('Descuento: -$44 MXN'));
-  assert.ok(message.includes('Total: $526 MXN'));
-});
-
-test('an order whose coupon was refused after all quotes no discount at all', () => {
-  const message = buildWhatsAppMessage(
-    [{ name: 'SAUVAGE ELIXIR', house: 'DIOR', size: 100, price: 1500, qty: 1, type: 'bottle', label: '100ml' }],
-    1500,
-    { name: 'Roger' },
-    '',
-    [{ code: 'PRIMERO5', amount: 75, total: 1425 }],
-    /* Someone else took the single redemption between preview and order. */
-    { subtotal: 1500, discount: 0, total: 1500, coupons: [] },
-  );
-
-  assert.ok(message.includes('Total: $1,500 MXN'));
-  assert.equal(message.includes('PRIMERO5'), false);
-  assert.equal(message.includes('Descuento'), false);
-});
-
-test('an order with a pack saving plus a coupon adds up on screen', () => {
-  const message = buildWhatsAppMessage(
-    [{ name: 'VICTORY', house: 'INVICTUS', size: 3, price: 150, qty: 1 }],
-    450,
-    { name: 'Roger' },
-    '',
-    null,
-    /* 45 off the pack + 40 from the coupon = 85 total. Printing only the
-       coupon line would leave the customer unable to reach the total. */
-    { subtotal: 450, discount: 85, total: 365, coupons: [{ code: 'VIP10', discount_amount: 40 }] },
-  );
-
-  assert.ok(message.includes('Subtotal: $450 MXN'));
-  assert.ok(message.includes('Descuento: -$40 MXN'));
-  assert.ok(message.includes('Descuento total: -$85 MXN'));
-  assert.ok(message.includes('Total: $365 MXN'));
+  for (const stale of ['$1,850', '$92', '$1,758', 'PRIMERO5', 'Descuento', 'Subtotal', 'Total']) {
+    assert.equal(message.includes(stale), false, `message must not contain "${stale}"`);
+  }
 });

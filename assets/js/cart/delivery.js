@@ -38,6 +38,17 @@ const REQUIRED_ADDRESS_FIELDS = [
   'recipient', 'phone', 'street', 'exterior_number', 'neighborhood', 'city', 'state', 'postal_code',
 ];
 
+/* Editing one of these invalidates whatever price we are holding. */
+const PRICE_CHANGING_FIELDS = ['postal_code', 'neighborhood', 'street', 'exterior_number'];
+
+/* Enough of an address to be worth asking the server about.
+
+   Deliberately NOT the same list as REQUIRED_ADDRESS_FIELDS: a delivery can be
+   priced before the customer has typed who receives it, and making them fill in
+   a name to see a shipping cost is the kind of friction that loses the order.
+   Recipient and phone are still required to CHECK OUT — see isReady(). */
+const QUOTABLE_ADDRESS_FIELDS = ['postal_code', 'neighborhood', 'street', 'exterior_number'];
+
 let _state = {
   mode: null,
   address: {},
@@ -127,12 +138,17 @@ export const Delivery = {
     if (clean) _state.address[field] = clean;
     else delete _state.address[field];
 
-    /* Postal code and colonia are what change the price — the postal code
-       decides which carrier/zone rate applies, and the colonia is how local
-       delivery resolves its zone. Re-quoting because somebody corrected a
-       typo in "references" would throw away a valid rate and make the form
-       feel broken. */
-    if ((field === 'postal_code' || field === 'neighborhood') && previous !== clean) _invalidateQuote();
+    /* The fields that can change the PRICE, and only those.
+
+       Postal code and colonia decide the carrier rate and the local zone.
+       Street and exterior number joined them when local delivery started
+       pricing itself by road distance: two houses in the same colonia can be a
+       different band apart, so a corrected street number is a different price.
+
+       Everything else is deliberately excluded. Re-quoting because somebody
+       fixed a typo in "references" would throw away a valid rate and make the
+       form feel broken for a change that cannot move a peso. */
+    if (PRICE_CHANGING_FIELDS.includes(field) && previous !== clean) _invalidateQuote();
 
     _persist();
   },
@@ -152,6 +168,14 @@ export const Delivery = {
 
   hasCompleteAddress() {
     return this.missingAddressFields().length === 0;
+  },
+
+  /* Enough address to ask for a price, which is less than enough to check out.
+
+     The customer sees "Entrega local — $40" the moment they have typed WHERE,
+     without having to fill in who receives it first. */
+  canQuoteAddress() {
+    return QUOTABLE_ADDRESS_FIELDS.every(field => Boolean(_state.address[field]));
   },
 
   /* ── Money ─────────────────────────────────────────────────
@@ -266,6 +290,13 @@ export const Delivery = {
       neighborhood: _state.address.neighborhood || null,
       city: _state.address.city || null,
       state: _state.address.state || null,
+      // Local delivery can now price itself by ROAD DISTANCE when no zone
+      // covers the address, and a distance needs a house rather than a postal
+      // code — a CP centroid is the middle of a neighbourhood nobody lives at.
+      // Sent for both modes because the request shape stays one shape; the
+      // national quote reads the postal code and ignores these.
+      street: _state.address.street || null,
+      exterior_number: _state.address.exterior_number || null,
     });
 
     if (!ok) {

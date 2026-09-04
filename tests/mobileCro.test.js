@@ -75,13 +75,28 @@ test('cart upsell copy says "Completa tu pedido", not "Completa tu colección"',
   assert.ok(!src.includes('Completa tu colección'), 'old collection title removed from cart recommendations');
 });
 
-test('customer name is optional and there are zero required fields before WhatsApp', () => {
+/* The name is asked ONCE, in the delivery block.
+
+   This test used to assert the opposite — that a "Tu nombre (opcional)" input
+   existed in the checkout panel. That field was the bug: it was the only thing
+   feeding the order's customer record, while the name the customer actually
+   typed went into the delivery block's "Quién recibe" and stayed there. A
+   customer who filled the form in correctly produced an order reading «Sin
+   nombre» with no phone. */
+test('the name is asked once, in the delivery block, and never twice', () => {
   const drawer = read(CART_DRAWER_SRC);
-  assert.ok(drawer.includes('id="checkout-name"'), 'name input present');
-  assert.ok(drawer.includes('Tu nombre (opcional)'), 'name marked optional');
-  assert.ok(drawer.includes('id="checkout-name-error"'), 'name-local error slot');
+  assert.ok(!drawer.includes('id="checkout-name"'), 'the duplicate name input is gone');
+  assert.ok(!drawer.includes('Tu nombre (opcional)'), 'the duplicate label is gone');
+  assert.ok(!drawer.includes('id="checkout-name-error"'), 'its error slot went with it');
+
+  // The one place it IS asked, alongside the phone that used to be missing
+  // from the payload entirely.
+  assert.ok(drawer.includes('id="delivery-recipient"'), 'recipient asked in the delivery block');
+  assert.ok(drawer.includes('Quién recibe'), 'recipient labelled for the customer');
+  assert.ok(drawer.includes('id="delivery-phone"'), 'phone asked in the delivery block');
+
   assert.ok(!drawer.includes('aria-required="true"'), 'no required field');
-  assert.ok(!drawer.includes('id="checkout-phone"'), 'phone field removed');
+  assert.ok(!drawer.includes('id="checkout-phone"'), 'no second phone field');
   assert.ok(drawer.includes('id="checkout-notes-toggle"'), 'notes collapsed behind a toggle');
   assert.ok(drawer.includes('En WhatsApp confirmamos envío, pago y disponibilidad'), 'explains the next step');
   assert.ok(drawer.includes('class="cart-trust"'), 'trust strip present');
@@ -194,7 +209,11 @@ test('checkout has no required fields — an empty name still passes', async () 
 
 /* ── F. WhatsApp checkout message still builds ──────────────── */
 
-test('WhatsApp checkout message still builds with name and items', async () => {
+/* The message carries the folio and nothing else — see
+   checkoutWhatsApp.test.js for the full contract. Kept here because the mobile
+   funnel's last step is this handoff, and a message that started reprinting
+   the cart again would be a regression this file should notice. */
+test('the WhatsApp handoff is a folio, not a copy of the cart', async () => {
   globalThis.window = globalThis.window || { location: { hostname: 'localhost', pathname: '/' } };
   globalThis.localStorage = globalThis.localStorage || {
     getItem() { return null; }, setItem() {}, removeItem() {},
@@ -202,13 +221,8 @@ test('WhatsApp checkout message still builds with name and items', async () => {
   globalThis.document = globalThis.document || { getElementById: () => null };
 
   const { buildWhatsAppMessage } = await import('../assets/js/cart/checkout.js');
-  const message = buildWhatsAppMessage(
-    [{ name: 'VICTORY', house: 'INVICTUS', size: 5, price: 170, qty: 1 }],
-    170,
-    { name: 'Roger' },
-    'WEB-1',
-  );
-  assert.match(message, /Me interesa este decant:/);
-  assert.match(message, /Mi nombre es Roger\./);
-  assert.match(message, /Total: \$170 MXN/);
+  const message = buildWhatsAppMessage('WEB-20260904-0001');
+
+  assert.equal(message, 'Hola, quiero confirmar mi pedido WEB-20260904-0001.');
+  assert.ok(!/Me interesa|Mi nombre es|Total:/.test(message));
 });
