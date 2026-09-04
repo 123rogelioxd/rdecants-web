@@ -10758,6 +10758,40 @@ body.rd-searching .quick-gender { display: none; }
   .delivery-grid { grid-template-columns: 1fr; }
 }
 
+/* Postal-code resolution feedback — the read-only "📍 municipio, estado"
+   line shown once a CP resolves to a real place, before the colonia
+   dropdown appears (see cart/address.js). */
+.delivery-location-hint {
+  grid-column: 1 / -1;
+  margin: -2px 0 2px;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+
+/* "+ Interior / depto. (opcional)" — same collapsed-by-default treatment as
+   .checkout-notes-toggle, so optional fields never compete with the ones a
+   courier actually needs. */
+.delivery-more-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 8px;
+  padding: 4px 0;
+  background: none;
+  border: none;
+  color: rgba(var(--accent-rgb), 0.9);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.delivery-more-toggle:hover { color: var(--accent); }
+
+.delivery-more { margin-bottom: 6px; }
+
 .delivery-quote-btn {
   width: 100%;
   min-height: 44px;

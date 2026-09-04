@@ -59,7 +59,11 @@ export const CART_DRAWER_HTML = `
         <h3 class="delivery-title">¿Cómo lo quieres recibir?</h3>
 
         <div class="delivery-modes" id="delivery-modes" role="radiogroup" aria-label="Forma de entrega">
-          <button type="button" class="delivery-mode" data-mode="pickup" role="radio" aria-checked="false">
+          <!-- No physical customer-facing store today. Hidden by default so
+               it never flashes before deliveryPanel.js confirms R Supply OS
+               is actually offering it (STOREFRONT_PICKUP_ENABLED) — see
+               _loadModes() in ui/deliveryPanel.js. -->
+          <button type="button" class="delivery-mode" data-mode="pickup" role="radio" aria-checked="false" hidden>
             <span class="delivery-mode-label">Recoger</span>
             <span class="delivery-mode-hint">En tienda</span>
           </button>
@@ -73,35 +77,32 @@ export const CART_DRAWER_HTML = `
           </button>
         </div>
 
-        <!-- Local: pick a configured zone. -->
-        <div class="delivery-block" id="delivery-local" hidden>
-          <label class="delivery-field" for="delivery-zone">
-            <span>Zona de entrega</span>
-            <select class="checkout-field" id="delivery-zone">
-              <option value="">Elige tu zona</option>
-            </select>
-          </label>
-        </div>
-
-        <!-- National: the address the label is printed from. -->
-        <div class="delivery-block" id="delivery-national" hidden>
+        <!-- Address: CP-first, shared shape for Local and National alike.
+             See assets/js/cart/address.js — the same module drives this
+             block and the one on the Cotiza tu perfume page. -->
+        <div class="delivery-block" id="delivery-address-block" hidden data-address-root>
           <div class="delivery-grid">
-            <label class="delivery-field delivery-field--wide" for="delivery-recipient">
-              <span>Quién recibe</span>
-              <input class="checkout-field" id="delivery-recipient" data-address="recipient"
-                     type="text" autocomplete="name" placeholder="Nombre completo">
-            </label>
-            <label class="delivery-field" for="delivery-phone">
-              <span>Teléfono</span>
-              <input class="checkout-field" id="delivery-phone" data-address="phone"
-                     type="tel" inputmode="numeric" autocomplete="tel" placeholder="10 dígitos">
-            </label>
             <label class="delivery-field" for="delivery-postal-code">
               <span>Código postal</span>
               <input class="checkout-field" id="delivery-postal-code" data-address="postal_code"
                      type="text" inputmode="numeric" autocomplete="postal-code"
                      maxlength="5" placeholder="68000">
             </label>
+
+            <p class="delivery-location-hint" data-address-location hidden></p>
+
+            <label class="delivery-field delivery-field--wide" data-address-colonia-select-wrap hidden>
+              <span>Colonia</span>
+              <select class="checkout-field" data-address-colonia-select>
+                <option value="">Elige tu colonia</option>
+              </select>
+            </label>
+            <label class="delivery-field delivery-field--wide" for="delivery-neighborhood" data-address-colonia-manual-wrap hidden>
+              <span>Colonia</span>
+              <input class="checkout-field" id="delivery-neighborhood" data-address="neighborhood"
+                     type="text" autocomplete="address-level3" placeholder="Centro">
+            </label>
+
             <label class="delivery-field delivery-field--wide" for="delivery-street">
               <span>Calle</span>
               <input class="checkout-field" id="delivery-street" data-address="street"
@@ -112,30 +113,45 @@ export const CART_DRAWER_HTML = `
               <input class="checkout-field" id="delivery-exterior" data-address="exterior_number"
                      type="text" placeholder="101">
             </label>
+
+            <label class="delivery-field delivery-field--wide" for="delivery-recipient">
+              <span>Quién recibe</span>
+              <input class="checkout-field" id="delivery-recipient" data-address="recipient"
+                     type="text" autocomplete="name" placeholder="Nombre completo">
+            </label>
+            <label class="delivery-field" for="delivery-phone">
+              <span>Teléfono</span>
+              <input class="checkout-field" id="delivery-phone" data-address="phone"
+                     type="tel" inputmode="numeric" autocomplete="tel" placeholder="10 dígitos">
+            </label>
+          </div>
+
+          <button type="button" class="delivery-more-toggle" data-address-more-toggle aria-expanded="false">
+            + Interior / depto. (opcional)
+          </button>
+          <div class="delivery-grid delivery-more" data-address-more hidden>
             <label class="delivery-field" for="delivery-interior">
-              <span>Interior (opcional)</span>
+              <span>Interior / depto.</span>
               <input class="checkout-field" id="delivery-interior" data-address="interior_number"
                      type="text" placeholder="3">
             </label>
-            <label class="delivery-field delivery-field--wide" for="delivery-neighborhood">
-              <span>Colonia</span>
-              <input class="checkout-field" id="delivery-neighborhood" data-address="neighborhood"
-                     type="text" autocomplete="address-level3" placeholder="Centro">
+            <label class="delivery-field delivery-field--wide" for="delivery-references">
+              <span>Referencias</span>
+              <input class="checkout-field" id="delivery-references" data-address="references"
+                     type="text" placeholder="Portón azul, entre 5 de Mayo y Morelos">
             </label>
-            <label class="delivery-field" for="delivery-city">
+            <!-- Manual fallback — only shown when the postal code did not
+                 resolve, so a real gap in the SEPOMEX data never blocks
+                 checkout (see address.js). -->
+            <label class="delivery-field" for="delivery-city" data-address-city-wrap hidden>
               <span>Ciudad</span>
               <input class="checkout-field" id="delivery-city" data-address="city"
                      type="text" autocomplete="address-level2" placeholder="Oaxaca de Juárez">
             </label>
-            <label class="delivery-field" for="delivery-state">
+            <label class="delivery-field" for="delivery-state" data-address-state-wrap hidden>
               <span>Estado</span>
               <input class="checkout-field" id="delivery-state" data-address="state"
                      type="text" autocomplete="address-level1" placeholder="Oaxaca">
-            </label>
-            <label class="delivery-field delivery-field--wide" for="delivery-references">
-              <span>Referencias (opcional)</span>
-              <input class="checkout-field" id="delivery-references" data-address="references"
-                     type="text" placeholder="Portón azul, entre 5 de Mayo y Morelos">
             </label>
           </div>
         </div>

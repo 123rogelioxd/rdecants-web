@@ -275,7 +275,6 @@ function _deliveryBlockedMessage() {
   const missing = Delivery.missingAddressFields();
 
   if (missing.length) return 'Completa tu dirección de envío para continuar.';
-  if (Delivery.mode === 'local' && !Delivery.state.zoneKey) return 'Elige tu zona de entrega para continuar.';
 
   return 'Calcula el costo de entrega para continuar.';
 }

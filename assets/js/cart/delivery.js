@@ -25,11 +25,13 @@ export const DELIVERY_MODES = {
   NATIONAL: 'national',
 };
 
-/* Address fields the national flow needs. `interior_number` and `references`
-   are genuinely optional; the rest are what a courier cannot deliver without. */
+/* Address fields both delivered modes need — local and national alike now
+   resolve from the same postal-code-first address (see cart/address.js).
+   `interior_number` and `references` are genuinely optional; `municipio` is
+   derived from the postal-code lookup, never typed. */
 export const ADDRESS_FIELDS = [
   'recipient', 'phone', 'street', 'exterior_number', 'interior_number',
-  'neighborhood', 'city', 'state', 'postal_code', 'references',
+  'neighborhood', 'municipio', 'city', 'state', 'postal_code', 'references',
 ];
 
 const REQUIRED_ADDRESS_FIELDS = [
@@ -38,7 +40,6 @@ const REQUIRED_ADDRESS_FIELDS = [
 
 let _state = {
   mode: null,
-  zoneKey: null,
   address: {},
   /* The options R Supply OS last offered, and which one is selected. */
   options: [],
@@ -49,17 +50,16 @@ let _state = {
   status: 'idle',   // idle | loading | quoted | manual | error
 };
 
-let _zonesCache = null;
+let _optionsCache = null;
 
 /* ── Persistence ──────────────────────────────────────────────
-   Only the customer's INPUT is remembered — mode, zone, address. Never a
+   Only the customer's INPUT is remembered — mode and address. Never a
    quoted price or a token: both expire, and restoring a stale one would show a
    price the carrier is no longer offering. */
 function _persist() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       mode: _state.mode,
-      zoneKey: _state.zoneKey,
       address: _state.address,
     }));
   } catch { /* storage unavailable — the choice simply is not remembered */ }
@@ -69,7 +69,6 @@ function _restore() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     if (saved.mode) _state.mode = saved.mode;
-    if (saved.zoneKey) _state.zoneKey = saved.zoneKey;
     if (saved.address && typeof saved.address === 'object') {
       _state.address = _cleanAddress(saved.address);
     }
@@ -119,13 +118,6 @@ export const Delivery = {
     _persist();
   },
 
-  setZone(zoneKey) {
-    if (_state.zoneKey === zoneKey) return;
-    _state.zoneKey = zoneKey || null;
-    _invalidateQuote();
-    _persist();
-  },
-
   setAddressField(field, value) {
     if (!ADDRESS_FIELDS.includes(field)) return;
 
@@ -135,10 +127,12 @@ export const Delivery = {
     if (clean) _state.address[field] = clean;
     else delete _state.address[field];
 
-    /* Only the postal code changes what a carrier charges. Re-quoting because
-       somebody corrected a typo in "references" would throw away a valid rate
-       and make the form feel broken. */
-    if (field === 'postal_code' && previous !== clean) _invalidateQuote();
+    /* Postal code and colonia are what change the price — the postal code
+       decides which carrier/zone rate applies, and the colonia is how local
+       delivery resolves its zone. Re-quoting because somebody corrected a
+       typo in "references" would throw away a valid rate and make the form
+       feel broken. */
+    if ((field === 'postal_code' || field === 'neighborhood') && previous !== clean) _invalidateQuote();
 
     _persist();
   },
@@ -148,9 +142,11 @@ export const Delivery = {
   },
 
   /* Which required fields are still empty. Drives the inline hints rather than
-     a single "complete the form" error that does not say what is missing. */
+     a single "complete the form" error that does not say what is missing.
+     Applies to both delivered modes — local delivery needs a real street for
+     the repartidor exactly as national needs one for the label. */
   missingAddressFields() {
-    if (_state.mode !== DELIVERY_MODES.NATIONAL) return [];
+    if (_state.mode !== DELIVERY_MODES.NATIONAL && _state.mode !== DELIVERY_MODES.LOCAL) return [];
     return REQUIRED_ADDRESS_FIELDS.filter(field => !_state.address[field]);
   },
 
@@ -182,10 +178,6 @@ export const Delivery = {
     if (!_state.mode) return false;
     if (_state.mode === DELIVERY_MODES.PICKUP) return true;
 
-    if (_state.mode === DELIVERY_MODES.LOCAL) {
-      return Boolean(_state.zoneKey) && (this.isPriced() || this.requiresManualQuote());
-    }
-
     return this.hasCompleteAddress() && (this.isPriced() || this.requiresManualQuote());
   },
 
@@ -215,21 +207,40 @@ export const Delivery = {
     return _state.reason;
   },
 
-  /* The zones this shop serves. Cached for the session — the list changes when
-     an operator edits configuration, not while somebody is checking out. */
-  async zones() {
-    if (_zonesCache) return _zonesCache;
+  /* /api/web/delivery/options, fetched once per session and shared by
+     zones() and modes() below — one network call answers both questions. The
+     list changes when an operator edits configuration, not while somebody is
+     checking out. */
+  async _options() {
+    if (_optionsCache) return _optionsCache;
 
     try {
       const data = await ApiClient.getDeliveryOptions();
-      _zonesCache = Array.isArray(data?.zones) ? data.zones : [];
+      _optionsCache = {
+        zones: Array.isArray(data?.zones) ? data.zones : [],
+        modes: Array.isArray(data?.modes) ? data.modes.map(m => m.value) : Object.values(DELIVERY_MODES),
+      };
     } catch {
-      /* The picker degrades to "no local zones offered" rather than showing
-         zones we cannot price. */
-      _zonesCache = [];
+      /* Degrades to "nothing extra offered" rather than showing a zone or a
+         mode R Supply OS did not actually confirm. Local/national are the
+         floor — a transient failure here must not also hide the modes every
+         checkout depends on. */
+      _optionsCache = { zones: [], modes: [DELIVERY_MODES.LOCAL, DELIVERY_MODES.NATIONAL] };
     }
 
-    return _zonesCache;
+    return _optionsCache;
+  },
+
+  /* The zones this shop serves. */
+  async zones() {
+    return (await this._options()).zones;
+  },
+
+  /* Which delivery modes R Supply OS is currently offering — e.g. pickup
+     stays out of this list while there is no physical customer-facing store,
+     without the storefront hardcoding that decision anywhere. */
+  async modes() {
+    return (await this._options()).modes;
   },
 
   /**
@@ -248,8 +259,11 @@ export const Delivery = {
     const { ok, data } = await ApiClient.quoteDelivery({
       ...cartPayload,
       mode: _state.mode,
-      zone_key: _state.zoneKey,
       postal_code: _state.address.postal_code || null,
+      // Local resolves its zone from these two, silently — never a zone the
+      // customer picks (see cart/address.js).
+      municipio: _state.address.municipio || null,
+      neighborhood: _state.address.neighborhood || null,
       city: _state.address.city || null,
       state: _state.address.state || null,
     });
@@ -281,14 +295,16 @@ export const Delivery = {
   },
 
   /* The block that travels with the order. Deliberately carries no amount:
-     the token is the amount, and R Supply OS unseals it. */
+     the token is the amount, and R Supply OS unseals it. Local resolves its
+     zone from the same address national uses to reach a carrier. */
   forOrder() {
     if (!_state.mode) return null;
 
     const payload = { mode: _state.mode };
 
-    if (_state.mode === DELIVERY_MODES.LOCAL) payload.zone_key = _state.zoneKey;
-    if (_state.mode === DELIVERY_MODES.NATIONAL) payload.address = { ..._state.address };
+    if (_state.mode === DELIVERY_MODES.LOCAL || _state.mode === DELIVERY_MODES.NATIONAL) {
+      payload.address = { ..._state.address };
+    }
     if (_state.selectedToken) payload.option_token = _state.selectedToken;
 
     return payload;
@@ -302,7 +318,7 @@ export const Delivery = {
 
   reset() {
     _state = {
-      mode: null, zoneKey: null, address: {}, options: [],
+      mode: null, address: {}, options: [],
       selectedToken: null, cost: null, requiresManualQuote: false,
       reason: null, status: 'idle',
     };
