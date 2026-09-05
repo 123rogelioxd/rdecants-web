@@ -20,101 +20,67 @@ Object.defineProperty(globalThis, 'navigator', {
 const { buildWhatsAppMessage, buildWebOrderPayload } = await import('../assets/js/cart/checkout.js');
 const { CatalogProvider } = await import('../assets/js/providers/catalog.js');
 
-test('buildWhatsAppMessage creates a natural customer WhatsApp message', () => {
-  const message = buildWhatsAppMessage(
-    [
-      { name: 'VICTORY', house: 'INVICTUS', size: 5, price: 170, qty: 1 },
-      { name: 'ONE MILLION LUCKY', house: 'PACO RABANNE', size: 5, price: 200, qty: 1 },
-      { name: 'LE BEAU LE PARFUM', house: 'JEAN PAUL GAULTIER', size: 5, price: 200, qty: 1 },
-    ],
-    570,
-    { name: 'Roger' },
-    'WEB-20260603-0002',
+/* ══════════════════════════════════════════════════════════════════════
+   The WhatsApp message is a REFERENCE to the order, not a copy of it.
+
+   This file used to hold eleven tests asserting the opposite: that the
+   message reprinted the item list, the subtotal, each coupon code and
+   amount, the total, the delivery mode, the shipping cost and the grand
+   total. Every one of those assertions was protecting a duplicate of a
+   record R Supply OS already holds — a duplicate that could disagree with
+   the real order (a one-use coupon redeemed a second earlier, a bottle
+   repriced) and that a person then had to read back by hand.
+
+   The order is created BEFORE the handoff, priced, reserved and routed. So
+   the whole message is the folio, and these four tests cover what is left
+   to get wrong: the folio is in it, nothing else is, and it survives a
+   transport that is not UTF-8 aware.
+   ══════════════════════════════════════════════════════════════════════ */
+
+test('buildWhatsAppMessage is one sentence carrying the folio', () => {
+  assert.equal(
+    buildWhatsAppMessage('WEB-20260904-0001'),
+    'Hola, quiero confirmar mi pedido WEB-20260904-0001.',
   );
-
-  assert.equal(message, [
-    'Hola 👋',
-    '',
-    'Me interesan estos decants:',
-    '• Invictus Victory — 5ml — $170',
-    '• One Million Lucky — 5ml — $200',
-    '• Le Beau Le Parfum — 5ml — $200',
-    '',
-    'Total: $570 MXN',
-    '',
-    /* The order reference. R Supply OS holds every line, price and address
-       under this folio, so the business opens the order instead of reading the
-       cart back out of the chat. */
-    'Mi pedido es WEB-20260603-0002.',
-    '',
-    'Mi nombre es Roger.',
-    '',
-    'Quedo pendiente de disponibilidad y detalles de compra.',
-  ].join('\n'));
-
-  /* Still a message a person would send: no form-field labels. */
-  assert.doesNotMatch(message, /Folio:|Casa|Presentaci[oó]n|Cantidad|Solo a|Producto:/);
 });
 
-test('buildWhatsAppMessage uses singular copy for one decant', () => {
-  const message = buildWhatsAppMessage(
-    [{ name: 'VICTORY', house: 'INVICTUS', size: 5, price: 170, qty: 1 }],
-    170,
-    { name: 'Roger' },
-    'WEB-20260603-0002',
-  );
+/* Nothing the order already knows gets repeated at the customer. */
+test('buildWhatsAppMessage reconstructs no part of the order', () => {
+  const message = buildWhatsAppMessage('WEB-20260904-0001');
 
-  assert.match(message, /Me interesa este decant:/);
-  assert.doesNotMatch(message, /Me interesan estos decants:/);
+  for (const forbidden of [
+    'Subtotal', 'Total', 'Descuento', 'Código',
+    'Envío', 'Entrega local', 'Recoger',
+    'Me interesa', 'Nombre', 'Mi nombre es',
+    'Quedo pendiente',
+  ]) {
+    assert.ok(!message.includes(forbidden), `message must not contain "${forbidden}"`);
+  }
 });
 
-test('buildWhatsAppMessage shows subtotal / código / descuento / total when a discount is applied', () => {
-  const message = buildWhatsAppMessage(
-    [
-      { name: 'VICTORY', house: 'INVICTUS', size: 5, price: 170, qty: 1 },
-      { name: 'ONE MILLION LUCKY', house: 'PACO RABANNE', size: 5, price: 380, qty: 1 },
-    ],
-    550,
-    { name: 'Roger' },
-    '',
-    { code: 'VIP8', amount: 44, total: 506 },
-  );
+/* The corruption customers actually saw: "Hola" followed by a replacement
+   character, because one byte of a four-byte emoji survived a transport that
+   decoded the text as Latin-1. Staying inside ASCII removes the class of bug
+   rather than patching one instance of it. */
+test('buildWhatsAppMessage is plain ASCII', () => {
+  const message = buildWhatsAppMessage('WEB-20260904-0001');
 
-  assert.match(message, /Subtotal: \$550 MXN/);
-  assert.match(message, /Código: VIP8/);
-  assert.match(message, /Descuento: -\$44 MXN/);
-  assert.match(message, /Total: \$506 MXN/);
+  assert.ok(/^[ -~]+$/.test(message), `not ASCII: ${JSON.stringify(message)}`);
+  assert.ok(!message.includes('�'));
 });
 
-test('buildWhatsAppMessage omits discount rows when no discount is applied', () => {
-  const message = buildWhatsAppMessage(
-    [{ name: 'VICTORY', house: 'INVICTUS', size: 5, price: 170, qty: 1 }],
-    170,
-    { name: 'Roger' },
-  );
-  assert.doesNotMatch(message, /Subtotal:|Código:|Descuento:/);
-  assert.match(message, /Total: \$170 MXN/);
-});
+/* Defence in depth only. _performCheckout returns before opening WhatsApp
+   when the order could not be created, so this branch is unreachable in the
+   real flow — but if it ever were reached, a message with a blank folio is
+   better than one with the literal string "undefined" in it. */
+test('buildWhatsAppMessage degrades to a folio-less sentence rather than printing undefined', () => {
+  for (const input of [undefined, null, '', '   ']) {
+    const message = buildWhatsAppMessage(input);
 
-test('buildWhatsAppMessage lists both coupons + total discount when two are applied', () => {
-  const message = buildWhatsAppMessage(
-    [{ name: 'VICTORY', house: 'INVICTUS', size: 5, price: 1000, qty: 1 }],
-    1000,
-    { name: 'Roger' },
-    '',
-    [
-      { code: 'TEN', amount: 100 },
-      { code: 'F50', amount: 50 },
-    ],
-  );
-
-  assert.match(message, /Subtotal: \$1,?000 MXN/);
-  assert.match(message, /Código: TEN/);
-  assert.match(message, /Descuento: -\$100 MXN/);
-  assert.match(message, /Código: F50/);
-  assert.match(message, /Descuento: -\$50 MXN/);
-  assert.match(message, /Descuento total: -\$150 MXN/);
-  assert.match(message, /Total: \$850 MXN/);
+    assert.equal(message, 'Hola, quiero confirmar mi pedido.');
+    assert.ok(!message.includes('undefined'));
+    assert.ok(!message.includes('null'));
+  }
 });
 
 test('buildWebOrderPayload forwards coupon_codes[] (canonical) + discount_code mirror', async () => {
@@ -263,90 +229,4 @@ test('buildWebOrderPayload keeps existing order payload shape when product has g
   } finally {
     CatalogProvider.getProductById = originalGetProductById;
   }
-});
-
-test('buildWhatsAppMessage omits the order reference when there is no folio', () => {
-  const message = buildWhatsAppMessage(
-    [{ name: 'VICTORY', house: 'INVICTUS', size: 5, price: 170, qty: 1 }],
-    170,
-    { name: 'Roger' },
-  );
-
-  assert.doesNotMatch(message, /Mi pedido es/);
-});
-
-test('buildWhatsAppMessage states a priced delivery and the total with shipping', () => {
-  const message = buildWhatsAppMessage(
-    [{ name: 'VICTORY', house: 'INVICTUS', size: 5, price: 170, qty: 1 }],
-    170,
-    { name: 'Roger' },
-    'RD-02631',
-    null,
-    {
-      subtotal: 170,
-      total: 170,
-      discount: 0,
-      grand_total: 320,
-      delivery: { mode: 'national', shipping_cost: 150, requires_manual_quote: false },
-    },
-  );
-
-  assert.match(message, /Envío: \$150/);
-  assert.match(message, /Total con envío: \$320/);
-  assert.match(message, /Mi pedido es RD-02631\./);
-});
-
-/* The regression that matters most in this file: an order whose shipping
-   nobody has priced must not produce a message promising a total. */
-test('buildWhatsAppMessage never prints $0 or a total for an unpriced delivery', () => {
-  const message = buildWhatsAppMessage(
-    [{ name: 'VICTORY', house: 'INVICTUS', size: 5, price: 170, qty: 1 }],
-    170,
-    { name: 'Roger' },
-    'RD-02631',
-    null,
-    {
-      subtotal: 170,
-      total: 170,
-      discount: 0,
-      grand_total: null,
-      delivery: { mode: 'national', shipping_cost: null, requires_manual_quote: true },
-    },
-  );
-
-  assert.match(message, /Envío: por confirmar/);
-  assert.doesNotMatch(message, /Total con envío/);
-  assert.doesNotMatch(message, /Envío: \$0/);
-});
-
-test('buildWhatsAppMessage says a free delivery costs nothing rather than $0', () => {
-  const message = buildWhatsAppMessage(
-    [{ name: 'VICTORY', house: 'INVICTUS', size: 5, price: 300, qty: 1 }],
-    300,
-    { name: 'Roger' },
-    'RD-02631',
-    null,
-    {
-      subtotal: 300,
-      total: 300,
-      discount: 0,
-      grand_total: 300,
-      delivery: { mode: 'local', shipping_cost: 0, requires_manual_quote: false },
-    },
-  );
-
-  assert.match(message, /Entrega local: sin costo/);
-});
-
-test('buildWhatsAppMessage omits delivery entirely when the order has no mode', () => {
-  const message = buildWhatsAppMessage(
-    [{ name: 'VICTORY', house: 'INVICTUS', size: 5, price: 170, qty: 1 }],
-    170,
-    { name: 'Roger' },
-    'RD-02631',
-    null,
-    { subtotal: 170, total: 170, discount: 0, delivery: { mode: null } },
-  );
-
-  assert.doesNotMatch(message, /Env[ií]o|Entrega local|Recoger/);
 });

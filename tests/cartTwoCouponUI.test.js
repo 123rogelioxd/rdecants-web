@@ -252,7 +252,19 @@ test('two-coupon UX flow end-to-end', async () => {
   assert.equal(Cart.items.length, 1, 'removing the last coupon never clears the cart');
 });
 
-test('checkout WhatsApp message and order payload carry both applied coupons', async () => {
+/* ── Two coupons are the ORDER's fact, not the message's ────────────────
+
+   These two tests used to read "Código: ESPANA40 / Descuento: -$40 / … /
+   Descuento total: -$100" out of the WhatsApp text. That reprint was how a
+   customer ended up holding a message promising a discount the order did not
+   have — a one-use code redeemed by somebody else in the second between the
+   preview and the write, and the chat still said otherwise.
+
+   The stacking itself is unchanged and still asserted, one layer down: the two
+   codes are applied, and both travel to R Supply OS in `coupon_codes`. The
+   money is recalculated there and the message is the folio. */
+
+test('both applied coupons travel to R Supply OS, and the message carries only the folio', async () => {
   Cart.clear();
   Discount.clear();
   stubBackend({ ESPANA40: { amount: 40, stackable: true }, ACERTASTE60: { amount: 60, stackable: true } }, 1050);
@@ -264,16 +276,13 @@ test('checkout WhatsApp message and order payload carry both applied coupons', a
   await submitCode('acertaste60');
   assert.deepEqual(Discount.codes(), ['ESPANA40', 'ACERTASTE60']);
 
-  const message = buildWhatsAppMessage(Cart.items, Cart.total(), { name: 'Roger' }, '', Discount.applied);
-  assert.match(message, /Código: ESPANA40/);
-  assert.match(message, /Descuento: -\$40 MXN/);
-  assert.match(message, /Código: ACERTASTE60/);
-  assert.match(message, /Descuento: -\$60 MXN/);
-  assert.match(message, /Descuento total: -\$100 MXN/);
-  assert.match(message, /Total: \$950 MXN/);
+  const message = buildWhatsAppMessage('WEB-20260904-0002');
+  assert.equal(message, 'Hola, quiero confirmar mi pedido WEB-20260904-0002.');
+  assert.ok(!/ESPANA40|ACERTASTE60|Descuento|Total/.test(message),
+    'the message must not restate money the order already holds');
 });
 
-test('existing one-coupon checkout stays compatible (no second code applied)', async () => {
+test('a single coupon behaves the same way — applied here, priced there', async () => {
   Cart.clear();
   Discount.clear();
   stubBackend({ ESPANA40: { amount: 40, stackable: true } }, 1050);
@@ -283,8 +292,6 @@ test('existing one-coupon checkout stays compatible (no second code applied)', a
   await submitCode('espana40');
   assert.deepEqual(Discount.codes(), ['ESPANA40']);
 
-  const message = buildWhatsAppMessage(Cart.items, Cart.total(), { name: 'Roger' }, '', Discount.applied);
-  assert.match(message, /Código: ESPANA40/);
-  assert.match(message, /Total: \$1,?010 MXN/);
-  assert.doesNotMatch(message, /Descuento total:/, 'single-coupon message keeps the pre-existing shape');
+  const message = buildWhatsAppMessage('WEB-20260904-0003');
+  assert.equal(message, 'Hola, quiero confirmar mi pedido WEB-20260904-0003.');
 });

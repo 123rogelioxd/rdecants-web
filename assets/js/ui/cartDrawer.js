@@ -32,13 +32,15 @@ export const CART_DRAWER_HTML = `
     </div>
 
     <div class="cart-static">
-      <div class="checkout-panel" id="checkout-form" aria-label="Datos de checkout">
-        <label class="checkout-control checkout-control--primary" for="checkout-name">
-          <span>Tu nombre (opcional)</span>
-          <input class="checkout-field" id="checkout-name" type="text" autocomplete="name" placeholder="Ej. Roger Díaz">
-          <small class="checkout-name-error" id="checkout-name-error" aria-live="polite"></small>
-        </label>
+      <!-- ── Checkout panel ─────────────────────────────────────────────
+           The name field that used to live here is gone. It asked for
+           something the delivery block below already asks for ("Quién recibe"
+           / "Teléfono"), and because only THIS field fed the order's customer
+           record, a customer who filled in the delivery block correctly
+           produced an order in R Supply OS reading «Sin nombre» with no phone.
 
+           One question, one place. Comments stay separate and optional. -->
+      <div class="checkout-panel" id="checkout-form" aria-label="Datos de checkout">
         <button type="button" class="checkout-notes-toggle" id="checkout-notes-toggle" aria-expanded="false" aria-controls="checkout-notes">
           Agregar comentario
         </button>
