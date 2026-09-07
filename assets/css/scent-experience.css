@@ -1,0 +1,44 @@
+.scent-notes { margin: 18px 0; }
+.scent-notes-title { font: 600 13px/1.4 var(--font-sans, sans-serif); margin-bottom: 12px; }
+.scent-notes-list { display: flex; gap: 8px; list-style: none; padding: 0; margin: 0; }
+.scent-note { flex: 1; min-width: 0; max-width: 100px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 7px; font-size: 11px; line-height: 1.3; overflow-wrap: anywhere; color: #514d47; }
+.scent-note-icon { width: 32px; height: 32px; flex-shrink: 0; color: #4b4841; }
+.bqv-description { font-size: 13px; line-height: 1.55; color: #5e5851; margin: 12px 0; }
+.bqv-image-note { font-size: 11px; line-height: 1.45; color: #787168; margin: 8px 0; }
+.pdm-size-btn--active,.pdp-size-btn--active,.pdp-size-btn--recommended.pdp-size-btn--active { background: #181816 !important; border-color: #181816 !important; color: #fff !important; box-shadow: none !important; }
+.pdm-size-btn--active span,.pdp-size-btn--active span { color: #fff !important; }
+.pdp-size-btn--recommended { border-color: #4f4d48; box-shadow: none; }
+.pdp-size-flag,.card-top-flag,.pick-label { background: #edeae4; color: #24231f; border-color: #dcd7ce; }
+.pdp-size-btn--active .pdp-size-flag { background: #181816; color: #fff; }
+.finder-option[aria-pressed="true"],.finder-chip[aria-pressed="true"],.asst-chip--active { background: #181816 !important; color: #fff !important; border-color: #181816 !important; }
+.bqv-sheet { max-height: calc(100dvh - 36px); overflow-y: auto; }
+.bqv-info { min-width: 0; }
+.pick-card--best .pick-label { background:#eeece6; color:#24231f; }
+.pick-card--best { border-color:#292722; }
+.bqv-fill-bar { background:#4f4c46; }
+.bottle-grid { grid-template-columns: repeat(4,minmax(0,1fr)); }
+@media (max-width: 700px) {
+ .bottle-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+ .pdm-info-scroll { min-height: 0; }
+ .scent-notes { margin: 12px 0; }
+ .scent-note { font-size: 10px; }
+ .bqv-sheet { max-height: 94dvh; }
+}
+.bottle-card { border-radius: 10px; display:flex; flex-direction:column; }
+.bottle-card-link { height:auto; flex:1; }
+.bottle-card-body { padding:12px; gap:6px; }
+.bottle-card-name { font-size:15px; }
+.bottle-card-image { aspect-ratio:1; }
+.bottle-card-actions { padding:0 12px 12px; }
+.bottle-card-cta { min-height:44px; font-size:12px; padding:10px 6px; }
+.perfume-page-head { padding-bottom:16px; }
+.perfume-catalog { padding-top:20px; }
+@media(max-width:700px) {
+ .bottle-filter-bar { gap:16px; margin-bottom:18px; }
+ .bottle-card-house { font-size:10px; letter-spacing:.06em; }
+ .bottle-card-name { font-size:13px; }
+ .bottle-card-presentation { font-size:11px; }
+ .bottle-card-price { font-size:12px; }
+ .perfume-page-head .section-eyebrow { display:none; }
+ .perfume-page-head .page-lede { font-size:13px; line-height:1.5; }
+}

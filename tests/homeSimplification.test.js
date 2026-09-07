@@ -281,7 +281,7 @@ test('how it works is three short steps', () => {
   assert.equal((steps.match(/class="step-card"/g) ?? []).length, 3, 'exactly three steps');
   assert.match(steps, /Elige tu perfume/);
   assert.match(steps, /Selecciona 3, 5 o 10 ml/);
-  assert.match(steps, /Envía tu pedido por WhatsApp/);
+  assert.match(steps, /Registra tu pedido/);
 });
 
 test('authenticity is stated once — and the lot evidence is still one tap away', () => {

@@ -1,0 +1,7 @@
+<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>QA local — ofertas físicas</title><link rel="stylesheet" href="/assets/css/styles.css"><link rel="stylesheet" href="/assets/css/scent-experience.css"><link rel="stylesheet" href="/assets/css/customer-experience.css"><body><h1>QA local — ofertas físicas sintéticas</h1><button id="open">Abrir botella de QA</button><div id="added" role="status"></div><script type="module">
+import {openBottleQuickView} from '/assets/js/ui/bottleQuickView.js';
+import {Cart} from '/assets/js/cart/cart.js';
+const product={id:'qa-bottle',name:'Oferta de QA',house:'Fixture local',image:'',scent_profile:{short_description:'Ficha sintética para validar la selección de unidades.',main_notes:[{id:'bergamot',label:'Bergamota'},{id:'vanilla',label:'Vainilla'}]},bottles:[{offer_key:'qa:sealed',kind:'bottle',sealed:true,ml:100,bottle_ml:100,size_label:'100 ml',condition_label:'Nuevo sellado',price:1200,stock:1},{offer_key:'qa:tester',kind:'tester',sealed:false,ml:100,bottle_ml:100,size_label:'100 ml',condition_label:'Tester',price:1000,stock:1},{offer_key:'qa:partial',kind:'partial',sealed:false,ml:65,bottle_ml:100,size_label:'65 ml de 100 ml',remaining_percent:65,condition_label:'Parcial',price:650,stock:1}]};
+document.getElementById('open').onclick=()=>openBottleQuickView(product);
+Cart.addBottle=(p,offer)=>{document.getElementById('added').textContent=JSON.stringify(offer);return {ok:true};};
+</script></body></html>

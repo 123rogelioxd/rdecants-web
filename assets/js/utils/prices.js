@@ -24,6 +24,7 @@ export function getPriceForSize(product, size) {
 }
 
 export function getValidVariants(product) {
+  if (product?.normal_decant && Array.isArray(product.variants) && !product.variants.length) return [];
   if (Array.isArray(product?.variants) && product.variants.length) {
     return [...product.variants]
       .map(_normalizeVariant)
@@ -53,6 +54,10 @@ export function getPrimaryVariants(product) {
   return getValidVariants(product).filter(variant => PRIMARY_SIZES.includes(variant.size));
 }
 
+export function hasDecantPresentations(product) {
+  return getPrimaryVariants(product).some(v => v.variant_id !== null && v.variant_id !== undefined);
+}
+
 /* Smallest primary presentation with a valid price — the honest entry point
    for "Desde {size}ml" display copy. Returns null when no primary variant
    has a price. */
@@ -65,12 +70,12 @@ export function getOrderableVariants(product) {
 }
 
 export function getDefaultVariant(product, preferredSize = 5) {
-  const variants = getOrderableVariants(product);
+  const variants = getOrderableVariants(product).filter(v => PRIMARY_SIZES.includes(v.size));
   return variants.find(v => v.size === preferredSize) || variants[0] || null;
 }
 
 export function getDisplayVariant(product, preferredSize = 5) {
-  const variants = getValidVariants(product);
+  const variants = getPrimaryVariants(product);
   return variants.find(v => v.size === preferredSize) || variants[0] || null;
 }
 
@@ -120,7 +125,7 @@ export function getSizeLabel(ml, product = null) {
 }
 
 function _normalizeVariant(raw = {}) {
-  const size = Number(raw.size ?? raw.ml_size);
+  const size = Number(raw.size ?? raw.ml_size ?? raw.ml);
   const price = raw.price ?? raw.retail_price;
   const stock = _safeStock(raw.stock ?? raw.availability);
   const available = Object.prototype.hasOwnProperty.call(raw, 'available') ? Boolean(raw.available) : stock > 0;

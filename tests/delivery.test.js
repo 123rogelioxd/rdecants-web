@@ -342,3 +342,12 @@ test('the address is remembered but the price is not', async () => {
   assert.equal('selectedToken' in saved, false);
   assert.equal('options' in saved, false);
 });
+
+test('a delivery quote arriving after an address change cannot restore a stale price', async () => {
+ Delivery.reset(); Delivery.setMode(DELIVERY_MODES.LOCAL);
+ let resolve; ApiClient.quoteDelivery=()=>new Promise(done=>{resolve=done;});
+ const pending=Delivery.quote(cart);
+ Delivery.setAddressField('postal_code','68000');
+ resolve(pricedResponse());
+ assert.equal((await pending).stale,true);assert.equal(Delivery.cost,null);assert.equal(Delivery.isReady(),false);
+});

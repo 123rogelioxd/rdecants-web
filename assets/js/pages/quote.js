@@ -9,6 +9,12 @@ import { bindAddressForm } from '../cart/address.js';
 export const MIN_QUOTE_QUERY = 2;
 export const QUOTE_DEBOUNCE_MS = 350;
 
+/** Onboarding is shown only before a meaningful search or a selection. */
+export function quoteExperienceState(query = '', itemCount = 0, browsing = true) {
+  if (itemCount > 0 && !browsing) return 'selected';
+  return String(query).trim().length >= MIN_QUOTE_QUERY || itemCount > 0 ? 'search' : 'intro';
+}
+
 const WHATSAPP_NUMBER = '5219516513018';
 
 export function quoteLines(items = []) {
@@ -301,6 +307,17 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
   let pricingGeneration = 0;
   let submitting = false;
   let panelLastFocus = null;
+  let browsing = true;
+  const browseAgain = document.getElementById('quote-browse-again');
+  const syncExperience = () => {
+    const stage = quoteExperienceState(input.value, basket.length, browsing);
+    document.body.dataset.quoteStage = stage;
+    document.querySelectorAll('[data-quote-intro]').forEach(el => { el.hidden = stage !== 'intro'; });
+    document.querySelectorAll('[data-quote-search-surface]').forEach(el => { el.hidden = stage === 'selected'; });
+    if (browseAgain) browseAgain.hidden = stage !== 'selected';
+    if (panel) panel.classList.toggle('is-selected', stage === 'selected');
+    if (mobileBar) mobileBar.hidden = !basket.length || stage === 'selected';
+  };
 
   /* ── Mobile drawer (the same panel is the desktop sticky sidebar; only
      the CSS repositions it under 1024px) ─────────────────────────────── */
@@ -349,6 +366,7 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
   const renderBasket = () => {
     if (panelCount) { panelCount.hidden = !basket.length; panelCount.textContent = String(basket.length); }
     syncMobileBar();
+    syncExperience();
 
     if (!basket.length) {
       basketEl.innerHTML = _basketEmpty();
@@ -410,6 +428,7 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
       return;
     }
     basketEl.setAttribute('aria-busy', 'true');
+    submit.disabled = true;
     try {
       const response = await ApiClient.priceQuoteBasket(quoteLines(basket));
       if (generation !== pricingGeneration) return;
@@ -463,8 +482,12 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
         const item = lastItems.find(candidate => candidate.reference === button.dataset.quoteAdd);
         if (!item) return;
         basket = upsertQuoteItem(basket, item);
+        browsing = false;
+        syncExperience();
         Tracker.emit('quote_item_added', { reference: item.reference });
         await reprice();
+        browseAgain?.scrollIntoView({ behavior: 'instant', block: 'start' });
+        browseAgain?.focus({ preventScroll: true });
       });
     });
     syncResultButtons();
@@ -512,6 +535,8 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
   const updateClearButton = () => { if (searchClear) searchClear.hidden = input.value.length === 0; };
 
   input.addEventListener('input', () => {
+    browsing = true;
+    syncExperience();
     updateClearButton();
     clearTimeout(searchTimer);
     const query = input.value.trim();
@@ -523,6 +548,18 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
     input.focus();
     clearTimeout(searchTimer);
     search('');
+    syncExperience();
+  });
+
+  browseAgain?.addEventListener('click', () => {
+    browsing = true;
+    closeQuotePanel();
+    input.value = '';
+    clearTimeout(searchTimer);
+    updateClearButton();
+    search('');
+    syncExperience();
+    input.focus();
   });
 
   /* ── Delivery: local/national, resolved the same postal-code-first way

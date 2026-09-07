@@ -15,13 +15,14 @@ import { openProductModal } from '../ui/modal.js';
 import { SearchBar }        from '../ui/searchbar.js';
 import { observeFadeUp }    from '../ui/animations.js';
 import { primeImageStates } from '../ui/images.js';
-import { getDisplayVariant,
+import { getVariantForSize, getDisplayVariant,
          formatPrice }      from '../utils/prices.js';
 import { getScarcityDisplay } from '../utils/scarcity.js';
 import { getDisplayBadges }  from '../utils/guidance.js';
 import { genderBadgeHtml as _genderBadge } from '../ui/genderBadge.js';
 import { describeAnswers }   from '../recommendations/engine.js';
 import { buildCatalogUrl }   from './intents.js';
+import { getCommercialProfileTags } from '../ui/scentNotes.js';
 import { showToast }         from '../ui/toast.js';
 
 /* module-level ref kept for SearchBar callback */
@@ -223,10 +224,10 @@ function _renderGrid(products, { rememberProducts = true, guided = null, preserv
    guided top-pick treatment. `absoluteIndex` is the card's position in the full
    list (used only for a small, capped stagger). */
 function _buildCard(p, absoluteIndex, { guided, recById } = {}) {
-  const displayVariant = getDisplayVariant(p);
+  const displayVariant = getVariantForSize(p, 5);
   const priceHtml = displayVariant
-    ? `${formatPrice(displayVariant.price)} <small>${displayVariant.size}ml</small>`
-    : 'Consultar precio';
+    ? `${formatPrice(displayVariant.price)} <small>· 5 ml</small>`
+    : '5 ml no disponible';
   const stockState = getScarcityDisplay(p);
   const isSoldOut = stockState.state === 'sold_out';
   const canQuickAdd = !isSoldOut && _isOrderableVariant(displayVariant);
@@ -253,7 +254,7 @@ function _buildCard(p, absoluteIndex, { guided, recById } = {}) {
     ? `<span class="card-top-flag">Nuestra recomendación #${rank}</span>`
     : '';
   const whyHtml = rank >= 1 && rank <= 3 && rec?.reason
-    ? `<p class="card-why">${rec.reason}</p>`
+    ? `<p class="card-why">${_escapeHtml(rec.reason)}</p>`
     : '';
   /* The guidance chip is derived from the product alone and knows nothing
      about what was asked, so on a card that already carries the recommender's
@@ -307,13 +308,13 @@ function _buildCard(p, absoluteIndex, { guided, recById } = {}) {
       </div>
       <h3 class="card-name">${p.name}</h3>
       ${whyHtml}
-      ${guidanceHtml}
+      <div class="card-guidance">${getCommercialProfileTags(p).map(tag => `<span class="guidance-chip">${_escapeHtml(tag)}</span>`).join('')}</div>
       <div class="card-purchase">
         <p class="card-price">${priceHtml}</p>
         <button class="btn-primary card-action"
           ${isSoldOut ? 'disabled aria-disabled="true"' : ''}
           aria-label="${isSoldOut ? `${p.name} agotado` : canQuickAdd ? `Agregar ${p.name} al carrito` : `Consultar disponibilidad de ${p.name}`}">
-          ${isSoldOut ? 'Agotado' : canQuickAdd ? 'Agregar' : 'Consultar'}
+          ${isSoldOut ? 'Agotado' : canQuickAdd ? 'Agregar' : 'Ver tamaños'}
         </button>
       </div>
     </div>

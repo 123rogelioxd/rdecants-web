@@ -161,7 +161,7 @@ test('the process is explained ONCE, in the "Cómo funciona" section', () => {
 
   /* And the steps that carry the instructions are in that same section. */
   assert.match(block, /Elige tu perfume/);
-  assert.match(block, /Envía tu pedido por WhatsApp/);
+  assert.match(block, /Registra tu pedido/);
 });
 
 test('the home shows four products and no size selectors', () => {

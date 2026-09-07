@@ -326,12 +326,13 @@ test('an explanation names only dimensions that scored, and claims no performanc
   const e = evaluateProduct(p, FULL_ANSWERS);
   const reason = explain(e, FULL_ANSWERS, { rank: 1 });
 
-  assert.match(reason, /^La mejor coincidencia/);
+  assert.match(reason, /^Te lo recomiendo/);
   assert.match(reason, /oficina/);
   assert.doesNotMatch(reason, /noche|fiesta|destacar/, 'nothing the answers did not ask about');
   assert.doesNotMatch(reason, /duración/, 'longevity is 0.62 — no duration claim');
-  assert.doesNotMatch(reason, /\d/, 'no numbers, no false precision');
-  assert.ok(reason.length <= 130, reason);
+  assert.doesNotMatch(reason, /\d+%|\d+\/100/, 'no fabricated compatibility percentage');
+  assert.match(reason, /5 ml por \$200 MXN/, 'real purchasable size and price');
+  assert.ok(reason.length <= 350, reason);
 });
 
 test('rank 2 and 3 do not claim to be the best match', () => {
@@ -340,8 +341,8 @@ test('rank 2 and 3 do not claim to be the best match', () => {
     product('B', { ...COMPLETE, scores: { ...COMPLETE.scores, versatility: 80 } }),
   ];
   const { picks } = getRecommendations(catalog, FULL_ANSWERS);
-  assert.match(picks[0].reason, /^La mejor coincidencia/);
-  assert.match(picks[1].reason, /^Buena coincidencia/);
+  assert.match(picks[0].reason, /^Te lo recomiendo/);
+  assert.match(picks[1].reason, /^Otra forma de elegir/);
 });
 
 test('a duration claim appears only when the question asked about performance AND longevity is high', () => {

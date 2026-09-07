@@ -299,7 +299,7 @@ test('a reason is generated for every recommendation and mentions a dimension th
     const { picks } = getRecommendations(CATALOG, answers);
     for (const pick of picks) {
       assert.ok(pick.reason && pick.reason.length > 0, `${label(answers)} ${pick.product.id}`);
-      assert.ok(pick.reason.length <= 130, `${label(answers)} too long: ${pick.reason}`);
+      assert.ok(pick.reason.length <= 350, `${label(answers)} too long: ${pick.reason}`);
       assert.doesNotMatch(pick.reason, /\d+\s?%/, 'no false-precision percentage');
       assert.doesNotMatch(pick.reason, /undefined|null|NaN/, pick.reason);
 

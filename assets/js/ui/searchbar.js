@@ -31,6 +31,8 @@ import { rankGuidedCatalog } from '../recommendations/assistant.js';
 import { ANSWER_LABELS } from '../recommendations/engine.js';
 import { buildCatalogUrl } from '../catalog/intents.js';
 import { lockBodyScroll, unlockBodyScroll } from './scrollLock.js';
+import { renderBottleSearch } from './catalogBottleSearch.js';
+import { hasDecantPresentations } from '../utils/prices.js';
 
 /* ── State ──────────────────────────────────────────────────── */
 const _DEFAULT = {
@@ -48,6 +50,7 @@ const _DEFAULT = {
 
 let _state            = { ..._DEFAULT };
 let _allProducts      = [];
+let _allCommercialProducts = [];
 let _onFilter         = null;
 let _lastResultCount  = 0;
 let _lastTrackedQuery = '';
@@ -78,7 +81,8 @@ export const SearchBar = {
     _drawerOverlay?.remove();
     _prevFocus = null;
 
-    _allProducts = allProducts;
+    _allCommercialProducts = allProducts;
+    _allProducts = allProducts.filter(hasDecantPresentations);
     _onFilter    = onFilter;
 
     /* Carry over any query the user typed before the catalog loaded */
@@ -567,6 +571,7 @@ function _run() {
 
   /* One query, three surfaces: the field, the URL and the page state. */
   const activeQuery = (_state.query ?? '').trim();
+  renderBottleSearch(_allCommercialProducts, activeQuery);
   _syncQueryToUrl(activeQuery);
   _syncSearchingState(activeQuery);
 

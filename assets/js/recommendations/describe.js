@@ -85,6 +85,7 @@ export function dominantUseCase(product) {
    order (family → character → performance) so the same product always
    reads the same way. Returns '' when there is nothing honest to say. */
 export function describeProduct(product) {
+  if (product?.scent_profile) return product.scent_profile.short_description || '';
   const words = [];
 
   const family = dominantFamily(product);
@@ -122,6 +123,7 @@ export function describeProduct(product) {
    can flatly contradict it: Cloud was recommended for the night and then read
    "Buena opción para el día a día" directly underneath. */
 export function describeForBeginner(product) {
+  if (product?.scent_profile) return product.scent_profile.short_description || '';
   const base = describeProduct(product);
   const useCase = dominantUseCase(product);
   if (!base) return '';
@@ -135,6 +137,7 @@ export function describeForBeginner(product) {
    nothing here makes a context claim. Returns '' when the scores and notes
    support no adjective at all, rather than falling back to a use case. */
 export function describeScent(product) {
+  if (product?.scent_profile) return (product.scent_profile.profile_tags ?? product.scent_profile.accords ?? []).slice(0, 2).join(' · ');
   const words = [];
 
   const family = dominantFamily(product);

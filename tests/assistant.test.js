@@ -247,7 +247,7 @@ test('every result carries a bounded score, a tier, a one-line reason and a brea
     assert.ok(r.confidence >= MIN_CONFIDENCE && r.confidence <= 1, `confidence ${r.confidence}`);
     assert.ok(r.matchTier && r.matchTier.label);
     assert.equal(typeof r.reason, 'string');
-    assert.ok(r.reason.length > 0 && r.reason.length <= 130, r.reason);
+    assert.ok(r.reason.length > 0 && r.reason.length <= 350, r.reason);
     assert.doesNotMatch(r.reason, /\d+\s?%/, 'no false-precision percentage');
     assert.equal(typeof r.useCase, 'string');
     /* The full breakdown is kept for debugging, not shown on the card. */

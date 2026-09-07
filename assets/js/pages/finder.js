@@ -372,7 +372,7 @@ function _pickCard(pick) {
   return `
     <li>
       <article class="pick-card ${rank === 1 ? 'pick-card--best' : ''}">
-        <p class="pick-label">${label}</p>
+        <p class="pick-label">${_escape(label)}</p>
         <div class="pick-media${product.image ? '' : ' img-shell img-failed'}"
              style="--img-initial:${_brandInitialCss(product)}"
              data-open-pick="${product.id}" role="button" tabindex="0"
@@ -387,8 +387,8 @@ function _pickCard(pick) {
             ${genderBadgeHtml(product)}
           </div>
           <h3 class="pick-name">${product.name}</h3>
-          ${reason ? `<p class="pick-why">${reason}</p>` : ''}
-          ${blurb ? `<p class="pick-blurb">${blurb}</p>` : ''}
+          ${reason ? `<p class="pick-why">${_escape(reason)}</p>` : ''}
+          ${blurb ? `<p class="pick-blurb">${_escape(blurb)}</p>` : ''}
           <div class="pick-buy">
             <span class="pick-price">${variant ? formatPrice(variant.price) : 'Consultar'} <small>· ${variant?.size ?? '—'} ml</small></span>
             <button type="button" class="pick-action" data-add-pick="${product.id}" ${orderable ? '' : 'disabled'}>
@@ -475,3 +475,5 @@ function _brandInitialCss(product) {
   const ch = source.charAt(0).toUpperCase();
   return `'${/[A-Z0-9À-Ý]/.test(ch) ? ch : 'R'}'`;
 }
+
+function _escape(value) { return String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;", "'":"&#39;"}[c])); }

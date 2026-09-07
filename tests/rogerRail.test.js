@@ -111,12 +111,14 @@ test('when every curated pick is unsellable the rail falls back whole', () => {
 
 /* ── New arrivals ────────────────────────────────────────────────── */
 
-test('new arrivals are the highest product_ids that can actually be sold', () => {
+const publication = days => ({ is_new: true, added_at: new Date(Date.now() - days * 86400000).toISOString(), new_until: new Date(Date.now() + (30-days) * 86400000).toISOString() });
+
+test('new arrivals use canonical dates and must still be orderable', () => {
   const catalog = [
-    product('OLD', { product_id: 2 }),
-    product('NEW', { product_id: 99 }),
+    product('OLD', { product_id: 2, publication: publication(25) }),
+    product('NEW', { product_id: 99, publication: publication(1) }),
     { ...soldOut('NEWEST_BUT_GONE'), product_id: 120 },
-    product('MID', { product_id: 40 }),
+    product('MID', { product_id: 40, publication: publication(12) }),
   ];
 
   assert.deepEqual(
@@ -126,7 +128,7 @@ test('new arrivals are the highest product_ids that can actually be sold', () =>
 });
 
 test('new arrivals are capped and tolerate a missing product_id', () => {
-  const catalog = Array.from({ length: 10 }, (_, i) => product(`P${i}`, { product_id: i + 1 }));
+  const catalog = Array.from({ length: 10 }, (_, i) => product(`P${i}`, { product_id: i + 1, publication: publication(i) }));
   catalog.push(product('NO_ID', { product_id: null }));
 
   const picks = selectNewest(catalog);
@@ -199,3 +201,5 @@ test('the rail\'s "Probar 5 ml" is the same cart write as the product page', asy
   assert.match(cart, /const price = getPriceForSize\(product, size\)/);
   assert.match(cart, /const variant = getVariantForSize\(product, size\)/);
 });
+
+test('new arrivals age out without a frontend deployment', () => { assert.deepEqual(selectNewest([product('AGED', { publication: publication(31) }), product('UNKNOWN')]), []); });

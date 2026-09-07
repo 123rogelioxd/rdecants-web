@@ -1,3 +1,4 @@
+import { buildScentNotesHtml, getShortDescription } from './scentNotes.js';
 /* =============================================================
    RDECANTS — PRODUCT DETAIL PAGE
    Editorial fragrance experience for /perfume/{slug}.
@@ -61,15 +62,15 @@ const WHATSAPP_NUMBER = '5219516513018';
 export function buildProductPageHtml(product) {
   if (!product) return _notFoundHtml();
 
-  const variants = getValidVariants(product);
+  const variants = getValidVariants(product).filter(v => PRIMARY_SIZES.includes(v.size));
   const bottles = Array.isArray(product.bottles) ? product.bottles : [];
   /* One rule, one source: getDefaultVariant prefers the recommended 5 ml and
      falls back to the first orderable presentation. The same variant is both
      flagged "Recomendado" and pre-selected, so the page can never highlight
      one size and price another. Nothing here is hardcoded — sizes, prices and
      availability all come from the catalog variants. */
-  const defaultVariant = getDefaultVariant(product) || getDisplayVariant(product);
-  const recommendedSize = getDefaultVariant(product)?.size ?? null;
+  const defaultVariant = getVariantForSize(product, 5) || getDefaultVariant(product) || getDisplayVariant(product);
+  const recommendedSize = getVariantForSize(product, 5) ? 5 : null;
   const defaultSize = defaultVariant?.size ?? null;
   const defaultPrice = defaultVariant?.price ?? null;
   /* Entry presentation for "Desde {size}ml" — always a selectable size
@@ -130,7 +131,8 @@ export function buildProductPageHtml(product) {
           </div>
         </div>
 
-        ${product.story ? `<p class="pdp-story">${_escape(product.story)}</p>` : ''}
+        ${getShortDescription(product) ? `<p class="pdp-story">${_escape(getShortDescription(product))}</p>` : ''}
+        ${buildScentNotesHtml(product)}
         ${guidanceHtml ? `<div class="pdp-guidance" aria-label="Recomendado para">${guidanceHtml}</div>` : ''}
 
         <!-- B. Buy — presentations, live price and Add, right here. No
@@ -212,7 +214,7 @@ export function hydrateProductPage(root, product, deps = {}) {
 
   primeImageStates(root);
 
-  let selectedSize = getDefaultVariant(product)?.size ?? null;
+  let selectedSize = getVariantForSize(product, 5)?.size ?? getDefaultVariant(product)?.size ?? null;
 
   /* Variant selection */
   root.querySelectorAll('.pdp-size-btn').forEach(btn => {
@@ -329,7 +331,7 @@ function _bottleOfferRows(product, bottles, { heading = 'Botellas disponibles', 
   const tryFirst = crossSell && product.variants?.length
     ? `<div class="pdp-try-first">
          <p><strong>¿Quieres probarlo primero?</strong></p>
-         <p>También está disponible en ${product.variants.map(v => `${v.size} ml`).join(' · ')}.</p>
+         <p>También está disponible en ${product.variants.filter(v => PRIMARY_SIZES.includes(v.size)).map(v => `${v.size} ml`).join(' · ')}.</p>
          <button type="button" class="btn-ghost" data-jump="#pdp-buy">Ver decants</button>
        </div>`
     : '';

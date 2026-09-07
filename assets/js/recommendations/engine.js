@@ -50,7 +50,7 @@ import {
 } from './normalize.js';
 import { getGenderEligibility, getGenderDisplay } from '../utils/gender.js';
 import { getOperationalScore } from './scoring.js';
-import { getDefaultVariant, getOrderableVariants } from '../utils/prices.js';
+import { getDefaultVariant, getOrderableVariants, formatPrice } from '../utils/prices.js';
 
 /* ── Tunables ─────────────────────────────────────────────────────
    Calibrated against the real 73-product catalog (see
@@ -737,7 +737,7 @@ export function evaluateProduct(product, rawAnswers = {}) {
   const exclusions = [];
 
   /* — Hard: can we sell it at all? — */
-  const orderable = getOrderableVariants(product).filter(v => _hasVariantId(v));
+  const orderable = getOrderableVariants(product).filter(v => [3, 5, 10].includes(v.size) && _hasVariantId(v));
   if (!n.offer.sellable || !orderable.length) exclusions.push('sin_stock');
 
   /* — Hard: budget, when one was given. A price band is a constraint on
@@ -966,18 +966,28 @@ export function explain(evaluation, rawAnswers = {}, { rank = 1 } = {}) {
     _dedupe(phrases.filter(p => p.kind === 'trait').map(p => p.text)).slice(0, 3),
   ).slice(0, 2);
 
-  if (!contexts.length && !traits.length) {
-    /* Nothing scored high enough to claim anything specific. Say the true,
-       minimal thing rather than a generic compliment. */
-    return 'Compatible con tus respuestas, con margen para explorar más.';
-  }
-
-  const lead = rank === 1 ? 'La mejor coincidencia' : 'Buena coincidencia';
-  if (contexts.length) {
-    const head = `${lead} ${_joinEs(contexts)}`;
-    return traits.length ? `${head}. ${_capitalize(_joinTraits(traits))}.` : `${head}.`;
-  }
-  return `${_capitalize(_joinTraits(traits))}.`;
+  const product = evaluation.product;
+  const profile = product?.scent_profile;
+  const legacyNotes = product?.notes?.length ? product.notes
+    : ['top', 'heart', 'base'].flatMap(key => product?.fragrance?.notes?.[key] ?? []);
+  const notes = _dedupe((profile?.main_notes ?? legacyNotes ?? [])
+    .map(note => typeof note === 'string' ? note : note?.label).filter(Boolean)).slice(0, 2);
+  const accords = _dedupe(profile?.profile_tags ?? product?.fragrance?.accords ?? [])
+    .filter(value => typeof value === 'string').slice(0, 2)
+    .map(value => value.replace(/_/g, ' ').toLowerCase());
+  const scent = notes.length ? `combina ${_joinEs(notes.map(n => n.toLowerCase()))}`
+    : accords.length ? `su carácter es ${_joinEs(accords)}` : '';
+  const context = _joinEs(contexts);
+  const lead = rank === 1 ? 'Te lo recomiendo' : 'Otra forma de elegir';
+  const head = scent
+    ? `${context ? `${lead} ${context}. ` : ''}${_capitalize(scent)}.`
+    : context ? `${lead} ${context}.` : 'Su perfil tiene información limitada; vale la pena probarlo primero.';
+  const detail = traits.length ? `${_capitalize(_joinTraits(traits))}.` : '';
+  const variant = evaluation.variant;
+  const offer = variant && !variant.soldOut && Number(variant.availability) > 0
+    && [3, 5, 10].includes(Number(variant.size)) && Number(variant.price) > 0
+    ? `Puedes probarlo en ${variant.size} ml por ${formatPrice(variant.price)}.` : '';
+  return [head, detail, offer].filter(Boolean).join(' ');
 }
 
 function _dedupe(list) { return [...new Set(list.filter(Boolean))]; }
@@ -1175,7 +1185,7 @@ function _bestRelaxation(products, answers) {
  * with the size to try first and a one-line reason.
  */
 export function getRecommendations(products, rawAnswers = {}, { limit = MAX_RESULTS } = {}) {
-  const ranked = rankCatalog(products, rawAnswers, { limit });
+  const ranked = rankCatalog(products, rawAnswers, { limit: Math.min(MAX_RESULTS, Math.max(0, limit)) });
   const answers = ranked.answers;
   const starterMl = suggestedStarterMl(answers.age);
 
@@ -1183,7 +1193,7 @@ export function getRecommendations(products, rawAnswers = {}, { limit = MAX_RESU
     ...ranked,
     picks: ranked.results.map((evaluation, index) => ({
       rank: index + 1,
-      label: `Nuestra recomendación #${index + 1}`,
+      label: recommendationLabel(evaluation.product, index, ranked.results[0]?.product),
       product: evaluation.product,
       variant: evaluation.variant,
       starterMl,
@@ -1194,6 +1204,21 @@ export function getRecommendations(products, rawAnswers = {}, { limit = MAX_RESU
       breakdown: evaluation.breakdown,
     })),
   };
+}
+
+export function recommendationLabel(product, index, first) {
+  const base = `Nuestra recomendación #${index + 1}`;
+  if (!index) return base;
+  const score = (p, key) => {
+    const raw = p?.scent_profile?.scores?.[key] ?? p?.fragrance?.scores?.[key];
+    if (raw == null || !Number.isFinite(Number(raw))) return null;
+    return Number(raw) > 1 ? Number(raw) / 100 : Number(raw);
+  };
+  for (const [key, label] of [['versatility','Más versátil'],['freshness','Una opción más fresca'],['intensity','Para mayor presencia'],['sweetness','Una opción más dulce']]) {
+    const current = score(product,key), previous = score(first,key);
+    if (current !== null && previous !== null && current >= .7 && current - previous >= .15) return `${base} · ${label}`;
+  }
+  return base;
 }
 
 /** Human-readable summary of the answers, for the editable results header. */

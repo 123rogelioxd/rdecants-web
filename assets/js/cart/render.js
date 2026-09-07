@@ -10,17 +10,12 @@ import { maybeAutoApplyPromo, resetAutoApplyGuard, markAutoApplyDone } from './c
 import { sendCheckoutWhatsApp,
          syncCheckoutAvailability,
          trackCheckoutStarted } from './checkout.js';
-import { renderDeliverySummary } from '../ui/deliveryPanel.js';
 import { EventBus }  from '../core/events.js';
 import { Tracker }   from '../tracking/tracker.js';
 import { showToast } from '../ui/toast.js';
 import { lockBodyScroll, unlockBodyScroll } from '../ui/scrollLock.js';
-import { formatPrice, isValidPrice, getDefaultVariant } from '../utils/prices.js';
+import { formatPrice, isValidPrice } from '../utils/prices.js';
 import { CatalogProvider } from '../providers/catalog.js';
-import { getCartUpsells, getShippingCompletionUpsell } from '../recommendations/upsells.js';
-import { getCollectionPairs } from '../recommendations/crossSell.js';
-import { Personalization, filterDisliked } from '../recommendations/personalization.js';
-import { getShippingState } from './momentum.js';
 
 const WHATSAPP_NUMBER = '5219516513018';
 let _prevFocus = null;
@@ -140,152 +135,7 @@ export function renderCart() {
   _renderSummary();
   renderDiscountPanel();
   syncCheckoutAvailability();
-  _renderUpsells();
   _scheduleRevalidation();
-}
-
-/* ── Add-on upsells (operational-first, low friction) ───────── */
-let _lastUpsellSig = '';
-
-async function _renderUpsells() {
-  const slot = document.getElementById('cart-upsells');
-  if (!slot) return;
-
-  const items = Cart.items;
-  if (!items.length) {
-    slot.hidden = true;
-    slot.innerHTML = '';
-    _lastUpsellSig = '';
-    return;
-  }
-
-  let products = [];
-  try {
-    products = await CatalogProvider.getProducts();
-  } catch {
-    return;
-  }
-
-  /* Cart may have changed while awaiting the catalog */
-  if (Cart.items.length !== items.length) return;
-
-  const shipping = getShippingState(Cart.total());
-  const taste = Personalization.getTaste();
-  const eligible = filterDisliked(products, taste, { minCount: 3 });
-
-  /* Below the shipping threshold → ONE cheapest-qualifying add-on, framed as
-     a shipping opportunity ("Te faltan $X para calificar para envío").
-     Never a block — if nothing qualifies we fall through to normal cross-sell. */
-  if (!shipping.isEligible) {
-    const rec = getShippingCompletionUpsell(Cart.items, eligible, shipping.remaining);
-    if (rec) {
-      _renderShippingCompletion(slot, rec, shipping);
-      return;
-    }
-  }
-
-  /* Eligible (or nothing qualifies) → optional complementary cross-sell. */
-  const cartProducts = Cart.items
-    .map(item => products.find(p => String(p.id) === String(item.sourceId ?? item.id)))
-    .filter(Boolean);
-
-  const pairs = getCollectionPairs(cartProducts, eligible, taste, { limit: 3 });
-  const isCollection = pairs.length > 0;
-
-  const suggestions = (isCollection ? pairs : getCartUpsells(Cart.items, eligible, {
-    targetRemaining: shipping.remaining,
-  }))
-    .map(product => ({ product, variant: getDefaultVariant(product, 3) }))
-    .filter(entry => entry.variant);
-
-  if (!suggestions.length) {
-    slot.hidden = true;
-    slot.innerHTML = '';
-    _lastUpsellSig = '';
-    return;
-  }
-
-  /* Optional, non-blocking cross-sell. */
-  slot.innerHTML = `
-    <p class="cart-section-label">Completa tu pedido</p>
-    <div class="cart-upsell-list">
-      ${suggestions.map(_upsellRow).join('')}
-    </div>`;
-  slot.hidden = false;
-
-  const railId = isCollection ? 'collection_builder_cart' : 'cart_upsell';
-  const railTitle = 'Completa tu pedido';
-  const sig = `${railId}:${suggestions.map(s => s.product.id).join('|')}`;
-  if (sig !== _lastUpsellSig) {
-    _lastUpsellSig = sig;
-    if (isCollection) {
-      Tracker.collectionBuilderViewed(suggestions.map(s => s.product), 'cart');
-    } else {
-      Tracker.recommendationView(suggestions.map(s => s.product), { railId, railTitle });
-    }
-  }
-
-  slot.querySelectorAll('.cart-upsell-add').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const entry = suggestions.find(s => String(s.product.id) === btn.dataset.productId);
-      if (!entry) return;
-      const position = Number(btn.dataset.position) + 1;
-      if (isCollection) {
-        Tracker.collectionBuilderClicked(entry.product, position, 'cart');
-        Tracker.collectionBuilderAdded(entry.product, position, 'cart');
-      } else {
-        Tracker.recommendationClicked(entry.product, position, { railId, railTitle });
-      }
-      window.__rd?.cart?.add(entry.product.id, entry.variant.size);
-    });
-  });
-}
-
-/* Single cheapest-qualifying recommendation that reaches the shipping
-   threshold in one tap. Optional and non-blocking. */
-function _renderShippingCompletion(slot, { product, variant }, shipping) {
-  slot.innerHTML = `
-    <div class="cart-shipping-complete">
-      <p class="cart-shipping-complete-head">
-        Te faltan <strong>${formatPrice(shipping.remaining)}</strong> para calificar para envío.
-      </p>
-      <div class="cart-upsell-list">
-        ${_upsellRow({ product, variant }, 0)}
-      </div>
-    </div>`;
-  slot.hidden = false;
-
-  const sig = `ship_complete:${product.id}:${variant.size}`;
-  if (sig !== _lastUpsellSig) {
-    _lastUpsellSig = sig;
-    Tracker.recommendedProductShown(product, variant, shipping.remaining);
-    Tracker.amountMissingForShipping(shipping);
-  }
-
-  slot.querySelector('.cart-upsell-add')?.addEventListener('click', () => {
-    Tracker.recommendedProductAdded(product, variant, shipping.remaining);
-    window.__rd?.cart?.add(product.id, variant.size);
-  });
-}
-
-function _upsellRow({ product, variant }, idx) {
-  const hasImage = product.image && product.image.trim() !== '';
-  return `
-    <div class="cart-upsell-item">
-      <span class="cart-upsell-img">
-        ${hasImage
-          ? `<img src="${product.image}" alt="${product.name}" loading="lazy" decoding="async"
-               onerror="this.parentElement.classList.add('cart-upsell-img--fallback');this.remove()">`
-          : ''}
-      </span>
-      <div class="cart-upsell-info">
-        <p class="cart-upsell-house">${product.house ?? ''}</p>
-        <p class="cart-upsell-name">${product.name}</p>
-        <p class="cart-upsell-meta">${variant.size}ml &middot; ${formatPrice(variant.price)}</p>
-      </div>
-      <button class="cart-upsell-add" data-product-id="${product.id}" data-position="${idx}"
-        aria-label="Agregar ${product.name} ${variant.size}ml a tu pedido">+</button>
-    </div>`;
 }
 
 /* ── Summary: subtotal · one discount row per coupon · final total ──── */
@@ -319,10 +169,7 @@ function _renderSummary() {
   const totalEl = document.getElementById('cart-total');
   if (totalEl) totalEl.textContent = finalTotal;
 
-  /* Delivery sits below the merchandise total and is rendered from the
-     Delivery state, never computed here. `finalTotal` is the merchandise the
-     customer actually pays for — the base a grand total is built on. */
-  renderDeliverySummary(finalTotal);
+
 }
 
 /* ── Discount panel: toggle ⇄ input ⇄ applied badge, transient messages ──
@@ -613,6 +460,7 @@ export function updateCartCount() {
 /* ── Drawer open / close ────────────────────────────────────── */
 export function openCart() {
   const drawer = document.getElementById('cart-drawer');
+  if (drawer?.classList.contains('active')) return;
   _prevFocus = document.activeElement;
   drawer?.classList.add('active');
   drawer?.setAttribute('aria-hidden', 'false');
@@ -628,6 +476,7 @@ export function openCart() {
 
 export function closeCart() {
   const drawer = document.getElementById('cart-drawer');
+  if (!drawer?.classList.contains('active')) return;
   drawer?.classList.remove('active');
   drawer?.setAttribute('aria-hidden', 'true');
   document.getElementById('cart-overlay')?.classList.remove('active');
@@ -662,7 +511,7 @@ function _handleCartKey(e) {
 
   const focusable = Array.from(drawer.querySelectorAll(
     'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-  ));
+  )).filter(element => element.getClientRects().length && !element.closest('[hidden]'));
   if (!focusable.length) return;
 
   const first = focusable[0];

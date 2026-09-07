@@ -12,7 +12,7 @@ import { CatalogProvider } from '../providers/catalog.js';
 import { Tracker }   from '../tracking/tracker.js';
 import { showToast } from '../ui/toast.js';
 import { getVariantForSize } from '../utils/prices.js';
-import { getShippingState } from './momentum.js';
+import { EventBus } from '../core/events.js';
 
 const STORAGE_KEY = 'rdecants_checkout_customer';
 const LAST_ORDER_KEY = 'rdecants_last_web_order_folio';
@@ -35,7 +35,7 @@ const FIELD_IDS = {
 
 let _startedSignature = '';
 let _isSubmitting = false;
-let _prevEligible = null;
+
 
 export function setupCheckout() {
   const form = _form();
@@ -76,158 +76,52 @@ export function trackCheckoutStarted(source = 'cart_drawer') {
   Tracker.checkoutStarted(items, Cart.total());
 }
 
-export async function sendCheckoutWhatsApp(phoneNumber) {
-  /* Idempotency guard — covers double-tap AND bfcache re-fire. We take
-     the lock synchronously before any awaits so a second click in the
-     same tick can never slip past. */
-  if (_isSubmitting) return;
-  if (_recentlyFired()) return;
+/** Registers a WebOrder only. WhatsApp is a separate, explicit next action. */
+export async function registerWebOrder() {
+  if (_isSubmitting || _recentlyFired()) return null;
   _isSubmitting = true;
   _syncAvailability();
-
-  /* Bottle inventory must be revalidated before the handoff, but waiting for
-     that request would lose the browser's click gesture and make WhatsApp look
-     like a blocked popup. Reserve the tab synchronously, then either navigate
-     it after validation or close it on a customer-facing stock error. */
-  const hasBottle = Cart.items.some(item => item.type === 'bottle');
-  const reservedWindow = hasBottle ? window.open('', '_blank') : null;
-
   try {
-    await _performCheckout(phoneNumber, reservedWindow);
+    const items = Cart.items;
+    if (!items.length) throw new Error('Agrega una fragancia antes de continuar.');
+    const availability = Cart.availabilityError();
+    if (availability) throw new Error(`Ajusta tu carrito: esta fragancia tiene ${_formatMl(availability.availableMl)} ml disponibles en total.`);
+    if (!Delivery.mode || !Delivery.isReady()) throw new Error(_deliveryBlockedMessage());
+    const validation = validateCheckout();
+    if (validation) throw new Error(validation.message);
+
+    const data = readCheckoutData();
+    saveCheckoutData(data);
+    const address = Delivery.address;
+    const total = Cart.total();
+    const attribution = Attribution.forOrder();
+    if (Object.keys(attribution).length) Tracker.campaignCheckoutAttributed(Attribution.forTracking());
+    let order;
+    try {
+      order = await _submitWebOrder(items, data, total, Discount.applied, attribution);
+    } catch (error) {
+      Delivery.clearQuote();
+      _logCheckoutError(error);
+      Tracker.backgroundOrderFailure(String(error?.message || 'order_failed'), total);
+      throw new Error(_customerOrderError(error));
+    }
+    _markFired();
+    Cart.clear();
+    Discount.clear();
+    Attribution.clear();
+    Delivery.clearQuote();
+    _clearCheckoutAttempt();
+    Tracker.emit('web_order_created', { folio: order.folio, total: order.grand_total });
+    return { order, items, address, notes: data.notes };
   } finally {
     _isSubmitting = false;
     _syncAvailability();
   }
 }
 
-/* WhatsApp-first: the WhatsApp window is opened SYNCHRONOUSLY inside the click
-   gesture (no awaits before it) so the popup isn't blocked and a backend outage
-   can never block the sale. The system order is created afterwards, async. */
-async function _performCheckout(phoneNumber, reservedWindow = null) {
-  const items = Cart.items;
-
-  if (!items.length) {
-    reservedWindow?.close?.();
-    const message = 'Agrega una fragancia antes de finalizar por WhatsApp';
-    _showMessage(message, 'error');
-    showToast(message);
-    _syncAvailability();
-    return;
-  }
-
-  const availabilityError = Cart.availabilityError();
-  if (availabilityError) {
-    reservedWindow?.close?.();
-    const available = _formatMl(availabilityError.availableMl);
-    const message = `Ajusta tu carrito: esta fragancia tiene ${available}ml disponibles en total.`;
-    _showMessage(message, 'error');
-    showToast(message);
-    return;
-  }
-
-  /* ── A destination that has not been answered is not a checkout ──────────
-     The customer may proceed on a MANUAL quote — agreeing to have the cost
-     confirmed is a real choice, and blocking them over a number nobody can
-     produce would simply lose the order. What must not happen is an order
-     leaving with a national address no courier could use, or with a quote the
-     customer started and never got an answer to: both put the business back to
-     asking for the address over WhatsApp.
-
-     Choosing no mode at all stays allowed, so a cart built before this panel
-     existed still checks out exactly as it did. */
-  if (Delivery.mode && !Delivery.isReady()) {
-    reservedWindow?.close?.();
-    const message = _deliveryBlockedMessage();
-    _showMessage(message, 'error');
-    showToast(message);
-    document.getElementById('delivery-panel')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    return;
-  }
-
-  const data = readCheckoutData();
-  saveCheckoutData(data);
-  _clearError();
-
-  const total = Cart.total();
-  const shipping = getShippingState(total);
-
-  Tracker.checkoutWhatsappClicked(items, total, { phone: Boolean(data.phone) });
-  Tracker.cartValueBeforeWhatsapp(total, items);
-  if (!shipping.isEligible) Tracker.amountMissingForShipping(shipping);
-
-  /* Snapshot what we send — the background order is built from this and is
-     unaffected by the cart being cleared after a successful launch. The discount
-     shown here is the last PREVIEW; R Supply OS recalculates the real total when
-     it creates the order (we only forward the code). */
-  const orderItems = items;
-  const discount = Discount.applied;
-  /* Snapshot campaign attribution BEFORE any clearing so the background order
-     carries it even after the session state is wiped on a successful handoff. */
-  const attribution = Attribution.forOrder();
-  if (Object.keys(attribution).length) Tracker.campaignCheckoutAttributed(Attribution.forTracking());
-
-  /* ── The order is created BEFORE WhatsApp, for every cart ────────────────
-     This used to be bottle-only: a decant checkout opened WhatsApp first and
-     wrote the order afterwards, fire-and-forget. When that write failed the
-     customer never knew, and the only surviving record of the sale was a chat
-     message the business then had to read back into an order by hand — the
-     exact manual reconstruction this system exists to remove.
-
-     Order-first makes the folio the thing being discussed rather than the
-     conversation being the order. It also means every checkout gets what only
-     bottles got before: live revalidation, server-recalculated money, and a
-     real error while the customer can still act on it.
-
-     The popup still opens synchronously from the click (`reservedWindow`) and
-     is only NAVIGATED after the await, because iOS Safari refuses a
-     window.open() that happens after an async boundary. That is the same
-     mechanism the bottle path already proved. */
-  let recordedOrder = null;
-  try {
-    recordedOrder = await _submitWebOrder(orderItems, data, total, discount, attribution);
-  } catch (error) {
-    reservedWindow?.close?.();
-    _logCheckoutError(error);
-    const message = _customerOrderError(error);
-    _showMessage(message, 'error');
-    showToast(message);
-    Tracker.backgroundOrderFailure(String(error?.message || 'order_failed'), total);
-    /* Cart, discount and attribution are all left intact so a retry is one tap
-       and nothing the customer chose is lost. */
-    return;
-  }
-
-  /* The order's numbers outrank the preview: R Supply OS may have priced the
-     cart differently in the seconds since — a bottle repriced, or someone else
-     taking the last redemption of a one-use code. Promising the preview total
-     in a WhatsApp message the customer keeps, after the backend has already
-     said otherwise, is a number nobody can honour. */
-  const messageText = buildWhatsAppMessage(recordedOrder.folio);
-  const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(messageText)}`;
-
-  _markFired();
-  if (reservedWindow) reservedWindow.location.href = whatsappUrl;
-  const opened = reservedWindow || window.open(whatsappUrl, '_blank');
-
-  /* The order exists either way now, so both branches clear the cart. A blocked
-     popup is a browser inconvenience, not a failed purchase, and leaving the
-     cart full would invite a second order for merchandise already reserved
-     under a folio the customer is holding. */
-  Cart.clear();
-  Discount.clear();
-  Attribution.clear();
-  /* The address is kept — customers reorder to the same place — but the price
-     is not: it belonged to the parcel that just shipped. */
-  Delivery.clearQuote();
-  _clearCheckoutAttempt();
-
-  if (!opened) {
-    _showManualWhatsApp(whatsappUrl);
-    return;
-  }
-
-  _showMessage('Listo, te llevamos a WhatsApp para finalizar tu pedido.', 'success');
-  showToast('Listo, abrimos WhatsApp para finalizar tu pedido.');
+/* Legacy bridge: opening checkout never bypasses delivery and review. */
+export function sendCheckoutWhatsApp() {
+  EventBus.emit('checkout:open');
 }
 
 /* One idempotency key per CHECKOUT ATTEMPT, not per click.
@@ -315,25 +209,11 @@ async function _submitWebOrder(items, data, total, discount = null, attribution 
   const order = response?.order;
   if (!response?.ok || !order?.folio) throw new Error('No se pudo crear el pedido en sistema.');
 
-  localStorage.setItem(LAST_ORDER_KEY, order.folio || '');
-  const finalTotal = _money(order.total) || total;
+  try { localStorage.setItem(LAST_ORDER_KEY, order.folio || ''); } catch { /* registration already succeeded */ }
+  const finalTotal = Number.isFinite(Number(order.total)) ? Number(order.total) : total;
   Tracker.checkoutCompleted(items, finalTotal, { folio: order.folio });
   Tracker.backgroundOrderSuccess(order.folio, finalTotal);
   return order;
-}
-
-/* Popup-blocked fallback: a persistent manual link, cart kept intact. */
-function _showManualWhatsApp(url) {
-  const el = document.getElementById('checkout-fallback');
-  if (!el) {
-    showToast('Abre WhatsApp para finalizar tu pedido', {
-      actionLabel: 'Abrir WhatsApp',
-      onAction: () => { if (!window.open(url, '_blank')) window.location.href = url; },
-    });
-    return;
-  }
-  el.hidden = false;
-  el.innerHTML = `Si WhatsApp no se abrió, <a href="${url}" target="_blank" rel="noopener">ábrelo manualmente aquí</a>. Tu carrito sigue guardado.`;
 }
 
 function _recentlyFired() {
@@ -391,8 +271,17 @@ export function saveCheckoutData(data = readCheckoutData()) {
 }
 
 export function validateCheckout() {
-  /* Zero required fields before WhatsApp. The customer identifies themselves
-     inside the chat, so nothing here blocks reaching the handoff. */
+  if (!Delivery.mode) return { message: 'Elige cómo recibir tu pedido.', field: 'mode' };
+  const missing = Delivery.missingAddressFields();
+  if (missing.length) return { message: 'Completa los datos de entrega para continuar.', field: missing[0] };
+  const address = Delivery.address;
+  if (Delivery.mode !== 'pickup' && !/^\d{5}$/.test(address.postal_code || '')) {
+    return { message: 'Escribe un código postal de 5 dígitos.', field: 'postal_code' };
+  }
+  if (Delivery.mode !== 'pickup' && !/^(?:52)?\d{10}$/.test((address.phone || '').replace(/[^\d]/g, ''))) {
+    return { message: 'Escribe un teléfono de 10 dígitos.', field: 'phone' };
+  }
+  if (!Delivery.isReady()) return { message: 'Calcula la entrega para revisar tu pedido.', field: 'quote' };
   return null;
 }
 
@@ -588,59 +477,15 @@ function _load() {
 }
 
 function _syncAvailability() {
-  const count = Cart.count();
-  const total = Cart.total();
-  const isEmpty = count === 0;
-  const shipping = getShippingState(total);
-  const button = document.getElementById('checkout-whatsapp');
-  const form = _form();
-
+  const isEmpty = Cart.count() === 0;
+  const button = document.getElementById('cart-continue');
   if (button) {
-    /* The primary CTA is never gated by a minimum or by customer data.
-       It is disabled only while empty or mid-submit (double-tap guard). */
-    const isDisabled = isEmpty || _isSubmitting;
-    button.disabled = isDisabled;
-    button.setAttribute('aria-disabled', String(isDisabled));
-    if (!_isSubmitting) button.textContent = getCheckoutButtonLabel({ isEmpty });
+    button.disabled = isEmpty || _isSubmitting;
+    button.setAttribute('aria-disabled', String(button.disabled));
+    button.textContent = getCheckoutButtonLabel({ isEmpty });
     button.dataset.state = getCheckoutButtonState({ isEmpty });
   }
-
-  form?.classList.toggle('checkout-form--disabled', isEmpty);
-  form?.classList.toggle('checkout-form--ready', !isEmpty && shipping.isEligible);
-
-  _syncShipping(count, shipping);
-}
-
-/* Shipping eligibility badge + explanation, shown near the total. This is an
-   operational status — it NEVER blocks or changes the CTA. */
-function _syncShipping(count, shipping) {
-  const status = document.getElementById('shipping-status');
-  const badge = document.getElementById('shipping-badge');
-  const note = document.getElementById('shipping-note');
-
-  if (status) {
-    if (count <= 0) {
-      status.hidden = true;
-    } else {
-      status.hidden = false;
-      status.dataset.state = shipping.isEligible ? 'eligible' : 'local';
-      if (badge) badge.textContent = shipping.isEligible ? '✓ Califica para envío' : '📍 Disponible para entrega local';
-      if (note) {
-        note.textContent = shipping.isEligible
-          ? 'Tu pedido ya califica para envío.'
-          : `Los pedidos menores a $${shipping.threshold} pueden recogerse localmente sin problema.`;
-      }
-    }
-  }
-
-  /* Eligibility-transition analytics (deduped by the tracker). */
-  if (count <= 0) {
-    _prevEligible = null;
-  } else if (_prevEligible !== shipping.isEligible) {
-    if (shipping.isEligible) Tracker.shippingEligible(shipping);
-    else Tracker.shippingNotEligible(shipping);
-    _prevEligible = shipping.isEligible;
-  }
+  _form()?.classList.toggle('checkout-form--disabled', isEmpty);
 }
 
 function _showError(error) {
@@ -687,10 +532,7 @@ function _form() {
 }
 
 export function getCheckoutButtonLabel({ isEmpty = false } = {}) {
-  /* One single action, one single label — it never changes (except the
-     transient loading state) so the user always sees the same next step. */
-  if (isEmpty) return 'Agrega una fragancia para finalizar';
-  return '📲 Enviar pedido por WhatsApp';
+  return isEmpty ? 'Agrega una fragancia para continuar' : 'Continuar a entrega →';
 }
 
 export function getCheckoutButtonState({ isEmpty = false } = {}) {
