@@ -16,12 +16,22 @@ import { Discount } from '../cart/discount.js';
 import { formatPrice } from '../utils/prices.js';
 import { buildWebOrderPayload, readCheckoutData } from '../cart/checkout.js';
 import { bindAddressForm } from '../cart/address.js';
+import { EventBus } from '../core/events.js';
+import { Tracker } from '../tracking/tracker.js';
 
 let _wired = false;
 let _quoteInFlight = false;
 let _onChange = () => {};
 let _addressForm = null;
 let _autoQuoteTimer = null;
+let _pendingQuote = false;
+let _parcelSignature = '';
+let _quoteError = '';
+
+const parcelSignature = () => JSON.stringify({
+  items: Cart.items.map(item => [item.key, item.qty, item.price]),
+  coupons: Discount.applied.map(coupon => [coupon.normalizedCode || coupon.code, coupon.amount]),
+});
 
 /* How long the street field settles before we ask for a price.
 
@@ -51,6 +61,16 @@ export function setupDeliveryPanel(onChange = () => {}) {
   _loadModes();
   _hydrate();
   renderDeliveryPanel();
+  _parcelSignature = parcelSignature();
+  const onParcelChange = () => {
+    const signature = parcelSignature();
+    if (signature === _parcelSignature) return;
+    _parcelSignature = signature;
+    invalidateDeliveryQuote();
+    _onChange();
+  };
+  EventBus.on('cart:updated', onParcelChange);
+  EventBus.on('discount:updated', onParcelChange);
 }
 
 /* Hides any delivery-mode button R Supply OS is not currently offering (e.g.
@@ -60,8 +80,13 @@ async function _loadModes() {
   const modes = await Delivery.modes();
 
   document.querySelectorAll('#delivery-modes .delivery-mode').forEach(button => {
-    if (!modes.includes(button.dataset.mode)) button.setAttribute('hidden', '');
+    button.hidden = !modes.includes(button.dataset.mode);
   });
+  if (Delivery.mode && !modes.includes(Delivery.mode)) {
+    Delivery.setMode(null);
+    renderDeliveryPanel();
+    _onChange();
+  }
 }
 
 /* ── Wiring ──────────────────────────────────────────────────────────────── */
@@ -69,6 +94,7 @@ async function _loadModes() {
 function _wireModes() {
   document.querySelectorAll('#delivery-modes .delivery-mode').forEach(button => {
     button.addEventListener('click', () => {
+      _quoteError = '';
       Delivery.setMode(button.dataset.mode);
       renderDeliveryPanel();
       _onChange();
@@ -96,7 +122,10 @@ function _wireAddressForm() {
   if (!root) return;
 
   _addressForm = bindAddressForm(root, {
-    onFieldChange: (field, value) => Delivery.setAddressField(field, value),
+    onFieldChange: (field, value) => {
+      _quoteError = '';
+      Delivery.setAddressField(field, value);
+    },
     onChange: () => {
       renderDeliveryPanel();
       _onChange();
@@ -113,7 +142,7 @@ function _wireAddressForm() {
 function _scheduleLocalAutoQuote() {
   clearTimeout(_autoQuoteTimer);
 
-  if (Delivery.mode !== DELIVERY_MODES.LOCAL || !Delivery.canQuoteAddress()) return;
+  if (Delivery.mode !== DELIVERY_MODES.LOCAL || !Delivery.canQuoteAddress() || Delivery.isPriced() || Delivery.requiresManualQuote()) return;
 
   _autoQuoteTimer = setTimeout(() => _requestQuote(), AUTO_QUOTE_DEBOUNCE_MS);
 }
@@ -133,13 +162,15 @@ function _hydrate() {
     if (value) input.value = value;
   });
 
-  if (state.address.postal_code) _addressForm?.hydrate(state.address.postal_code);
+  if (state.address.postal_code) _addressForm?.hydrate(state.address.postal_code, state.address);
 }
 
 /* ── Quoting ─────────────────────────────────────────────────────────────── */
 
+export async function requestDeliveryQuote() { return _requestQuote(); }
+
 async function _requestQuote() {
-  if (_quoteInFlight) return;
+  if (_quoteInFlight) { _pendingQuote = true; return; }
 
   const mode = Delivery.mode;
   if (!mode) return;
@@ -160,6 +191,8 @@ async function _requestQuote() {
   if (!items.length) return;
 
   _quoteInFlight = true;
+  _quoteError = '';
+  const generation = Delivery.generation;
   renderDeliveryPanel();
 
   try {
@@ -171,24 +204,32 @@ async function _requestQuote() {
       packs: Cart.packPurchases(),
     });
 
+    if (generation !== Delivery.generation) { _pendingQuote = true; return; }
     const result = await Delivery.quote({
       items: cartPayload.items,
       packs: cartPayload.packs,
       coupon_codes: cartPayload.coupon_codes,
     });
 
-    if (!result.ok) _message(result.message, 'error');
+    if (!result.ok && !result.stale) _quoteError = result.message;
+    if (result.ok) Tracker.emit('delivery_quoted', { mode: Delivery.mode, status: Delivery.status, cost: Delivery.cost });
   } catch {
-    _message('No pudimos calcular la entrega. Inténtalo de nuevo.', 'error');
+    _quoteError = 'No pudimos calcular la entrega. Inténtalo de nuevo.';
   } finally {
     _quoteInFlight = false;
     renderDeliveryPanel();
     _onChange();
+    if (_pendingQuote) {
+      _pendingQuote = false;
+      _scheduleLocalAutoQuote();
+    }
   }
 }
 
 /* The cart changed, so any price we hold describes a different parcel. */
 export function invalidateDeliveryQuote() {
+  clearTimeout(_autoQuoteTimer);
+  _quoteError = '';
   Delivery.clearQuote();
   renderDeliveryPanel();
 }
@@ -221,7 +262,7 @@ function _renderQuoteButton(mode) {
   /* Pickup and local quote themselves the moment the choice is complete. Only
      national — the one that reaches an external carrier — gets an explicit
      button, so a postal-code field does not fire a carrier call per keystroke. */
-  const needsButton = mode === DELIVERY_MODES.NATIONAL;
+  const needsButton = mode === DELIVERY_MODES.NATIONAL || (mode === DELIVERY_MODES.LOCAL && Delivery.canQuoteAddress() && !_quoteInFlight && !Delivery.isPriced() && !Delivery.requiresManualQuote());
   button.hidden = !needsButton;
 
   if (!needsButton) return;
@@ -229,7 +270,7 @@ function _renderQuoteButton(mode) {
   button.disabled = _quoteInFlight || !Delivery.address.postal_code;
   button.textContent = _quoteInFlight
     ? 'Calculando…'
-    : (Delivery.isPriced() || Delivery.requiresManualQuote() ? 'Recalcular envío' : 'Calcular envío');
+    : (Delivery.isPriced() || Delivery.requiresManualQuote() ? 'Recalcular entrega' : 'Calcular entrega');
 }
 
 function _renderOptions() {
@@ -279,6 +320,11 @@ function _renderMessage(mode) {
     return;
   }
 
+  if (_quoteError || Delivery.status === 'error') {
+    _message(_quoteError || Delivery.reason, 'error');
+    return;
+  }
+
   if (mode === DELIVERY_MODES.NATIONAL || mode === DELIVERY_MODES.LOCAL) {
     const missing = Delivery.missingAddressFields();
 
@@ -306,56 +352,7 @@ function _message(text, tone) {
   element.hidden = !text;
 }
 
-/* ── Summary rows ────────────────────────────────────────────────────────────
-   Called by cart/render.js so the shipping line and the grand total stay in
-   step with the merchandise total beside them. */
-export function renderDeliverySummary(merchandiseTotal) {
-  const row = $('cart-shipping-row');
-  const value = $('cart-shipping-value');
-  const label = $('cart-shipping-label');
-  const note = $('cart-total-note');
-
-  if (!row || !value) return;
-
-  const mode = Delivery.mode;
-
-  if (!mode) {
-    row.hidden = true;
-    if (note) note.hidden = true;
-    return;
-  }
-
-  row.hidden = false;
-  if (label) label.textContent = _modeLabel(mode);
-
-  if (Delivery.isPriced()) {
-    const cost = Delivery.cost;
-    value.textContent = cost > 0 ? formatPrice(cost, '') : 'Sin costo';
-
-    /* A grand total is only stated when every part of it is real. */
-    if (note) {
-      const grand = Number(merchandiseTotal || 0) + cost;
-      // formatPrice already appends " MXN".
-      note.textContent = `Total con entrega: ${formatPrice(grand, '')}`;
-      note.hidden = false;
-    }
-    return;
-  }
-
-  /* Unpriced. The words are the whole point: an order awaiting a manual quote
-     has no final total, so no total is shown. */
-  value.textContent = 'Por confirmar';
-  if (note) note.hidden = true;
-}
-
-/* ── Helpers ─────────────────────────────────────────────────────────────── */
-
-function _modeLabel(mode) {
-  if (mode === DELIVERY_MODES.PICKUP) return 'Recoger en tienda';
-  if (mode === DELIVERY_MODES.LOCAL) return 'Entrega local';
-  return 'Envío';
-}
-
+/* ── Helpers ─────────────────────────────────────────────── */
 function _toggle(element, show) {
   if (element) element.hidden = !show;
 }

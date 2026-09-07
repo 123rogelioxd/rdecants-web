@@ -70,12 +70,9 @@ test('the cross-sell list scrolls horizontally on mobile instead of stacking ful
   assert.match(mobileBlock, /\.cart-upsells\s*>\s*\.cart-upsell-list\s*\{[^}]*flex-direction:\s*row;/s);
 });
 
-test('upsell cards keep image, name, size/price and an add action — no large descriptions added', () => {
-  assert.match(renderSrc, /cart-upsell-img/);
-  assert.match(renderSrc, /cart-upsell-name/);
-  assert.match(renderSrc, /variant\.size\}ml/);
-  assert.match(renderSrc, /formatPrice\(variant\.price\)/);
-  assert.match(renderSrc, /cart-upsell-add/);
+test('cart is purchase review without recommendation cards', () => {
+  assert.doesNotMatch(renderSrc, /_renderUpsells|cart-upsell-add/);
+  assert.match(renderSrc, /Productos agregados/);
 });
 
 test('the single shipping-completion recommendation stays full-width, not squeezed into the strip', () => {

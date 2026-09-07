@@ -13,6 +13,7 @@
      • Safe: image fallback if src missing/broken
    ============================================================= */
 
+import { buildScentNotesHtml, getShortDescription, getCommercialProfileTags } from './scentNotes.js';
 import { showToast } from './toast.js';
 import { primeImageStates } from './images.js';
 import { lockBodyScroll, unlockBodyScroll } from './scrollLock.js';
@@ -79,6 +80,7 @@ export function openProductModal(product) {
 
   Tracker.productViewed(product);
   _render();
+  _overlay.setAttribute('aria-hidden', 'false');
 
   requestAnimationFrame(() => {
     _overlay.classList.add('pdm-overlay--open');
@@ -98,6 +100,7 @@ export function closeProductModal() {
   if (!_overlay) return;
 
   _overlay.classList.remove('pdm-overlay--open');
+  _overlay.setAttribute('aria-hidden', 'true');
   _modal.classList.remove('pdm-modal--open');
   unlockBodyScroll();
 
@@ -112,7 +115,7 @@ function _render() {
   const p = _activeProduct;
   if (!p || !_modal) return;
 
-  const variants = getValidVariants(p);
+  const variants = getValidVariants(p).filter(v => PRIMARY_SIZES.includes(v.size));
   const activeVariant = variants.find(v => v.size === _selectedSize) || getDefaultVariant(p) || getDisplayVariant(p);
   _selectedSize = activeVariant?.size ?? null;
   const price = activeVariant?.price ?? null;
@@ -130,7 +133,7 @@ function _render() {
 
   const guidanceHtml = buildProductModalGuidanceHtml(p);
   const detailsHref = productPageUrl(p);
-  const description = _modalDescription(p);
+  const description = getShortDescription(p);
 
   const sizesHtml = PRIMARY_SIZES
     .map(ml => {
@@ -194,7 +197,8 @@ function _render() {
         </div>
         <p class="pdm-decant-hint">Decant auténtico · prueba antes de comprar el frasco</p>
 
-        ${description ? `<p class="pdm-story">${description}</p>` : ''}
+        ${description ? `<p class="pdm-story">${description.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</p>` : ''}
+        ${buildScentNotesHtml(p)}
 
         ${guidanceHtml}
 
@@ -390,7 +394,7 @@ function _trapFocus(e) {
 
 /* ── Helpers ─────────────────────────────────────────────────── */
 function _defaultSize(product) {
-  return getDefaultVariant(product)?.size ?? null;
+  return getVariantForSize(product, 5)?.size ?? getDefaultVariant(product)?.size ?? null;
 }
 
 function _modalDescription(product) {

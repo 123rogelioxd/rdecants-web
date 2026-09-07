@@ -1,0 +1,18 @@
+name: Storefront tests
+on:
+  pull_request:
+    branches: [production]
+  push:
+    branches: [production]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Full storefront regression suite
+        run: node --test

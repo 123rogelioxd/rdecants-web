@@ -167,8 +167,10 @@ test('the cart drawer no longer contains a second name field', () => {
   assert.ok(!drawer.includes('Tu nombre (opcional)'));
 
   // And the one place it IS asked still exists.
-  assert.ok(drawer.includes('id="delivery-recipient"'));
-  assert.ok(drawer.includes('id="delivery-phone"'));
+  const flow = readFileSync(new URL('../assets/js/ui/checkoutMarkup.js', import.meta.url), 'utf8');
+  assert.ok(!drawer.includes('id="delivery-recipient"'));
+  assert.ok(flow.includes('id="delivery-recipient"'));
+  assert.ok(flow.includes('id="delivery-phone"'));
 });
 
 test('checkout.js reads no checkout-name element anywhere', () => {

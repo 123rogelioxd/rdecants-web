@@ -128,9 +128,10 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
   // Click → cart, with no page in between. Delegated so it survives every
   // re-render the filters trigger.
   grid.addEventListener('click', async event => {
-    const quickViewBtn = event.target.closest('[data-quick-view]');
+    const quickViewBtn = event.target.closest('[data-quick-view], .bottle-card-link');
 
     if (quickViewBtn) {
+      event.preventDefault();
       const card = quickViewBtn.closest('.bottle-card');
       const productId = card?.dataset.product;
       const product = products.find(p => String(p.id) === productId);
@@ -142,11 +143,8 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
 
     if (picker) {
       const card = picker.closest('.bottle-card');
-      const box = card?.querySelector('[data-picker]');
-      if (!box) return;
-      const open = box.hidden;
-      box.hidden = !open;
-      picker.setAttribute('aria-expanded', String(open));
+      const product = products.find(p => String(p.id) === card?.dataset.product);
+      if (product) openBottleQuickView(product);
       return;
     }
 

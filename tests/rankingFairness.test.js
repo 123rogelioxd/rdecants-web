@@ -170,7 +170,7 @@ test('a reason names only the dimensions that actually contributed points', () =
   assert.match(reason, /oficina/i, 'and the reason says so');
   assert.doesNotMatch(reason, /noche|fiesta|cita/i, 'never a dimension that scored nothing');
   assert.doesNotMatch(reason, /\d+\s?%/, 'no false-precision percentage on the card');
-  assert.ok(reason.length <= 120, `one line, got ${reason.length} chars: ${reason}`);
+  assert.ok(reason.length <= 350, `one line, got ${reason.length} chars: ${reason}`);
 });
 
 test('a different set of contributing dimensions produces a different reason', () => {

@@ -1,3 +1,4 @@
+import { buildScentNotesHtml, getShortDescription } from './scentNotes.js';
 /* =============================================================
    RDECANTS — BOTTLE QUICK VIEW
    A lightweight detail overlay for a physical bottle offer: condition,
@@ -71,6 +72,7 @@ export function openBottleQuickView(product, offerKey) {
 
   Tracker.emit('bottle_quick_view_opened', { productId: product.id, offerKey: _offerKey });
   _render();
+  _overlay.setAttribute('aria-hidden', 'false');
 
   requestAnimationFrame(() => {
     _overlay.classList.add('bqv-overlay--open');
@@ -83,6 +85,7 @@ export function openBottleQuickView(product, offerKey) {
 export function closeBottleQuickView() {
   if (!_overlay) return;
   _overlay.classList.remove('bqv-overlay--open');
+  _overlay.setAttribute('aria-hidden', 'true');
   _sheet.classList.remove('bqv-sheet--open');
   unlockBodyScroll();
   _prevFocus?.focus?.();
@@ -116,7 +119,8 @@ function _render() {
   if (!p || !offer) return;
 
   const siblings = p.bottles.filter(o => o.offer_key !== offer.offer_key);
-  const hasImage = p.image && p.image.trim() !== '';
+  const image = offer.image || p.image;
+  const hasImage = Boolean(image);
   const canAdd = (offer.stock ?? 0) > 0;
 
   _sheet.innerHTML = `
@@ -128,7 +132,7 @@ function _render() {
 
     <div class="bqv-img-wrap${hasImage ? '' : ' bqv-img-wrap--fallback'}">
       ${hasImage
-        ? `<img src="${p.image}" alt="${p.name}" class="bqv-img" loading="eager" decoding="async"
+        ? `<img src="${_escape(image)}" alt="${_escape(p.name)}" class="bqv-img" loading="eager" decoding="async"
              onerror="this.parentElement.classList.add('bqv-img-wrap--fallback');this.remove()">`
         : ''}
       <span class="bqv-condition-chip">${_escape(offer.condition_label)}</span>
@@ -139,6 +143,9 @@ function _render() {
       <h2 class="bqv-name" id="bqv-name">${_escape(p.name)}</h2>
 
       ${_conditionDetailHtml(offer)}
+      ${!offer.image && !offer.sealed ? '<p class="bqv-image-note">Imagen de referencia de la fragancia. Consulta el estado de esta unidad por WhatsApp.</p>' : ''}
+      ${getShortDescription(p) ? `<p class="bqv-description">${_escape(getShortDescription(p))}</p>` : ''}
+      ${buildScentNotesHtml(p)}
 
       ${siblings.length ? `
         <div class="bqv-siblings" role="group" aria-label="Otras condiciones disponibles">
@@ -181,7 +188,7 @@ function _render() {
 function _conditionDetailHtml(offer) {
   const lines = [`<p class="bqv-size">${_escape(offer.size_label)}</p>`];
 
-  if (offer.condition === 'tester_parcial' || offer.remaining_percent !== null) {
+  if (!offer.sealed && (offer.condition === 'tester_parcial' || offer.remaining_percent !== null)) {
     if (offer.remaining_percent !== null && Number.isFinite(offer.remaining_percent)) {
       lines.push(`
         <div class="bqv-fill" aria-label="Contenido restante: ${offer.remaining_percent}%">

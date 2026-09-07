@@ -226,7 +226,7 @@ test('clearing everything returns the default full catalog', () => {
   const state = SearchBar.getState();
   assert.equal(state.guide, null);
   assert.equal(state.gender, null);
-  assert.equal(_rendered.length, CATALOG.length, 'the whole catalog is back');
+  assert.deepEqual(_rendered.map(p => p.id).sort(), CATALOG.filter(p => p.variants.some(v => [3,5,10].includes(v.size) && v.variant_id != null)).map(p => p.id).sort(), 'all decants return without physical-only products');
 });
 
 /* ── One gender, one place ───────────────────────────────────────── */

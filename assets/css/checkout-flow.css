@@ -1,0 +1,68 @@
+.checkout-overlay { position: fixed; inset: 0; z-index: 1200; background: #16151288; display: flex; align-items: center; justify-content: center; padding: 28px; }
+.checkout-overlay[hidden] { display: none; }
+.checkout-dialog { background: #faf8f3; border-radius: 16px; width: min(1080px,100%); max-height: calc(100dvh - 56px); display: flex; flex-direction: column; color: #171714; overflow: hidden; box-shadow: 0 16px 64px #0003; }
+.checkout-heading { display: flex; align-items: center; justify-content: space-between; padding: 18px 28px; border-bottom: 1px solid #e5e0d8; }
+.checkout-brand { font: italic 32px Georgia,serif; }
+.checkout-brand span { font: 14px Georgia,serif; letter-spacing: .2em; }
+.checkout-close { width: 44px; height: 44px; border: 0; background: transparent; font-size: 28px; cursor: pointer; }
+.checkout-progress { display: flex; gap: 20px; justify-content: center; padding: 16px; font-size: 12px; color: #706c66; }
+.checkout-progress>button,.checkout-progress>span { display:flex; gap: 7px; align-items:center; border:0; background:transparent; font:inherit; color:inherit; }
+.checkout-progress [aria-current="step"] { color:#151513; font-weight:700; }
+.checkout-progress>*>span { display:inline-grid; place-items:center; width:22px; height:22px; border:1px solid #bbb6ae; border-radius:50%; }
+.checkout-progress [aria-current="step"]>span { background:#171714; color:white; border-color:#171714; }
+.checkout-scroll { overflow-y: auto; overscroll-behavior: contain; min-height: 0; padding: 12px 32px 28px; }
+.checkout-intro { margin-bottom: 24px; }
+.checkout-eyebrow { font-size: 10px; letter-spacing: .16em; color: #77716a; margin-bottom: 8px; }
+.checkout-intro h2 { font: 500 34px/1.15 Georgia,serif; margin-bottom: 8px; }
+.checkout-intro>p:last-child { font-size: 14px; color: #716b63; }
+.checkout-layout { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(240px,1fr); gap: 28px; align-items: start; }
+.checkout-content { min-width: 0; }
+.checkout-summary { position: sticky; top: 0; padding: 22px; border: 1px solid #e4dfd7; background: #fffefa; border-radius: 12px; }
+.checkout-summary h3 { font-size: 16px; margin-bottom: 18px; }
+.checkout-summary dl>div { display: flex; gap: 10px; justify-content: space-between; font-size: 13px; margin: 12px 0; }
+.checkout-summary dd { text-align: right; margin:0; }
+.checkout-summary .checkout-total { border-top: 1px solid #ddd7cd; padding-top: 16px; font-size: 18px; font-weight: 700; }
+.checkout-summary>p { color: #70695f; font-size: 12px; line-height: 1.5; }
+.checkout-actions { padding: 14px 32px max(18px,env(safe-area-inset-bottom)); border-top: 1px solid #ded9d0; background: #faf8f3; }
+.checkout-actions-row { display: flex; gap: 12px; justify-content: space-between; }
+.checkout-primary,.checkout-secondary,.checkout-whatsapp { display: inline-flex; justify-content: center; align-items: center; min-height: 46px; padding: 12px 22px; border-radius: 7px; font: 600 14px/1.2 inherit; cursor: pointer; text-decoration: none; }
+.checkout-primary { background:#171714; color:#fff; border:1px solid #171714; }
+.checkout-secondary { background: transparent; color: #171714; border: 1px solid #cfc9bf; }
+.checkout-primary:disabled,.checkout-secondary:disabled { opacity:.5; cursor:wait; }
+#cart-continue { width: 100%; }
+#checkout-action-hint { font-size: 12px; color:#716b63; margin-bottom:10px; }
+.checkout-step-error { color:#a12d25; font-size:13px; padding:8px 0; }
+.checkout-review-card { background:#fffefa; border:1px solid #e5dfd5; padding:18px; border-radius:10px; margin-bottom:14px; font-size:14px; line-height:1.55; }
+.checkout-section-title { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:15px; }
+.checkout-section-title h3 { font-size:16px; }
+.checkout-section-title button { border:0; background:none; text-decoration:underline; font:inherit; font-size:12px; min-height:44px; cursor:pointer; }
+.checkout-review-line { display:flex; justify-content:space-between; gap:12px; padding:12px 0; border-bottom:1px solid #e9e4dc; }
+.checkout-review-line p { color:#716b63; font-size:12px; }
+.checkout-review-line>span { white-space:nowrap; }
+.checkout-registered { text-align:center; padding:24px 12px; display:grid; gap:18px; justify-items:center; }
+.checkout-success-icon { width:56px; height:56px; border-radius:50%; background:#e0efe5; color:#24724e; display:grid; place-items:center; font-size:28px; }
+.checkout-folio { font-size:24px; font-weight:700; }
+.checkout-registration-note { color:#6b655c; font-size:13px; }
+.checkout-whatsapp { background:#187d54; border:1px solid #187d54; color:white; }
+.checkout-dialog .delivery-panel { margin:0; padding:0; border:0; }
+.checkout-dialog .delivery-mode[aria-checked="true"] { background:#171714; color:white; border-color:#171714; }
+.checkout-dialog .delivery-mode[aria-checked="true"] span { color:white; }
+.checkout-dialog .delivery-field input,.checkout-dialog .delivery-field select { min-height:44px; font-size:16px; }
+.checkout-dialog :focus-visible { outline:2px solid #171714; outline-offset:3px; }
+@media(max-width:700px) {
+ .checkout-overlay { padding:0; }
+ .checkout-dialog { width:100%; height:100dvh; max-height:100dvh; border-radius:0; }
+ .checkout-heading { padding:8px 18px; }
+ .checkout-progress { gap:12px; padding:12px 8px; font-size:10px; }
+ .checkout-progress>button,.checkout-progress>span { gap:4px; }
+ .checkout-scroll { padding:12px 18px 22px; }
+ .checkout-layout { grid-template-columns:minmax(0,1fr); gap:18px; }
+ .checkout-summary { position:static; padding:18px; }
+ .checkout-intro h2 { font-size:29px; }
+ .checkout-actions { padding:10px 18px max(12px,env(safe-area-inset-bottom)); }
+ .checkout-actions-row>* { flex:1; padding:12px 8px; font-size:12px; }
+ .checkout-dialog .delivery-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .checkout-dialog .delivery-field { min-width:0; }
+}
+.checkout-progress > button > span,.checkout-progress > span > span { background:#e9e7e1; color:#57534d; }
+.checkout-progress > [aria-current="step"] > span { background:#181816; color:#fff; }

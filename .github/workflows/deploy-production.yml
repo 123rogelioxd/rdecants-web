@@ -33,6 +33,9 @@ jobs:
             --exclude-glob .git/ \
             --exclude-glob .github/ \
             --exclude-glob node_modules/ \
+            --exclude-glob tests/ \
+            --exclude-glob scripts/ \
+            --exclude-glob docs/ \
             --exclude-glob "*.zip" \
             ./ /
           bye

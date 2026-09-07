@@ -13,6 +13,7 @@ import { normalizePacks } from '../recommendations/starterPacks.js';
 import { PRODUCTS } from '../../../data/products.js';
 
 let _productsCache = null;
+let _productsCachedAt = 0;
 let _packsCache = null;
 
 /* Local demo data (data/products.js) is a DEVELOPER fallback only. It must
@@ -41,7 +42,7 @@ function _demoFallbackAllowed() {
 
 export const CatalogProvider = {
   async getProducts() {
-    if (_productsCache) return _productsCache;
+    if (_productsCache && Date.now() - _productsCachedAt < 60000) return _productsCache;
 
     try {
       const data = await ApiClient.getCatalog();
@@ -49,6 +50,7 @@ export const CatalogProvider = {
 
       if (Array.isArray(items)) {
         _productsCache = items.map(_mapProduct).filter(Boolean);
+        _productsCachedAt = Date.now();
         return _productsCache;
       }
     } catch {
@@ -226,11 +228,12 @@ function _mapProduct(p) {
         10: Number(p.price_10ml ?? p.price10 ?? 0),
       };
 
-  const apiVariants = Array.isArray(p.variants ?? p.variantes)
+  const normal = p.normal_decant?.presentations;
+  const apiVariants = Array.isArray(normal) ? [...normal, ...(p.variants ?? []).filter(v => ![3,5,10].includes(Number(v.ml ?? v.size)))] : Array.isArray(p.variants ?? p.variantes)
     ? (p.variants ?? p.variantes)
     : [];
 
-  const variants = (apiVariants.length
+  const variants = (Array.isArray(normal) || apiVariants.length
     ? apiVariants.map(v => _mapVariant(v, id))
     : Object.entries(prices).map(([size, price]) => _mapVariant({
         id: `${id}-${size}`,
@@ -279,7 +282,10 @@ function _mapProduct(p) {
     featured: Boolean(p.featured),
     hero: Boolean(p.hero),
     commercial_role: p.commercial_role ?? p.commercialRole ?? p.launch_role ?? null,
-    fragrance: _mapFragrance(p.fragrance),
+    fragrance: _mapFragrance(p.scent_profile ? { ...p.fragrance, accords: p.scent_profile.accords, occasions: p.scent_profile.occasions, climates: p.scent_profile.climates, scores: p.scent_profile.scores, summary: p.scent_profile.short_description } : p.fragrance),
+    scent_profile: p.scent_profile ?? null,
+    normal_decant: p.normal_decant ?? null,
+    publication: p.publication ?? null,
     prices,
     variants,
     bottles,
@@ -301,6 +307,7 @@ function _mapBottleOffer(raw) {
 
   return {
     offer_key: offerKey,
+    image: normalizeApiImageUrl(raw.image_url ?? raw.image) || null,
     /* What this object IS, in the same vocabulary R Supply OS uses on the
        operator's own screen. A size means nothing without it: 100 is a flacon
        here and a pour on a decant. */

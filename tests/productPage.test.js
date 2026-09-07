@@ -246,9 +246,9 @@ test('the pre-selected presentation is the recommended one, read from the catalo
       { ...sample.variants[1], availability: 0, stock: 0, available: false, soldOut: true, sold_out: true },
     ],
   });
-  const three = noFive.slice(noFive.indexOf('data-size="3"') - 300, noFive.indexOf('data-size="3"') + 200);
-  assert.ok(three.includes('pdp-size-btn--active'), '3ml pre-selected');
-  assert.ok(three.includes('pdp-size-btn--recommended'), '3ml carries the recommendation');
+  const fiveUnavailable = noFive.match(/<button[^>]*data-size="5"[^>]*>/)?.[0] || '';
+  assert.ok(fiveUnavailable.includes('pdp-size-btn--active'), '5ml remains the explicit default');
+  assert.ok(fiveUnavailable.includes('disabled'), 'out-of-stock 5ml cannot be bought');
   assert.ok(noFive.includes('aria-pressed="true"'), 'a presentation is always pre-selected');
 });
 
@@ -278,15 +278,15 @@ test('PDP fused section carries up to 2 why bullets next to the lead', () => {
   assert.ok(bullets <= 2, `why bullets capped at 2, got ${bullets}`);
 });
 
-test('PDP hero keeps metadata out of the top visible area', () => {
+test('PDP hero displays principal SVG notes and keeps full metadata in details', () => {
   const html = buildProductPageHtml(sample);
   const heroSlice = html.slice(
     html.indexOf('id="pdp-hero"'),
     html.indexOf('id="pdp-novice"')
   );
   assert.ok(!heroSlice.includes('note-tag'), 'notes hidden from hero');
-  assert.ok(!heroSlice.includes('bergamota'), 'note text hidden from hero');
-  assert.ok(!heroSlice.includes('ambroxan'), 'accord text hidden from hero');
+  assert.ok(heroSlice.includes('scent-note-icon'), 'principal note icons visible');
+  assert.ok((heroSlice.match(/data-scent-note=/g) || []).length <= 5, 'principal notes capped');
 
   const detailsSlice = html.slice(html.indexOf('id="pdp-tech"'));
   assert.ok(detailsSlice.includes('note-tag'), 'notes stay accessible in details');
@@ -365,7 +365,7 @@ test('Afnan 9PM shows concise public guidance', () => {
   assert.ok(heroSlice.includes('>Dulce<'));
   assert.ok(!heroSlice.includes('>Cita<'));
   assert.ok(!heroSlice.includes('>Fiesta<'));
-  assert.ok(!heroSlice.includes('Manzana'), 'notes are not dumped in hero');
+  assert.ok((heroSlice.match(/data-scent-note=/g) || []).length <= 5, 'only principal notes in hero');
   assert.ok(whySlice.includes('pdp-novice-lead'), 'one summary line');
   assert.ok(whySlice.includes('Vibra juvenil y seductora'));
   assert.ok((whySlice.match(/<li>/g) || []).length <= 2);

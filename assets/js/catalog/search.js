@@ -1,3 +1,5 @@
+import { normalizeProduct } from '../recommendations/normalize.js';
+import { normalizeScentNote, mainScentNotes } from '../ui/scentNotes.js';
 /* =============================================================
    RDECANTS — SEARCH ENGINE
    Pure filter + sort logic. Zero DOM, zero side effects.
@@ -280,6 +282,13 @@ function _norm(str) {
 }
 
 function _matchesMood(product, mood) {
+  if (product.scent_profile) {
+    const n = normalizeProduct(product);
+    const keys = { fresco: ['citrico','acuatico','aromatico','verde'], dulce: ['dulce','gourmand'], elegante: ['elegante','formal'], fiesta: ['fiesta','noche'], diario: ['diario','oficina','escuela'], lujo: ['lujo','luxury'] }[mood];
+    if (!keys) return true;
+    const tokens = [...n.families.values, ...n.occasions.values, ...n.moods.values, ...n.tags.values];
+    return keys.some(key => tokens.includes(key));
+  }
   const rules = MOOD_MAP[mood];
   if (!rules) return true;
 
@@ -342,7 +351,10 @@ export function scoreSearchResult(product, rawQuery) {
          and a typo in a note is not worth a wrong product. */
       const noteTokens = _identityTokens(fields.notes.join(' '));
       const noteQuality = _allTokensMatch(queryTokens, noteTokens, { allowFuzzy: false });
-      if (!noteQuality) return 0;
+      if (!noteQuality) {
+        const queryNote = normalizeScentNote(rawQuery);
+        if (!queryNote?.id || !mainScentNotes(product).some(note => note.id === queryNote.id)) return 0;
+      }
       score = SEARCH_SCORE.notes + Math.min(noteQuality, 40);
     }
   }
@@ -393,6 +405,8 @@ function _searchFields(product) {
      different key. Nothing editorial belongs in here. */
   const notes = _uniqueNormalized([
     ..._asArray(product?.notes),
+    ...mainScentNotes(product).flatMap(note => [note.label, note.id]),
+    ..._asArray(product?.scent_profile?.accords),
     ..._asArray(f?.accords),
   ]);
   const secondary = _uniqueNormalized([
@@ -644,6 +658,7 @@ function _sort(products, sort) {
 }
 
 function _catalogAddedOrder(product) {
+  if (product.publication) return Date.parse(product.publication.added_at) || 0;
   const value = Number(product?.product_id);
   return Number.isFinite(value) ? value : Number.NEGATIVE_INFINITY;
 }

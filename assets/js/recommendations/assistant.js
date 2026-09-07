@@ -191,7 +191,7 @@ function _toRecommendation(evaluation, answers, rank) {
  */
 export function getAssistantRecommendations(answers = {}, products = [], { limit = MAX_RESULTS } = {}) {
   if (!Array.isArray(products) || !products.length) return [];
-  const ranked = rankCatalog(products, answers, { limit });
+  const ranked = rankCatalog(products, answers, { limit: Math.min(MAX_RESULTS, Math.max(0, limit)) });
   return ranked.results.map((evaluation, index) =>
     _toRecommendation(evaluation, ranked.answers, index + 1));
 }
@@ -256,7 +256,7 @@ export function getFinderResult(answers = {}, products = []) {
     ...result,
     summary: describeAnswers(result.answers),
     picks: result.picks.map(pick => {
-      const suggestedVariant = getVariantForSize(pick.product, starterMl) ?? pick.variant;
+      const suggestedVariant = pick.variant;
       return {
         ...pick,
         /* `role` used to be best / safe / standout, which implied three

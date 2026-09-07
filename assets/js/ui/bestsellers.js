@@ -126,8 +126,8 @@ export function selectNewest(products, limit = BESTSELLER_LIMIT) {
   return (Array.isArray(products) ? products : [])
     .filter(Boolean)
     .filter(isSellable)
-    .filter(p => Number.isFinite(Number(p.product_id)))
-    .sort((a, b) => Number(b.product_id) - Number(a.product_id))
+    .filter(p => p.publication?.is_new === true && Date.parse(p.publication.new_until) > Date.now())
+    .sort((a, b) => Date.parse(b.publication.added_at) - Date.parse(a.publication.added_at))
     .slice(0, Math.max(0, limit));
 }
 
@@ -199,7 +199,7 @@ export function syncEntryPrice(products, doc = document) {
    view, one tap away. */
 function _buildRailCard(product, index, editorial = {}) {
   const tryVariant = getVariantForSize(product, TRY_SIZE_ML);
-  const variant = tryVariant ?? getDisplayVariant(product);
+  const variant = tryVariant;
   const stock = getScarcityDisplay(product);
   const canQuickAdd = Boolean(variant && !variant.soldOut && variant.availability > 0 && _validVariantId(variant.variant_id));
 

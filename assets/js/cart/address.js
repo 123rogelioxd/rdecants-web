@@ -87,26 +87,27 @@ export function bindAddressForm(root, { onFieldChange, onChange = () => {} }) {
     if (stateWrap) stateWrap.hidden = true;
   };
 
-  const renderUnresolved = () => {
+  const renderUnresolved = (saved = {}) => {
     lastResolution = null;
     if (locationHint) {
       locationHint.hidden = true;
       locationHint.textContent = '';
     }
     showManualColonia();
-    if (coloniaManualInput) coloniaManualInput.value = '';
-    emit('municipio', '');
-    emit('city', '');
-    emit('state', '');
+    if (coloniaManualInput) coloniaManualInput.value = saved.neighborhood || '';
+    emit('neighborhood', saved.neighborhood || '');
+    emit('municipio', saved.municipio || '');
+    emit('city', saved.city || '');
+    emit('state', saved.state || '');
   };
 
-  const renderResolved = resolution => {
+  const renderResolved = (resolution, saved = {}) => {
     lastResolution = resolution;
     showColoniaSelect();
 
     if (locationHint) {
       locationHint.hidden = false;
-      locationHint.textContent = `📍 ${resolution.municipio}, ${resolution.estado}`;
+      locationHint.textContent = `${resolution.municipio}, ${resolution.estado}`;
     }
 
     if (coloniaSelect) {
@@ -119,12 +120,14 @@ export function bindAddressForm(root, { onFieldChange, onChange = () => {} }) {
     emit('state', resolution.estado);
     // A fresh resolution invalidates whichever colonia was chosen before —
     // the customer must confirm again rather than keep a stale one.
-    emit('neighborhood', '');
+    const previous = resolution.colonias.some(colonia => colonia.colonia === saved.neighborhood) ? saved.neighborhood : '';
+    if (coloniaSelect) coloniaSelect.value = previous;
+    emit('neighborhood', previous);
   };
 
   coloniaSelect?.addEventListener('change', () => emit('neighborhood', coloniaSelect.value));
 
-  const lookup = async cp => {
+  const lookup = async (cp, saved = {}) => {
     const generation = ++requestGeneration;
 
     try {
@@ -132,15 +135,15 @@ export function bindAddressForm(root, { onFieldChange, onChange = () => {} }) {
       if (generation !== requestGeneration) return; // superseded by a newer keystroke
 
       if (resolution?.ok && Array.isArray(resolution.colonias) && resolution.colonias.length) {
-        renderResolved(resolution);
+        renderResolved(resolution, saved);
       } else {
-        renderUnresolved();
+        renderUnresolved(saved);
       }
     } catch {
       if (generation !== requestGeneration) return;
       // A network hiccup is the same as "not in the catalog" to the
       // customer: they can still complete the address by hand.
-      renderUnresolved();
+      renderUnresolved(saved);
     }
 
     onChange();
@@ -167,10 +170,10 @@ export function bindAddressForm(root, { onFieldChange, onChange = () => {} }) {
     /** The last successful resolution, or null (unresolved / not looked up yet). */
     resolution: () => lastResolution,
     /** Restore a previously-typed postal code (e.g. from localStorage) and re-resolve it. */
-    hydrate(postalCode) {
+    hydrate(postalCode, saved = {}) {
       if (!postalCode || postalCode.length !== 5) return;
       postalInput.value = postalCode;
-      lookup(postalCode);
+      lookup(postalCode, saved);
     },
   };
 }

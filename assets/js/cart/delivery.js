@@ -39,7 +39,7 @@ const REQUIRED_ADDRESS_FIELDS = [
 ];
 
 /* Editing one of these invalidates whatever price we are holding. */
-const PRICE_CHANGING_FIELDS = ['postal_code', 'neighborhood', 'street', 'exterior_number'];
+const PRICE_CHANGING_FIELDS = ['postal_code', 'neighborhood', 'street', 'exterior_number', 'municipio', 'city', 'state'];
 
 /* Enough of an address to be worth asking the server about.
 
@@ -62,6 +62,7 @@ let _state = {
 };
 
 let _optionsCache = null;
+let _generation = 0;
 
 /* ── Persistence ──────────────────────────────────────────────
    Only the customer's INPUT is remembered — mode and address. Never a
@@ -79,7 +80,7 @@ function _persist() {
 function _restore() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-    if (saved.mode) _state.mode = saved.mode;
+    if (Object.values(DELIVERY_MODES).includes(saved.mode)) _state.mode = saved.mode;
     if (saved.address && typeof saved.address === 'object') {
       _state.address = _cleanAddress(saved.address);
     }
@@ -100,6 +101,8 @@ function _cleanAddress(raw) {
    is the guard against the worst bug available here: quoting a 2-decant parcel
    to one postal code, then ordering six decants to another at the first price. */
 function _invalidateQuote() {
+  _generation++;
+  _state.pricing = null;
   _state.options = [];
   _state.selectedToken = null;
   _state.cost = null;
@@ -117,6 +120,10 @@ export const Delivery = {
   get state() {
     return { ..._state, address: { ..._state.address } };
   },
+
+  get generation() { return _generation; },
+
+  get pricing() { return _state.pricing ? { ..._state.pricing } : null; },
 
   get mode() {
     return _state.mode;
@@ -207,7 +214,7 @@ export const Delivery = {
 
   selectOption(token) {
     const option = _state.options.find(candidate => candidate.token === token);
-    if (!option) return false;
+    if (!option || option.amount === null || !Number.isFinite(Number(option.amount)) || Number(option.amount) < 0) return false;
 
     _state.selectedToken = option.token;
     _state.cost = Number(option.amount);
@@ -276,11 +283,13 @@ export const Delivery = {
   async quote(cartPayload) {
     if (!_state.mode) return { ok: false };
 
-    _state.status = 'loading';
     _invalidateQuote();
+    const generation = _generation;
     _state.status = 'loading';
 
-    const { ok, data } = await ApiClient.quoteDelivery({
+    let response;
+    try {
+      response = await ApiClient.quoteDelivery({
       ...cartPayload,
       mode: _state.mode,
       postal_code: _state.address.postal_code || null,
@@ -299,6 +308,14 @@ export const Delivery = {
       exterior_number: _state.address.exterior_number || null,
     });
 
+    } catch {
+      if (generation !== _generation) return { ok: false, stale: true };
+      _state.status = 'error';
+      _state.reason = 'No pudimos calcular la entrega. Inténtalo de nuevo.';
+      return { ok: false, message: _state.reason };
+    }
+    if (generation !== _generation) return { ok: false, stale: true };
+    const { ok, data } = response;
     if (!ok) {
       _state.status = 'error';
       _state.reason = data?.message || 'No pudimos calcular la entrega. Revisa los datos e inténtalo de nuevo.';
@@ -306,7 +323,11 @@ export const Delivery = {
     }
 
     const delivery = data?.delivery ?? {};
-    _state.options = Array.isArray(delivery.options) ? delivery.options : [];
+    _state.options = (Array.isArray(delivery.options) ? delivery.options : []).filter(option => option.token && option.amount !== null && Number.isFinite(Number(option.amount)) && Number(option.amount) >= 0);
+    const pricing = data?.pricing;
+    if (pricing && ['subtotal', 'discount', 'merchandise_total'].every(key => pricing[key] !== null && Number.isFinite(Number(pricing[key])) && Number(pricing[key]) >= 0)) {
+      _state.pricing = { subtotal: Number(pricing.subtotal), discount: Number(pricing.discount), merchandise_total: Number(pricing.merchandise_total) };
+    }
     _state.reason = delivery.reason ?? null;
 
     if (delivery.requires_manual_quote || _state.options.length === 0) {
@@ -348,6 +369,7 @@ export const Delivery = {
   },
 
   reset() {
+    _generation++;
     _state = {
       mode: null, address: {}, options: [],
       selectedToken: null, cost: null, requiresManualQuote: false,

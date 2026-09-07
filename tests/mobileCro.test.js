@@ -50,7 +50,7 @@ test('cart drawer title says "Tu carrito" (not "Tu Colección") with a subtitle'
   assert.match(drawer, /class="cart-title">Tu carrito</, 'cart title');
   assert.doesNotMatch(drawer, /class="cart-title">Tu Colección</, 'old title gone');
   assert.match(drawer, /class="cart-subtitle"/, 'subtitle present');
-  assert.match(drawer, /Revisa tu pedido antes de enviarlo por WhatsApp/, 'subtitle copy');
+  assert.match(drawer, /Revisa tus productos y continúa a la entrega./, 'subtitle copy');
 });
 
 test('every entry point mounts the shared drawer through the page shell', () => {
@@ -69,9 +69,9 @@ test('every entry point mounts the shared drawer through the page shell', () => 
   }
 });
 
-test('cart upsell copy says "Completa tu pedido", not "Completa tu colección"', () => {
+test('cart review contains no cross-sell interruption', () => {
   const src = read('assets/js/cart/render.js');
-  assert.ok(src.includes('Completa tu pedido'), 'new cart recommendation title present');
+  assert.ok(!src.includes('Completa tu pedido'), 'cart stays focused on review');
   assert.ok(!src.includes('Completa tu colección'), 'old collection title removed from cart recommendations');
 });
 
@@ -85,23 +85,24 @@ test('cart upsell copy says "Completa tu pedido", not "Completa tu colección"',
    nombre» with no phone. */
 test('the name is asked once, in the delivery block, and never twice', () => {
   const drawer = read(CART_DRAWER_SRC);
+  const flow = read('assets/js/ui/checkoutMarkup.js');
   assert.ok(!drawer.includes('id="checkout-name"'), 'the duplicate name input is gone');
   assert.ok(!drawer.includes('Tu nombre (opcional)'), 'the duplicate label is gone');
   assert.ok(!drawer.includes('id="checkout-name-error"'), 'its error slot went with it');
 
   // The one place it IS asked, alongside the phone that used to be missing
   // from the payload entirely.
-  assert.ok(drawer.includes('id="delivery-recipient"'), 'recipient asked in the delivery block');
-  assert.ok(drawer.includes('Quién recibe'), 'recipient labelled for the customer');
-  assert.ok(drawer.includes('id="delivery-phone"'), 'phone asked in the delivery block');
+  assert.ok(flow.includes('id="delivery-recipient"'), 'recipient asked in the delivery block');
+  assert.ok(flow.includes('Quién recibe'), 'recipient labelled for the customer');
+  assert.ok(flow.includes('id="delivery-phone"'), 'phone asked in the delivery block');
 
   assert.ok(!drawer.includes('aria-required="true"'), 'no required field');
   assert.ok(!drawer.includes('id="checkout-phone"'), 'no second phone field');
   assert.ok(drawer.includes('id="checkout-notes-toggle"'), 'notes collapsed behind a toggle');
-  assert.ok(drawer.includes('En WhatsApp confirmamos envío, pago y disponibilidad'), 'explains the next step');
+  assert.ok(drawer.includes('La entrega se calcula en el siguiente paso.'), 'explains the next step');
   assert.ok(drawer.includes('class="cart-trust"'), 'trust strip present');
-  assert.ok(drawer.includes('id="shipping-status"'), 'shipping eligibility status present');
-  assert.ok(drawer.includes('id="checkout-fallback"'), 'popup-blocked fallback slot present');
+  assert.ok(!drawer.includes('id="shipping-status"'), 'no misleading shipping eligibility');
+  assert.ok(flow.includes('id="checkout-registered-whatsapp"'), 'explicit folio handoff');
   assert.ok(!drawer.includes('id="checkout-momentum"'), 'old momentum line removed');
 });
 
@@ -175,12 +176,12 @@ test('checkout CTA is one constant action — only the empty state differs', asy
 
   /* With items in the cart, the label and state never change — not for a
      missing name, not for a below-recommended total. */
-  assert.equal(getCheckoutButtonLabel({ isEmpty: false }), '📲 Enviar pedido por WhatsApp');
+  assert.equal(getCheckoutButtonLabel({ isEmpty: false }), 'Continuar a entrega →');
   assert.equal(getCheckoutButtonState({ isEmpty: false }), 'ready');
 
   assert.equal(
     getCheckoutButtonLabel({ isEmpty: false, minimum: { isComplete: false }, hasValidName: false }),
-    '📲 Enviar pedido por WhatsApp',
+    'Continuar a entrega →',
   );
   assert.equal(
     getCheckoutButtonState({ isEmpty: false, minimum: { isComplete: false }, hasValidName: false }),
@@ -188,13 +189,13 @@ test('checkout CTA is one constant action — only the empty state differs', asy
   );
 
   /* Empty is the only non-ready state. */
-  assert.equal(getCheckoutButtonLabel({ isEmpty: true }), 'Agrega una fragancia para finalizar');
+  assert.equal(getCheckoutButtonLabel({ isEmpty: true }), 'Agrega una fragancia para continuar');
   assert.equal(getCheckoutButtonState({ isEmpty: true }), 'empty');
 });
 
 /* ── E. Zero required fields — name is optional ─────────────── */
 
-test('checkout has no required fields — an empty name still passes', async () => {
+test('checkout requires delivery before registration', async () => {
   globalThis.window = globalThis.window || { location: { hostname: 'localhost', pathname: '/' } };
   globalThis.localStorage = globalThis.localStorage || {
     getItem() { return null; }, setItem() {}, removeItem() {},
@@ -203,8 +204,8 @@ test('checkout has no required fields — an empty name still passes', async () 
 
   const { validateCheckout } = await import('../assets/js/cart/checkout.js');
 
-  assert.equal(validateCheckout({ name: '', notes: '' }), null, 'empty name is allowed');
-  assert.equal(validateCheckout({ name: 'Roger', notes: '' }), null, 'named order is allowed');
+  assert.equal(validateCheckout({ name: '', notes: '' }).field, 'mode');
+  assert.equal(validateCheckout({ name: 'Roger', notes: '' }).field, 'mode', 'name does not replace delivery');
 });
 
 /* ── F. WhatsApp checkout message still builds ──────────────── */
