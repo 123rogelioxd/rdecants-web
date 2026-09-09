@@ -128,6 +128,19 @@ export const CHECKOUT_FLOW_HTML = `
           Calcular entrega
         </button>
 
+        <!-- WHEN — local delivery only, and only once we know where it goes.
+             A PREFERENCE, not an appointment: the heading says "preferido",
+             the note says we confirm it by WhatsApp, and "Lo coordinamos por
+             WhatsApp" is always available as the zero-friction answer. The days
+             and windows come from /api/web/delivery/options; nothing about them
+             is hardcoded here. See ui/deliveryPanel.js. -->
+        <div class="delivery-when" id="delivery-when" hidden>
+          <h4 class="delivery-when-title" id="delivery-when-title">¿Cuándo te queda mejor?</h4>
+          <div class="delivery-when-days" id="delivery-when-days" role="group" aria-labelledby="delivery-when-title"></div>
+          <div class="delivery-when-slots" id="delivery-when-slots" role="group" aria-label="Horario preferido"></div>
+          <p class="delivery-when-note">Es tu horario preferido. Lo confirmamos por WhatsApp.</p>
+        </div>
+
         <!-- Real carrier options, one radio each. Rendered only when the server
              returned priced options. -->
         <div class="delivery-options" id="delivery-options" role="radiogroup"
@@ -148,13 +161,23 @@ export const CHECKOUT_FLOW_HTML = `
             <div class="checkout-review-card" id="checkout-review-notes" hidden></div>
           </section>
           <section id="checkout-step-registered" data-checkout-step="registered" aria-label="Pedido registrado" hidden>
+            <!-- What is TRUE at this moment, said in the order a customer
+                 asks it: the order exists, the stock is held, nothing has been
+                 charged, and here is when we are aiming for. Every line is a
+                 fact the server confirmed in its response — none of it is
+                 assumed by this screen. -->
             <div class="checkout-registered">
               <span class="checkout-success-icon" aria-hidden="true">✓</span>
               <p class="checkout-folio" id="checkout-folio"></p>
-              <p>Tu inventario quedó apartado. Confirmaremos los detalles de entrega y pago por WhatsApp.</p>
+              <ul class="checkout-facts" id="checkout-registered-facts"></ul>
               <p class="checkout-registration-note">El registro de tu pedido no realiza un cobro.</p>
               <a class="checkout-whatsapp" id="checkout-registered-whatsapp" target="_blank" rel="noopener">Confirmar por WhatsApp</a>
-              <button type="button" class="checkout-secondary" id="checkout-keep-shopping">Seguir comprando</button>
+              <!-- Straight to the customer's own order. The browser was
+                   securely remembered while the order was being registered, so
+                   this never asks anyone to sign in to see what they just
+                   bought. -->
+              <a class="checkout-secondary" id="checkout-view-order" href="/cuenta.html">Ver mi pedido</a>
+              <button type="button" class="checkout-secondary checkout-secondary--quiet" id="checkout-keep-shopping">Seguir comprando</button>
             </div>
           </section>
         </div>

@@ -277,7 +277,7 @@ test('a discount saved by an older build is still read as one applied code', asy
 test('the message quotes no money, so no preview can go stale in it', () => {
   const message = buildWhatsAppMessage('WEB-20260904-0004');
 
-  assert.equal(message, 'Hola, quiero confirmar mi pedido WEB-20260904-0004.');
+  assert.equal(message, 'Hola, quiero confirmar mi pedido WEB-20260904-0004 de RDECANTS.');
 
   for (const stale of ['$1,850', '$92', '$1,758', 'PRIMERO5', 'Descuento', 'Subtotal', 'Total']) {
     assert.equal(message.includes(stale), false, `message must not contain "${stale}"`);

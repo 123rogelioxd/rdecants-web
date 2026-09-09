@@ -18,6 +18,35 @@ import { formatPrice, isValidPrice } from '../utils/prices.js';
 import { CatalogProvider } from '../providers/catalog.js';
 
 const WHATSAPP_NUMBER = '5219516513018';
+
+/* The perfume, as a picture.
+
+   ── Why the cart line already knows it ─────────────────────────────────────
+   `item.image` is the canonical catalogue URL, copied onto the line when it was
+   added and already sent to R Supply OS in the order metadata. Nothing new is
+   stored and no second image source is introduced — this renders what the cart
+   has been carrying all along.
+
+   ── Why the fallback is a monogram and not a broken frame ──────────────────
+   A product without a photo, an image host having a bad minute, and an offline
+   phone all produce the same thing: an <img> that will never paint. The wrapper
+   carries the initial underneath, so the row keeps its shape and stays
+   recognisable instead of collapsing or showing a torn-page icon. `onerror`
+   removes the image rather than hiding it, so a failed load cannot leave an
+   alt-text string sitting on top of the monogram. */
+function cartThumbHtml(item) {
+  const image = typeof item?.image === 'string' ? item.image.trim() : '';
+  const initial = String(item?.house || item?.name || 'R').trim().charAt(0).toUpperCase() || 'R';
+
+  return `<div class="cart-item-thumb" data-fallback="${_esc(initial)}" aria-hidden="true">${
+    image
+      ? `<img src="${_esc(image)}" alt="" loading="lazy" decoding="async"
+             onerror="this.closest('.cart-item-thumb').classList.add('cart-item-thumb--empty');this.remove()">`
+      : ''
+  }</div>`;
+}
+
+const _esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 let _prevFocus = null;
 
 /* ── Render ─────────────────────────────────────────────────── */
@@ -98,9 +127,11 @@ export function renderCart() {
     return `
       <div class="cart-item${isPack ? ' cart-item--pack' : ''}${isBottle ? ' cart-item--bottle' : ''}">
         <div class="cart-item-top">
+          ${cartThumbHtml(item)}
           <div class="cart-item-id">
             <p class="cart-item-house">${item.house}</p>
             <p class="cart-item-name">${item.name}</p>
+            <p class="cart-item-meta">${label}</p>
           </div>
           <button class="remove-btn"
             onclick="window.__rd.cart.remove('${item.key}')"
@@ -109,11 +140,6 @@ export function renderCart() {
         ${contents}
         ${savingRow}
         <div class="cart-item-bottom">
-          <div class="cart-item-meta-price">
-            <span class="cart-item-meta">${label} &times; ${item.qty}</span>
-            ${isMaxed ? '<span class="cart-stock-note">Máximo disponible</span>' : ''}
-            <span class="cart-item-price">${formatPrice(subtotal, 'Precio por confirmar')}</span>
-          </div>
           <div class="qty-controls" ${isBottle ? 'aria-label="Una botella"' : ''}>
             <button class="qty-btn"
               onclick="window.__rd.cart.changeQty('${item.key}', -1)"
@@ -123,6 +149,10 @@ export function renderCart() {
               onclick="window.__rd.cart.changeQty('${item.key}', 1)"
               ${isMaxed ? 'disabled' : ''}
               aria-label="Aumentar cantidad">+</button>
+          </div>
+          <div class="cart-item-money">
+            ${isMaxed ? '<span class="cart-stock-note">Máximo disponible</span>' : ''}
+            <span class="cart-item-price">${formatPrice(subtotal, 'Precio por confirmar')}</span>
           </div>
         </div>
       </div>

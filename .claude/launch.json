@@ -6,6 +6,12 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["--yes", "serve", "-l", "5050", "."],
       "port": 5050
+    },
+    {
+      "name": "rdecants-qa",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/preview.mjs"],
+      "port": 8080
     }
   ]
 }

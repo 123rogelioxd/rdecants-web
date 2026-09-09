@@ -29,11 +29,23 @@ test('cart item template uses the compact two-row structure', () => {
   assert.match(renderSrc, /cart-item-top/);
   assert.match(renderSrc, /cart-item-bottom/);
   assert.match(renderSrc, /cart-item-id/);
-  assert.match(renderSrc, /cart-item-meta-price/);
+  /* Row 1 now carries the presentation under the name — "10 ml" is part of what
+     is being bought, not part of adjusting it — so row 2 is the stepper and the
+     money alone. `cart-item-meta-price` was the old combined cluster. */
+  assert.match(renderSrc, /cart-item-money/);
   /* The old tall single-column layout (info block beside a stacked
      remove+qty column) must be gone, not just supplemented. */
   assert.doesNotMatch(renderSrc, /cart-item-info/, 'old info wrapper removed');
   assert.doesNotMatch(renderSrc, /cart-item-controls/, 'old stacked controls column removed');
+});
+
+test('every cart line shows the perfume, not just its name', () => {
+  assert.match(renderSrc, /cart-item-thumb/, 'cart lines carry a thumbnail');
+  assert.match(renderSrc, /item\?\.image/, 'the image comes from the cart line itself');
+  /* A photo that never loads must reveal the monogram underneath rather than
+     leave a hole or an alt-text string on top of it. */
+  assert.match(renderSrc, /cart-item-thumb--empty/, 'image failure has a fallback state');
+  assert.match(renderSrc, /data-fallback=/, 'the monogram initial is rendered on the wrapper');
 });
 
 test('cart item keeps house/name/size/qty/price — internal stock count is never shown to the customer', () => {

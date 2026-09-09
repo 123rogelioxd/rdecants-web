@@ -52,6 +52,15 @@ const QUOTABLE_ADDRESS_FIELDS = ['postal_code', 'neighborhood', 'street', 'exter
 let _state = {
   mode: null,
   address: {},
+  /* WHEN the customer would prefer to receive a LOCAL delivery: a date and a
+     window KEY, both chosen from what /api/web/delivery/options published.
+
+     A PREFERENCE, never an appointment. There is no capacity model behind it —
+     the API says so in its own payload (`kind: requested`,
+     `is_guaranteed: false`) — so every label around it reads "preferido" and
+     the customer is told it is coordinated, not booked. */
+  preference: null,
+  windows: null,
   /* The options R Supply OS last offered, and which one is selected. */
   options: [],
   selectedToken: null,
@@ -73,6 +82,10 @@ function _persist() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       mode: _state.mode,
       address: _state.address,
+      /* Identity only, like the address. A remembered DATE can go stale
+         overnight, which is exactly why _restore() drops one that is no longer
+         on offer rather than resubmitting it. */
+      preference: _state.preference,
     }));
   } catch { /* storage unavailable — the choice simply is not remembered */ }
 }
@@ -83,6 +96,12 @@ function _restore() {
     if (Object.values(DELIVERY_MODES).includes(saved.mode)) _state.mode = saved.mode;
     if (saved.address && typeof saved.address === 'object') {
       _state.address = _cleanAddress(saved.address);
+    }
+    if (_state.mode === DELIVERY_MODES.LOCAL && saved.preference?.date && saved.preference?.window) {
+      /* Restored unverified: the catalogue has not been fetched yet this page
+         load. setWindows() re-checks it the moment it arrives and drops a day
+         that has passed. */
+      _state.preference = { date: String(saved.preference.date), window: String(saved.preference.window) };
     }
   } catch { /* unreadable — start fresh */ }
 }
@@ -132,7 +151,56 @@ export const Delivery = {
   setMode(mode) {
     if (_state.mode === mode) return;
     _state.mode = Object.values(DELIVERY_MODES).includes(mode) ? mode : null;
+    /* A window belongs to LOCAL delivery only. Switching to a national order
+       must not carry an hour nobody can honour into the next screen. */
+    if (_state.mode !== DELIVERY_MODES.LOCAL) _state.preference = null;
     _invalidateQuote();
+    _persist();
+  },
+
+  /* ── The requested window ───────────────────────────────────────────────
+     Held as identity only: `{ date, window }`. Labels are never stored here
+     and never posted — the server rebuilds them from its own catalogue, so a
+     stale tab cannot freeze last month's wording onto this month's order. */
+  get preference() {
+    return _state.preference ? { ..._state.preference } : null;
+  },
+
+  get windows() {
+    return _state.windows;
+  },
+
+  setWindows(offer) {
+    _state.windows = offer && typeof offer === 'object' ? offer : null;
+    /* A day that is no longer offered — the customer left the tab open past
+       the window's closing time — stops being selected. Silently dropping it is
+       right: the alternative is posting a request the server will refuse to
+       record, which looks to the customer like it was accepted. */
+    if (_state.preference && !this.isPreferenceOffered(_state.preference)) {
+      _state.preference = null;
+    }
+  },
+
+  isPreferenceOffered(preference) {
+    const days = Array.isArray(_state.windows?.days) ? _state.windows.days : null;
+    if (!days) return true;   // nothing published yet; do not invent a refusal
+    const day = days.find(d => d?.date === preference?.date);
+    return Boolean(day && (day.windows || []).some(w => w?.key === preference?.window));
+  },
+
+  setPreference(date, windowKey) {
+    if (_state.mode !== DELIVERY_MODES.LOCAL) return;
+    const next = date && windowKey ? { date: String(date), window: String(windowKey) } : null;
+    if (next && !this.isPreferenceOffered(next)) return;
+    _state.preference = next;
+    /* Deliberately NOT an _invalidateQuote(): when a delivery arrives cannot
+       change what it costs, and throwing away a valid rate for it would make
+       the form feel broken. */
+    _persist();
+  },
+
+  clearPreference() {
+    _state.preference = null;
     _persist();
   },
 
@@ -250,13 +318,19 @@ export const Delivery = {
       _optionsCache = {
         zones: Array.isArray(data?.zones) ? data.zones : [],
         modes: Array.isArray(data?.modes) ? data.modes.map(m => m.value) : Object.values(DELIVERY_MODES),
+        /* The days and windows a LOCAL order may ask for. Published by the
+           server, never assembled here — a window that has closed for today
+           simply stops arriving, with no frontend deploy. */
+        deliveryWindows: data?.delivery_windows ?? null,
       };
     } catch {
       /* Degrades to "nothing extra offered" rather than showing a zone or a
          mode R Supply OS did not actually confirm. Local/national are the
          floor — a transient failure here must not also hide the modes every
          checkout depends on. */
-      _optionsCache = { zones: [], modes: [DELIVERY_MODES.LOCAL, DELIVERY_MODES.NATIONAL] };
+      /* No windows rather than invented ones: a customer must never be offered
+         a slot the business did not confirm it can be asked for. */
+      _optionsCache = { zones: [], modes: [DELIVERY_MODES.LOCAL, DELIVERY_MODES.NATIONAL], deliveryWindows: null };
     }
 
     return _optionsCache;
@@ -272,6 +346,12 @@ export const Delivery = {
      without the storefront hardcoding that decision anywhere. */
   async modes() {
     return (await this._options()).modes;
+  },
+
+  /* The published window offer, fetched once and cached with the rest of the
+     delivery configuration. */
+  async deliveryWindows() {
+    return (await this._options()).deliveryWindows;
   },
 
   /**
@@ -358,6 +438,12 @@ export const Delivery = {
       payload.address = { ..._state.address };
     }
     if (_state.selectedToken) payload.option_token = _state.selectedToken;
+    /* Local only, and identity only. The server re-derives the label and the
+       hours, refuses a window that has closed, and simply records no preference
+       rather than failing the order. */
+    if (_state.mode === DELIVERY_MODES.LOCAL && _state.preference) {
+      payload.preference = { ..._state.preference };
+    }
 
     return payload;
   },

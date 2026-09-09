@@ -36,9 +36,13 @@
     })();
   </script>
   <meta name="DECANTS_HIDE_DEMO_PRODUCTS" content="true">
-  <title>Perfumes completos — RDecants</title>
-  <meta name="description" content="Perfumes originales nuevos, testers y parciales disponibles en RDecants.">
-  <link rel="canonical" href="https://rdecants.com/perfumes.html">
+  <title>Mis pedidos — RDecants</title>
+  <meta name="description" content="Consulta tus pedidos de RDecants: folio, estado, productos y entrega.">
+  <link rel="canonical" href="https://rdecants.com/cuenta.html">
+  <!-- A customer's own order history. Never indexed: the page is empty for
+       everyone but its owner, and a search result for it would only ever be a
+       dead end. -->
+  <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#F5F1E8">
   <link rel="icon" href="/favicon.ico?v=2026.09.09.1" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/favicon-32.png?v=2026.09.09.1">
@@ -62,7 +66,7 @@
     <a href="/" class="header-logo" aria-label="RDecants — inicio"><img class="logo-mark" src="/assets/brand/rdecants-monogram.png?v=2026.09.09.1" alt="RDecants" width="240" height="171"><span class="logo-text">RDECANTS</span></a>
     <nav class="header-nav" aria-label="Navegación principal">
       <a class="header-nav-link" href="/catalogo.html">Catálogo</a>
-      <a class="header-nav-link" href="/perfumes.html" aria-current="page">Perfumes</a>
+      <a class="header-nav-link" href="/perfumes.html">Perfumes</a>
       <a class="header-nav-link" href="/cotiza.html">Cotiza tu perfume</a>
       <a class="nav-cta" href="/elegir.html"><span aria-hidden="true">✦</span> Ayúdame a elegir</a>
     </nav>
@@ -71,36 +75,34 @@
   <div class="nav-scrim" id="nav-scrim"></div>
   <nav class="nav-drawer" id="nav-drawer" aria-label="Menú" aria-hidden="true">
     <div class="nav-drawer-head"><span class="logo-text">RDECANTS</span><button class="icon-btn" id="nav-close" type="button" aria-label="Cerrar menú">×</button></div>
-    <a href="/catalogo.html">Catálogo</a><a href="/perfumes.html" aria-current="page">Perfumes</a><a href="/cotiza.html">Cotiza tu perfume</a><a href="/elegir.html">Ayúdame a elegir</a><a href="/cuenta.html">Mis pedidos</a><a href="/ayuda.html">Ayuda</a>
+    <a href="/catalogo.html">Catálogo</a><a href="/perfumes.html">Perfumes</a><a href="/cotiza.html">Cotiza tu perfume</a><a href="/elegir.html">Ayúdame a elegir</a><a href="/cuenta.html" aria-current="page">Mis pedidos</a><a href="/ayuda.html">Ayuda</a>
   </nav>
   <main>
-    <section class="page-head perfume-page-head">
+    <section class="page-head account-head">
       <div class="container">
-        <nav class="breadcrumb" aria-label="Ruta"><a href="/">Inicio</a><span>/</span><span aria-current="page">Perfumes</span></nav>
-        <p class="section-eyebrow">Una fragancia, varias formas de comprarla</p>
-        <h1 class="page-title">Perfumes</h1>
-        <p class="page-lede">Botellas nuevas y selladas, testers y parciales. Cada fragancia aparece una sola vez; abre su ficha para elegir la oferta exacta.</p>
+        <nav class="breadcrumb" aria-label="Ruta"><a href="/">Inicio</a><span>/</span><span aria-current="page">Mis pedidos</span></nav>
+        <p class="section-eyebrow" id="account-greeting">Tu cuenta</p>
+        <h1 class="page-title">Mis pedidos</h1>
+        <p class="page-lede" id="account-lede">Aquí ves los pedidos que registraste desde este navegador.</p>
       </div>
     </section>
-    <section class="section perfume-catalog" aria-labelledby="perfume-filter-title">
+
+    <section class="section account-section" aria-labelledby="account-list-title">
       <div class="container">
-        <div class="bottle-filter-bar">
-          <div><h2 id="perfume-filter-title">Disponibles hoy</h2><p id="perfumes-count" aria-live="polite">Cargando…</p></div>
-          <div class="bottle-filters" role="group" aria-label="Filtrar perfumes por condición">
-            <button type="button" class="is-active" data-bottle-filter="all" aria-pressed="true">Todos</button>
-            <button type="button" data-bottle-filter="sealed" aria-pressed="false">Nuevos y sellados</button>
-            <button type="button" data-bottle-filter="tester" aria-pressed="false">Testers</button>
-            <button type="button" data-bottle-filter="partial" aria-pressed="false">Parciales</button>
-          </div>
+        <h2 id="account-list-title" class="sf-sr-only">Tus pedidos</h2>
+
+        <!-- One region, three states: loading, guest, and the customer's own
+             orders. Rendered by assets/js/pages/account.js; the page never
+             decides an order's status for itself. -->
+        <div id="account-root" aria-live="polite">
+          <p class="account-loading">Cargando tus pedidos…</p>
         </div>
-        <div class="bottle-grid" id="perfumes-grid" aria-live="polite"></div>
-        <button class="btn-primary" id="perfumes-retry" type="button" hidden>Reintentar</button>
       </div>
     </section>
   </main>
   <footer class="footer"><div class="container"><div><p class="footer-logo">RDECANTS</p><p class="footer-tagline">Decants y perfumes originales</p></div><nav class="footer-links"><a href="/catalogo.html">Catálogo</a><a href="/perfumes.html">Perfumes</a><a href="/cotiza.html">Cotiza tu perfume</a><a href="/elegir.html">Ayúdame a elegir</a><a href="/cuenta.html">Mis pedidos</a><a href="/ayuda.html">Ayuda</a><a href="/privacidad.html">Privacidad</a><a href="/terminos.html">Términos</a></nav><div class="footer-legal"><span>© 2026 RDECANTS</span><span>Precios en MXN</span></div></div></footer>
   <a class="whatsapp-float" href="https://wa.me/5219516513018" target="_blank" rel="noopener" aria-label="Contactar por WhatsApp">WA</a>
   <div id="toast" class="toast" aria-live="polite"></div>
-  <script type="module" src="/assets/js/pages/perfumes.js?v=2026.09.09.1"></script>
+  <script type="module" src="/assets/js/pages/account.js?v=2026.09.09.1"></script>
 </body>
 </html>

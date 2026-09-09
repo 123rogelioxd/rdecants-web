@@ -118,7 +118,7 @@ test('discount preview sends the same opaque bottle identity as checkout', () =>
 test('the WhatsApp handoff for a mixed cart is the folio, not a line list', () => {
   const message = buildWhatsAppMessage('WEB-20260904-0007');
 
-  assert.equal(message, 'Hola, quiero confirmar mi pedido WEB-20260904-0007.');
+  assert.equal(message, 'Hola, quiero confirmar mi pedido WEB-20260904-0007 de RDECANTS.');
   assert.ok(!/Botella|5ml|Me interesan/.test(message));
 });
 

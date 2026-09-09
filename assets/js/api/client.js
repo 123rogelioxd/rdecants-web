@@ -20,10 +20,42 @@ async function _get(path) {
   return res.json();
 }
 
-async function _post(path, payload) {
+/* ── Why some calls carry credentials and most do not ──────────────────────
+   The customer session is an HttpOnly cookie set by api.rdecants.com. A browser
+   neither SENDS nor ACCEPTS a cookie on a cross-origin fetch unless that fetch
+   opts in with `credentials: 'include'` — so registering an order and every
+   account read must, or a returning customer would silently never be
+   recognised.
+
+   Everything else stays `omit` deliberately. The catalogue, the delivery quote
+   and the discount preview are public reads that must behave identically for a
+   customer and a stranger, and sending a credential where it changes nothing is
+   how a cache ends up holding one customer's response for another.
+
+   The API answers these with Access-Control-Allow-Credentials against an
+   explicit origin list; see config/cors.php in r-supply-os. */
+async function _getWithCredentials(path) {
+  const url = new URL(`${API_BASE}${path}`);
+  url.searchParams.set('v', `${BUILD_VERSION}-${Date.now()}`);
+
+  const res = await fetch(url, {
+    cache: 'no-store',
+    credentials: 'include',
+    headers: { 'Accept': 'application/json' },
+  });
+
+  const data = await res.json().catch(() => null);
+
+  /* 401 is not an error here — it is the answer "this browser is a guest", and
+     the account UI renders a different screen for it. Throwing would turn the
+     ordinary first-visit case into a console full of exceptions. */
+  return { ok: res.ok && data?.ok !== false, status: res.status, data };
+}
+
+async function _post(path, payload, { credentials = 'omit' } = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
-    credentials: 'omit',
+    credentials,
     headers: {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
@@ -81,7 +113,18 @@ export const ApiClient = {
      "nothing scheduled", so a caller distinguishes only success from
      transport failure. */
   getPromotion:       () => _get('/api/web/promotion'),
-  createWebOrder:     (payload) => _post('/api/web/orders', payload),
+  /* `include` so the browser ACCEPTS the Set-Cookie that makes this customer a
+     recognised one on their next visit. Nothing about the order itself changes. */
+  createWebOrder:     (payload) => _post('/api/web/orders', payload, { credentials: 'include' }),
+  /* ── Mi cuenta / Mis pedidos ──────────────────────────────────────────
+     Every one of these is answered from the cliente_id the session cookie
+     resolves to. There is no customer id, phone number or folio the storefront
+     could send to ask about somebody else — a folio here narrows a set that is
+     already this customer's own. */
+  getAccount:         () => _getWithCredentials('/api/web/account'),
+  getAccountOrders:   () => _getWithCredentials('/api/web/account/orders'),
+  getAccountOrder:    (folio) => _getWithCredentials(`/api/web/account/orders/${encodeURIComponent(folio)}`),
+  forgetAccount:      () => _post('/api/web/account/forget', {}, { credentials: 'include' }),
   /* Delivery. Both are READS: quoting creates no shipment, reserves no stock
      and consumes no coupon. The quote sends the cart as identity + quantity,
      exactly like the order does — R Supply OS reprices it, because the local

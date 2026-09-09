@@ -31,7 +31,31 @@ export function checkoutSummaryHtml(totals) {
 
 function totals() { return checkoutTotals({ subtotal: Cart.total(), discount: Discount.amount(), pricing: Delivery.pricing, deliveryCost: Delivery.isPriced() ? Delivery.cost : null }); }
 function error(message = '') { $('checkout-step-error').textContent = message; $('checkout-step-error').hidden = !message; }
-function itemHtml(items) { return items.map(item => `<div class="checkout-review-line"><div><strong>${esc(item.name)}</strong><p>${esc(item.type === 'bottle' ? `Botella · ${item.offer_label || item.condition_label || item.size}` : item.type === 'pack' ? item.size : `${item.size} ml`)} · Cantidad ${item.qty}</p></div><span>${money(item.price * item.qty)}</span></div>`).join(''); }
+/* The same 56px thumbnail the cart uses, from the same `item.image` the cart
+   line already carries. A customer confirming an order should be able to
+   recognise the perfumes by sight — a list of names is a spelling test.
+
+   The monogram sits on the wrapper, so a photo that never loads reveals it
+   instead of leaving a hole. See .cart-item-thumb in components.css. */
+function thumbHtml(item) {
+  const image = typeof item?.image === 'string' ? item.image.trim() : '';
+  const initial = String(item?.house || item?.name || 'R').trim().charAt(0).toUpperCase() || 'R';
+  return `<div class="cart-item-thumb checkout-review-thumb" data-fallback="${esc(initial)}" aria-hidden="true">${
+    image ? `<img src="${esc(image)}" alt="" loading="lazy" decoding="async" onerror="this.closest('.cart-item-thumb').classList.add('cart-item-thumb--empty');this.remove()">` : ''
+  }</div>`;
+}
+
+function itemLabel(item) {
+  if (item.type === 'bottle') return `Botella · ${item.offer_label || item.condition_label || item.size}`;
+  if (item.type === 'pack') return item.size;
+  return `${item.size} ml`;
+}
+
+function itemHtml(items) {
+  return items.map(item => `<div class="checkout-review-line">${thumbHtml(item)}<div class="checkout-review-id">${
+    item.house ? `<p class="checkout-review-house">${esc(item.house)}</p>` : ''
+  }<strong>${esc(item.name)}</strong><p>${esc(itemLabel(item))} · Cantidad ${item.qty}</p></div><span>${money(item.price * item.qty)}</span></div>`).join('');
+}
 
 function render() {
   if (!$('checkout-overlay')) return;
@@ -91,13 +115,45 @@ async function next() {
     const order = result.order;
     registered = { ...result, totals: registeredOrderTotals(order, reviewedTotals) };
     $('checkout-folio').textContent = `Folio ${order.folio}`;
-    $('checkout-registered-whatsapp').href = `https://wa.me/5219516513018?text=${encodeURIComponent(buildWhatsAppMessage(order.folio))}`;
+    $('checkout-registered-facts').innerHTML = registeredFactsHtml(order);
+    const whatsapp = $('checkout-registered-whatsapp');
+    whatsapp.href = `https://wa.me/5219516513018?text=${encodeURIComponent(buildWhatsAppMessage(order.folio, order.delivery?.preference))}`;
+    whatsapp.onclick = () => Tracker.emit('whatsapp_confirmation_clicked', { folio: order.folio, source: 'checkout' });
+    /* Deep-links to this order, not to the list. The session cookie was set on
+       the same response that created it, so nothing asks the customer to sign
+       in to see what they just bought. */
+    $('checkout-view-order').href = `/cuenta.html?folio=${encodeURIComponent(order.folio)}`;
     changeStep('registered');
   } catch (e) {
     if (step === 'confirm' && !Delivery.isReady()) changeStep('delivery');
     error(e.message || 'No pudimos registrar tu pedido. Tu carrito sigue aquí.');
   }
   finally { busy = false; render(); }
+}
+
+/* The four things a customer wants confirmed, each one read from the server's
+   own response rather than assumed by this screen.
+
+   Note what is NOT here: any claim about payment. "Pedido registrado" is not
+   "pagado", and the note below this list says so in as many words. */
+export function registeredFactsHtml(order) {
+  const facts = ['Tu inventario quedó apartado.'];
+
+  const preference = order?.delivery?.preference;
+  if (preference?.label) {
+    /* "Preferido", because that is what it is. `is_guaranteed` is false in the
+       payload and no screen may render it as a confirmed appointment. */
+    facts.push(`Horario preferido: ${preference.label}. Lo confirmamos por WhatsApp.`);
+  }
+
+  const shipping = order?.delivery?.shipping_cost;
+  facts.push(shipping === null || shipping === undefined
+    ? 'El costo de entrega se confirma por WhatsApp.'
+    : 'La entrega ya está calculada.');
+
+  facts.push('Confirmaremos los detalles de entrega y pago por WhatsApp.');
+
+  return facts.map(fact => `<li>${esc(fact)}</li>`).join('');
 }
 
 export function registeredOrderTotals(order, reviewed) {

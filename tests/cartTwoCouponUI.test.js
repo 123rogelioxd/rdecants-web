@@ -277,7 +277,7 @@ test('both applied coupons travel to R Supply OS, and the message carries only t
   assert.deepEqual(Discount.codes(), ['ESPANA40', 'ACERTASTE60']);
 
   const message = buildWhatsAppMessage('WEB-20260904-0002');
-  assert.equal(message, 'Hola, quiero confirmar mi pedido WEB-20260904-0002.');
+  assert.equal(message, 'Hola, quiero confirmar mi pedido WEB-20260904-0002 de RDECANTS.');
   assert.ok(!/ESPANA40|ACERTASTE60|Descuento|Total/.test(message),
     'the message must not restate money the order already holds');
 });
@@ -293,5 +293,5 @@ test('a single coupon behaves the same way — applied here, priced there', asyn
   assert.deepEqual(Discount.codes(), ['ESPANA40']);
 
   const message = buildWhatsAppMessage('WEB-20260904-0003');
-  assert.equal(message, 'Hola, quiero confirmar mi pedido WEB-20260904-0003.');
+  assert.equal(message, 'Hola, quiero confirmar mi pedido WEB-20260904-0003 de RDECANTS.');
 });

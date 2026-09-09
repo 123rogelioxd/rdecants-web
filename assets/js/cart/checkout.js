@@ -433,13 +433,44 @@ async function _buildOrderItem(item) {
    `folio` is required in practice. A message with no folio would be exactly the
    unrecorded order this flow exists to eliminate, and the caller never reaches
    here without one — _performCheckout returns on a failed order and never
-   opens WhatsApp. The fallback is a last defence, not a supported path. */
-export function buildWhatsAppMessage(folio = '') {
-  const reference = String(folio || '').trim();
+   opens WhatsApp. The fallback is a last defence, not a supported path.
 
-  return reference
-    ? `Hola, quiero confirmar mi pedido ${reference}.`
-    : 'Hola, quiero confirmar mi pedido.';
+   ── The one thing that was added back, and why ─────────────────────────────
+   The requested delivery window — when the customer chose one. It is the other
+   question the seller would otherwise have to go and look up before replying,
+   and unlike a price or a line item it cannot be stale: it is echoed from the
+   snapshot the SERVER just wrote, not rebuilt from browser state.
+
+   Printed as a DATE rather than "Hoy" or "Mañana". A chat message read at nine
+   the next morning has no idea which day "hoy" was — and "Mañana" would carry
+   an ñ into a channel this function deliberately keeps ASCII, for the same
+   reason the opening emoji had to go. */
+export function buildWhatsAppMessage(folio = '', preference = null) {
+  const reference = String(folio || '').trim();
+  const opening = reference
+    ? `Hola, quiero confirmar mi pedido ${reference} de RDECANTS.`
+    : 'Hola, quiero confirmar mi pedido de RDECANTS.';
+
+  const line = _preferenceLine(preference);
+
+  return line ? `${opening}
+${line}` : opening;
+}
+
+/* "Horario preferido: 10/09, 4 - 7 pm." — or nothing.
+
+   Built only from `date` and `window_label` as the server stored them. A
+   missing or malformed either means no line at all: the folio is what the
+   message is for, and a half-built sentence about timing helps nobody. */
+function _preferenceLine(preference) {
+  const date = String(preference?.date ?? '').trim();
+  const label = String(preference?.window_label ?? '').trim();
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !label) return '';
+
+  const [, month, day] = date.split('-');
+
+  return `Horario preferido: ${day}/${month}, ${label}.`;
 }
 
 export function syncCheckoutAvailability() {

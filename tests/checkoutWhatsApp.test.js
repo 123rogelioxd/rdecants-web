@@ -40,7 +40,7 @@ const { CatalogProvider } = await import('../assets/js/providers/catalog.js');
 test('buildWhatsAppMessage is one sentence carrying the folio', () => {
   assert.equal(
     buildWhatsAppMessage('WEB-20260904-0001'),
-    'Hola, quiero confirmar mi pedido WEB-20260904-0001.',
+    'Hola, quiero confirmar mi pedido WEB-20260904-0001 de RDECANTS.',
   );
 });
 
@@ -77,7 +77,7 @@ test('buildWhatsAppMessage degrades to a folio-less sentence rather than printin
   for (const input of [undefined, null, '', '   ']) {
     const message = buildWhatsAppMessage(input);
 
-    assert.equal(message, 'Hola, quiero confirmar mi pedido.');
+    assert.equal(message, 'Hola, quiero confirmar mi pedido de RDECANTS.');
     assert.ok(!message.includes('undefined'));
     assert.ok(!message.includes('null'));
   }

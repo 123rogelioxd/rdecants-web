@@ -16,7 +16,10 @@ const ninePm = {
 
 test('modal guidance renders max 3 visible badges without the PDP why box', () => {
   const html = buildProductModalGuidanceHtml(ninePm);
-  assert.equal((html.match(/<span class="guidance-chip /g) || []).length, 3);
+  /* The modifier class (guidance-chip--dulce) is gone: nothing styled it, and
+     these labels now come from the backend, where a key is not guaranteed to be
+     a safe class name. The cap and the labels are what this test is about. */
+  assert.equal((html.match(/<span class="guidance-chip"/g) || []).length, 3);
   assert.equal((html.match(/<li>/g) || []).length, 0);
   assert.ok(html.includes('>Dulce<'));
   assert.ok(html.includes('>Noche<'));

@@ -35,13 +35,62 @@
 .checkout-review-card { background:#fffefa; border:1px solid #e5dfd5; padding:18px; border-radius:10px; margin-bottom:14px; font-size:14px; line-height:1.55; }
 .checkout-section-title { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:15px; }
 .checkout-section-title h3 { font-size:16px; }
-.checkout-section-title button { border:0; background:none; text-decoration:underline; font:inherit; font-size:12px; min-height:44px; cursor:pointer; }
-.checkout-review-line { display:flex; justify-content:space-between; gap:12px; padding:12px 0; border-bottom:1px solid #e9e4dc; }
+/* "Editar carrito" / "Editar entrega".
+   A bordered secondary action in the brand's own ink, not an underlined link.
+   `color` is stated rather than inherited: a bare <button> falls back to the
+   UA's ButtonText and a bare <a> to the browser's default blue, and neither
+   belongs in this palette. */
+.checkout-section-title button { border:1px solid #d9d2c6; background:#fff; color:#171714; text-decoration:none; font:inherit; font-size:12px; min-height:44px; padding:0 12px; border-radius:6px; cursor:pointer; white-space:nowrap; }
+.checkout-section-title button:hover:not(:disabled) { background:#f4efe6; border-color:#171714; }
+.checkout-section-title button:disabled { opacity:.5; cursor:default; }
+
+/* Thumbnail · identity · line total. The thumbnail is what lets a customer
+   confirm the actual perfumes instead of proof-reading a list of names. */
+.checkout-review-line { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 0; border-bottom:1px solid #e9e4dc; }
 .checkout-review-line p { color:#716b63; font-size:12px; }
-.checkout-review-line>span { white-space:nowrap; }
+.checkout-review-line>span { white-space:nowrap; font-family:var(--font-display, inherit); font-size:15px; }
+.checkout-review-id { flex:1; min-width:0; }
+.checkout-review-id strong { display:block; line-height:1.25; overflow-wrap:anywhere; }
+.checkout-review-house { font-size:9px; letter-spacing:.22em; text-transform:uppercase; color:#8a8378; margin-bottom:2px; }
+/* Slightly smaller than the cart's 56px: this list is read, not edited. */
+.checkout-review-thumb { width:48px; height:48px; }
+/* ── "¿Cuándo te queda mejor?" ────────────────────────────────────────────
+   Chips, not a date picker. Two taps and no keyboard: the whole point is that
+   choosing a time costs less than skipping it.
+
+   The selected state is solid black on cream — the brand's own primary — never
+   a gold fill, and the "coordinate by WhatsApp" chip is a peer of the windows
+   rather than a smaller escape hatch. */
+.delivery-when { margin-top:18px; padding-top:16px; border-top:1px solid #e9e4dc; }
+.delivery-when-title { font-size:14px; font-weight:600; margin:0 0 10px; color:#171714; }
+.delivery-when-days,.delivery-when-slots { display:flex; flex-wrap:wrap; gap:8px; }
+.delivery-when-slots { margin-top:8px; }
+.delivery-when-chip {
+  border:1px solid #d9d2c6; background:#fff; color:#171714;
+  font:inherit; font-size:13px; line-height:1;
+  min-height:44px; padding:0 14px; border-radius:999px; cursor:pointer;
+}
+.delivery-when-chip:hover { border-color:#171714; }
+.delivery-when-chip.is-active { background:#171714; border-color:#171714; color:#fff; }
+.delivery-when-chip--slot { font-variant-numeric:tabular-nums; }
+.delivery-when-chip--more { font-size:12px; color:#5f594f; border-style:dashed; }
+.delivery-when-chip--none { font-size:12px; color:#5f594f; }
+.delivery-when-chip--none.is-active { color:#fff; }
+.delivery-when-note { margin:10px 0 0; font-size:11.5px; color:#716b63; line-height:1.45; }
+
 .checkout-registered { text-align:center; padding:24px 12px; display:grid; gap:18px; justify-items:center; }
 .checkout-success-icon { width:56px; height:56px; border-radius:50%; background:#e0efe5; color:#24724e; display:grid; place-items:center; font-size:28px; }
 .checkout-folio { font-size:24px; font-weight:700; }
+/* Four short facts, not a bulleted list. The container is centred, so a
+   list-style marker sits alone against the left margin while the text floats in
+   the middle — the punctuation ends up further from its sentence than the
+   sentence is wide. Each line carries its own tick instead. */
+.checkout-facts { list-style:none; margin:0; padding:0; display:grid; gap:8px; max-width:34ch; text-align:left; }
+.checkout-facts li { position:relative; padding-left:22px; font-size:14px; line-height:1.5; color:#3d3931; }
+.checkout-facts li::before { content:"✓"; position:absolute; left:0; top:0; color:#187d54; font-size:13px; }
+/* "Seguir comprando" is the third choice on this screen and reads like it. */
+.checkout-secondary--quiet { background:none; border-color:transparent; color:#6b655c; }
+.checkout-secondary--quiet:hover { color:#171714; border-color:#d9d2c6; }
 .checkout-registration-note { color:#6b655c; font-size:13px; }
 .checkout-whatsapp { background:#187d54; border:1px solid #187d54; color:white; }
 .checkout-dialog .delivery-panel { margin:0; padding:0; border:0; }
