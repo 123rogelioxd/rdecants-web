@@ -27,7 +27,13 @@ test('source files render accents as valid UTF-8 (no replacement char)', () => {
 
 test('previously corrupted strings now read correctly', () => {
   const modal = read('assets/js/ui/modal.js');
-  assert.ok(modal.includes('Decant auténtico'), 'auténtico restored');
+  /* "Decant auténtico · prueba antes de comprar el frasco" used to sit directly
+     under the perfume name. It answers a question the customer asks AFTER they
+     want the perfume, so it moved below the buy actions and is phrased as
+     reassurance (.pdm-trust). The UTF-8 guard this line was carrying moves with
+     it — 'presentación' below is on the same screen and still accented. */
+  assert.ok(modal.includes('Original preparado por RDECANTS'), 'trust microcopy present');
+  assert.ok(!modal.includes('pdm-decant-hint'), 'the old headline position is gone');
   assert.ok(modal.includes('Elige presentación'), 'presentación restored');
   assert.ok(modal.includes('Ideal para probar'), 'modal size guidance present');
   assert.ok(modal.includes('Ver perfil completo'), 'modal full-profile link present');
@@ -224,6 +230,6 @@ test('the WhatsApp handoff is a folio, not a copy of the cart', async () => {
   const { buildWhatsAppMessage } = await import('../assets/js/cart/checkout.js');
   const message = buildWhatsAppMessage('WEB-20260904-0001');
 
-  assert.equal(message, 'Hola, quiero confirmar mi pedido WEB-20260904-0001.');
+  assert.equal(message, 'Hola, quiero confirmar mi pedido WEB-20260904-0001 de RDECANTS.');
   assert.ok(!/Me interesa|Mi nombre es|Total:/.test(message));
 });

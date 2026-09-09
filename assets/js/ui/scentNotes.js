@@ -61,6 +61,40 @@ export function getShortDescription(product) {
   return sentenceCase(text(product?.fragrance?.summary) || text(product?.desc) || text(product?.story));
 }
 
+/* WHAT IS THIS FOR — at most three chips, from RSupplyOS.
+
+   Deliberately a passthrough with a hard cap, not a derivation. The rules that
+   pick these ("the authored occasion leads", "a family accord outranks an
+   ingredient one", "templado separates nothing") live in the canonical
+   projection beside the metadata they read, because a copy of them here would
+   be a second opinion about a perfume that the business cannot see or review.
+
+   The cap is enforced anyway: a payload is data, and three is a layout
+   guarantee this page makes on its own. */
+export function getContextChips(product, limit = 3) {
+  const chips = list(product?.scent_profile?.context_chips)
+    .map(value => text(typeof value === 'string' ? value : value?.label))
+    .filter(Boolean);
+
+  const seen = new Set();
+
+  return chips.filter(value => {
+    const key = normalizeNoteKey(value);
+    if (!key || seen.has(key)) return false;
+    seen.add(key); return true;
+  }).slice(0, Math.max(0, Math.min(3, Number(limit) || 0)));
+}
+
+/* WHAT DOES IT FEEL LIKE — one first-person sentence, or nothing.
+
+   Empty string when the backend sent none, and never a fallback built from the
+   description: the projection returns null precisely when a perfume's metadata
+   cannot support a phrase, and filling that silence here would reintroduce the
+   invented copy it refuses to write. */
+export function getVibeCopy(product) {
+  return text(product?.scent_profile?.vibe);
+}
+
 export function getCommercialProfileTags(product, limit = 2) {
   const profile = product?.scent_profile;
   const raw = profile ? list(profile.profile_tags ?? profile.accords) : list(product?.fragrance?.accords);

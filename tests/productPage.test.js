@@ -307,7 +307,7 @@ test('PDP visible badges are limited to two strongest tags', () => {
     html.indexOf('id="pdp-hero"'),
     html.indexOf('id="pdp-novice"')
   );
-  const badges = heroSlice.match(/<span class="guidance-chip /g) || [];
+  const badges = heroSlice.match(/<span class="guidance-chip"/g) || [];
   assert.equal(badges.length, 2);
   assert.ok(heroSlice.includes('>Noche<'));
   assert.ok(heroSlice.includes('>Cita<'));

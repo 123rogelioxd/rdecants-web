@@ -13,7 +13,7 @@
      • Safe: image fallback if src missing/broken
    ============================================================= */
 
-import { buildScentNotesHtml, getShortDescription, getCommercialProfileTags } from './scentNotes.js';
+import { buildScentNotesHtml, getShortDescription, getCommercialProfileTags, getContextChips, getVibeCopy } from './scentNotes.js';
 import { showToast } from './toast.js';
 import { primeImageStates } from './images.js';
 import { lockBodyScroll, unlockBodyScroll } from './scrollLock.js';
@@ -29,6 +29,11 @@ import { getDefaultVariant,
          PRIMARY_SIZES } from '../utils/prices.js';
 import { getScarcityDisplay } from '../utils/scarcity.js';
 import { getDisplayBadges } from '../utils/guidance.js';
+
+/* Backend copy is TEXT, not markup. Every string that reaches innerHTML from
+   the API goes through this — a perfume name with an ampersand in it is a
+   normal catalogue entry, not an attack, and it must render as one. */
+const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 import { productPageUrl } from './productPage.js';
 
 /* ── Constants ──────────────────────────────────────────────── */
@@ -134,6 +139,7 @@ function _render() {
   const guidanceHtml = buildProductModalGuidanceHtml(p);
   const detailsHref = productPageUrl(p);
   const description = getShortDescription(p);
+  const vibe = getVibeCopy(p);
 
   const sizesHtml = PRIMARY_SIZES
     .map(ml => {
@@ -195,12 +201,12 @@ function _render() {
             ${concentrationHtml}
           </div>
         </div>
-        <p class="pdm-decant-hint">Decant auténtico · prueba antes de comprar el frasco</p>
+        ${guidanceHtml}
 
-        ${description ? `<p class="pdm-story">${description.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</p>` : ''}
+        ${vibe ? `<p class="pdm-vibe">${esc(vibe)}</p>` : ''}
         ${buildScentNotesHtml(p)}
 
-        ${guidanceHtml}
+        ${description && description !== vibe ? `<p class="pdm-story">${esc(description)}</p>` : ''}
 
         ${stockHtml}
 
@@ -236,6 +242,7 @@ function _render() {
                 Consultar por WhatsApp
               </button>
             </div>
+            <p class="pdm-trust">Original preparado por RDECANTS · prueba antes de comprar la botella</p>
           </div>
         </div>
       </div>
@@ -247,14 +254,29 @@ function _render() {
   _bindEvents();
 }
 
-export function buildProductModalGuidanceHtml(product) {
-  const guidanceHtml = getDisplayBadges(product, { context: 'quick_view' })
-    .map(g => `<span class="guidance-chip guidance-chip--${g.key}">${g.label}</span>`)
-    .join('');
+/* The three context chips, above the scent notes rather than below them.
 
-  return guidanceHtml
-    ? `<div class="pdm-guidance" aria-label="Recomendado para">${guidanceHtml}</div>`
-    : '';
+   ── Why the backend list wins ──────────────────────────────────────────────
+   `scent_profile.context_chips` is chosen by the canonical projection from the
+   same occasions/climates/accords it publishes, so the chips a customer reads
+   and the metadata an editor maintains cannot drift apart. getDisplayBadges is
+   kept as the fallback for a cached payload from before that field shipped —
+   it derives the same idea from the same fields, one release behind.
+
+   Escaped, capped at three, and rendered as plain text: these are backend
+   labels, not markup. */
+export function buildProductModalGuidanceHtml(product) {
+  const chips = getContextChips(product, 3);
+  const labels = chips.length
+    ? chips
+    : getDisplayBadges(product, { context: 'quick_view' }).map(g => g.label);
+
+  if (!labels.length) return '';
+
+  return `<div class="pdm-guidance" aria-label="Para qué sirve">${labels
+    .slice(0, 3)
+    .map(label => `<span class="guidance-chip">${esc(label)}</span>`)
+    .join('')}</div>`;
 }
 
 /* ── Event binding ───────────────────────────────────────────── */

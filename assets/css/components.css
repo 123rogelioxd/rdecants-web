@@ -1219,11 +1219,31 @@
   color: rgba(25, 24, 22, 0.62);
 }
 
+/* The technical paragraph, demoted. It now sits BELOW the notes and reads as
+   supporting detail; the first-person phrase above carries the decision. */
 .pdp-story {
   font-size: 14.5px;
   line-height: 1.6;
   color: rgba(25, 24, 22, 0.72);
   margin: 0 0 18px;
+}
+
+/* "Quiero algo ..." — the same block the quick view leads with, at PDP size.
+   See .pdm-vibe for why it is not clamped. */
+.pdp-vibe {
+  font-family: var(--font-display, inherit);
+  font-size: 19px;
+  line-height: 1.4;
+  color: var(--ink);
+  margin: 2px 0 16px;
+  text-wrap: pretty;
+}
+
+@media (max-width: 767px) {
+  .pdp-vibe {
+    font-size: 16px;
+    margin: 2px 0 12px;
+  }
 }
 
 .pdp-guidance {
@@ -2976,6 +2996,48 @@ body.pdp-cta-visible .whatsapp-float {
 
 .cart-item-id { flex: 1; min-width: 0; }
 
+/* ── The perfume, as a picture ────────────────────────────────────────────
+   Fixed 56px square so every row is the same height whatever the image's own
+   aspect ratio is — a cart of five perfumes has to scan as a list, not as a
+   ragged column. `contain` rather than `cover`: a bottle photographed on white
+   loses its silhouette when it is cropped to fill.
+
+   The monogram lives on the WRAPPER via ::after, so it is already painted
+   underneath the image. A photo that never loads reveals it instead of leaving
+   a hole, and no second request or JS retry is involved. */
+.cart-item-thumb {
+  position: relative;
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg-sunk);
+  overflow: hidden;
+}
+
+.cart-item-thumb::after {
+  content: attr(data-fallback);
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: rgba(25, 24, 22, 0.28);
+}
+
+.cart-item-thumb img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background: var(--bg-sunk);
+}
+
 .cart-item-house {
   font-size: 9px;
   letter-spacing: 0.25em;
@@ -2984,21 +3046,40 @@ body.pdp-cta-visible .whatsapp-float {
   margin-bottom: 2px;
 }
 
+/* PRIMARY. Full-strength ink at the largest size in the row: the customer's
+   first question about a cart is "what is in it", and the answer is the name. */
 .cart-item-name {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1.25;
+  color: var(--ink);
 }
 
-/* Row 2: meta + price on the left, qty stepper on the right — one line,
-   vertically centered against the stepper's own 44px touch target. */
+/* Row 2: the stepper on the left, the money on the right.
+   
+   The presentation moved UP, under the name, because "10 ml" is part of what
+   the customer is buying rather than part of how they are adjusting it. What is
+   left here is the one control and the one number, which is why they now sit at
+   opposite ends instead of competing in the same cluster. */
 .cart-item-bottom {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  margin-top: 10px;
 }
 
+.cart-item-money {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px 8px;
+  min-width: 0;
+  text-align: right;
+}
+
+/* Kept for the older markup that still renders it as a row-2 cluster. */
 .cart-item-meta-price {
   flex: 1;
   min-width: 0;
@@ -3012,6 +3093,7 @@ body.pdp-cta-visible .whatsapp-float {
   color: rgba(25, 24, 22, 0.55);
   font-size: 11px;
   line-height: 1.3;
+  margin-top: 3px;
 }
 
 .cart-stock-note {
@@ -3020,10 +3102,13 @@ body.pdp-cta-visible .whatsapp-float {
   line-height: 1.3;
 }
 
+/* PRIMARY, with the name. Black rather than the bronze accent: the accent is
+   spent on the discount and saving rows, and when every number on the page is
+   accented none of them is emphasis any more. */
 .cart-item-price {
   font-family: var(--font-display);
-  font-size: 16px;
-  color: var(--accent);
+  font-size: 17px;
+  color: var(--ink);
   line-height: 1;
 }
 
@@ -8093,6 +8178,49 @@ textarea:focus-visible {
   color: var(--accent, var(--bronze-ink));
   margin: 4px 0 10px;
   line-height: 1.4;
+}
+
+/* ── "Quiero algo ..." ────────────────────────────────────────────────────
+   The purchasing shortcut, in the customer's own words. Set in the editorial
+   face at reading size and in full-strength ink: it is the first thing the eye
+   should land on after the name, which is why the technical paragraph that
+   used to occupy this position now sits below the notes in muted grey.
+
+   Not clamped. It is one short sentence by construction — the backend refuses
+   to emit a long one — and a clamp here would only ever hide the end of a
+   phrase that is the whole point of the block. */
+.pdm-vibe {
+  font-family: var(--font-display, inherit);
+  font-size: 17px;
+  line-height: 1.4;
+  color: var(--ink);
+  margin: 10px 0 14px;
+  text-wrap: pretty;
+}
+
+/* ── Reassurance, after the decision ──────────────────────────────────────
+   "Decant auténtico" used to sit directly under the perfume name, spending the
+   most valuable space on the page on something nobody is deciding between. It
+   answers a question the customer asks AFTER they want the perfume, so it is
+   here, under the buy actions, quiet and always available. */
+.pdm-trust {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  margin: 10px 0 0;
+  text-align: center;
+}
+
+@media (max-width: 767px) {
+  .pdm-vibe {
+    font-size: 15px;
+    margin: 8px 0 12px;
+  }
+
+  .pdm-trust {
+    font-size: 10px;
+    margin-top: 8px;
+  }
 }
 
 .pdm-value-prop,

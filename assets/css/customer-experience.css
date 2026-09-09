@@ -28,3 +28,123 @@ body[data-quote-stage="selected"] .quote-body-section { padding-top: 8px; }
   .search-bottle-copy { padding: 10px; }
   body[data-quote-stage="selected"] .quote-panel-scroll { padding-bottom: 20px; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MI CUENTA / MIS PEDIDOS
+
+   The customer's own record, in the same cream-and-black language as the
+   rest of the storefront. Deliberately restrained: this is a page people
+   open to check one thing, so it is a list, a status and a total — no
+   dashboard, no charts, no badges competing for the same glance.
+
+   Status colours are the one place hue carries meaning here, and they stay
+   muted: a delivered order is a calm green, a cancelled one a soft red, and
+   everything in between is ink. Nothing is gold.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.account-section { padding-top: 8px; }
+.account-loading { color: var(--ink-soft, #68635d); font-size: 14px; padding: 24px 0; }
+
+.account-orders { display: grid; gap: 12px; }
+
+/* A row, not a card stack: the folio and the status are what the eye needs,
+   and the thumbnails are what make the row recognisable without reading. */
+.account-order {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--line, #e5e0d8);
+  border-radius: 10px;
+  background: #fffdf9;
+  color: inherit;
+  text-decoration: none;
+}
+.account-order:hover { border-color: var(--ink, #171714); }
+.account-order-thumbs { display: flex; flex: 0 0 auto; gap: 6px; }
+.account-order-body { flex: 1; min-width: 0; }
+.account-order-folio { font-family: var(--font-display, inherit); font-size: 16px; color: var(--ink, #171714); line-height: 1.2; }
+.account-order-meta { font-size: 12px; color: var(--ink-soft, #68635d); line-height: 1.45; margin-top: 2px; overflow-wrap: anywhere; }
+.account-order-total { flex: 0 0 auto; text-align: right; display: grid; gap: 2px; }
+.account-total-value { font-family: var(--font-display, inherit); font-size: 16px; color: var(--ink, #171714); }
+.account-total-note { font-size: 10.5px; color: var(--ink-soft, #68635d); }
+
+/* Status. Progress and payment use the same chip so they read as peers —
+   they are two independent facts, and neither implies the other. */
+.account-status {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  line-height: 1.35;
+  border: 1px solid transparent;
+}
+.account-status--pending { background: #f4efe6; color: #5f594f; border-color: #e5ddcd; }
+.account-status--progress { background: #eef1f6; color: #35435c; border-color: #dbe1ea; }
+.account-status--done { background: #e6f1ea; color: #24724e; border-color: #cfe4d8; }
+.account-status--cancelled { background: #f8ecec; color: #8b3a3a; border-color: #ecd8d8; }
+.account-status--payment { margin-top: 10px; }
+
+.account-thumb { width: 44px; height: 44px; }
+
+/* ── Detail ──────────────────────────────────────────────────────────── */
+.account-back { display: inline-block; margin-bottom: 14px; font-size: 13px; color: var(--ink, #171714); text-decoration: none; border-bottom: 1px solid rgba(23, 23, 20, .25); padding-bottom: 1px; }
+.account-back:hover { border-bottom-color: var(--ink, #171714); }
+
+.account-detail { display: grid; gap: 16px; }
+.account-detail-head { padding-bottom: 14px; border-bottom: 1px solid var(--line, #e5e0d8); }
+.account-detail-note { margin-top: 8px; font-size: 13px; color: var(--ink-soft, #68635d); line-height: 1.5; }
+
+.account-block { border: 1px solid var(--line, #e5e0d8); border-radius: 10px; background: #fffdf9; padding: 16px; }
+.account-block h3 { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft, #68635d); margin-bottom: 12px; }
+
+.account-line { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f0ebe2; }
+.account-line:last-child { border-bottom: 0; padding-bottom: 0; }
+.account-line-id { flex: 1; min-width: 0; }
+.account-line-id strong { display: block; font-size: 14px; line-height: 1.25; overflow-wrap: anywhere; }
+.account-line-brand { font-size: 9px; letter-spacing: .22em; text-transform: uppercase; color: #8a8378; margin-bottom: 2px; }
+.account-line-total { flex: 0 0 auto; font-family: var(--font-display, inherit); font-size: 15px; white-space: nowrap; }
+
+.account-money-row { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; padding: 4px 0; color: var(--ink-soft, #68635d); }
+.account-money-row--total { border-top: 1px solid #f0ebe2; margin-top: 6px; padding-top: 10px; font-family: var(--font-display, inherit); font-size: 17px; color: var(--ink, #171714); }
+
+/* The only strong colour on the page, and it is WhatsApp's, matching the
+   registered screen. Never used for anything that is not that action. */
+.account-cta {
+  display: block;
+  text-align: center;
+  padding: 15px 18px;
+  border-radius: 8px;
+  background: #187d54;
+  border: 1px solid #187d54;
+  color: #fff;
+  font-size: 15px;
+  text-decoration: none;
+  min-height: 44px;
+}
+.account-cta:hover { background: #146846; }
+
+.account-forget {
+  margin-top: 18px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink-soft, #68635d);
+  text-decoration: underline;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.account-empty { text-align: center; padding: 36px 16px; display: grid; gap: 12px; justify-items: center; }
+.account-empty h2 { font-family: var(--font-display, inherit); font-size: 22px; }
+.account-empty p { font-size: 14px; color: var(--ink-soft, #68635d); line-height: 1.55; max-width: 42ch; }
+
+@media (max-width: 700px) {
+  .account-order { padding: 12px; gap: 10px; }
+  .account-order-thumbs .account-thumb:nth-child(2) { display: none; }
+  .account-order-folio { font-size: 15px; }
+  .account-total-value { font-size: 15px; }
+  .account-block { padding: 14px; }
+}

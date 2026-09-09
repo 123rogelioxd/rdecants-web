@@ -1,4 +1,4 @@
-import { buildScentNotesHtml, getShortDescription } from './scentNotes.js';
+import { buildScentNotesHtml, getShortDescription, getContextChips, getVibeCopy } from './scentNotes.js';
 /* =============================================================
    RDECANTS — PRODUCT DETAIL PAGE
    Editorial fragrance experience for /perfume/{slug}.
@@ -91,9 +91,18 @@ export function buildProductPageHtml(product) {
     : '';
   const genderHtml = genderBadgeHtml(product, { compact: false, className: 'pdp-gender' });
 
-  const guidanceHtml = getDisplayBadges(product, { context: 'product_detail' })
-    .map(g => `<span class="guidance-chip guidance-chip--${_escape(g.key)}">${_escape(g.label)}</span>`)
+  /* The same three chips the quick view leads with, from the same canonical
+     field. getDisplayBadges stays as the fallback for a payload cached from
+     before `context_chips` shipped. */
+  const contextChips = getContextChips(product, 3);
+  const chipLabels = contextChips.length
+    ? contextChips
+    : getDisplayBadges(product, { context: 'product_detail' }).map(g => g.label).slice(0, 3);
+  const guidanceHtml = chipLabels
+    .map(label => `<span class="guidance-chip">${_escape(label)}</span>`)
     .join('');
+  const vibe = getVibeCopy(product);
+  const description = getShortDescription(product);
 
   const confBadge = getConfidenceBadge(product);
   const confBadgeHtml = confBadge
@@ -131,9 +140,11 @@ export function buildProductPageHtml(product) {
           </div>
         </div>
 
-        ${getShortDescription(product) ? `<p class="pdp-story">${_escape(getShortDescription(product))}</p>` : ''}
+        ${guidanceHtml ? `<div class="pdp-guidance" aria-label="Para qué sirve">${guidanceHtml}</div>` : ''}
+
+        ${vibe ? `<p class="pdp-vibe">${_escape(vibe)}</p>` : ''}
         ${buildScentNotesHtml(product)}
-        ${guidanceHtml ? `<div class="pdp-guidance" aria-label="Recomendado para">${guidanceHtml}</div>` : ''}
+        ${description && description !== vibe ? `<p class="pdp-story">${_escape(description)}</p>` : ''}
 
         <!-- B. Buy — presentations, live price and Add, right here. No
              intermediate step, no second modal. -->

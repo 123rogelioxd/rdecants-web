@@ -18,6 +18,7 @@ import { buildWebOrderPayload, readCheckoutData } from '../cart/checkout.js';
 import { bindAddressForm } from '../cart/address.js';
 import { EventBus } from '../core/events.js';
 import { Tracker } from '../tracking/tracker.js';
+import { Account } from '../account/account.js';
 
 let _wired = false;
 let _quoteInFlight = false;
@@ -58,8 +59,10 @@ export function setupDeliveryPanel(onChange = () => {}) {
   _wireAddressForm();
   $('delivery-quote-btn')?.addEventListener('click', () => _requestQuote());
 
+  _wireWhen();
   _loadModes();
   _hydrate();
+  _prefillFromAccount();
   renderDeliveryPanel();
   _parcelSignature = parcelSignature();
   const onParcelChange = () => {
@@ -78,6 +81,11 @@ export function setupDeliveryPanel(onChange = () => {}) {
    which modes exist is hardcoded here; the backend decides. */
 async function _loadModes() {
   const modes = await Delivery.modes();
+
+  /* Handed to the state module rather than kept here, so it can drop a
+     remembered day that is no longer on offer before anything renders it. */
+  Delivery.setWindows(await Delivery.deliveryWindows());
+  renderDeliveryPanel();
 
   document.querySelectorAll('#delivery-modes .delivery-mode').forEach(button => {
     button.hidden = !modes.includes(button.dataset.mode);
@@ -163,6 +171,63 @@ function _hydrate() {
   });
 
   if (state.address.postal_code) _addressForm?.hydrate(state.address.postal_code, state.address);
+}
+
+/* ── A returning customer should not retype what we already have ──────────
+   Filled from the customer's OWN most recent order, which R Supply OS returns
+   for a browser it recognises. No account, no password, no form: they ordered
+   once, so we know where they live.
+
+   ── Three rules that keep this from being annoying or wrong ─────────────
+   1. It NEVER overwrites. Anything already in the field — typed now, or
+      remembered from the last session by Delivery's own storage — wins. The
+      prefill fills blanks; it does not correct people.
+   2. It is fully editable afterwards. Nothing here locks a field.
+   3. It changes no historical order. This reads the last order's snapshot and
+      writes into a FORM; the order itself is never touched, so a customer who
+      moves house does not rewrite where last month's parcel went.
+
+   Silent on failure. A customer who is not recognised, or an API that did not
+   answer, simply gets the empty form they would have got anyway. */
+async function _prefillFromAccount() {
+  let saved = null;
+
+  try {
+    saved = await Account.prefill();
+  } catch { /* not recognised, or offline — the form is simply empty */ }
+
+  if (!saved) return;
+
+  const current = Delivery.state.address;
+  const incoming = { ...saved.address };
+
+  /* The recipient IS the customer for a normal storefront checkout — the same
+     mapping R Supply OS applies server-side. */
+  if (saved.name) incoming.recipient = saved.name;
+  if (saved.phone) incoming.phone = saved.phone;
+
+  let filled = 0;
+
+  for (const [field, value] of Object.entries(incoming)) {
+    if (!value || current[field]) continue;
+    Delivery.setAddressField(field, value);
+    filled += 1;
+  }
+
+  if (!filled) return;
+
+  /* A remembered mode too, but only when the customer has not chosen one in
+     this session — switching somebody's delivery method under them would be a
+     far worse surprise than an empty field. */
+  if (!Delivery.mode && saved.mode) Delivery.setMode(saved.mode);
+
+  _hydrate();
+  renderDeliveryPanel();
+  _onChange();
+
+  if (Delivery.mode === DELIVERY_MODES.LOCAL && Delivery.canQuoteAddress()) _requestQuote();
+
+  Tracker.emit('checkout_prefilled', { fields: filled });
 }
 
 /* ── Quoting ─────────────────────────────────────────────────────────────── */
@@ -252,8 +317,86 @@ export function renderDeliveryPanel() {
 
   _renderQuoteButton(mode);
   _renderOptions();
+  _renderWhen(mode);
   _renderMessage(mode);
 }
+
+/* ── "¿Cuándo te queda mejor?" ────────────────────────────────────────────
+   Two taps: a day, then a window. Shown only for LOCAL delivery and only once
+   the address is complete enough to price — asking when before knowing where
+   is asking a question the answer to which might not apply.
+
+   ── Requested, never booked ─────────────────────────────────────────────
+   Nothing here promises a time. The days and windows are exactly what
+   /api/web/delivery/options published (which carries `is_guaranteed: false`
+   of its own), a window that has closed today simply is not in the list, and
+   "Lo coordinamos por WhatsApp" is a first-class choice rather than a way of
+   opting out of a form. */
+function _renderWhen(mode) {
+  const block = $('delivery-when');
+  if (!block) return;
+
+  const offer = Delivery.windows;
+  const days = Array.isArray(offer?.days) ? offer.days.filter(day => (day.windows || []).length) : [];
+  const applies = mode === DELIVERY_MODES.LOCAL && offer?.enabled === true && days.length > 0;
+
+  _toggle(block, applies);
+  if (!applies) return;
+
+  const chosen = Delivery.preference;
+  /* The day defaults to whatever the customer already picked; otherwise none is
+     preselected. A preselected day would post a preference nobody chose. */
+  const activeDate = chosen?.date && days.some(d => d.date === chosen.date) ? chosen.date : _openDay;
+
+  $('delivery-when-days').innerHTML = days.map(day => `
+    <button type="button" class="delivery-when-chip${day.date === activeDate ? ' is-active' : ''}"
+            data-when-day="${_esc(day.date)}" aria-pressed="${day.date === activeDate}">${_esc(day.label)}</button>`).join('');
+
+  const active = days.find(day => day.date === activeDate);
+
+  $('delivery-when-slots').innerHTML = !active ? '' : `${active.windows.map(window => {
+    const on = chosen?.date === active.date && chosen?.window === window.key;
+    return `<button type="button" class="delivery-when-chip delivery-when-chip--slot${on ? ' is-active' : ''}"
+              data-when-window="${_esc(window.key)}" data-when-date="${_esc(active.date)}"
+              aria-pressed="${on}">${_esc(window.label)}</button>`;
+  }).join('')}<button type="button" class="delivery-when-chip delivery-when-chip--none${chosen ? '' : ' is-active'}"
+      data-when-clear="1" aria-pressed="${!chosen}">Lo coordinamos por WhatsApp</button>`;
+}
+
+/* Which day's windows are on screen. UI state only — choosing a day is not
+   choosing a window, and nothing is sent until a window is tapped. */
+let _openDay = null;
+
+function _wireWhen() {
+  const block = $('delivery-when');
+  if (!block) return;
+
+  block.addEventListener('click', event => {
+    const target = event.target.closest('button');
+    if (!target) return;
+
+    if (target.dataset.whenDay) {
+      _openDay = target.dataset.whenDay;
+      renderDeliveryPanel();
+      return;
+    }
+
+    if (target.dataset.whenClear) {
+      Delivery.clearPreference();
+    } else if (target.dataset.whenWindow) {
+      _openDay = target.dataset.whenDate;
+      Delivery.setPreference(target.dataset.whenDate, target.dataset.whenWindow);
+      Tracker.emit('delivery_preference_selected', { window: target.dataset.whenWindow });
+    } else {
+      return;
+    }
+
+    renderDeliveryPanel();
+    _onChange();
+  });
+}
+
+const _esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 function _renderQuoteButton(mode) {
   const button = $('delivery-quote-btn');
