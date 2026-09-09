@@ -39,7 +39,7 @@ Merge/deploy backend first, frontend second, after both checks are green and com
 # Customer order continuity (2026-09-09)
 
 Backend PR: https://github.com/123rogelioxd/r-supply-os/pull/PENDING · full
-operational reference in `r-supply-os/docs/CUSTOMER_ORDER_CONTINUITY.md`.
+operational reference in `r-supply-os/RSNEXUS/operations/CUSTOMER-ORDER-CONTINUITY.md`.
 
 ## Perfume: three questions, answered in order
 
