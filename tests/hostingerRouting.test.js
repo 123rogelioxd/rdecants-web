@@ -120,3 +120,18 @@ test('every hero format referenced by the markup is a format the server can name
       `index.html serves .${ext} from /assets/hero but .htaccess never declares it`);
   }
 });
+
+test('developer tooling is never published to the web root', () => {
+  const workflow = readFileSync(join(root, '.github/workflows/deploy-production.yml'), 'utf8');
+
+  /* .claude/launch.json was reachable at https://rdecants.com/.claude/launch.json:
+     it is not secret, but a public storefront should not serve the commands and
+     local ports a developer runs. The mirror is opt-OUT, so anything new at the
+     repository root ships unless it is named here. */
+  for (const excluded of ['.git/', '.github/', '.claude/', 'node_modules/', 'tests/', 'scripts/', 'docs/']) {
+    assert.ok(
+      workflow.includes(`--exclude-glob ${excluded}`),
+      `${excluded} must not be deployed to the public web root`,
+    );
+  }
+});

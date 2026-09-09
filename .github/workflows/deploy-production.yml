@@ -32,6 +32,7 @@ jobs:
           mirror -R --verbose --only-newer --parallel=2 \
             --exclude-glob .git/ \
             --exclude-glob .github/ \
+            --exclude-glob .claude/ \
             --exclude-glob node_modules/ \
             --exclude-glob tests/ \
             --exclude-glob scripts/ \
