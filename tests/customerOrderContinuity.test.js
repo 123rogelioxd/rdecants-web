@@ -405,6 +405,20 @@ test('the account API is never asked about a customer the browser names', () => 
   assert.match(source, /getAccountOrder\(folio\)/);
 });
 
+test('the account page ships all four states, not just the happy one', () => {
+  const source = read('assets/js/pages/account.js');
+
+  assert.match(source, /Cargando tus pedidos/, 'loading');
+  assert.match(source, /Aún no tienes pedidos aquí/, 'guest');
+  assert.match(source, /Todavía no hay pedidos/, 'recognised but empty');
+  assert.match(source, /No pudimos cargar tus pedidos/, 'transport failure');
+  assert.match(source, /data-account-retry/, 'the failure state offers a retry');
+
+  /* A network failure must NOT read as "you have no orders". Account.identity()
+     marks it `offline`, and this is the branch that keeps the two apart. */
+  assert.match(source, /identity\.offline \? errorHtml\(\) : guestHtml\(\)/);
+});
+
 test('a guest is an ordinary state, not an error or a login wall', () => {
   const source = read('assets/js/pages/account.js');
 
