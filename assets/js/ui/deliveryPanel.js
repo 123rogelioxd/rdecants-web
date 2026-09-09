@@ -348,9 +348,21 @@ function _renderWhen(mode) {
      preselected. A preselected day would post a preference nobody chose. */
   const activeDate = chosen?.date && days.some(d => d.date === chosen.date) ? chosen.date : _openDay;
 
-  $('delivery-when-days').innerHTML = days.map(day => `
+  /* Hoy · Mañana · Otro día. The horizon is a week, and seven date chips
+     wrapping across a phone is a list to read rather than a choice to make —
+     so the rest stay behind one more tap, and appear only when somebody wants
+     a day that is not the next two (or already picked one). */
+  const isFar = date => days.findIndex(day => day.date === date) > 1;
+  const expanded = _showAllDays || isFar(activeDate);
+  const visible = expanded ? days : days.slice(0, 2);
+
+  $('delivery-when-days').innerHTML = visible.map(day => `
     <button type="button" class="delivery-when-chip${day.date === activeDate ? ' is-active' : ''}"
-            data-when-day="${_esc(day.date)}" aria-pressed="${day.date === activeDate}">${_esc(day.label)}</button>`).join('');
+            data-when-day="${_esc(day.date)}" aria-pressed="${day.date === activeDate}">${_esc(day.label)}</button>`).join('')
+    + (expanded || days.length <= 2
+      ? ''
+      : `<button type="button" class="delivery-when-chip delivery-when-chip--more"
+                 data-when-more="1" aria-expanded="false">Otro día…</button>`);
 
   const active = days.find(day => day.date === activeDate);
 
@@ -363,9 +375,11 @@ function _renderWhen(mode) {
       data-when-clear="1" aria-pressed="${!chosen}">Lo coordinamos por WhatsApp</button>`;
 }
 
-/* Which day's windows are on screen. UI state only — choosing a day is not
-   choosing a window, and nothing is sent until a window is tapped. */
+/* Which day's windows are on screen, and whether the full week is showing.
+   Both are UI state only — choosing a day is not choosing a window, and nothing
+   is sent until a window is tapped. */
 let _openDay = null;
+let _showAllDays = false;
 
 function _wireWhen() {
   const block = $('delivery-when');
@@ -374,6 +388,13 @@ function _wireWhen() {
   block.addEventListener('click', event => {
     const target = event.target.closest('button');
     if (!target) return;
+
+    if (target.dataset.whenMore) {
+      _showAllDays = true;
+      renderDeliveryPanel();
+      $('delivery-when-days')?.querySelector('button:nth-child(3)')?.focus();
+      return;
+    }
 
     if (target.dataset.whenDay) {
       _openDay = target.dataset.whenDay;

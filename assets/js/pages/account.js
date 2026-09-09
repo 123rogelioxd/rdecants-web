@@ -24,6 +24,21 @@ const WHATSAPP_NUMBER = '5219516513018';
 
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+/* The order snapshot stores `nombre_completo`, which already begins with the
+   house — so rendering brand and name as two lines prints "AFNAN / AFNAN 9PM
+   ELIXIR". Presentation only: the snapshot is the record of what was bought and
+   is never rewritten, this just stops the row saying the brand twice. */
+export function itemDisplayName(item) {
+  const name = String(item?.name ?? '').trim();
+  const brand = String(item?.brand ?? '').trim();
+
+  if (!brand || !name.toLowerCase().startsWith(brand.toLowerCase())) return name;
+
+  const trimmed = name.slice(brand.length).trim();
+
+  return trimmed || name;
+}
+
 /* The perfume, as a picture — the same monogram fallback the cart uses, so a
    photo that never loads leaves a recognisable row rather than a hole. */
 export function orderThumbHtml(item) {
@@ -94,7 +109,7 @@ export function orderDetailHtml(order) {
             ${orderThumbHtml(item)}
             <div class="account-line-id">
               ${item.brand ? `<p class="account-line-brand">${esc(item.brand)}</p>` : ''}
-              <strong>${esc(item.name)}</strong>
+              <strong>${esc(itemDisplayName(item))}</strong>
               <p class="account-order-meta">${item.ml ? `${esc(item.ml)} ml` : 'Botella'} · Cantidad ${esc(item.quantity)}</p>
             </div>
             <span class="account-line-total">${esc(formatOrderTotal(item.line_total) ?? '')}</span>
@@ -121,7 +136,7 @@ export function orderDetailHtml(order) {
         <div class="account-money-row"><span>Productos</span><span>${esc(formatOrderTotal(order.merchandise_total) ?? '')}</span></div>
         ${Number(order.discount) > 0 ? `<div class="account-money-row"><span>Descuentos</span><span>−${esc(formatOrderTotal(order.discount) ?? '')}</span></div>` : ''}
         <div class="account-money-row account-money-row--total">
-          <span>${total ? 'Total' : 'Total'}</span>
+          <span>Total</span>
           <span>${total ? esc(total) : 'Por confirmar'}</span>
         </div>
         <p class="account-status account-status--${esc(paymentTone(status))} account-status--payment">${esc(status.payment_label ?? 'Pago por confirmar')}</p>
@@ -130,6 +145,17 @@ export function orderDetailHtml(order) {
       <a class="account-cta" href="https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappText(order))}"
          target="_blank" rel="noopener" data-account-whatsapp>Confirmar por WhatsApp</a>
     </article>`;
+}
+
+/* Cliente stores names upper-cased, which is right for an operator scanning a
+   list and wrong for greeting somebody by name — "HOLA, ROGER" reads as
+   shouting. Cased for display only; the record is untouched, and a name the
+   customer typed with their own capitalisation keeps it. */
+export function greetingName(name) {
+  const value = String(name ?? '').trim();
+  if (!value || value !== value.toUpperCase()) return value;
+
+  return value.toLowerCase().replace(/(^|[\s'’-])(\p{L})/gu, (_, sep, char) => sep + char.toUpperCase());
 }
 
 export function deliveryModeLabel(mode) {
@@ -189,7 +215,7 @@ async function render() {
   }
 
   const greeting = document.getElementById('account-greeting');
-  if (greeting && identity.customer?.name) greeting.textContent = `Hola, ${identity.customer.name}`;
+  if (greeting && identity.customer?.name) greeting.textContent = `Hola, ${greetingName(identity.customer.name)}`;
 
   if (Account.shouldReportRecognition()) {
     Tracker.emit('customer_recognized', { orders: identity.ordersCount });

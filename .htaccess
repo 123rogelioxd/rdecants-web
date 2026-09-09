@@ -89,6 +89,12 @@ Options -MultiViews
     RewriteRule ^elegir/?$            elegir.html   [L,QSA]
     RewriteRule ^ayudame-a-elegir/?$  elegir.html   [L,QSA]
     RewriteRule ^ayuda/?$             ayuda.html    [L,QSA]
+    # "Mis pedidos". QSA matters more here than anywhere else on the site:
+    # the order detail is /cuenta?folio=WEB-... and dropping the query string
+    # would send a customer following a link to their own order to an
+    # unexplained list instead.
+    RewriteRule ^cuenta/?$            cuenta.html   [L,QSA]
+    RewriteRule ^mis-pedidos/?$       cuenta.html   [L,QSA]
 
     # ── Slug routes for product detail pages ─────────────────
     # /perfume/{slug}      → product.html
