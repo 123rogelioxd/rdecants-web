@@ -132,3 +132,29 @@ running.
 
 Cache version `2026.09.09.1` across `VERSION`, `BUILD_VERSION` and every entry
 point including `cuenta.html`.
+
+
+---
+
+# Cotiza tu perfume in Mis pedidos (2026-09-24)
+
+Backend PR: https://github.com/123rogelioxd/r-supply-os/pull/152 — merge and deploy
+that first; this storefront only ships once it is live.
+
+- `submitQuote` now sends `credentials: 'include'`, so the browser accepts the
+  customer session R Supply OS issues for a quote (10-digit phones only, same bar
+  as checkout). Search and pricing stay anonymous.
+- The WhatsApp message is still built by the server; it now carries the perfumes
+  and the quoted total under the folio. Nothing here rebuilds it.
+- After a quote is recorded, a success panel (outside the CTA block, which hides
+  with an empty basket and used to take the popup-blocked WhatsApp fallback with
+  it) offers «Abrir WhatsApp» and «Seguir en Mis pedidos». The follow-up link is
+  only ever a same-site path.
+- «Mis pedidos» renders quote rows (`kind: 'cotizacion'`) in the same list, with
+  a «Por encargo» tag, the API's labels verbatim, each perfume's own state in the
+  detail, and `apartado` shown as a positive partial payment. WhatsApp from a
+  quote says «cotizacion», in plain ASCII.
+- `tests/packCart.test.js` stubbed `CatalogProvider.getProducts`: two tests were
+  reading the real production catalogue and passed only while it answered CI.
+
+Cache version `2026.09.24.1`.

@@ -18,7 +18,7 @@
 import { bootstrapShell } from '../core/shell.js';
 import { Tracker } from '../tracking/tracker.js';
 import { normalizeApiImageUrl } from '../api/config.js';
-import { Account, statusTone, paymentTone, formatOrderDate, formatOrderTotal } from '../account/account.js';
+import { Account, statusTone, paymentTone, isQuote, formatOrderDate, formatOrderTotal } from '../account/account.js';
 
 const WHATSAPP_NUMBER = '5219516513018';
 
@@ -71,7 +71,7 @@ export function orderCardHtml(order) {
     <a class="account-order" href="/cuenta.html?folio=${encodeURIComponent(order.folio)}">
       <div class="account-order-thumbs">${(order.preview ?? []).map(orderThumbHtml).join('')}</div>
       <div class="account-order-body">
-        <p class="account-order-folio">${esc(order.folio)}</p>
+        <p class="account-order-folio">${esc(order.folio)}${isQuote(order) ? ' <span class="account-kind">Por encargo</span>' : ''}</p>
         <p class="account-order-meta">${esc(formatOrderDate(order.created_at))}${order.summary_line ? ` · ${esc(order.summary_line)}` : ''}</p>
         <p class="account-status account-status--${esc(statusTone(status))}">${esc(status.progress_label ?? 'Pedido registrado')}</p>
         ${preference ? `<p class="account-order-meta">Horario preferido: ${esc(preference)}</p>` : ''}
@@ -96,7 +96,7 @@ export function orderDetailHtml(order) {
 
     <article class="account-detail">
       <header class="account-detail-head">
-        <p class="account-order-folio">${esc(order.folio)}</p>
+        <p class="account-order-folio">${esc(order.folio)}${isQuote(order) ? ' <span class="account-kind">Por encargo</span>' : ''}</p>
         <p class="account-order-meta">${esc(formatOrderDate(order.created_at))}</p>
         <p class="account-status account-status--${esc(statusTone(status))}">${esc(status.progress_label ?? '')}</p>
         <p class="account-detail-note">${esc(status.progress_detail ?? '')}</p>
@@ -110,7 +110,7 @@ export function orderDetailHtml(order) {
             <div class="account-line-id">
               ${item.brand ? `<p class="account-line-brand">${esc(item.brand)}</p>` : ''}
               <strong>${esc(itemDisplayName(item))}</strong>
-              <p class="account-order-meta">${item.ml ? `${esc(item.ml)} ml` : 'Botella'} · Cantidad ${esc(item.quantity)}</p>
+              <p class="account-order-meta">${item.ml ? `${esc(item.ml)} ml` : 'Botella'} · Cantidad ${esc(item.quantity)}${item.item_status ? ` · ${esc(item.item_status)}` : ''}</p>
             </div>
             <span class="account-line-total">${esc(formatOrderTotal(item.line_total) ?? '')}</span>
           </div>`).join('')}
@@ -172,7 +172,9 @@ export function deliveryModeLabel(mode) {
    all of that, better than a page could restate it, and a message that repeats
    an order is how WhatsApp became a second copy of it in the first place. */
 export function whatsappText(order) {
-  return `Hola, quiero confirmar mi pedido ${order?.folio ?? ''}.`.replace(/\s+/g, ' ').trim();
+  const noun = isQuote(order) ? 'cotizacion' : 'pedido';
+
+  return `Hola, quiero confirmar mi ${noun} ${order?.folio ?? ''}.`.replace(/\s+/g, ' ').trim();
 }
 
 function guestHtml() {

@@ -157,7 +157,17 @@ export function statusTone(status) {
    Only `pagado` is a positive claim, and it arrives only when an operator
    marked the collection settled. */
 export function paymentTone(status) {
-  return status?.payment === 'pagado' ? 'done' : 'pending';
+  if (status?.payment === 'pagado') return 'done';
+  // Money recorded but not all of it: a real, positive fact short of "paid".
+  if (status?.payment === 'apartado') return 'progress';
+
+  return 'pending';
+}
+
+/* A «Cotiza tu perfume» request, as opposed to a catalogue order. The API
+   says which; a row from an older API without `kind` is an order. */
+export function isQuote(order) {
+  return order?.kind === 'cotizacion';
 }
 
 export function formatOrderDate(iso) {
