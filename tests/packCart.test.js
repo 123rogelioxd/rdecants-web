@@ -79,6 +79,11 @@ const PACK = {
 beforeEach(() => {
   Cart.clear();
   _store.clear();
+  /* Reconciliation refuses to touch a cart when the catalogue did not load.
+     Unstubbed, that read went to the REAL api.rdecants.com, so these tests
+     passed only while production answered the CI runner — and failed
+     anywhere offline. The pack's own products are a catalogue that loaded. */
+  CatalogProvider.getProducts = async () => PACK.products ?? [{ id: 1 }];
   CatalogProvider.getPacks = async () => [PACK];
   CatalogProvider.getPackById = async id => (String(id) === '7' ? PACK : null);
 });

@@ -235,6 +235,19 @@ export function shouldShowSort(groupCount) {
   return groupCount >= 2;
 }
 
+/* Where the customer follows a recorded quote. The API names it; an older API
+   that does not is still answered with the folio deep link «Mis pedidos»
+   understands — never an absolute URL from the response, which could send the
+   customer off-site. */
+export function quoteAccountUrl(response, reference = '') {
+  const url = String(response?.account_url ?? '').trim();
+  if (url.startsWith('/') && !url.startsWith('//')) return url;
+
+  const folio = String(reference || response?.reference || '').trim();
+
+  return folio ? `/cuenta.html?folio=${encodeURIComponent(folio)}` : '/cuenta.html';
+}
+
 /* ── The WhatsApp message this page used to build itself ──────────────────
    No longer wired into the live submit handoff: PublicQuoteController::store()
    now builds and returns whatsapp_message/whatsapp_url from the SAME
@@ -283,6 +296,7 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
   if (!input || !results || !basketEl || !ctaBlock || !submit) return;
 
   const submitMessage = document.getElementById('quote-submit-message');
+  const success = document.getElementById('quote-success');
   const searchClear = document.getElementById('quote-search-clear');
   const resultsHead = document.getElementById('quote-results-head');
   const resultsCount = document.getElementById('quote-results-count');
@@ -369,10 +383,12 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
     syncExperience();
 
     if (!basket.length) {
-      basketEl.innerHTML = _basketEmpty();
+      basketEl.innerHTML = success && !success.hidden ? '' : _basketEmpty();
       ctaBlock.hidden = true;
       return;
     }
+
+    if (success) success.hidden = true;
 
     if (whatsappFallback) {
       whatsappFallback.hidden = true;
@@ -650,6 +666,14 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
 
       if (reservedWindow) reservedWindow.location.href = whatsappUrl;
       const opened = reservedWindow || window.open(whatsappUrl, '_blank');
+
+      if (success) {
+        const accountUrl = quoteAccountUrl(response, reference);
+        success.querySelector('[data-quote-success-folio]').textContent = reference;
+        success.querySelector('[data-quote-success-whatsapp]').href = whatsappUrl;
+        success.querySelector('[data-quote-success-account]').href = accountUrl;
+        success.hidden = false;
+      }
 
       basket = [];
       pricedBasket = { items: [], total: 0, unavailable: [] };

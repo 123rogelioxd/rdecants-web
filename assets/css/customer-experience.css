@@ -148,3 +148,14 @@ body[data-quote-stage="selected"] .quote-body-section { padding-top: 8px; }
   .account-total-value { font-size: 15px; }
   .account-block { padding: 14px; }
 }
+
+/* ── Cotiza: after the request is recorded (2026-09-24) ─────────────────── */
+.quote-success { display: grid; gap: 8px; padding: 14px; margin: 12px 0; border-radius: 14px; border: 1px solid var(--line, rgba(0,0,0,.12)); background: var(--surface, #fff); }
+.quote-success-title { margin: 0; font-size: 15px; }
+.quote-success-copy { margin: 0; font-size: 13px; opacity: .8; }
+.quote-success-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.quote-success-actions a { text-decoration: none; }
+
+/* «Mis pedidos»: an order bought from the catalogue and one ordered for the
+   customer read the same; this tag is the only difference said out loud. */
+.account-kind { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; vertical-align: middle; border: 1px solid currentColor; opacity: .75; }

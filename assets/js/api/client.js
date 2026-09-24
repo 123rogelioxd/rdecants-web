@@ -140,7 +140,10 @@ export const ApiClient = {
   previewDiscount:    (payload) => _postSafe('/api/web/discounts/preview', payload),
   searchQuoteCatalog: (query, limit = 24) => _get(`/api/web/quote/search?q=${encodeURIComponent(query)}&limit=${limit}`),
   priceQuoteBasket:   (items) => _post('/api/web/quote/price', { items }),
-  submitQuote:        (payload) => _post('/api/web/quote', payload),
+  /* `include` for the same reason as createWebOrder: a quote is a customer
+     commitment, and R Supply OS answers it with the session cookie that puts
+     it in «Mis pedidos». The quote itself is unchanged. */
+  submitQuote:        (payload) => _post('/api/web/quote', payload, { credentials: 'include' }),
   /* Cross-sell backed by real purchase behaviour (co-purchase, repeat-buy) —
      the one signal a client-side scorer structurally cannot see, because
      purchase history is private. Read-only; the caller decides what to do
