@@ -445,16 +445,59 @@ async function _buildOrderItem(item) {
    the next morning has no idea which day "hoy" was — and "Mañana" would carry
    an ñ into a channel this function deliberately keeps ASCII, for the same
    reason the opening emoji had to go. */
-export function buildWhatsAppMessage(folio = '', preference = null) {
+function _asciiText(value) {
+  return String(value ?? '')
+    .replace(/[’‘]/g, "'")
+    .replace(/[–—]/g, '-')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\x20-\x7E]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function _orderLines(items = []) {
+  if (!Array.isArray(items)) return [];
+
+  return items.flatMap(item => {
+    const rawName = _asciiText(item?.name);
+    if (!rawName) return [];
+
+    const house = _asciiText(item?.house);
+    const name = house && !rawName.toLowerCase().startsWith(house.toLowerCase())
+      ? `${house} ${rawName}`
+      : rawName;
+
+    let presentation = '';
+    if (item?.type === 'bottle') {
+      const bottle = _asciiText(item?.offer_label || item?.condition_label || item?.size || 'Botella');
+      presentation = /^botella\b/i.test(bottle) ? bottle : `Botella - ${bottle}`;
+    } else if (item?.type === 'pack') {
+      presentation = _asciiText(item?.size || 'Pack');
+    } else {
+      const size = _asciiText(item?.size);
+      presentation = size ? (/\bml\b/i.test(size) ? size : `${size} ml`) : '';
+    }
+
+    const qty = Math.max(1, Number.parseInt(item?.qty, 10) || 1);
+    return [`- ${name}${presentation ? ` - ${presentation}` : ''} x${qty}`];
+  });
+}
+
+export function buildWhatsAppMessage(folio = '', preference = null, items = []) {
   const reference = String(folio || '').trim();
   const opening = reference
     ? `Hola, quiero confirmar mi pedido ${reference} de RDECANTS.`
     : 'Hola, quiero confirmar mi pedido de RDECANTS.';
 
-  const line = _preferenceLine(preference);
+  const blocks = [opening];
+  const orderLines = _orderLines(items);
+  if (orderLines.length) blocks.push(`Pedido:\n${orderLines.join('\n')}`);
 
-  return line ? `${opening}
-${line}` : opening;
+  const line = _preferenceLine(preference);
+  if (line) blocks.push(line);
+
+  return blocks.join('\n');
 }
 
 /* "Horario preferido: 10/09, 4 - 7 pm." — or nothing.
