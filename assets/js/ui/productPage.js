@@ -56,7 +56,7 @@ import {
 import { getConfidenceBadge } from './pdpConfidence.js';
 import { showToast } from './toast.js';
 
-const WHATSAPP_NUMBER = '5219516513018';
+const WHATSAPP_NUMBER = '529513446211';
 
 /* ── Public: build the page HTML ─────────────────────────────── */
 export function buildProductPageHtml(product) {
