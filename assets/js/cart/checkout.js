@@ -402,49 +402,20 @@ async function _buildOrderItem(item) {
   };
 }
 
-/* The message the customer sends: one sentence and a folio.
+/* The WhatsApp handoff is a reference, not a second order record.
 
-   ── Why it stopped being the order ───────────────────────────────────────
-   It used to rebuild the whole cart in text: every line, every presentation,
-   the subtotal, each coupon, the total, the customer's name. That made the
-   chat a SECOND copy of a record R Supply OS already holds — one that could
-   disagree with the real order (a coupon consumed a second earlier, a bottle
-   repriced), that a person had to read back by hand, and that the business
-   ended up treating as the order itself.
+   R Supply OS remains authoritative for prices, discounts, payment, delivery
+   cost and status. The message carries only:
+     • the folio;
+     • the exact submitted cart snapshot (name, presentation, quantity);
+     • the requested delivery window, when present.
 
-   By the time this runs the backend record exists: priced, reserved, routed to
-   Operación or Guías, with the address attached. The folio is the whole
-   message because it is the only thing the order cannot say for itself — that
-   this particular person is ready to go ahead.
+   `registerWebOrder()` captures `items` before clearing the cart and only returns
+   after the server accepts the order, so these product lines identify the order
+   without making WhatsApp a second pricing authority.
 
-   Three things deliberately went with it:
-
-     • The opening emoji. It reached real customers as "Hola" followed by a
-       replacement character — one byte of a four-byte codepoint surviving a
-       transport that was not treating the text as UTF-8. Nothing here needs a
-       character outside ASCII, so the class of bug is gone rather than patched.
-
-     • "Quedo pendiente de disponibilidad." Availability is not pending — it
-       was validated and physically reserved before this string was built.
-
-     • The name line. R Supply OS has the customer's name; printing it back at
-       them was only ever a way for a missing one to be announced.
-
-   `folio` is required in practice. A message with no folio would be exactly the
-   unrecorded order this flow exists to eliminate, and the caller never reaches
-   here without one — _performCheckout returns on a failed order and never
-   opens WhatsApp. The fallback is a last defence, not a supported path.
-
-   ── The one thing that was added back, and why ─────────────────────────────
-   The requested delivery window — when the customer chose one. It is the other
-   question the seller would otherwise have to go and look up before replying,
-   and unlike a price or a line item it cannot be stale: it is echoed from the
-   snapshot the SERVER just wrote, not rebuilt from browser state.
-
-   Printed as a DATE rather than "Hoy" or "Mañana". A chat message read at nine
-   the next morning has no idea which day "hoy" was — and "Mañana" would carry
-   an ñ into a channel this function deliberately keeps ASCII, for the same
-   reason the opening emoji had to go. */
+   Everything is reduced to plain ASCII because this channel previously mangled
+   multi-byte characters. */
 function _asciiText(value) {
   return String(value ?? '')
     .replace(/[’‘]/g, "'")
