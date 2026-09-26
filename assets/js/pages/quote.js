@@ -15,7 +15,7 @@ export function quoteExperienceState(query = '', itemCount = 0, browsing = true)
   return String(query).trim().length >= MIN_QUOTE_QUERY || itemCount > 0 ? 'search' : 'intro';
 }
 
-const WHATSAPP_NUMBER = '5219516513018';
+const WHATSAPP_NUMBER = '529513446211';
 
 export function quoteLines(items = []) {
   return items.map(item => ({ reference: item.reference, quantity: Number(item.quantity) || 1 }));
