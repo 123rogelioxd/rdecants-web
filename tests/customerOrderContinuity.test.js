@@ -328,8 +328,11 @@ test('the order detail shows products, delivery and the real payment state', () 
   assert.doesNotMatch(html, /Pagado/);
 });
 
-test('the order detail offers WhatsApp with the folio and nothing rebuilt', () => {
-  assert.equal(whatsappText(order), 'Hola, quiero confirmar mi pedido WEB-20260909-0001.');
+test('the order detail WhatsApp identifies the products without copying totals', () => {
+  const message = whatsappText(order);
+  assert.match(message, /WEB-20260909-0001/);
+  assert.match(message, /RASASI HAWAS FIRE - 5 ml x2/);
+  assert.doesNotMatch(message, /420|MXN|Total/);
 
   const html = orderDetailHtml(order);
   assert.match(html, /wa\.me\/529513446211/);
