@@ -17,7 +17,7 @@ import { lockBodyScroll, unlockBodyScroll } from '../ui/scrollLock.js';
 import { formatPrice, isValidPrice } from '../utils/prices.js';
 import { CatalogProvider } from '../providers/catalog.js';
 
-const WHATSAPP_NUMBER = '5219516513018';
+const WHATSAPP_NUMBER = '529513446211';
 
 /* The perfume, as a picture.
 
