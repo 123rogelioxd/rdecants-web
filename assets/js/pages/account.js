@@ -166,15 +166,38 @@ export function deliveryModeLabel(mode) {
   return 'Entrega por confirmar';
 }
 
-/* The folio, and nothing rebuilt.
+/* WhatsApp carries the reference plus a compact product summary.
+   Prices, payment and status stay in R Supply OS; the message only answers the
+   first question a human reading the chat has: which order is this? */
+function whatsappAscii(value) {
+  return String(value ?? '')
+    .replace(/[’‘]/g, "'")
+    .replace(/[–—]/g, '-')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\x20-\x7E]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
-   Deliberately not the cart, the prices or the payment state: R Supply OS holds
-   all of that, better than a page could restate it, and a message that repeats
-   an order is how WhatsApp became a second copy of it in the first place. */
+function whatsappOrderLine(item) {
+  const display = whatsappAscii(itemDisplayName(item));
+  if (!display) return '';
+
+  const brand = whatsappAscii(item?.brand);
+  const name = brand ? `${brand} ${display}` : display;
+  const presentation = item?.ml ? `${whatsappAscii(item.ml)} ml` : 'Botella';
+  const qty = Math.max(1, Number.parseInt(item?.quantity, 10) || 1);
+
+  return `- ${name} - ${presentation} x${qty}`;
+}
+
 export function whatsappText(order) {
   const noun = isQuote(order) ? 'cotizacion' : 'pedido';
+  const opening = `Hola, quiero confirmar mi ${noun} ${order?.folio ?? ''}.`.replace(/\s+/g, ' ').trim();
+  const lines = (order?.items ?? []).map(whatsappOrderLine).filter(Boolean);
 
-  return `Hola, quiero confirmar mi ${noun} ${order?.folio ?? ''}.`.replace(/\s+/g, ' ').trim();
+  return lines.length ? `${opening}\nPedido:\n${lines.join('\n')}` : opening;
 }
 
 function guestHtml() {
