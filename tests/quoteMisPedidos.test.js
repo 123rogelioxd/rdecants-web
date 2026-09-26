@@ -103,10 +103,22 @@ test('the quote detail shows each perfume with its own state', () => {
   assert.match(html, /Apartado: \$1,000 de \$2,980/);
 });
 
-test('WhatsApp from «Mis pedidos» names a quote as a quote, in plain ASCII', () => {
-  assert.equal(whatsappText(quoteRow), 'Hola, quiero confirmar mi cotizacion RD-00003.');
+test('WhatsApp from «Mis pedidos» names the quote and its products in plain ASCII', () => {
+  const detail = {
+    ...quoteRow,
+    items: [
+      { name: 'VERSACE DYLAN BLUE EDT', brand: null, ml: 100, quantity: 1 },
+      { name: 'RASASI HAWAS ICE', brand: null, ml: 100, quantity: 1 },
+    ],
+  };
+  const message = whatsappText(detail);
+
+  assert.match(message, /Hola, quiero confirmar mi cotizacion RD-00003\./);
+  assert.match(message, /VERSACE DYLAN BLUE EDT - 100 ml x1/);
+  assert.match(message, /RASASI HAWAS ICE - 100 ml x1/);
+  assert.equal(message, Buffer.from(message, 'utf8').toString('ascii'));
+
   assert.equal(whatsappText({ folio: 'WEB-20260924-0001' }), 'Hola, quiero confirmar mi pedido WEB-20260924-0001.');
-  assert.match(whatsappText(quoteRow), /^[\x20-\x7E]+$/);
 });
 
 test('the storefront still never touches the session token', () => {
