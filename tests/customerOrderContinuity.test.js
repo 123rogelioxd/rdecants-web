@@ -173,24 +173,47 @@ test('a stale remembered day is dropped rather than resubmitted', () => {
   assert.match(delivery, /if \(_state\.preference && !this\.isPreferenceOffered\(_state\.preference\)\)/);
 });
 
-/* ── WHATSAPP: a folio, and at most one more fact ─────────────────────────── */
+/* ── WHATSAPP: folio + what the customer actually ordered ───────────────── */
 
-test('the WhatsApp message carries the folio and never rebuilds the order', () => {
-  const message = buildWhatsAppMessage('WEB-20260909-0001');
+test('the WhatsApp message names the submitted products without rebuilding money', () => {
+  const message = buildWhatsAppMessage(
+    'WEB-20260926-0002',
+    null,
+    [
+      { house: 'LOUIS VUITTON', name: 'L’IMMENSITÉ', size: 5, qty: 1, type: 'decant', price: 350 },
+      { house: 'RASASI', name: 'HAWAS ICE', size: 10, qty: 2, type: 'decant', price: 230 },
+    ],
+  );
 
-  assert.equal(message, 'Hola, quiero confirmar mi pedido WEB-20260909-0001 de RDECANTS.');
+  assert.match(message, /WEB-20260926-0002/);
+  assert.match(message, /Pedido:/);
+  assert.match(message, /LOUIS VUITTON L'IMMENSITE - 5 ml x1/);
+  assert.match(message, /RASASI HAWAS ICE - 10 ml x2/);
   for (const forbidden of ['$', 'Total', 'MXN', 'pagado', 'disponibilidad']) {
     assert.ok(!message.includes(forbidden), `${forbidden} must not appear in the handoff`);
   }
+});
+
+test('the WhatsApp product summary stays plain ASCII and handles bottle presentation', () => {
+  const message = buildWhatsAppMessage(
+    'WEB-1',
+    null,
+    [{ house: 'DIOR', name: 'SAUVAGE EDP', size: '100 ml', qty: 1, type: 'bottle', offer_label: 'Tester' }],
+  );
+
+  assert.match(message, /DIOR SAUVAGE EDP - Botella - Tester x1/);
+  assert.equal(message, Buffer.from(message, 'utf8').toString('ascii'));
+});
+
+test('checkout passes the exact submitted cart snapshot into the WhatsApp message', () => {
+  const flow = read('assets/js/ui/checkoutFlow.js');
+  assert.match(flow, /buildWhatsAppMessage\(order\.folio, order\.delivery\?\.preference, result\.items\)/);
 });
 
 test('a chosen window is added as an explicit date, in plain ASCII', () => {
   const message = buildWhatsAppMessage('WEB-1', { date: '2026-09-10', window_label: '4 - 7 pm' });
 
   assert.match(message, /Horario preferido: 10\/09, 4 - 7 pm\./);
-  /* "Mañana" would carry an ñ into a channel that has already been seen
-     mangling multi-byte characters, and a message read the next morning has no
-     idea which day "hoy" was. */
   assert.equal(message, Buffer.from(message, 'utf8').toString('ascii'));
 });
 
@@ -305,8 +328,11 @@ test('the order detail shows products, delivery and the real payment state', () 
   assert.doesNotMatch(html, /Pagado/);
 });
 
-test('the order detail offers WhatsApp with the folio and nothing rebuilt', () => {
-  assert.equal(whatsappText(order), 'Hola, quiero confirmar mi pedido WEB-20260909-0001.');
+test('the order detail WhatsApp identifies the products without copying totals', () => {
+  const message = whatsappText(order);
+  assert.match(message, /WEB-20260909-0001/);
+  assert.match(message, /RASASI HAWAS FIRE - 5 ml x2/);
+  assert.doesNotMatch(message, /420|MXN|Total/);
 
   const html = orderDetailHtml(order);
   assert.match(html, /wa\.me\/529513446211/);

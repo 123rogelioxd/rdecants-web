@@ -402,59 +402,73 @@ async function _buildOrderItem(item) {
   };
 }
 
-/* The message the customer sends: one sentence and a folio.
+/* The WhatsApp handoff is a reference, not a second order record.
 
-   ── Why it stopped being the order ───────────────────────────────────────
-   It used to rebuild the whole cart in text: every line, every presentation,
-   the subtotal, each coupon, the total, the customer's name. That made the
-   chat a SECOND copy of a record R Supply OS already holds — one that could
-   disagree with the real order (a coupon consumed a second earlier, a bottle
-   repriced), that a person had to read back by hand, and that the business
-   ended up treating as the order itself.
+   R Supply OS remains authoritative for prices, discounts, payment, delivery
+   cost and status. The message carries only:
+     • the folio;
+     • the exact submitted cart snapshot (name, presentation, quantity);
+     • the requested delivery window, when present.
 
-   By the time this runs the backend record exists: priced, reserved, routed to
-   Operación or Guías, with the address attached. The folio is the whole
-   message because it is the only thing the order cannot say for itself — that
-   this particular person is ready to go ahead.
+   `registerWebOrder()` captures `items` before clearing the cart and only returns
+   after the server accepts the order, so these product lines identify the order
+   without making WhatsApp a second pricing authority.
 
-   Three things deliberately went with it:
+   Everything is reduced to plain ASCII because this channel previously mangled
+   multi-byte characters. */
+function _asciiText(value) {
+  return String(value ?? '')
+    .replace(/[’‘]/g, "'")
+    .replace(/[–—]/g, '-')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\x20-\x7E]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
-     • The opening emoji. It reached real customers as "Hola" followed by a
-       replacement character — one byte of a four-byte codepoint surviving a
-       transport that was not treating the text as UTF-8. Nothing here needs a
-       character outside ASCII, so the class of bug is gone rather than patched.
+function _orderLines(items = []) {
+  if (!Array.isArray(items)) return [];
 
-     • "Quedo pendiente de disponibilidad." Availability is not pending — it
-       was validated and physically reserved before this string was built.
+  return items.flatMap(item => {
+    const rawName = _asciiText(item?.name);
+    if (!rawName) return [];
 
-     • The name line. R Supply OS has the customer's name; printing it back at
-       them was only ever a way for a missing one to be announced.
+    const house = _asciiText(item?.house);
+    const name = house && !rawName.toLowerCase().startsWith(house.toLowerCase())
+      ? `${house} ${rawName}`
+      : rawName;
 
-   `folio` is required in practice. A message with no folio would be exactly the
-   unrecorded order this flow exists to eliminate, and the caller never reaches
-   here without one — _performCheckout returns on a failed order and never
-   opens WhatsApp. The fallback is a last defence, not a supported path.
+    let presentation = '';
+    if (item?.type === 'bottle') {
+      const bottle = _asciiText(item?.offer_label || item?.condition_label || item?.size || 'Botella');
+      presentation = /^botella\b/i.test(bottle) ? bottle : `Botella - ${bottle}`;
+    } else if (item?.type === 'pack') {
+      presentation = _asciiText(item?.size || 'Pack');
+    } else {
+      const size = _asciiText(item?.size);
+      presentation = size ? (/\bml\b/i.test(size) ? size : `${size} ml`) : '';
+    }
 
-   ── The one thing that was added back, and why ─────────────────────────────
-   The requested delivery window — when the customer chose one. It is the other
-   question the seller would otherwise have to go and look up before replying,
-   and unlike a price or a line item it cannot be stale: it is echoed from the
-   snapshot the SERVER just wrote, not rebuilt from browser state.
+    const qty = Math.max(1, Number.parseInt(item?.qty, 10) || 1);
+    return [`- ${name}${presentation ? ` - ${presentation}` : ''} x${qty}`];
+  });
+}
 
-   Printed as a DATE rather than "Hoy" or "Mañana". A chat message read at nine
-   the next morning has no idea which day "hoy" was — and "Mañana" would carry
-   an ñ into a channel this function deliberately keeps ASCII, for the same
-   reason the opening emoji had to go. */
-export function buildWhatsAppMessage(folio = '', preference = null) {
+export function buildWhatsAppMessage(folio = '', preference = null, items = []) {
   const reference = String(folio || '').trim();
   const opening = reference
     ? `Hola, quiero confirmar mi pedido ${reference} de RDECANTS.`
     : 'Hola, quiero confirmar mi pedido de RDECANTS.';
 
-  const line = _preferenceLine(preference);
+  const blocks = [opening];
+  const orderLines = _orderLines(items);
+  if (orderLines.length) blocks.push(`Pedido:\n${orderLines.join('\n')}`);
 
-  return line ? `${opening}
-${line}` : opening;
+  const line = _preferenceLine(preference);
+  if (line) blocks.push(line);
+
+  return blocks.join('\n');
 }
 
 /* "Horario preferido: 10/09, 4 - 7 pm." — or nothing.
