@@ -309,7 +309,7 @@ test('the order detail offers WhatsApp with the folio and nothing rebuilt', () =
   assert.equal(whatsappText(order), 'Hola, quiero confirmar mi pedido WEB-20260909-0001.');
 
   const html = orderDetailHtml(order);
-  assert.match(html, /wa\.me\/5219516513018/);
+  assert.match(html, /wa\.me\/529513446211/);
   assert.doesNotMatch(html, /wa\.me[^"]*420/, 'no totals in the handoff link');
 });
 
