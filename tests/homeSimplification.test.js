@@ -297,7 +297,7 @@ test('authenticity is stated once — and the lot evidence is still one tap away
   const faq = html.slice(html.indexOf('class="faq-list'), html.indexOf('</div>', html.indexOf('class="faq-list')));
   assert.match(faq, /frasco/i, 'the claim survives');
   assert.match(faq, /lote/i, 'and so does the lot evidence');
-  assert.match(faq, /wa\.me\/5219516513018/, 'as a real WhatsApp action, not a description of one');
+  assert.match(faq, /wa\.me\/529513446211/, 'as a real WhatsApp action, not a description of one');
 
   assert.doesNotMatch(html, /class="trust-strip"/, 'no duplicate trust strip on the home');
 });
@@ -346,7 +346,7 @@ test('footer links point to live routes only', () => {
   const html = read('index.html');
   const footer = html.slice(html.indexOf('<footer class="footer">'));
 
-  assert.match(footer, /wa\.me\/5219516513018/, 'WhatsApp');
+  assert.match(footer, /wa\.me\/529513446211/, 'WhatsApp');
   assert.match(footer, /href="\/catalogo\.html"/, 'Catálogo');
   assert.match(footer, /href="\/elegir\.html"/, 'Ayúdame a elegir');
   assert.match(footer, /RDECANTS/, 'customer-facing legal line kept');
