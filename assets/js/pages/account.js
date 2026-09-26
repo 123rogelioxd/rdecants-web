@@ -20,7 +20,7 @@ import { Tracker } from '../tracking/tracker.js';
 import { normalizeApiImageUrl } from '../api/config.js';
 import { Account, statusTone, paymentTone, isQuote, formatOrderDate, formatOrderTotal } from '../account/account.js';
 
-const WHATSAPP_NUMBER = '5219516513018';
+const WHATSAPP_NUMBER = '529513446211';
 
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
