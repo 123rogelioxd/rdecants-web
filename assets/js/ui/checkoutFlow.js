@@ -137,6 +137,12 @@ async function next() {
    Note what is NOT here: any claim about payment. "Pedido registrado" is not
    "pagado", and the note below this list says so in as many words. */
 export function registeredFactsHtml(order) {
+  /* Inside R Supply OS's commerce engine the server says, for THIS order,
+     until when it is held, what is owed by component and what was paid. When
+     that block is absent the screen says what it always said. */
+  const commerce = order?.commerce;
+  if (commerce) return commerceFactsHtml(order, commerce);
+
   const facts = ['Tu inventario quedó apartado.'];
 
   const preference = order?.delivery?.preference;
@@ -156,11 +162,63 @@ export function registeredFactsHtml(order) {
   return facts.map(fact => `<li>${esc(fact)}</li>`).join('');
 }
 
+/* Every figure is the server's: total_due, paid_amount, balance_due and the
+   hold's end. «Pagado» appears only when paid_amount says so — registering
+   an order never charges anything. */
+export function commerceFactsHtml(order, commerce) {
+  const facts = [];
+  const until = holdLabel(commerce.reservation_expires_at);
+  facts.push(until ? `Tu pedido quedó apartado hasta ${until}.` : 'Tu pedido quedó apartado.');
+
+  if (commerce.shipping_quote_pending) {
+    facts.push(`Productos: ${money(commerce.merchandise_amount)}. El costo de entrega se confirma por WhatsApp.`);
+  } else if (Number(commerce.shipping_amount) > 0) {
+    facts.push(`Total a pagar: ${money(commerce.total_due)} (productos ${money(commerce.merchandise_amount)} + envío ${money(commerce.shipping_amount)}).`);
+  } else {
+    facts.push(`Total a pagar: ${money(commerce.total_due)}.`);
+  }
+
+  if (Number(commerce.paid_amount) > 0) {
+    facts.push(Number(commerce.balance_due) > 0
+      ? `Recibimos ${money(commerce.paid_amount)}; faltan ${money(commerce.balance_due)}.`
+      : 'Tu pago está confirmado.');
+  }
+
+  const preference = order?.delivery?.preference;
+  if (preference?.label) facts.push(`Horario preferido: ${preference.label}. Lo confirmamos por WhatsApp.`);
+
+  facts.push(commerce.payment_link
+    ? 'Puedes pagar ahora con Mercado Pago o confirmar por WhatsApp para recibir los datos de transferencia.'
+    : 'Confirma por WhatsApp para recibir los datos de pago.');
+
+  const items = facts.map(fact => `<li>${esc(fact)}</li>`);
+  if (commerce.payment_link && /^https:\/\//.test(String(commerce.payment_link))) {
+    items.push(`<li><a class="checkout-pay-link" href="${esc(commerce.payment_link)}" target="_blank" rel="noopener" data-checkout-pay>Pagar con Mercado Pago</a></li>`);
+  }
+
+  return items.join('');
+}
+
+/* «mañana a las 9:10» in the customer's own clock, from the server's instant. */
+export function holdLabel(iso, now = new Date()) {
+  const at = iso ? new Date(iso) : null;
+  if (!at || Number.isNaN(at.getTime())) return '';
+
+  const time = at.toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit' });
+  const day = date => date.toLocaleDateString('es-MX', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+  if (day(at) === day(now)) return `hoy a las ${time}`;
+  if (day(at) === day(tomorrow)) return `mañana a las ${time}`;
+
+  return `el ${at.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit' })} a las ${time}`;
+}
+
 export function registeredOrderTotals(order, reviewed) {
   const deliveryCost = order.delivery && 'shipping_cost' in order.delivery ? order.delivery.shipping_cost : null;
   const result = checkoutTotals({ subtotal: order.subtotal ?? reviewed.subtotal, discount: order.discount ?? reviewed.discount, deliveryCost });
   result.merchandise = order.total ?? result.merchandise;
-  result.total = order.grand_total ?? null;
+  result.total = order.commerce?.total_due ?? order.grand_total ?? null;
   return result;
 }
 
