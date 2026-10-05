@@ -139,12 +139,35 @@ export function orderDetailHtml(order) {
           <span>Total</span>
           <span>${total ? esc(total) : 'Por confirmar'}</span>
         </div>
-        <p class="account-status account-status--${esc(paymentTone(status))} account-status--payment">${esc(status.payment_label ?? 'Pago por confirmar')}</p>
+        ${paymentRowsHtml(order?.payment)}
+        <p class="account-status account-status--${esc(paymentTone(status))} account-status--payment">${esc(paymentLabel(order?.payment) ?? status.payment_label ?? 'Pago por confirmar')}</p>
       </section>
 
       <a class="account-cta" href="https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappText(order))}"
          target="_blank" rel="noopener" data-account-whatsapp>Confirmar por WhatsApp</a>
     </article>`;
+}
+
+/* What R Supply OS confirmed as paid for this order (confirmed money only —
+   a message or a screenshot is never a payment) and what is still owed. Absent
+   while the order is not in the commerce engine. */
+export function paymentRowsHtml(payment) {
+  if (!payment) return '';
+
+  const rows = [];
+  if (Number(payment.paid_amount) > 0) rows.push(`<div class="account-money-row"><span>Pagado</span><span>${esc(formatOrderTotal(payment.paid_amount) ?? '')}</span></div>`);
+  if (Number(payment.balance_due) > 0 && !payment.shipping_quote_pending) rows.push(`<div class="account-money-row"><span>Por pagar</span><span>${esc(formatOrderTotal(payment.balance_due) ?? '')}</span></div>`);
+
+  return rows.join('');
+}
+
+export function paymentLabel(payment) {
+  if (!payment) return null;
+  if (payment.shipping_quote_pending) return 'Costo de entrega por confirmar';
+  if (Number(payment.total_due) > 0 && Number(payment.balance_due) <= 0) return 'Pagado';
+  if (Number(payment.paid_amount) > 0) return 'Pago parcial';
+
+  return 'Pendiente de pago';
 }
 
 /* Cliente stores names upper-cased, which is right for an operator scanning a
