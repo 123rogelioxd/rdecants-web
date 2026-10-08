@@ -25,7 +25,7 @@
 .checkout-summary>p { color: #70695f; font-size: 12px; line-height: 1.5; }
 .checkout-actions { padding: 14px 32px max(18px,env(safe-area-inset-bottom)); border-top: 1px solid #ded9d0; background: #faf8f3; }
 .checkout-actions-row { display: flex; gap: 12px; justify-content: space-between; }
-.checkout-primary,.checkout-secondary,.checkout-whatsapp { display: inline-flex; justify-content: center; align-items: center; min-height: 46px; padding: 12px 22px; border-radius: 7px; font: 600 14px/1.2 inherit; cursor: pointer; text-decoration: none; }
+.checkout-primary,.checkout-secondary,.checkout-whatsapp,.checkout-pay-now { display: inline-flex; justify-content: center; align-items: center; min-height: 46px; padding: 12px 22px; border-radius: 7px; font: 600 14px/1.2 inherit; cursor: pointer; text-decoration: none; }
 .checkout-primary { background:#171714; color:#fff; border:1px solid #171714; }
 .checkout-secondary { background: transparent; color: #171714; border: 1px solid #cfc9bf; }
 .checkout-primary:disabled,.checkout-secondary:disabled { opacity:.5; cursor:wait; }
@@ -92,7 +92,10 @@
 .checkout-secondary--quiet { background:none; border-color:transparent; color:#6b655c; }
 .checkout-secondary--quiet:hover { color:#171714; border-color:#d9d2c6; }
 .checkout-registration-note { color:#6b655c; font-size:13px; }
+.checkout-pay-now { background:#171714; border:1px solid #171714; color:#fff; width:min(100%,360px); }
+.checkout-pay-now[hidden] { display:none; }
 .checkout-whatsapp { background:#187d54; border:1px solid #187d54; color:white; }
+.checkout-whatsapp--secondary { background:transparent; border-color:#cfc9bf; color:#171714; }
 .checkout-dialog .delivery-panel { margin:0; padding:0; border:0; }
 .checkout-dialog .delivery-mode[aria-checked="true"] { background:#171714; color:white; border-color:#171714; }
 .checkout-dialog .delivery-mode[aria-checked="true"] span { color:white; }
