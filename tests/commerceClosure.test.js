@@ -7,7 +7,7 @@ globalThis.sessionStorage = { getItem() { return null; }, setItem() {}, removeIt
 globalThis.document = globalThis.document ?? { getElementById() { return null; }, querySelector() { return null; }, querySelectorAll() { return []; }, addEventListener() {}, body: { classList: { add() {}, remove() {} } } };
 Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { userAgent: 'node-test' } });
 
-const { registeredFactsHtml, commerceFactsHtml, holdLabel, registeredOrderTotals } = await import('../assets/js/ui/checkoutFlow.js');
+const { registeredFactsHtml, commerceFactsHtml, holdLabel, registeredOrderTotals, isHttpsPaymentLink } = await import('../assets/js/ui/checkoutFlow.js');
 const { paymentRowsHtml, paymentLabel } = await import('../assets/js/pages/account.js');
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -50,13 +50,14 @@ test('the server\'s figures: held until when, and what is owed by component', ()
   assert.match(html, /Confirma por WhatsApp para recibir los datos de pago/);
 });
 
-test('a payment link is offered only as an https link from the server', () => {
-  const linked = commerceFactsHtml({}, { ...commerce, payment_link: 'https://www.mercadopago.com.mx/checkout/v1/redirect?pref_id=1' });
-  assert.match(linked, /<a class="checkout-pay-link" href="https:\/\/www\.mercadopago\.com\.mx\/checkout\/v1\/redirect\?pref_id=1"/);
-  assert.match(linked, /rel="noopener"/);
+test('the payment CTA accepts only an https link from the server and financial facts never render executable markup', () => {
+  assert.equal(isHttpsPaymentLink('https://www.mercadopago.com.mx/checkout/v1/redirect?pref_id=1'), true);
+  assert.equal(isHttpsPaymentLink('javascript:alert(1)'), false);
+  assert.equal(isHttpsPaymentLink('http://example.com/pay'), false);
+  assert.equal(isHttpsPaymentLink(null), false);
 
-  const hostile = commerceFactsHtml({}, { ...commerce, payment_link: 'javascript:alert(1)' });
-  assert.doesNotMatch(hostile, /checkout-pay-link/);
+  const facts = commerceFactsHtml({}, { ...commerce, payment_link: 'javascript:alert(1)' });
+  assert.doesNotMatch(facts, /href=|checkout-pay|javascript:/i);
 });
 
 test('paid money is reported only as the server confirms it', () => {
