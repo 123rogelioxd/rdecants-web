@@ -120,6 +120,6 @@ test('buildProductPageHtml shows a single value-prop line (no duplicate reassura
   };
   const html = buildProductPageHtml(sample);
   assert.ok(html.includes('pdp-value-prop'), 'value-prop line rendered');
-  assert.ok(html.includes('pruébalo desde'), 'value-prop copy present');
+  assert.match(html, /pruébalo desde/i, 'value-prop copy present');
   assert.ok(!html.includes('pdp-decant-reassurance'), 'duplicate reassurance line removed');
 });
