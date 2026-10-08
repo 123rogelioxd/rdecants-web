@@ -247,6 +247,29 @@ test('a chosen window is echoed as preferred, from the server snapshot', () => {
   assert.match(html, /Lo confirmamos por WhatsApp/);
 });
 
+test('checkout asks the customer to apartar, not to understand an internal registration step', () => {
+  const flow = read('assets/js/ui/checkoutFlow.js');
+  const markup = read('assets/js/ui/checkoutMarkup.js');
+
+  assert.match(flow, /'Apartar pedido'/);
+  assert.match(flow, /'Pedido apartado'/);
+  assert.match(markup, />Apartado<\/span>/);
+  assert.doesNotMatch(markup, />Registro<\/span>/);
+});
+
+test('a real Mercado Pago link becomes the primary post-order action while WhatsApp stays available', () => {
+  const flow = read('assets/js/ui/checkoutFlow.js');
+  const markup = read('assets/js/ui/checkoutMarkup.js');
+  const css = read('assets/css/checkout-flow.css');
+
+  assert.match(markup, /id="checkout-pay-now"/);
+  assert.match(flow, /order\?\.commerce\?\.payment_link/);
+  assert.match(flow, /Pagar \$\{money\(balanceDue\)\} con Mercado Pago/);
+  assert.match(flow, /checkout-whatsapp--secondary/);
+  assert.match(css, /\.checkout-pay-now \{[^}]*background:#171714/);
+  assert.match(markup, /id="checkout-registered-whatsapp"/);
+});
+
 test('the registered screen links straight to this order, not to a login', () => {
   const flow = read('assets/js/ui/checkoutFlow.js');
   const markup = read('assets/js/ui/checkoutMarkup.js');
