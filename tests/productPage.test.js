@@ -373,6 +373,14 @@ test('Afnan 9PM shows concise public guidance', () => {
   assert.ok(!whySlice.includes('pdp-notfor-line'), 'no extra negative guidance in public why section');
 });
 
+test('PDP trial value proposition is truthful and does not claim every bottle costs thousands', () => {
+  const html = buildProductPageHtml(sample);
+
+  assert.match(html, /Pruébalo desde/);
+  assert.match(html, /descubre si va contigo antes de ir por la botella/);
+  assert.doesNotMatch(html, /botella completa cuesta miles/i);
+});
+
 test('PDP includes the sticky mini-buy CTA', () => {
   const html = buildProductPageHtml(sample);
   assert.ok(html.includes('id="pdp-sticky-cta"'));
