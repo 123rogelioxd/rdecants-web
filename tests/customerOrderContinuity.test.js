@@ -253,8 +253,8 @@ test('checkout asks the customer to apartar, not to understand an internal regis
 
   assert.match(flow, /'Apartar pedido'/);
   assert.match(flow, /'Pedido apartado'/);
-  assert.match(markup, />Apartado<\/span>/);
-  assert.doesNotMatch(markup, />Registro<\/span>/);
+  assert.match(markup, /<span>4<\/span> Apartado/);
+  assert.doesNotMatch(markup, /<span>4<\/span> Registro/);
 });
 
 test('a real Mercado Pago link becomes the primary post-order action while WhatsApp stays available', () => {
