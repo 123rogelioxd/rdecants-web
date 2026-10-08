@@ -177,7 +177,7 @@ export function buildProductPageHtml(product) {
             </div>
 
             ${lowestPrice !== null ? `
-              <p class="pdp-value-prop">Una botella completa cuesta miles — pruébalo desde ${formatPrice(lowestPrice)}.</p>
+              <p class="pdp-value-prop">Prueba el aroma desde ${formatPrice(lowestPrice)} antes de decidir si quieres la botella.</p>
             ` : ''}` : bottles.length
               ? _bottleOfferRows(product, bottles, { heading: bottles.length === 1 ? 'Disponible ahora' : 'Elige tu botella' })
               : '<div class="pdp-price-consult">Precio disponible por consulta personalizada.</div>'}

@@ -149,7 +149,7 @@ test('PDP hero never advertises the 2ml price as the "Desde" entry', async () =>
     html.indexOf('id="pdp-hero"'),
     html.indexOf('id="pdp-novice"'),
   );
-  assert.ok(heroSlice.includes('pruébalo desde'), 'hero anchors the entry price copy');
+  assert.ok(heroSlice.includes('Prueba el aroma desde'), 'hero anchors the entry price copy');
   assert.ok(heroSlice.includes('$120'), 'hero shows the real 3ml entry price');
   assert.ok(!heroSlice.includes('$80'), 'hero must NOT show the 2ml $80 price');
   assert.ok(!heroSlice.includes('data-size="2"'), '2ml is never a selectable presentation');

@@ -215,6 +215,14 @@ test('PDP order: buy is IN the hero, the sell/guide section follows it', () => {
   assert.ok(i('id="pdp-tech"') > i('id="pdp-related"'));
 });
 
+test('PDP value proposition sells the decant without inventing the bottle price', () => {
+  const html = buildProductPageHtml(sample);
+
+  assert.match(html, /Prueba el aroma desde/);
+  assert.match(html, /antes de decidir si quieres la botella/);
+  assert.doesNotMatch(html, /botella completa cuesta miles/i);
+});
+
 test('PDP hero carries the presentations and Add — no intermediate step', () => {
   const html = buildProductPageHtml(sample);
   const heroSlice = html.slice(
