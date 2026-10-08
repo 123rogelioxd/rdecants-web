@@ -134,7 +134,6 @@ async function next() {
     const whatsapp = $('checkout-registered-whatsapp');
     whatsapp.href = `https://wa.me/529513446211?text=${encodeURIComponent(buildWhatsAppMessage(order.folio, order.delivery?.preference, result.items))}`;
     whatsapp.classList.toggle('checkout-whatsapp--secondary', canPayNow);
-    whatsapp.href = whatsapp.href;
     whatsapp.onclick = () => Tracker.emit('whatsapp_confirmation_clicked', { folio: order.folio, source: 'checkout' });
     /* Deep-links to this order, not to the list. The session cookie was set on
        the same response that created it, so nothing asks the customer to sign
