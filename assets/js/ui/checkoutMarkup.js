@@ -10,7 +10,7 @@ export const CHECKOUT_FLOW_HTML = `
       <button type="button" data-checkout-edit="cart"><span>1</span> Carrito</button>
       <button type="button" data-checkout-edit="delivery" data-checkout-progress="delivery"><span>2</span> Entrega</button>
       <span data-checkout-progress="confirm"><span>3</span> Confirmar</span>
-      <span data-checkout-progress="registered"><span>4</span> Registro</span>
+      <span data-checkout-progress="registered"><span>4</span> Apartado</span>
     </nav>
     <div class="checkout-scroll" id="checkout-scroll">
       <div class="checkout-intro">
@@ -160,7 +160,7 @@ export const CHECKOUT_FLOW_HTML = `
             </div>
             <div class="checkout-review-card" id="checkout-review-notes" hidden></div>
           </section>
-          <section id="checkout-step-registered" data-checkout-step="registered" aria-label="Pedido registrado" hidden>
+          <section id="checkout-step-registered" data-checkout-step="registered" aria-label="Pedido apartado" hidden>
             <!-- What is TRUE at this moment, said in the order a customer
                  asks it: the order exists, the stock is held, nothing has been
                  charged, and here is when we are aiming for. Every line is a
@@ -170,7 +170,8 @@ export const CHECKOUT_FLOW_HTML = `
               <span class="checkout-success-icon" aria-hidden="true">✓</span>
               <p class="checkout-folio" id="checkout-folio"></p>
               <ul class="checkout-facts" id="checkout-registered-facts"></ul>
-              <p class="checkout-registration-note">El registro de tu pedido no realiza un cobro.</p>
+              <p class="checkout-registration-note">Tu pedido está apartado. El cobro ocurre sólo cuando eliges y completas un pago.</p>
+              <a class="checkout-pay-now" id="checkout-pay-now" target="_blank" rel="noopener" hidden>Pagar con Mercado Pago</a>
               <a class="checkout-whatsapp" id="checkout-registered-whatsapp" target="_blank" rel="noopener">Confirmar por WhatsApp</a>
               <!-- Straight to the customer's own order. The browser was
                    securely remembered while the order was being registered, so
@@ -186,7 +187,7 @@ export const CHECKOUT_FLOW_HTML = `
     </div>
     <footer class="checkout-actions" id="checkout-actions">
       <p class="checkout-step-error" id="checkout-step-error" role="alert" hidden></p>
-      <p class="checkout-action-hint" id="checkout-action-hint">Revisarás tu pedido antes de registrarlo.</p>
+      <p class="checkout-action-hint" id="checkout-action-hint">Revisarás tu pedido antes de apartarlo.</p>
       <div class="checkout-actions-row">
         <button type="button" class="checkout-secondary" id="checkout-back">Volver al carrito</button>
         <button type="button" class="checkout-primary" id="checkout-next">Revisar pedido →</button>
