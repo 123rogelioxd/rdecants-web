@@ -10,6 +10,7 @@ import { Tracker } from '../tracking/tracker.js';
 
 const money = value => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 2 }).format(value) + ' MXN';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+export const isHttpsPaymentLink = value => typeof value === 'string' && /^https:\/\//i.test(value.trim());
 const $ = id => document.getElementById(id);
 let step = 'delivery', busy = false, wired = false, previousFocus = null, registered = null;
 
@@ -120,7 +121,7 @@ async function next() {
     const payNow = $('checkout-pay-now');
     const paymentLink = order?.commerce?.payment_link;
     const balanceDue = Number(order?.commerce?.balance_due ?? order?.commerce?.total_due ?? 0);
-    const canPayNow = typeof paymentLink === 'string' && /^https:\/\//.test(paymentLink);
+    const canPayNow = isHttpsPaymentLink(paymentLink);
     payNow.hidden = !canPayNow;
     if (canPayNow) {
       payNow.href = paymentLink;
