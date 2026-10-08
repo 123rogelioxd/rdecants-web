@@ -170,8 +170,9 @@ export const CHECKOUT_FLOW_HTML = `
               <span class="checkout-success-icon" aria-hidden="true">✓</span>
               <p class="checkout-folio" id="checkout-folio"></p>
               <ul class="checkout-facts" id="checkout-registered-facts"></ul>
-              <p class="checkout-registration-note">El registro de tu pedido no realiza un cobro.</p>
-              <a class="checkout-whatsapp" id="checkout-registered-whatsapp" target="_blank" rel="noopener">Confirmar por WhatsApp</a>
+              <p class="checkout-registration-note">Apartar tu pedido no realiza un cobro.</p>
+              <a class="checkout-primary" id="checkout-pay-now" target="_blank" rel="noopener" hidden>Pagar con Mercado Pago</a>
+              <a class="checkout-whatsapp" id="checkout-registered-whatsapp" target="_blank" rel="noopener">Continuar por WhatsApp</a>
               <!-- Straight to the customer's own order. The browser was
                    securely remembered while the order was being registered, so
                    this never asks anyone to sign in to see what they just

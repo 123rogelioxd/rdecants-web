@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 globalThis.window = { __RDECANTS_API_BASE__: '', location: { hostname: 'localhost', pathname: '/' } };
 globalThis.localStorage = { getItem() { return null; }, setItem() {}, removeItem() {} };
@@ -50,13 +51,19 @@ test('the server\'s figures: held until when, and what is owed by component', ()
   assert.match(html, /Confirma por WhatsApp para recibir los datos de pago/);
 });
 
-test('a payment link is offered only as an https link from the server', () => {
+test('a verified payment link is a dedicated primary action, not buried inside the facts list', () => {
   const linked = commerceFactsHtml({}, { ...commerce, payment_link: 'https://www.mercadopago.com.mx/checkout/v1/redirect?pref_id=1' });
-  assert.match(linked, /<a class="checkout-pay-link" href="https:\/\/www\.mercadopago\.com\.mx\/checkout\/v1\/redirect\?pref_id=1"/);
-  assert.match(linked, /rel="noopener"/);
+  assert.match(linked, /Puedes pagar ahora con Mercado Pago/);
+  assert.doesNotMatch(linked, /checkout-pay-link/);
 
-  const hostile = commerceFactsHtml({}, { ...commerce, payment_link: 'javascript:alert(1)' });
-  assert.doesNotMatch(hostile, /checkout-pay-link/);
+  const markup = readFileSync(new URL('../assets/js/ui/checkoutMarkup.js', import.meta.url), 'utf8');
+  const flow = readFileSync(new URL('../assets/js/ui/checkoutFlow.js', import.meta.url), 'utf8');
+
+  assert.match(markup, /id="checkout-pay-now"[^>]*hidden>Pagar con Mercado Pago/);
+  assert.ok(markup.indexOf('checkout-pay-now') < markup.indexOf('checkout-registered-whatsapp'));
+  assert.match(flow, /\^https:\\\/\\\//, 'only https payment links become actionable');
+  assert.match(flow, /mercado_pago_checkout_clicked/);
+  assert.match(flow, /Prefiero transferencia \/ necesito ayuda/);
 });
 
 test('paid money is reported only as the server confirms it', () => {

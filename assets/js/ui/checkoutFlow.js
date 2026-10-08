@@ -63,18 +63,18 @@ function render() {
   document.querySelectorAll('[data-checkout-progress]').forEach(el => {
     if (el.dataset.checkoutProgress === step) el.setAttribute('aria-current', 'step'); else el.removeAttribute('aria-current');
   });
-  const names = { delivery: ['2', 'Entrega', 'Elige cómo recibir tu pedido.'], confirm: ['3', 'Revisa tu pedido', 'Confirma tu selección y los datos de entrega.'], registered: ['4', 'Pedido registrado', 'Gracias por elegir RDECANTS.'] };
+  const names = { delivery: ['2', 'Entrega', 'Elige cómo recibir tu pedido.'], confirm: ['3', 'Revisa tu pedido', 'Confirma tu selección y los datos de entrega.'], registered: ['4', 'Pedido apartado', 'Tu pedido ya quedó apartado.'] };
   const [n, title, subtitle] = names[step];
   $('checkout-title').textContent = title; $('checkout-subtitle').textContent = subtitle; $('checkout-eyebrow').textContent = `PASO ${n} DE 4`;
   $('checkout-summary').innerHTML = checkoutSummaryHtml(registered?.totals ?? totals());
   $('checkout-actions').hidden = step === 'registered';
   document.querySelectorAll('[data-checkout-edit]').forEach(el => { el.disabled = busy || step === 'registered'; });
   $('checkout-next').disabled = busy;
-  $('checkout-next').textContent = busy ? 'Un momento…' : step === 'delivery' ? 'Revisar pedido →' : 'Registrar pedido';
+  $('checkout-next').textContent = busy ? 'Un momento…' : step === 'delivery' ? 'Revisar pedido →' : 'Apartar pedido';
   $('checkout-back').disabled = busy;
   $('checkout-close').disabled = busy;
   $('checkout-back').textContent = step === 'delivery' ? 'Volver al carrito' : 'Editar entrega';
-  $('checkout-action-hint').textContent = step === 'delivery' ? 'Revisarás tu pedido antes de registrarlo.' : 'Apartaremos tu inventario. El registro no realiza un cobro.';
+  $('checkout-action-hint').textContent = step === 'delivery' ? 'Revisarás tu pedido antes de apartarlo.' : 'Apartaremos tu inventario. Apartarlo no realiza un cobro.';
   if (step === 'confirm') {
     $('checkout-review-items').innerHTML = itemHtml(Cart.items);
     const a = Delivery.address;
@@ -116,8 +116,19 @@ async function next() {
     registered = { ...result, totals: registeredOrderTotals(order, reviewedTotals) };
     $('checkout-folio').textContent = `Folio ${order.folio}`;
     $('checkout-registered-facts').innerHTML = registeredFactsHtml(order);
+    const payNow = $('checkout-pay-now');
+    const paymentLink = typeof order?.commerce?.payment_link === 'string' && /^https:\/\//.test(order.commerce.payment_link)
+      ? order.commerce.payment_link
+      : '';
+    payNow.hidden = !paymentLink;
+    payNow.href = paymentLink || '#';
+    payNow.onclick = paymentLink
+      ? () => Tracker.emit('mercado_pago_checkout_clicked', { folio: order.folio, source: 'checkout' })
+      : null;
+
     const whatsapp = $('checkout-registered-whatsapp');
     whatsapp.href = `https://wa.me/529513446211?text=${encodeURIComponent(buildWhatsAppMessage(order.folio, order.delivery?.preference, result.items))}`;
+    whatsapp.textContent = paymentLink ? 'Prefiero transferencia / necesito ayuda' : 'Continuar por WhatsApp';
     whatsapp.onclick = () => Tracker.emit('whatsapp_confirmation_clicked', { folio: order.folio, source: 'checkout' });
     /* Deep-links to this order, not to the list. The session cookie was set on
        the same response that created it, so nothing asks the customer to sign
@@ -192,10 +203,6 @@ export function commerceFactsHtml(order, commerce) {
     : 'Confirma por WhatsApp para recibir los datos de pago.');
 
   const items = facts.map(fact => `<li>${esc(fact)}</li>`);
-  if (commerce.payment_link && /^https:\/\//.test(String(commerce.payment_link))) {
-    items.push(`<li><a class="checkout-pay-link" href="${esc(commerce.payment_link)}" target="_blank" rel="noopener" data-checkout-pay>Pagar con Mercado Pago</a></li>`);
-  }
-
   return items.join('');
 }
 
