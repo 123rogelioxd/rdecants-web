@@ -19,8 +19,7 @@ import { bootstrapShell } from '../core/shell.js';
 import { Tracker } from '../tracking/tracker.js';
 import { normalizeApiImageUrl } from '../api/config.js';
 import { Account, statusTone, paymentTone, isQuote, formatOrderDate, formatOrderTotal } from '../account/account.js';
-
-const WHATSAPP_NUMBER = '529513446211';
+import { orderWhatsAppUrl } from '../cart/checkout.js';
 
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -143,8 +142,8 @@ export function orderDetailHtml(order) {
         <p class="account-status account-status--${esc(paymentTone(status))} account-status--payment">${esc(paymentLabel(order?.payment) ?? status.payment_label ?? 'Pago por confirmar')}</p>
       </section>
 
-      <a class="account-cta" href="https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappText(order))}"
-         target="_blank" rel="noopener" data-account-whatsapp>Confirmar por WhatsApp</a>
+      ${orderWhatsAppUrl(order) ? `<a class="account-cta" href="${esc(orderWhatsAppUrl(order))}"
+         target="_blank" rel="noopener" data-account-whatsapp>Confirmar por WhatsApp</a>` : ''}
     </article>`;
 }
 
@@ -216,8 +215,10 @@ function whatsappOrderLine(item) {
 }
 
 export function whatsappText(order) {
+  const canonical = orderWhatsAppUrl(order);
+  if (canonical) return new URL(canonical).searchParams.get('text') || '';
   const noun = isQuote(order) ? 'cotizacion' : 'pedido';
-  const opening = `Hola, quiero confirmar mi ${noun} ${order?.folio ?? ''}.`.replace(/\s+/g, ' ').trim();
+  const opening = `Hola, quiero confirmar mi ${noun}.`;
   const lines = (order?.items ?? []).map(whatsappOrderLine).filter(Boolean);
 
   return lines.length ? `${opening}\nPedido:\n${lines.join('\n')}` : opening;

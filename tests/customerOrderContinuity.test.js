@@ -185,7 +185,7 @@ test('the WhatsApp message names the submitted products without rebuilding money
     ],
   );
 
-  assert.match(message, /WEB-20260926-0002/);
+  assert.doesNotMatch(message, /WEB-20260926-0002/);
   assert.match(message, /Pedido:/);
   assert.match(message, /LOUIS VUITTON L'IMMENSITE - 5 ml x1/);
   assert.match(message, /RASASI HAWAS ICE - 10 ml x2/);
@@ -205,9 +205,10 @@ test('the WhatsApp product summary stays plain ASCII and handles bottle presenta
   assert.equal(message, Buffer.from(message, 'utf8').toString('ascii'));
 });
 
-test('checkout passes the exact submitted cart snapshot into the WhatsApp message', () => {
+test('checkout uses the backend accepted order WhatsApp URL', () => {
   const flow = read('assets/js/ui/checkoutFlow.js');
-  assert.match(flow, /buildWhatsAppMessage\(order\.folio, order\.delivery\?\.preference, result\.items\)/);
+  assert.match(flow, /orderWhatsAppUrl\(order\)/);
+  assert.doesNotMatch(flow, /buildWhatsAppMessage\(order\.folio/);
 });
 
 test('a chosen window is added as an explicit date, in plain ASCII', () => {
@@ -328,13 +329,14 @@ test('the order detail shows products, delivery and the real payment state', () 
   assert.doesNotMatch(html, /Pagado/);
 });
 
-test('the order detail WhatsApp identifies the products without copying totals', () => {
-  const message = whatsappText(order);
-  assert.match(message, /WEB-20260909-0001/);
+test('the order detail uses canonical WhatsApp money without internal folio', () => {
+  const canonical = { ...order, whatsapp_url: 'https://wa.me/529513446211?text=Hola%20RASASI%20HAWAS%20FIRE%20-%205%20ml%20x2%0ATotal%20con%20entrega%3A%20%24450.' };
+  const message = whatsappText(canonical);
+  assert.doesNotMatch(message, /WEB-20260909-0001/);
   assert.match(message, /RASASI HAWAS FIRE - 5 ml x2/);
-  assert.doesNotMatch(message, /420|MXN|Total/);
+  assert.match(message, /Total con entrega: \$450/);
 
-  const html = orderDetailHtml(order);
+  const html = orderDetailHtml(canonical);
   assert.match(html, /wa\.me\/529513446211/);
   assert.doesNotMatch(html, /wa\.me[^"]*420/, 'no totals in the handoff link');
 });
@@ -455,11 +457,11 @@ test('a guest is an ordinary state, not an error or a login wall', () => {
   }
 });
 
-test('prefill fills blanks and never overwrites what the customer typed', () => {
+test('prefill requires a customer action before filling the form', () => {
   const panel = read('assets/js/ui/deliveryPanel.js');
 
-  assert.match(panel, /if \(!value \|\| current\[field\]\) continue;/);
-  assert.match(panel, /if \(!Delivery\.mode && saved\.mode\)/);
+  assert.match(panel, /checkout-use-address.*addEventListener\('click'/);
+  assert.match(panel, /Account\.prefill\(\{ refresh: true \}\)/);
 });
 
 /* ── NAVIGATION ───────────────────────────────────────────────────────────── */

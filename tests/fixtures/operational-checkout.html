@@ -1,0 +1,23 @@
+<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>QA local — checkout operativo</title><link rel="stylesheet" href="/assets/css/tokens.css"><link rel="stylesheet" href="/assets/css/components.css"><link rel="stylesheet" href="/assets/css/styles.css"><link rel="stylesheet" href="/assets/css/checkout-flow.css"><body><button id="open">Abrir checkout sintético</button><div id="cart-overlay" hidden></div><div id="cart-drawer"></div><script type="module">
+import {CHECKOUT_FLOW_HTML} from '/assets/js/ui/checkoutMarkup.js';
+import {Cart} from '/assets/js/cart/cart.js';
+import {Delivery} from '/assets/js/cart/delivery.js';
+import {Account} from '/assets/js/account/account.js';
+import {ApiClient} from '/assets/js/api/client.js';
+import {setupCheckoutFlow,openCheckoutFlow} from '/assets/js/ui/checkoutFlow.js';
+import {renderDeliveryPanel} from '/assets/js/ui/deliveryPanel.js';
+document.body.insertAdjacentHTML('beforeend',CHECKOUT_FLOW_HTML);
+const product={id:'1',name:'Perfume de prueba',brand:'Fixture',ml_available:100,variants:[{id:11,ml:5,price:150,stock:10}]};
+let saved=true;
+ApiClient.getCatalog=async()=>[product];
+ApiClient.getDeliveryOptions=async()=>({modes:[{value:'local'},{value:'national'}],capabilities:{saved_addresses:true},delivery_windows:{enabled:true,days:[{date:'2026-10-10',label:'Hoy',windows:[{key:'tarde',label:'1 - 4 pm'}]}]}});
+ApiClient.getAccount=async()=>({ok:true,status:200,data:{authenticated:true,customer:{name:'Cliente de prueba',phone:'9511234567'},delivery:{address_saved:saved,mode:'local',address:saved?{recipient:'Cliente de prueba',phone:'9511234567',street:'Calle de prueba',exterior_number:'10',neighborhood:'Centro',municipio:'Oaxaca',city:'Oaxaca',state:'Oaxaca',postal_code:'68000'}:null}}});
+ApiClient.forgetAddress=async()=>{saved=false;return{ok:true,status:200}};
+ApiClient.forgetAccount=async()=>{saved=false;return{ok:true,status:200}};
+ApiClient.getPostalCode=async()=>({ok:true,municipio:'Oaxaca',estado:'Oaxaca',ciudad:'Oaxaca',colonias:[{colonia:'Centro'}]});
+ApiClient.quoteDelivery=async()=>({ok:true,data:{delivery:{options:[{token:'synthetic-local-token',amount:40,label:'Entrega local'}]},pricing:{subtotal:150,discount:0,merchandise_total:150}}});
+ApiClient.createWebOrder=async()=>{throw Object.assign(new Error('Horario no disponible'),{status:422,data:{errors:{'delivery.preference':['Horario no disponible']}}});};
+setupCheckoutFlow();await Cart.add('1',5);
+document.getElementById('open').onclick=openCheckoutFlow;
+window.checkoutQA={Cart,Delivery,Account,ApiClient,renderDeliveryPanel};window.qaReady=true;
+</script></body></html>

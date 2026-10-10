@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   let products = [];
   try {
-    products = await CatalogProvider.getProducts();
+    products = await CatalogProvider.getProducts({ includeUnavailable: true });
   } catch {
     products = [];
   }
@@ -52,12 +52,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   setProductSeo(product);
   Tracker.productPdpView(product);
   hydrateProductPage(root, product);
-  renderCollectionPairs(root, product, products);
-  renderRelated(root, product, products);
+  const orderable = await CatalogProvider.getProducts();
+  renderCollectionPairs(root, product, orderable);
+  renderRelated(root, product, orderable);
   // Fire-and-forget: the local heuristic above already rendered the section.
   // This only upgrades it in place if R Supply OS's real-behaviour engine
   // has something to say for this product.
-  upgradeRelatedWithRealSignal(root, product, products);
+  upgradeRelatedWithRealSignal(root, product, orderable);
 
   AppState.set('initialized', true);
   Tracker.emit('page_view', { path: window.location.pathname, productId: product.id });

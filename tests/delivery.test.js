@@ -327,20 +327,14 @@ test('a rejected quote surfaces the message and stays unpriced', async () => {
 
 // ── Persistence ─────────────────────────────────────────────────────────────
 
-test('the address is remembered but the price is not', async () => {
+test('the address and quote are never persisted in browser storage', async () => {
   stubQuote(pricedResponse());
   Delivery.setMode(DELIVERY_MODES.NATIONAL);
   applyAddress();
   await Delivery.quote(cart);
 
-  const saved = JSON.parse(_store.get('rdecants_delivery_choice'));
-
-  assert.equal(saved.address.postal_code, '68000');
-  assert.equal(saved.mode, 'national');
-  /* A restored price would be a rate the carrier is no longer offering. */
-  assert.equal('cost' in saved, false);
-  assert.equal('selectedToken' in saved, false);
-  assert.equal('options' in saved, false);
+  assert.equal(_store.has('rdecants_delivery_choice'), false);
+  assert.equal(Delivery.address.postal_code, '68000');
 });
 
 test('a delivery quote arriving after an address change cannot restore a stale price', async () => {

@@ -52,6 +52,8 @@ const QUOTABLE_ADDRESS_FIELDS = ['postal_code', 'neighborhood', 'street', 'exter
 let _state = {
   mode: null,
   address: {},
+  saveAddress: false,
+  preferenceNeedsReselection: false,
   /* WHEN the customer would prefer to receive a LOCAL delivery: a date and a
      window KEY, both chosen from what /api/web/delivery/options published.
 
@@ -73,47 +75,20 @@ let _state = {
 let _optionsCache = null;
 let _generation = 0;
 
-/* ── Persistence ──────────────────────────────────────────────
-   Only the customer's INPUT is remembered — mode and address. Never a
-   quoted price or a token: both expire, and restoring a stale one would show a
-   price the carrier is no longer offering. */
+/* Private delivery input stays in memory. Only the backend may remember an
+   address after explicit consent, behind the customer session. Purge the old
+   browser copy on every load; it could belong to another person on this device. */
 function _persist() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      mode: _state.mode,
-      address: _state.address,
-      /* Identity only, like the address. A remembered DATE can go stale
-         overnight, which is exactly why _restore() drops one that is no longer
-         on offer rather than resubmitting it. */
-      preference: _state.preference,
-    }));
+    localStorage.removeItem(STORAGE_KEY);
   } catch { /* storage unavailable — the choice simply is not remembered */ }
 }
 
 function _restore() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-    if (Object.values(DELIVERY_MODES).includes(saved.mode)) _state.mode = saved.mode;
-    if (saved.address && typeof saved.address === 'object') {
-      _state.address = _cleanAddress(saved.address);
-    }
-    if (_state.mode === DELIVERY_MODES.LOCAL && saved.preference?.date && saved.preference?.window) {
-      /* Restored unverified: the catalogue has not been fetched yet this page
-         load. setWindows() re-checks it the moment it arrives and drops a day
-         that has passed. */
-      _state.preference = { date: String(saved.preference.date), window: String(saved.preference.window) };
-    }
-  } catch { /* unreadable — start fresh */ }
+  _persist();
 }
 
-function _cleanAddress(raw) {
-  const address = {};
-  ADDRESS_FIELDS.forEach(field => {
-    const value = raw?.[field];
-    if (typeof value === 'string' && value.trim()) address[field] = value.trim();
-  });
-  return address;
-}
+_restore();
 
 /* ── Invalidation ─────────────────────────────────────────────
    Any change to WHAT is being delivered or WHERE invalidates the price. This
@@ -154,6 +129,7 @@ export const Delivery = {
     /* A window belongs to LOCAL delivery only. Switching to a national order
        must not carry an hour nobody can honour into the next screen. */
     if (_state.mode !== DELIVERY_MODES.LOCAL) _state.preference = null;
+    if (_state.mode !== DELIVERY_MODES.LOCAL) _state.preferenceNeedsReselection = false;
     _invalidateQuote();
     _persist();
   },
@@ -172,14 +148,22 @@ export const Delivery = {
 
   setWindows(offer) {
     _state.windows = offer && typeof offer === 'object' ? offer : null;
-    /* A day that is no longer offered — the customer left the tab open past
-       the window's closing time — stops being selected. Silently dropping it is
-       right: the alternative is posting a request the server will refuse to
-       record, which looks to the customer like it was accepted. */
+    /* Preserve the customer's choice and require reselection. Silently erasing
+       it would allow the next order to become "sin hora" without consent. */
     if (_state.preference && !this.isPreferenceOffered(_state.preference)) {
-      _state.preference = null;
+      _state.preferenceNeedsReselection = true;
     }
   },
+
+  get preferenceNeedsReselection() { return _state.preferenceNeedsReselection === true; },
+
+  async refreshWindows() {
+    _optionsCache = null;
+    this.setWindows(await this.deliveryWindows());
+    return _state.windows;
+  },
+
+  rejectPreference() { _state.preferenceNeedsReselection = true; },
 
   isPreferenceOffered(preference) {
     const days = Array.isArray(_state.windows?.days) ? _state.windows.days : null;
@@ -193,6 +177,7 @@ export const Delivery = {
     const next = date && windowKey ? { date: String(date), window: String(windowKey) } : null;
     if (next && !this.isPreferenceOffered(next)) return;
     _state.preference = next;
+    _state.preferenceNeedsReselection = false;
     /* Deliberately NOT an _invalidateQuote(): when a delivery arrives cannot
        change what it costs, and throwing away a valid rate for it would make
        the form feel broken. */
@@ -201,6 +186,7 @@ export const Delivery = {
 
   clearPreference() {
     _state.preference = null;
+    _state.preferenceNeedsReselection = false;
     _persist();
   },
 
@@ -230,6 +216,16 @@ export const Delivery = {
 
   get address() {
     return { ..._state.address };
+  },
+
+  get saveAddress() { return _state.saveAddress === true; },
+  setSaveAddress(consent) { _state.saveAddress = consent === true; },
+
+  clearAddress() {
+    _state.address = {};
+    _state.saveAddress = false;
+    _invalidateQuote();
+    _persist();
   },
 
   /* Which required fields are still empty. Drives the inline hints rather than
@@ -275,6 +271,7 @@ export const Delivery = {
      unanswered quote, or a national address that no courier could use. */
   isReady() {
     if (!_state.mode) return false;
+    if (this.preferenceNeedsReselection) return false;
     if (_state.mode === DELIVERY_MODES.PICKUP) return true;
 
     return this.hasCompleteAddress() && (this.isPriced() || this.requiresManualQuote());
@@ -322,6 +319,7 @@ export const Delivery = {
            server, never assembled here — a window that has closed for today
            simply stops arriving, with no frontend deploy. */
         deliveryWindows: data?.delivery_windows ?? null,
+        savedAddresses: data?.capabilities?.saved_addresses === true,
       };
     } catch {
       /* Degrades to "nothing extra offered" rather than showing a zone or a
@@ -330,7 +328,7 @@ export const Delivery = {
          checkout depends on. */
       /* No windows rather than invented ones: a customer must never be offered
          a slot the business did not confirm it can be asked for. */
-      _optionsCache = { zones: [], modes: [DELIVERY_MODES.LOCAL, DELIVERY_MODES.NATIONAL], deliveryWindows: null };
+      _optionsCache = { zones: [], modes: [DELIVERY_MODES.LOCAL, DELIVERY_MODES.NATIONAL], deliveryWindows: null, savedAddresses: false };
     }
 
     return _optionsCache;
@@ -353,6 +351,8 @@ export const Delivery = {
   async deliveryWindows() {
     return (await this._options()).deliveryWindows;
   },
+
+  get canSaveAddress() { return _optionsCache?.savedAddresses === true; },
 
   /**
    * Ask R Supply OS what this cart costs to deliver.
@@ -432,15 +432,13 @@ export const Delivery = {
   forOrder() {
     if (!_state.mode) return null;
 
-    const payload = { mode: _state.mode };
+    const payload = { mode: _state.mode, save_address: this.saveAddress };
 
     if (_state.mode === DELIVERY_MODES.LOCAL || _state.mode === DELIVERY_MODES.NATIONAL) {
       payload.address = { ..._state.address };
     }
     if (_state.selectedToken) payload.option_token = _state.selectedToken;
-    /* Local only, and identity only. The server re-derives the label and the
-       hours, refuses a window that has closed, and simply records no preference
-       rather than failing the order. */
+    /* Local only, identity only. A closed window is rejected visibly. */
     if (_state.mode === DELIVERY_MODES.LOCAL && _state.preference) {
       payload.preference = { ..._state.preference };
     }
@@ -448,8 +446,7 @@ export const Delivery = {
     return payload;
   },
 
-  /* Called after a successful order. The address is kept (customers reorder to
-     the same place); the quote is not. */
+  /* Invalidates a quote while retaining current, unsent form input. */
   clearQuote() {
     _invalidateQuote();
   },
@@ -457,7 +454,8 @@ export const Delivery = {
   reset() {
     _generation++;
     _state = {
-      mode: null, address: {}, options: [],
+      mode: null, address: {}, saveAddress: false, preference: null,
+      preferenceNeedsReselection: false, windows: null, options: [],
       selectedToken: null, cost: null, requiresManualQuote: false,
       reason: null, status: 'idle',
     };

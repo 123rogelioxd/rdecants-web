@@ -13,8 +13,10 @@ import { Tracker }   from '../tracking/tracker.js';
 import { showToast } from '../ui/toast.js';
 import { getVariantForSize } from '../utils/prices.js';
 import { EventBus } from '../core/events.js';
+import { Account } from '../account/account.js';
 
 const STORAGE_KEY = 'rdecants_checkout_customer';
+try { localStorage.removeItem(STORAGE_KEY); } catch { /* legacy private copy unavailable */ }
 const LAST_ORDER_KEY = 'rdecants_last_web_order_folio';
 const LAST_FIRED_KEY = 'rdecants_checkout_last_fired_at';
 /* Survives reloads within the tab so a refresh mid-submit still replays
@@ -100,16 +102,28 @@ export async function registerWebOrder() {
     try {
       order = await _submitWebOrder(items, data, total, Discount.applied, attribution);
     } catch (error) {
-      Delivery.clearQuote();
+      const windowRejected = isDeliveryPreferenceError(error);
+      if (windowRejected) {
+        Delivery.rejectPreference();
+        await Delivery.refreshWindows();
+      } else {
+        Delivery.clearQuote();
+      }
       _logCheckoutError(error);
       Tracker.backgroundOrderFailure(String(error?.message || 'order_failed'), total);
-      throw new Error(_customerOrderError(error));
+      const visibleError = new Error(windowRejected
+        ? 'Ese horario ya no está disponible. Elige otro horario o coordínalo por WhatsApp. Tu carrito sigue aquí.'
+        : _customerOrderError(error));
+      visibleError.code = windowRejected ? 'DELIVERY_PREFERENCE_UNAVAILABLE' : error.code;
+      throw visibleError;
     }
     _markFired();
     Cart.clear();
     Discount.clear();
     Attribution.clear();
-    Delivery.clearQuote();
+    Delivery.reset();
+    if (_field('notes')) _field('notes').value = '';
+    Account._reset();
     _clearCheckoutAttempt();
     Tracker.emit('web_order_created', { folio: order.folio, total: order.grand_total });
     return { order, items, address, notes: data.notes };
@@ -117,6 +131,11 @@ export async function registerWebOrder() {
     _isSubmitting = false;
     _syncAvailability();
   }
+}
+
+export function isDeliveryPreferenceError(error) {
+  return error?.status === 422 && Object.keys(error?.data?.errors ?? {})
+    .some(key => key === 'delivery.preference' || key.startsWith('delivery.preference.'));
 }
 
 /* Legacy bridge: opening checkout never bypasses delivery and review. */
@@ -267,11 +286,14 @@ export function readCheckoutData() {
    copies of the same fact that could disagree the moment the customer edits
    one of them — and this is the copy nothing reads back. */
 export function saveCheckoutData(data = readCheckoutData()) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ notes: data.notes || '' }));
+  /* Notes can contain personal delivery information too. Keep them in the
+     mounted form and remove the legacy browser copy. */
+  try { localStorage.removeItem(STORAGE_KEY); } catch { /* storage unavailable */ }
 }
 
 export function validateCheckout() {
   if (!Delivery.mode) return { message: 'Elige cómo recibir tu pedido.', field: 'mode' };
+  if (Delivery.preferenceNeedsReselection) return { message: 'Ese horario ya no está disponible. Elige otro o coordínalo por WhatsApp.', field: 'preference' };
   const missing = Delivery.missingAddressFields();
   if (missing.length) return { message: 'Completa los datos de entrega para continuar.', field: missing[0] };
   const address = Delivery.address;
@@ -456,10 +478,7 @@ function _orderLines(items = []) {
 }
 
 export function buildWhatsAppMessage(folio = '', preference = null, items = []) {
-  const reference = String(folio || '').trim();
-  const opening = reference
-    ? `Hola, quiero confirmar mi pedido ${reference} de RDECANTS.`
-    : 'Hola, quiero confirmar mi pedido de RDECANTS.';
+  const opening = 'Hola, quiero confirmar mi pedido de RDECANTS.';
 
   const blocks = [opening];
   const orderLines = _orderLines(items);
@@ -469,6 +488,16 @@ export function buildWhatsAppMessage(folio = '', preference = null, items = []) 
   if (line) blocks.push(line);
 
   return blocks.join('\n');
+}
+
+/* The backend builds the message from the accepted order, canonical prices
+   and requested window. Never compose another order in the browser. */
+export function orderWhatsAppUrl(order) {
+  try {
+    const url = new URL(order?.whatsapp_url);
+    if (url.protocol !== 'https:' || url.hostname !== 'wa.me' || url.username || url.password || url.port || !/^\/\d{8,15}$/.test(url.pathname)) return null;
+    return url.href;
+  } catch { return null; }
 }
 
 /* "Horario preferido: 10/09, 4 - 7 pm." — or nothing.
@@ -514,11 +543,8 @@ function _hydrate() {
 }
 
 function _load() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-  } catch {
-    return {};
-  }
+  saveCheckoutData();
+  return {};
 }
 
 function _syncAvailability() {
@@ -610,6 +636,6 @@ function _formatMl(value) {
    can act on; this is the part a developer needs and they do not. */
 function _logCheckoutError(error) {
   if (error?.status === 422 && error?.data) {
-    console.error('[RDecants] order validation failed:', error.data);
+    console.error('[RDecants] order validation failed:', { fields: Object.keys(error.data.errors ?? {}) });
   }
 }

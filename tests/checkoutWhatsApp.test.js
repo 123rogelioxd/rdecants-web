@@ -37,10 +37,10 @@ const { CatalogProvider } = await import('../assets/js/providers/catalog.js');
    transport that is not UTF-8 aware.
    ══════════════════════════════════════════════════════════════════════ */
 
-test('buildWhatsAppMessage is one sentence carrying the folio', () => {
+test('legacy message never exposes an internal folio', () => {
   assert.equal(
     buildWhatsAppMessage('WEB-20260904-0001'),
-    'Hola, quiero confirmar mi pedido WEB-20260904-0001 de RDECANTS.',
+    'Hola, quiero confirmar mi pedido de RDECANTS.',
   );
 });
 

@@ -115,10 +115,10 @@ test('discount preview sends the same opaque bottle identity as checkout', () =>
    What is still worth asserting is that the PAYLOAD keeps the two apart — a
    bottle travels as an offer_key with no variant, a decant as a variant with
    millilitres — which is exactly what the tests above this one cover. */
-test('the WhatsApp handoff for a mixed cart is the folio, not a line list', () => {
+test('the legacy WhatsApp helper excludes internal folios and browser money', () => {
   const message = buildWhatsAppMessage('WEB-20260904-0007');
 
-  assert.equal(message, 'Hola, quiero confirmar mi pedido WEB-20260904-0007 de RDECANTS.');
+  assert.equal(message, 'Hola, quiero confirmar mi pedido de RDECANTS.');
   assert.ok(!/Botella|5ml|Me interesan/.test(message));
 });
 
