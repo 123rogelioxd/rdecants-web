@@ -3,8 +3,8 @@
    Who this browser is, according to R Supply OS.
 
    ── There is no login, and that is the design ────────────────
-   A customer becomes recognised by ORDERING. The API sets an HttpOnly session
-   cookie when their first order is registered, and from then on this module
+   The API can recognise a trusted browser with an HttpOnly session
+   cookie, and from then on this module
    just asks "who am I" and gets an answer. Nothing here stores a name, a phone
    number or an order — every one of those is fetched, because the copy that
    matters lives in R Supply OS and a copy kept here would be free to disagree
@@ -22,6 +22,7 @@
    ============================================================= */
 
 import { ApiClient } from '../api/client.js';
+import { Delivery } from '../cart/delivery.js';
 
 /* One in-flight identity request per page load, shared by every caller.
 
@@ -90,12 +91,10 @@ export const Account = {
 
   /** Sign this browser out. Revokes the session server-side, not just locally. */
   async forget() {
-    try {
-      await ApiClient.forgetAccount();
-    } catch { /* already gone, or offline — the local view resets either way */ }
-
+    await ApiClient.forgetAccount();
     _identity = null;
     _recognitionReported = false;
+    Delivery.reset();
   },
 
   /**
@@ -105,17 +104,23 @@ export const Account = {
    * — there is no separate address book to keep in sync. Always editable: this
    * fills fields in, it does not lock them.
    */
-  async prefill() {
-    const identity = await this.identity();
-    if (!identity.authenticated) return null;
+  async prefill({ refresh = false } = {}) {
+    const identity = await this.identity({ refresh });
+    if (!identity.authenticated || identity.delivery?.address_saved !== true) return null;
 
     const address = identity.delivery?.address ?? null;
     const name = identity.customer?.name ?? null;
     const phone = identity.customer?.phone ?? null;
 
-    if (!address && !name && !phone) return null;
+    if (!address || !Object.keys(address).length) return null;
 
     return { name, phone, mode: identity.delivery?.mode ?? null, address: address ?? {} };
+  },
+
+  async forgetAddress() {
+    await ApiClient.forgetAddress();
+    _identity = null;
+    Delivery.clearAddress();
   },
 
   /** Fires once per page load, and only for a customer we actually recognised. */

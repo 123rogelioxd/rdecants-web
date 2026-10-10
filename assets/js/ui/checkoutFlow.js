@@ -1,9 +1,9 @@
 import { Cart } from '../cart/cart.js';
 import { Discount } from '../cart/discount.js';
 import { Delivery } from '../cart/delivery.js';
-import { registerWebOrder, validateCheckout, readCheckoutData, buildWhatsAppMessage } from '../cart/checkout.js';
+import { registerWebOrder, validateCheckout, readCheckoutData, orderWhatsAppUrl } from '../cart/checkout.js';
 import { openCart, closeCart } from '../cart/render.js';
-import { setupDeliveryPanel, requestDeliveryQuote } from './deliveryPanel.js';
+import { setupDeliveryPanel, requestDeliveryQuote, refreshSavedAddress, renderDeliveryPanel } from './deliveryPanel.js';
 import { lockBodyScroll, unlockBodyScroll } from './scrollLock.js';
 import { EventBus } from '../core/events.js';
 import { Tracker } from '../tracking/tracker.js';
@@ -91,6 +91,7 @@ export function openCheckoutFlow() {
   if (!Cart.items.length) return;
   previousFocus = document.activeElement; registered = null;
   closeCart(); $('checkout-overlay').hidden = false; lockBodyScroll(); changeStep('delivery');
+  refreshSavedAddress();
   Tracker.emit('delivery_started', { itemCount: Cart.count() });
 }
 
@@ -117,7 +118,10 @@ async function next() {
     $('checkout-folio').textContent = `Folio ${order.folio}`;
     $('checkout-registered-facts').innerHTML = registeredFactsHtml(order);
     const whatsapp = $('checkout-registered-whatsapp');
-    whatsapp.href = `https://wa.me/529513446211?text=${encodeURIComponent(buildWhatsAppMessage(order.folio, order.delivery?.preference, result.items))}`;
+    const whatsappUrl = orderWhatsAppUrl(order);
+    whatsapp.hidden = !whatsappUrl;
+    if (whatsappUrl) whatsapp.href = whatsappUrl;
+    else whatsapp.removeAttribute('href');
     whatsapp.onclick = () => Tracker.emit('whatsapp_confirmation_clicked', { folio: order.folio, source: 'checkout' });
     /* Deep-links to this order, not to the list. The session cookie was set on
        the same response that created it, so nothing asks the customer to sign
@@ -125,6 +129,7 @@ async function next() {
     $('checkout-view-order').href = `/cuenta.html?folio=${encodeURIComponent(order.folio)}`;
     changeStep('registered');
   } catch (e) {
+    if (e.code === 'DELIVERY_PREFERENCE_UNAVAILABLE') renderDeliveryPanel();
     if (step === 'confirm' && !Delivery.isReady()) changeStep('delivery');
     error(e.message || 'No pudimos registrar tu pedido. Tu carrito sigue aquí.');
   }

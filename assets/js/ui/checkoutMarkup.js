@@ -43,6 +43,18 @@ export const CHECKOUT_FLOW_HTML = `
           </button>
         </div>
 
+        <section class="checkout-saved-address" id="checkout-saved-address" hidden aria-label="Dirección guardada">
+          <h4>¿Quieres recibir tu pedido en esta misma dirección?</h4>
+          <p id="checkout-saved-address-summary"></p>
+          <div class="checkout-address-actions">
+            <button type="button" class="checkout-primary" id="checkout-use-address">Usar esta dirección</button>
+            <button type="button" class="checkout-secondary" id="checkout-other-address">Usar otra dirección</button>
+          </div>
+          <button type="button" class="checkout-account-forget" id="checkout-delete-address">Eliminar dirección guardada</button>
+          <button type="button" class="checkout-account-forget" id="checkout-forget-account">Esta no es mi cuenta · salir de este dispositivo</button>
+          <p class="delivery-msg" id="checkout-address-error" role="alert" hidden></p>
+        </section>
+
         <!-- Address: CP-first, shared shape for Local and National alike.
              See assets/js/cart/address.js — the same module drives this
              block and the one on the Cotiza tu perfume page. -->
@@ -128,6 +140,13 @@ export const CHECKOUT_FLOW_HTML = `
           Calcular entrega
         </button>
 
+        <fieldset class="checkout-address-consent" id="checkout-address-consent" hidden>
+          <legend>¿Quieres guardar esta dirección para tus próximas compras?</legend>
+          <label><input type="radio" name="save-address" value="yes"> Sí, guardar dirección</label>
+          <label><input type="radio" name="save-address" value="no"> No, usar solo esta vez</label>
+          <p>Guardarla es opcional. Si usas un dispositivo compartido, elige usarla solo esta vez.</p>
+        </fieldset>
+
         <!-- WHEN — local delivery only, and only once we know where it goes.
              A PREFERENCE, not an appointment: the heading says "preferido",
              the note says we confirm it by WhatsApp, and "Lo coordinamos por
@@ -139,6 +158,7 @@ export const CHECKOUT_FLOW_HTML = `
           <div class="delivery-when-days" id="delivery-when-days" role="group" aria-labelledby="delivery-when-title"></div>
           <div class="delivery-when-slots" id="delivery-when-slots" role="group" aria-label="Horario preferido"></div>
           <p class="delivery-when-note">Es tu horario preferido. Lo confirmamos por WhatsApp.</p>
+          <p class="delivery-msg" id="delivery-preference-error" role="alert" hidden>El horario que elegiste ya no está disponible. Elige otro o coordínalo por WhatsApp.</p>
         </div>
 
         <!-- Real carrier options, one radio each. Rendered only when the server

@@ -113,12 +113,13 @@ test('WhatsApp from «Mis pedidos» names the quote and its products in plain AS
   };
   const message = whatsappText(detail);
 
-  assert.match(message, /Hola, quiero confirmar mi cotizacion RD-00003\./);
+  assert.match(message, /Hola, quiero confirmar mi cotizacion\./);
+  assert.doesNotMatch(message, /RD-00003/);
   assert.match(message, /VERSACE DYLAN BLUE EDT - 100 ml x1/);
   assert.match(message, /RASASI HAWAS ICE - 100 ml x1/);
   assert.equal(message, Buffer.from(message, 'utf8').toString('ascii'));
 
-  assert.equal(whatsappText({ folio: 'WEB-20260924-0001' }), 'Hola, quiero confirmar mi pedido WEB-20260924-0001.');
+  assert.equal(whatsappText({ folio: 'WEB-20260924-0001' }), 'Hola, quiero confirmar mi pedido.');
 });
 
 test('the storefront still never touches the session token', () => {

@@ -28,6 +28,10 @@ let _autoQuoteTimer = null;
 let _pendingQuote = false;
 let _parcelSignature = '';
 let _quoteError = '';
+let _savedAddress = null;
+let _savedAddressUsed = false;
+let _savedAddressDismissed = false;
+let _savedAddressRequest = 0;
 
 const parcelSignature = () => JSON.stringify({
   items: Cart.items.map(item => [item.key, item.qty, item.price]),
@@ -62,7 +66,7 @@ export function setupDeliveryPanel(onChange = () => {}) {
   _wireWhen();
   _loadModes();
   _hydrate();
-  _prefillFromAccount();
+  _wireSavedAddress();
   renderDeliveryPanel();
   _parcelSignature = parcelSignature();
   const onParcelChange = () => {
@@ -73,6 +77,14 @@ export function setupDeliveryPanel(onChange = () => {}) {
     _onChange();
   };
   EventBus.on('cart:updated', onParcelChange);
+  EventBus.on('cart:updated', () => {
+    if (Cart.items.length) return;
+    _savedAddressRequest++;
+    _savedAddress = null;
+    _savedAddressUsed = false;
+    _savedAddressDismissed = false;
+    document.querySelectorAll('[name="save-address"]').forEach(input => { input.checked = false; });
+  });
   EventBus.on('discount:updated', onParcelChange);
 }
 
@@ -133,6 +145,16 @@ function _wireAddressForm() {
     onFieldChange: (field, value) => {
       _quoteError = '';
       Delivery.setAddressField(field, value);
+      /* A different contact must never inherit the old customer's address.
+         Clear fields populated by the saved-address action; manual entry is
+         left alone, since it was the customer's own current input. */
+      if (field === 'phone' && _savedAddressUsed && _phone(value) !== _phone(_savedAddress?.phone)) {
+        Delivery.clearAddress();
+        Delivery.setAddressField('phone', value);
+        _savedAddressUsed = false;
+        _savedAddressDismissed = true;
+        _hydrate();
+      }
     },
     onChange: () => {
       renderDeliveryPanel();
@@ -167,67 +189,111 @@ function _hydrate() {
 
   document.querySelectorAll('#delivery-address-block [data-address]').forEach(input => {
     const value = state.address[input.dataset.address];
-    if (value) input.value = value;
+    input.value = value || '';
   });
 
   if (state.address.postal_code) _addressForm?.hydrate(state.address.postal_code, state.address);
+  else _addressForm?.clear();
 }
 
-/* ── A returning customer should not retype what we already have ──────────
-   Filled from the customer's OWN most recent order, which R Supply OS returns
-   for a browser it recognises. No account, no password, no form: they ordered
-   once, so we know where they live.
-
-   ── Three rules that keep this from being annoying or wrong ─────────────
-   1. It NEVER overwrites. Anything already in the field — typed now, or
-      remembered from the last session by Delivery's own storage — wins. The
-      prefill fills blanks; it does not correct people.
-   2. It is fully editable afterwards. Nothing here locks a field.
-   3. It changes no historical order. This reads the last order's snapshot and
-      writes into a FORM; the order itself is never touched, so a customer who
-      moves house does not rewrite where last month's parcel went.
-
-   Silent on failure. A customer who is not recognised, or an API that did not
-   answer, simply gets the empty form they would have got anyway. */
-async function _prefillFromAccount() {
-  let saved = null;
-
-  try {
-    saved = await Account.prefill();
-  } catch { /* not recognised, or offline — the form is simply empty */ }
-
-  if (!saved) return;
-
-  const current = Delivery.state.address;
-  const incoming = { ...saved.address };
-
-  /* The recipient IS the customer for a normal storefront checkout — the same
-     mapping R Supply OS applies server-side. */
-  if (saved.name) incoming.recipient = saved.name;
-  if (saved.phone) incoming.phone = saved.phone;
-
-  let filled = 0;
-
-  for (const [field, value] of Object.entries(incoming)) {
-    if (!value || current[field]) continue;
-    Delivery.setAddressField(field, value);
-    filled += 1;
-  }
-
-  if (!filled) return;
-
-  /* A remembered mode too, but only when the customer has not chosen one in
-     this session — switching somebody's delivery method under them would be a
-     far worse surprise than an empty field. */
-  if (!Delivery.mode && saved.mode) Delivery.setMode(saved.mode);
-
+/* Revalidate the cookie-bound identity each time checkout opens. A saved
+   snapshot is offered for an explicit action, never silently inserted. */
+export async function refreshSavedAddress() {
   _hydrate();
+  const request = ++_savedAddressRequest;
+  const [saved] = await Promise.all([Account.prefill({ refresh: true }), Delivery.refreshWindows()]);
+  if (request !== _savedAddressRequest) return;
+  if (_savedAddressUsed && (!saved || _phone(saved.phone) !== _phone(_savedAddress?.phone))) {
+    Delivery.clearAddress();
+    _savedAddressUsed = false;
+    _hydrate();
+    _onChange();
+  }
+  _savedAddress = saved;
   renderDeliveryPanel();
-  _onChange();
+}
 
-  if (Delivery.mode === DELIVERY_MODES.LOCAL && Delivery.canQuoteAddress()) _requestQuote();
+const _phone = value => String(value ?? '').replace(/\D/g, '').replace(/^52(?=\d{10}$)/, '');
 
-  Tracker.emit('checkout_prefilled', { fields: filled });
+function _addressError(message = '') {
+  const element = $('checkout-address-error');
+  if (element) { element.textContent = message; element.hidden = !message; }
+}
+
+function _wireSavedAddress() {
+  document.querySelectorAll('[name="save-address"]').forEach(input => input.addEventListener('change', () => {
+    Delivery.setSaveAddress(input.value === 'yes');
+  }));
+  $('checkout-use-address')?.addEventListener('click', async () => {
+    const button = $('checkout-use-address');
+    button.disabled = true;
+    _addressError();
+    try {
+      await refreshSavedAddress();
+      if (!_savedAddress) return;
+      Delivery.clearAddress();
+      for (const [field, value] of Object.entries(_savedAddress.address)) Delivery.setAddressField(field, value);
+      Delivery.setAddressField('recipient', _savedAddress.name || _savedAddress.address.recipient);
+      Delivery.setAddressField('phone', _savedAddress.phone || _savedAddress.address.phone);
+      if (!Delivery.mode) Delivery.setMode(_savedAddress.mode);
+      _savedAddressUsed = true;
+      _hydrate();
+      renderDeliveryPanel();
+      _onChange();
+      _scheduleLocalAutoQuote();
+      Tracker.emit('checkout_prefilled', { fields: Object.keys(Delivery.address).length });
+    } finally { button.disabled = false; }
+  });
+  $('checkout-other-address')?.addEventListener('click', () => {
+    _savedAddressUsed = false;
+    _savedAddressDismissed = true;
+    Delivery.clearAddress();
+    _hydrate();
+    renderDeliveryPanel();
+    _onChange();
+    $('delivery-postal-code')?.focus();
+  });
+  $('checkout-forget-account')?.addEventListener('click', async () => {
+    const button = $('checkout-forget-account');
+    button.disabled = true;
+    try {
+      await Account.forget();
+      if ($('checkout-notes')) $('checkout-notes').value = '';
+      _savedAddressRequest++;
+      _savedAddress = null;
+      _savedAddressUsed = false;
+      _hydrate();
+      renderDeliveryPanel();
+      _onChange();
+    } catch { _addressError('No pudimos cerrar la sesión. Inténtalo de nuevo antes de compartir este dispositivo.'); }
+    finally { button.disabled = false; }
+  });
+  $('checkout-delete-address')?.addEventListener('click', async () => {
+    const button = $('checkout-delete-address');
+    button.disabled = true;
+    try {
+      await Account.forgetAddress();
+      _savedAddressRequest++;
+      _savedAddress = null;
+      _savedAddressUsed = false;
+      _hydrate();
+      renderDeliveryPanel();
+      _onChange();
+    } catch { _addressError('No pudimos eliminar la dirección. Inténtalo de nuevo.'); }
+    finally { button.disabled = false; }
+  });
+}
+
+function _renderSavedAddress() {
+  const block = $('checkout-saved-address');
+  if (!block) return;
+  const differentContact = Delivery.address.phone && _phone(Delivery.address.phone) !== _phone(_savedAddress?.phone);
+  block.hidden = !_savedAddress || _savedAddressDismissed || differentContact;
+  if (block.hidden) { $('checkout-saved-address-summary').textContent = ''; return; }
+  $('checkout-saved-address-summary').textContent = [
+    _savedAddress.address.street, _savedAddress.address.exterior_number,
+    _savedAddress.address.neighborhood, _savedAddress.address.city, _savedAddress.address.postal_code,
+  ].filter(Boolean).join(' · ');
 }
 
 /* ── Quoting ─────────────────────────────────────────────────────────────── */
@@ -314,6 +380,11 @@ export function renderDeliveryPanel() {
   });
 
   _toggle($('delivery-address-block'), mode === DELIVERY_MODES.LOCAL || mode === DELIVERY_MODES.NATIONAL);
+  _toggle($('checkout-address-consent'), Delivery.canSaveAddress && (mode === DELIVERY_MODES.LOCAL || mode === DELIVERY_MODES.NATIONAL));
+  document.querySelectorAll('[name="save-address"]').forEach(input => {
+    if (!Delivery.saveAddress && input.value === 'yes') input.checked = false;
+  });
+  _renderSavedAddress();
 
   _renderQuoteButton(mode);
   _renderOptions();
@@ -339,9 +410,16 @@ function _renderWhen(mode) {
   const offer = Delivery.windows;
   const days = Array.isArray(offer?.days) ? offer.days.filter(day => (day.windows || []).length) : [];
   const applies = mode === DELIVERY_MODES.LOCAL && offer?.enabled === true && days.length > 0;
-
-  _toggle(block, applies);
-  if (!applies) return;
+  const needsChoice = Delivery.preferenceNeedsReselection;
+  _toggle(block, applies || needsChoice);
+  _toggle($('delivery-preference-error'), needsChoice);
+  if (!applies) {
+    if (needsChoice) {
+      $('delivery-when-days').innerHTML = '';
+      $('delivery-when-slots').innerHTML = '<button type="button" class="delivery-when-chip" data-when-clear="1">Lo coordinamos por WhatsApp</button>';
+    }
+    return;
+  }
 
   const chosen = Delivery.preference;
   /* The day defaults to whatever the customer already picked; otherwise none is

@@ -11,10 +11,23 @@ import { normalizePacks } from '../recommendations/starterPacks.js';
 /* PACKS is deliberately no longer imported. The demo fixture carries invented
    pack prices, and a pack is a priced commercial offer — see getPacks(). */
 import { PRODUCTS } from '../../../data/products.js';
+import { PRIMARY_SIZES } from '../utils/prices.js';
 
 let _productsCache = null;
 let _productsCachedAt = 0;
 let _packsCache = null;
+let _packsCachedAt = 0;
+
+/* Only canonical offer identity + positive available inventory can advertise a
+   buyable presentation. The full response remains available for cart checks
+   and an informative sold-out product page. */
+export function hasOrderablePresentation(product) {
+  if (!product || product.active === false || ['inactive', 'archived', 'draft'].includes(String(product.status ?? '').toLowerCase())) return false;
+  if (product.purchase?.mode === 'sold_out') return false;
+  return (product.bottles ?? []).some(offer => offer.offer_key && offer.stock > 0)
+    || (product.variants ?? []).some(variant => PRIMARY_SIZES.includes(variant.size) && variant.variant_id !== null && variant.variant_id !== undefined
+      && !variant.soldOut && variant.availability > 0 && (product.available_ml === null || product.available_ml >= variant.size));
+}
 
 /* Local demo data (data/products.js) is a DEVELOPER fallback only. It must
    never reach real customers. This pure predicate decides whether the fallback
@@ -41,8 +54,9 @@ function _demoFallbackAllowed() {
 }
 
 export const CatalogProvider = {
-  async getProducts() {
-    if (_productsCache && Date.now() - _productsCachedAt < 60000) return _productsCache;
+  async getProducts({ includeUnavailable = false } = {}) {
+    const visible = products => includeUnavailable ? products : products.filter(hasOrderablePresentation);
+    if (_productsCache && Date.now() - _productsCachedAt < 60000) return visible(_productsCache);
 
     try {
       const data = await ApiClient.getCatalog();
@@ -51,7 +65,7 @@ export const CatalogProvider = {
       if (Array.isArray(items)) {
         _productsCache = items.map(_mapProduct).filter(Boolean);
         _productsCachedAt = Date.now();
-        return _productsCache;
+        return visible(_productsCache);
       }
     } catch {
       /* Network/transport failure — fall through to the environment-gated
@@ -63,7 +77,7 @@ export const CatalogProvider = {
     if (!_demoFallbackAllowed()) return [];
 
     _productsCache = PRODUCTS.map(_mapProduct).filter(Boolean);
-    return _productsCache;
+    return visible(_productsCache);
   },
 
   /**
@@ -84,14 +98,18 @@ export const CatalogProvider = {
    * stored price, stock or image.
    */
   async getPacks() {
-    if (_packsCache) return _packsCache;
+    if (_packsCache && Date.now() - _packsCachedAt < 60000) return _packsCache;
 
     try {
       const data = await ApiClient.getPacks();
       const items = Array.isArray(data?.data) ? data.data : data;
 
       if (Array.isArray(items)) {
-        _packsCache = normalizePacks(items.map(_mapPackPayload)).filter(Boolean);
+        _packsCache = normalizePacks(items.map(_mapPackPayload)).filter(pack => pack.items.every(item => {
+          const variant = item.product.variants.find(candidate => String(candidate.variant_id) === String(item.variant?.variant_id));
+          return hasOrderablePresentation(item.product) && variant && !variant.soldOut && variant.availability > 0;
+        }));
+        _packsCachedAt = Date.now();
         return _packsCache;
       }
     } catch {
@@ -124,11 +142,13 @@ export const CatalogProvider = {
       const items = Array.isArray(data?.data) ? data.data : data;
 
       if (Array.isArray(items) && items.length) {
-        return _mapProduct(items[0]);
+        const available = items.map(_mapProduct).find(hasOrderablePresentation);
+        if (available) return available;
       }
 
-      if (items && typeof items === 'object') {
-        return _mapProduct(items);
+      if (items && typeof items === 'object' && !Array.isArray(items)) {
+        const product = _mapProduct(items);
+        if (hasOrderablePresentation(product)) return product;
       }
     } catch (err) {
       console.warn('[RDecants] featured API unavailable.', err.message);
@@ -158,7 +178,7 @@ export const CatalogProvider = {
       return entries
         .map(entry => {
           const product = _mapProduct(entry?.product);
-          if (!product) return null;
+          if (!hasOrderablePresentation(product)) return null;
           return {
             label: entry.label ?? null,
             reason: entry.reason ?? null,
@@ -178,7 +198,7 @@ export const CatalogProvider = {
   },
 
   async getProductById(id) {
-    const products = await this.getProducts();
+    const products = await this.getProducts({ includeUnavailable: true });
     return products.find(p => String(p.id) === String(id)) || null;
   },
 
@@ -243,10 +263,10 @@ function _mapProduct(p) {
         ml_size: size,
         price,
         retail_price: price,
-        availability: p.stock ?? 10,
-        stock: p.stock ?? 10,
-        soldOut: false,
-        sold_out: false,
+        availability: 0,
+        stock: 0,
+        soldOut: true,
+        sold_out: true,
       }, id))
   ).filter(v => Number.isFinite(v.size) && Number.isFinite(v.price) && v.price > 0);
 

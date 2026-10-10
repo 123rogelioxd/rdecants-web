@@ -67,7 +67,7 @@ async function _post(path, payload, { credentials = 'omit' } = {}) {
 
   if (!res.ok || data?.ok === false) {
     if (res.status === 422) {
-      console.error('[RDecants] API validation failed:', { path, status: res.status, response: data });
+      console.error('[RDecants] API validation failed:', { path, status: res.status, fields: Object.keys(data?.errors ?? {}) });
     }
 
     const message = data?.message || `API ${path} -> ${res.status}`;
@@ -125,6 +125,7 @@ export const ApiClient = {
   getAccountOrders:   () => _getWithCredentials('/api/web/account/orders'),
   getAccountOrder:    (folio) => _getWithCredentials(`/api/web/account/orders/${encodeURIComponent(folio)}`),
   forgetAccount:      () => _post('/api/web/account/forget', {}, { credentials: 'include' }),
+  forgetAddress:      () => _post('/api/web/account/address/forget', {}, { credentials: 'include' }),
   /* Delivery. Both are READS: quoting creates no shipment, reserves no stock
      and consumes no coupon. The quote sends the cart as identity + quantity,
      exactly like the order does — R Supply OS reprices it, because the local

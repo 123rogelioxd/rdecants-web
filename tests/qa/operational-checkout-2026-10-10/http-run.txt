@@ -1,0 +1,15 @@
+PASS 1-new-customer-consent-notice-canonical-message
+PASS 4-requested-window-reaches-canonical-operation
+PASS 2-returning-customer-explicit-reuse
+PASS 3-other-address-preserves-previous-consent
+PASS 5-expired-window-keeps-cart-and-requires-reselection
+PASS idempotent-replay-one-order-hold-and-notice
+PASS same-phone-and-guest-retry-never-grant-history-or-future-address
+PASS multi-item-browser-prices-ignored-real-signed-national-quote
+PASS reserved-last-unit-hides-from-real-catalog-and-rejects-oversell
+PASS shared-browser-switch-revokes-presented-cookie-without-phone-login
+PASS cookie-and-account-fail-closed-in-another-tenant
+PASS forget-origin-guard-and-consent-revocation-preserve-history
+PASS expired-cookie-fails-closed
+PASS no-sales-labels-payments-or-external-messages
+{"passed":14,"directory":"C:\\Users\\PC\\AppData\\Local\\Temp\\rdecants-http-qa-5UzrCG"}

@@ -169,7 +169,16 @@ export function bindAddressForm(root, { onFieldChange, onChange = () => {} }) {
   return {
     /** The last successful resolution, or null (unresolved / not looked up yet). */
     resolution: () => lastResolution,
-    /** Restore a previously-typed postal code (e.g. from localStorage) and re-resolve it. */
+    /** Cancel private hydration when changing person or discarding an address. */
+    clear() {
+      clearTimeout(debounceTimer);
+      requestGeneration++;
+      lastResolution = null;
+      if (locationHint) { locationHint.hidden = true; locationHint.textContent = ''; }
+      if (coloniaSelect) coloniaSelect.innerHTML = '<option value="">Elige tu colonia</option>';
+      showManualColonia();
+    },
+    /** Re-resolve an explicitly selected saved snapshot. */
     hydrate(postalCode, saved = {}) {
       if (!postalCode || postalCode.length !== 5) return;
       postalInput.value = postalCode;

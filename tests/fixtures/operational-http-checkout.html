@@ -1,0 +1,18 @@
+<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="DECANTS_HIDE_DEMO_PRODUCTS" content="true"><title>QA HTTP local — checkout operativo</title><link rel="stylesheet" href="/assets/css/tokens.css"><link rel="stylesheet" href="/assets/css/components.css"><link rel="stylesheet" href="/assets/css/styles.css"><link rel="stylesheet" href="/assets/css/checkout-flow.css"><body><button id="open">Abrir checkout sintético HTTP</button><div id="cart-overlay" hidden></div><div id="cart-drawer"></div><script>
+window.__RDECANTS_API_BASE__ = new URLSearchParams(location.search).get('api');
+</script><script type="module">
+import {CHECKOUT_FLOW_HTML} from '/assets/js/ui/checkoutMarkup.js';
+import {Cart} from '/assets/js/cart/cart.js';
+import {Delivery} from '/assets/js/cart/delivery.js';
+import {Account} from '/assets/js/account/account.js';
+import {ApiClient} from '/assets/js/api/client.js';
+import {CatalogProvider} from '/assets/js/providers/catalog.js';
+import {registerWebOrder} from '/assets/js/cart/checkout.js';
+import {setupCheckoutFlow,openCheckoutFlow} from '/assets/js/ui/checkoutFlow.js';
+import {renderDeliveryPanel} from '/assets/js/ui/deliveryPanel.js';
+document.body.insertAdjacentHTML('beforeend',CHECKOUT_FLOW_HTML);
+setupCheckoutFlow();
+document.getElementById('open').onclick=openCheckoutFlow;
+window.checkoutQA={Cart,Delivery,Account,ApiClient,CatalogProvider,registerWebOrder,renderDeliveryPanel};
+window.qaReady=true;
+</script></body></html>
