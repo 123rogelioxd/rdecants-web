@@ -6,6 +6,8 @@ Base reproducida: `4067f61` (`origin/production`). Capturas con Edge 154 headles
 
 `results.json` registra 320, 375, 390, 430, 768, 1024, 1280 y 1440 px. Se verificó: sin overflow horizontal; campos de al menos 16 px; CTA dentro del viewport; radios de consentimiento sin selección inicial; dirección vacía antes de aceptar reutilizar; cambio de teléfono borra prefill; dirección y notas privadas fuera de localStorage; 422 conserva carrito, dirección, preferencia original y token firmado hasta reseleccionar.
 
+`short-viewport-375.png` comprueba foco y CTA al reducir la altura a 430 px. El recorrido adicional por API real tiene 14 comprobaciones y evidencia en [HTTP-README.md](HTTP-README.md).
+
 Reproducción: instalar Playwright o establecer `PLAYWRIGHT_MODULE` a su instalación, ejecutar `node scripts/qa-operational-checkout.cjs`. `QA_BROWSER` selecciona el canal (predeterminado `msedge`), `QA_OUTPUT` el directorio de evidencia. `QA_BASELINE_ROOT` apunta a una extracción de la base para capturar el antes.
 
 Suite completa Node: 1157 pruebas, 1156 correctas, 0 fallas, 1 omitida (API real opcional). Siete nuevas regresiones fallaron antes de implementar y pasan después; otras tres cubren capability, fallo de borrado y POST 422 real conservando también cupones. Prueba de compatibilidad: APIs antiguas sin `address_saved:true` nunca ofrecen prefill; sin `capabilities.saved_addresses:true` no ofrecen guardar; sin `whatsapp_url` seguro no inventan el mensaje ni abren un destino alternativo.

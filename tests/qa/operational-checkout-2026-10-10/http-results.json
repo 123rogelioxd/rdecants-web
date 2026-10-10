@@ -1,0 +1,697 @@
+{
+  "checks": [
+    {
+      "name": "1-new-customer-consent-notice-canonical-message",
+      "passed": true,
+      "order_id": 1,
+      "total": 190
+    },
+    {
+      "name": "4-requested-window-reaches-canonical-operation",
+      "passed": true,
+      "date": "2026-10-10",
+      "window": "Hoy · 1 - 4 pm"
+    },
+    {
+      "name": "2-returning-customer-explicit-reuse",
+      "passed": true
+    },
+    {
+      "name": "3-other-address-preserves-previous-consent",
+      "passed": true
+    },
+    {
+      "name": "5-expired-window-keeps-cart-and-requires-reselection",
+      "passed": true,
+      "orders_before": 3,
+      "orders_after_rejection": 3
+    },
+    {
+      "name": "idempotent-replay-one-order-hold-and-notice",
+      "passed": true
+    },
+    {
+      "name": "same-phone-and-guest-retry-never-grant-history-or-future-address",
+      "passed": true
+    },
+    {
+      "name": "multi-item-browser-prices-ignored-real-signed-national-quote",
+      "passed": true,
+      "total": 380
+    },
+    {
+      "name": "reserved-last-unit-hides-from-real-catalog-and-rejects-oversell",
+      "passed": true
+    },
+    {
+      "name": "shared-browser-switch-revokes-presented-cookie-without-phone-login",
+      "passed": true
+    },
+    {
+      "name": "cookie-and-account-fail-closed-in-another-tenant",
+      "passed": true
+    },
+    {
+      "name": "forget-origin-guard-and-consent-revocation-preserve-history",
+      "passed": true
+    },
+    {
+      "name": "expired-cookie-fails-closed",
+      "passed": true
+    },
+    {
+      "name": "no-sales-labels-payments-or-external-messages",
+      "passed": true,
+      "orders": 8,
+      "notices": 8,
+      "sales": 0,
+      "shipments": 0
+    }
+  ],
+  "backend": "C:\\Users\\PC\\.codex\\worktrees\\closure-integration-20261010",
+  "seeded": {
+    "organization_id": 1,
+    "owner_id": 1,
+    "products": [
+      {
+        "product_id": 1,
+        "variant_id": 1,
+        "price": 150
+      },
+      {
+        "product_id": 2,
+        "variant_id": 2,
+        "price": 200
+      },
+      {
+        "product_id": 3,
+        "variant_id": 3,
+        "price": 100
+      }
+    ]
+  },
+  "final": {
+    "orders": [
+      {
+        "id": 1,
+        "folio": "WEB-20261010-0001",
+        "status": "pending",
+        "total": 150,
+        "shipping": 40,
+        "grand_total": 190,
+        "address": {
+          "recipient": "Synthetic buyer",
+          "phone": "9511111111",
+          "street": "First synthetic street",
+          "exterior_number": "10",
+          "neighborhood": "Centro",
+          "municipio": "Oaxaca de Juárez",
+          "city": "Oaxaca de Juárez",
+          "state": "Oaxaca",
+          "postal_code": "68000",
+          "references": "Synthetic reference"
+        },
+        "metadata": {
+          "source": "rdecants-web",
+          "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36 Edg/155.0.0.0",
+          "cart_version": "1.0.5",
+          "session_id": null,
+          "cart_items": [
+            {
+              "key": "TEST-BNIFG8KSLL-5",
+              "name": "FIRST FIXTURE",
+              "house": "SYNTHETIC",
+              "type": "product",
+              "image": null
+            }
+          ],
+          "address_consent": {
+            "granted": false,
+            "at": "2026-10-10T09:00:00+00:00",
+            "version": 1,
+            "revoked_at": "2026-10-10T15:30:00+00:00"
+          },
+          "operational_routing": {
+            "destination": "operacion",
+            "routed_at": "2026-10-10T15:30:00+00:00",
+            "sale_fulfillment_id": 1
+          },
+          "customer_web_session_id": 1
+        },
+        "preference": {
+          "kind": "requested",
+          "is_guaranteed": false,
+          "date": "2026-10-10",
+          "timezone": "UTC",
+          "day_label": "Hoy",
+          "window": "tarde",
+          "window_label": "1 - 4 pm",
+          "starts_at": "13:00",
+          "ends_at": "16:00",
+          "label": "Hoy · 1 - 4 pm",
+          "requested_at": "2026-10-10T09:00:00+00:00"
+        },
+        "items": [
+          {
+            "name": "SYNTHETIC FIRST FIXTURE",
+            "quantity": 1,
+            "ml": 5,
+            "price": 150
+          }
+        ],
+        "operation": {
+          "date": "2026-10-10",
+          "requested_window": "Hoy · 1 - 4 pm",
+          "items": 1,
+          "collection_status": "unknown"
+        }
+      },
+      {
+        "id": 2,
+        "folio": "WEB-20261010-0002",
+        "status": "pending",
+        "total": 150,
+        "shipping": 40,
+        "grand_total": 190,
+        "address": {
+          "recipient": "SYNTHETIC BUYER",
+          "phone": "9511111111",
+          "street": "First synthetic street",
+          "exterior_number": "10",
+          "neighborhood": "Centro",
+          "municipio": "Oaxaca de Juárez",
+          "city": "Oaxaca de Juárez",
+          "state": "Oaxaca",
+          "postal_code": "68000",
+          "references": "Synthetic reference"
+        },
+        "metadata": {
+          "source": "rdecants-web",
+          "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36 Edg/155.0.0.0",
+          "cart_version": "1.0.5",
+          "session_id": null,
+          "cart_items": [
+            {
+              "key": "TEST-BNIFG8KSLL-5",
+              "name": "FIRST FIXTURE",
+              "house": "SYNTHETIC",
+              "type": "product",
+              "image": null
+            }
+          ],
+          "customer_web_session_id": 1,
+          "operational_routing": {
+            "destination": "operacion",
+            "routed_at": "2026-10-10T09:00:00+00:00",
+            "sale_fulfillment_id": 2
+          }
+        },
+        "preference": null,
+        "items": [
+          {
+            "name": "SYNTHETIC FIRST FIXTURE",
+            "quantity": 1,
+            "ml": 5,
+            "price": 150
+          }
+        ],
+        "operation": {
+          "date": null,
+          "requested_window": null,
+          "items": 1,
+          "collection_status": "unknown"
+        }
+      },
+      {
+        "id": 3,
+        "folio": "WEB-20261010-0003",
+        "status": "pending",
+        "total": 150,
+        "shipping": 40,
+        "grand_total": 190,
+        "address": {
+          "recipient": "Synthetic buyer",
+          "phone": "9511111111",
+          "street": "Temporary synthetic street",
+          "exterior_number": "10",
+          "neighborhood": "Centro",
+          "municipio": "Oaxaca de Juárez",
+          "city": "Oaxaca de Juárez",
+          "state": "Oaxaca",
+          "postal_code": "68000",
+          "references": "Synthetic reference"
+        },
+        "metadata": {
+          "source": "rdecants-web",
+          "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36 Edg/155.0.0.0",
+          "cart_version": "1.0.5",
+          "session_id": null,
+          "cart_items": [
+            {
+              "key": "TEST-BNIFG8KSLL-5",
+              "name": "FIRST FIXTURE",
+              "house": "SYNTHETIC",
+              "type": "product",
+              "image": null
+            }
+          ],
+          "customer_web_session_id": 1,
+          "operational_routing": {
+            "destination": "operacion",
+            "routed_at": "2026-10-10T09:00:00+00:00",
+            "sale_fulfillment_id": 3
+          }
+        },
+        "preference": {
+          "kind": "requested",
+          "is_guaranteed": false,
+          "date": "2026-10-10",
+          "timezone": "UTC",
+          "day_label": "Hoy",
+          "window": "tarde",
+          "window_label": "1 - 4 pm",
+          "starts_at": "13:00",
+          "ends_at": "16:00",
+          "label": "Hoy · 1 - 4 pm",
+          "requested_at": "2026-10-10T09:00:00+00:00"
+        },
+        "items": [
+          {
+            "name": "SYNTHETIC FIRST FIXTURE",
+            "quantity": 1,
+            "ml": 5,
+            "price": 150
+          }
+        ],
+        "operation": {
+          "date": "2026-10-10",
+          "requested_window": "Hoy · 1 - 4 pm",
+          "items": 1,
+          "collection_status": "unknown"
+        }
+      },
+      {
+        "id": 4,
+        "folio": "WEB-20261010-0004",
+        "status": "pending",
+        "total": 150,
+        "shipping": 40,
+        "grand_total": 190,
+        "address": {
+          "recipient": "SYNTHETIC BUYER",
+          "phone": "9511111111",
+          "street": "First synthetic street",
+          "exterior_number": "10",
+          "neighborhood": "Centro",
+          "municipio": "Oaxaca de Juárez",
+          "city": "Oaxaca de Juárez",
+          "state": "Oaxaca",
+          "postal_code": "68000",
+          "references": "Synthetic reference"
+        },
+        "metadata": {
+          "source": "rdecants-web",
+          "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36 Edg/155.0.0.0",
+          "cart_version": "1.0.5",
+          "session_id": null,
+          "cart_items": [
+            {
+              "key": "TEST-BNIFG8KSLL-5",
+              "name": "FIRST FIXTURE",
+              "house": "SYNTHETIC",
+              "type": "product",
+              "image": null
+            }
+          ],
+          "customer_web_session_id": 1,
+          "operational_routing": {
+            "destination": "operacion",
+            "routed_at": "2026-10-10T15:30:00+00:00",
+            "sale_fulfillment_id": 4
+          }
+        },
+        "preference": {
+          "kind": "requested",
+          "is_guaranteed": false,
+          "date": "2026-10-10",
+          "timezone": "UTC",
+          "day_label": "Hoy",
+          "window": "noche",
+          "window_label": "4 - 7 pm",
+          "starts_at": "16:00",
+          "ends_at": "19:00",
+          "label": "Hoy · 4 - 7 pm",
+          "requested_at": "2026-10-10T15:30:00+00:00"
+        },
+        "items": [
+          {
+            "name": "SYNTHETIC FIRST FIXTURE",
+            "quantity": 1,
+            "ml": 5,
+            "price": 150
+          }
+        ],
+        "operation": {
+          "date": "2026-10-10",
+          "requested_window": "Hoy · 4 - 7 pm",
+          "items": 1,
+          "collection_status": "unknown"
+        }
+      },
+      {
+        "id": 5,
+        "folio": "WEB-20261010-0005",
+        "status": "pending",
+        "total": 150,
+        "shipping": 40,
+        "grand_total": 190,
+        "address": {
+          "recipient": "Synthetic buyer",
+          "phone": "9511111111",
+          "street": "Other browser private street",
+          "exterior_number": "10",
+          "neighborhood": "Centro",
+          "municipio": "Oaxaca de Juárez",
+          "city": "Oaxaca de Juárez",
+          "state": "Oaxaca",
+          "postal_code": "68000",
+          "references": "Synthetic reference"
+        },
+        "metadata": {
+          "source": "rdecants-web",
+          "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36 Edg/155.0.0.0",
+          "cart_version": "1.0.5",
+          "session_id": null,
+          "cart_items": [
+            {
+              "key": "TEST-BNIFG8KSLL-5",
+              "name": "FIRST FIXTURE",
+              "house": "SYNTHETIC",
+              "type": "product",
+              "image": null
+            }
+          ],
+          "operational_routing": {
+            "destination": "operacion",
+            "routed_at": "2026-10-10T15:30:00+00:00",
+            "sale_fulfillment_id": 5
+          }
+        },
+        "preference": null,
+        "items": [
+          {
+            "name": "SYNTHETIC FIRST FIXTURE",
+            "quantity": 1,
+            "ml": 5,
+            "price": 150
+          }
+        ],
+        "operation": {
+          "date": null,
+          "requested_window": null,
+          "items": 1,
+          "collection_status": "unknown"
+        }
+      },
+      {
+        "id": 6,
+        "folio": "WEB-20261010-0006",
+        "status": "pending",
+        "total": 350,
+        "shipping": 30,
+        "grand_total": 380,
+        "address": {
+          "recipient": "Synthetic buyer",
+          "phone": "9512222222",
+          "street": "National synthetic street",
+          "exterior_number": "10",
+          "neighborhood": "Centro",
+          "municipio": "Oaxaca de Juárez",
+          "city": "Oaxaca de Juárez",
+          "state": "Oaxaca",
+          "postal_code": "68000",
+          "references": "Synthetic reference"
+        },
+        "metadata": {
+          "source": "rdecants-web",
+          "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36 Edg/155.0.0.0",
+          "cart_version": "1.0.5",
+          "session_id": null,
+          "cart_items": [
+            {
+              "key": "TEST-BNIFG8KSLL-5",
+              "name": "FIRST FIXTURE",
+              "house": "SYNTHETIC",
+              "type": "product",
+              "image": null
+            }
+          ],
+          "operational_routing": {
+            "destination": "guias",
+            "routed_at": "2026-10-10T15:30:00+00:00"
+          },
+          "customer_web_session_id": 2
+        },
+        "preference": null,
+        "items": [
+          {
+            "name": "SYNTHETIC FIRST FIXTURE",
+            "quantity": 1,
+            "ml": 5,
+            "price": 150
+          },
+          {
+            "name": "SYNTHETIC SECOND FIXTURE",
+            "quantity": 1,
+            "ml": 5,
+            "price": 200
+          }
+        ],
+        "operation": null
+      },
+      {
+        "id": 7,
+        "folio": "WEB-20261010-0007",
+        "status": "pending",
+        "total": 100,
+        "shipping": 40,
+        "grand_total": 140,
+        "address": {
+          "recipient": "Synthetic buyer",
+          "phone": "9511111111",
+          "street": "Other browser private street",
+          "exterior_number": "10",
+          "neighborhood": "Centro",
+          "municipio": "Oaxaca de Juárez",
+          "city": "Oaxaca de Juárez",
+          "state": "Oaxaca",
+          "postal_code": "68000",
+          "references": "Synthetic reference"
+        },
+        "metadata": {
+          "source": "rdecants-web",
+          "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36 Edg/155.0.0.0",
+          "cart_version": "1.0.5",
+          "session_id": null,
+          "cart_items": [
+            {
+              "key": "TEST-BNIFG8KSLL-5",
+              "name": "FIRST FIXTURE",
+              "house": "SYNTHETIC",
+              "type": "product",
+              "image": null
+            }
+          ],
+          "address_consent": {
+            "granted": true,
+            "at": "2026-10-10T15:30:00+00:00",
+            "version": 1
+          },
+          "operational_routing": {
+            "destination": "operacion",
+            "routed_at": "2026-10-10T15:30:00+00:00",
+            "sale_fulfillment_id": 6
+          },
+          "customer_web_session_id": 3
+        },
+        "preference": null,
+        "items": [
+          {
+            "name": "SYNTHETIC LAST UNIT FIXTURE",
+            "quantity": 1,
+            "ml": 5,
+            "price": 100
+          }
+        ],
+        "operation": {
+          "date": null,
+          "requested_window": null,
+          "items": 1,
+          "collection_status": "unknown"
+        }
+      },
+      {
+        "id": 8,
+        "folio": "WEB-20261010-0008",
+        "status": "pending",
+        "total": 150,
+        "shipping": 30,
+        "grand_total": 180,
+        "address": {
+          "recipient": "Synthetic buyer",
+          "phone": "9512222222",
+          "street": "National synthetic street",
+          "exterior_number": "10",
+          "neighborhood": "Centro",
+          "municipio": "Oaxaca de Juárez",
+          "city": "Oaxaca de Juárez",
+          "state": "Oaxaca",
+          "postal_code": "68000",
+          "references": "Synthetic reference"
+        },
+        "metadata": {
+          "source": "rdecants-web",
+          "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36 Edg/155.0.0.0",
+          "cart_version": "1.0.5",
+          "session_id": null,
+          "cart_items": [
+            {
+              "key": "TEST-BNIFG8KSLL-5",
+              "name": "FIRST FIXTURE",
+              "house": "SYNTHETIC",
+              "type": "product",
+              "image": null
+            }
+          ],
+          "operational_routing": {
+            "destination": "guias",
+            "routed_at": "2026-10-10T15:30:00+00:00"
+          }
+        },
+        "preference": null,
+        "items": [
+          {
+            "name": "SYNTHETIC FIRST FIXTURE",
+            "quantity": 1,
+            "ml": 5,
+            "price": 150
+          }
+        ],
+        "operation": null
+      }
+    ],
+    "reservations": 9,
+    "notifications": [
+      {
+        "id": 1,
+        "organization_id": 1,
+        "user_id": 1,
+        "status": "skipped",
+        "title": "Nuevo pedido web · 190.00 MXN",
+        "body": "Synthetic buyer · SYNTHETIC FIRST FIXTURE 5 ml · Entrega local · Preferido: Hoy · 1 - 4 pm · Pago por confirmar. Revisar pedido.",
+        "target_url": "/web-orders/1",
+        "deduplication_key": "new_web_order:1"
+      },
+      {
+        "id": 2,
+        "organization_id": 1,
+        "user_id": 1,
+        "status": "skipped",
+        "title": "Nuevo pedido web · 190.00 MXN",
+        "body": "SYNTHETIC BUYER · SYNTHETIC FIRST FIXTURE 5 ml · Entrega local · Pago por confirmar. Revisar pedido.",
+        "target_url": "/web-orders/2",
+        "deduplication_key": "new_web_order:2"
+      },
+      {
+        "id": 3,
+        "organization_id": 1,
+        "user_id": 1,
+        "status": "skipped",
+        "title": "Nuevo pedido web · 190.00 MXN",
+        "body": "Synthetic buyer · SYNTHETIC FIRST FIXTURE 5 ml · Entrega local · Preferido: Hoy · 1 - 4 pm · Pago por confirmar. Revisar pedido.",
+        "target_url": "/web-orders/3",
+        "deduplication_key": "new_web_order:3"
+      },
+      {
+        "id": 4,
+        "organization_id": 1,
+        "user_id": 1,
+        "status": "skipped",
+        "title": "Nuevo pedido web · 190.00 MXN",
+        "body": "SYNTHETIC BUYER · SYNTHETIC FIRST FIXTURE 5 ml · Entrega local · Preferido: Hoy · 4 - 7 pm · Pago por confirmar. Revisar pedido.",
+        "target_url": "/web-orders/4",
+        "deduplication_key": "new_web_order:4"
+      },
+      {
+        "id": 5,
+        "organization_id": 1,
+        "user_id": 1,
+        "status": "skipped",
+        "title": "Nuevo pedido web · 190.00 MXN",
+        "body": "Synthetic buyer · SYNTHETIC FIRST FIXTURE 5 ml · Entrega local · Pago por confirmar. Revisar pedido.",
+        "target_url": "/web-orders/5",
+        "deduplication_key": "new_web_order:5"
+      },
+      {
+        "id": 6,
+        "organization_id": 1,
+        "user_id": 1,
+        "status": "skipped",
+        "title": "Nuevo pedido web · 380.00 MXN",
+        "body": "Synthetic multi buyer · SYNTHETIC FIRST FIXTURE 5 ml · SYNTHETIC SECOND FIXTURE 5 ml · Envío nacional · Pago por confirmar. Revisar pedido.",
+        "target_url": "/web-orders/6",
+        "deduplication_key": "new_web_order:6"
+      },
+      {
+        "id": 7,
+        "organization_id": 1,
+        "user_id": 1,
+        "status": "skipped",
+        "title": "Nuevo pedido web · 140.00 MXN",
+        "body": "Synthetic stock buyer · SYNTHETIC LAST UNIT FIXTURE 5 ml · Entrega local · Pago por confirmar. Revisar pedido.",
+        "target_url": "/web-orders/7",
+        "deduplication_key": "new_web_order:7"
+      },
+      {
+        "id": 8,
+        "organization_id": 1,
+        "user_id": 1,
+        "status": "skipped",
+        "title": "Nuevo pedido web · 180.00 MXN",
+        "body": "Synthetic multi buyer · SYNTHETIC FIRST FIXTURE 5 ml · Envío nacional · Pago por confirmar. Revisar pedido.",
+        "target_url": "/web-orders/8",
+        "deduplication_key": "new_web_order:8"
+      }
+    ],
+    "sessions": [
+      {
+        "id": 1,
+        "cliente_id": 1,
+        "identity_provenance": "new_customer_v2",
+        "revoked_at": null
+      },
+      {
+        "id": 2,
+        "cliente_id": 2,
+        "identity_provenance": "new_customer_v2",
+        "revoked_at": "2026-10-10T15:30:00.000000Z"
+      },
+      {
+        "id": 3,
+        "cliente_id": 3,
+        "identity_provenance": "new_customer_v2",
+        "revoked_at": "2026-10-10T15:30:00.000000Z"
+      }
+    ],
+    "commerce_count": 8,
+    "sales_count": 0,
+    "shipments_count": 0
+  },
+  "pageErrors": [],
+  "limitations": [
+    "Synthetic carrier and pricing fixture; no provider integration",
+    "APP_ENV testing correctly rejects localhost forget; authorized Origin exercised through HTTP context request",
+    "No physical iOS keyboard or zoom validation",
+    "No payment or sale confirmation in this checkout traversal"
+  ]
+}
