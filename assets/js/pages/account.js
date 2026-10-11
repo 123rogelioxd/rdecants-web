@@ -65,6 +65,7 @@ export function orderCardHtml(order) {
   const merchandise = formatOrderTotal(order?.merchandise_total);
   const status = order?.status ?? {};
   const preference = order?.delivery?.preference_label;
+  const confirmedWindow = confirmedWindowLabel(order);
 
   return `
     <a class="account-order" href="/cuenta.html?folio=${encodeURIComponent(order.folio)}">
@@ -74,6 +75,7 @@ export function orderCardHtml(order) {
         <p class="account-order-meta">${esc(formatOrderDate(order.created_at))}${order.summary_line ? ` · ${esc(order.summary_line)}` : ''}</p>
         <p class="account-status account-status--${esc(statusTone(status))}">${esc(status.progress_label ?? 'Pedido registrado')}</p>
         ${preference ? `<p class="account-order-meta">Horario preferido: ${esc(preference)}</p>` : ''}
+        ${confirmedWindow ? `<p class="account-order-meta">Entrega confirmada: ${esc(confirmedWindow)}</p>` : ''}
       </div>
       <div class="account-order-total">
         ${total
@@ -89,6 +91,7 @@ export function orderDetailHtml(order) {
   const total = formatOrderTotal(order?.total);
   const shipping = order?.delivery?.shipping_cost;
   const preference = order?.delivery?.preference_label;
+  const confirmedWindow = confirmedWindowLabel(order);
 
   return `
     <a class="account-back" href="/cuenta.html"><span aria-hidden="true">←</span> Todos mis pedidos</a>
@@ -124,10 +127,9 @@ export function orderDetailHtml(order) {
           ? 'Costo de entrega por confirmar'
           : `Entrega: ${esc(formatOrderTotal(shipping) ?? 'Sin costo')}`}</p>
         ${preference
-          /* "Preferido", never "confirmado". There is no capacity model behind
-             it and the API says so in its own payload. */
-          ? `<p class="account-order-meta">Horario preferido: ${esc(preference)} · lo confirmamos por WhatsApp</p>`
+          ? `<p class="account-order-meta">Horario preferido: ${esc(preference)}${confirmedWindow ? '' : ' · lo confirmamos por WhatsApp'}</p>`
           : ''}
+        ${confirmedWindow ? `<p class="account-order-meta">Entrega confirmada: ${esc(confirmedWindow)}</p>` : ''}
       </section>
 
       <section class="account-block account-block--money" aria-label="Importe">
@@ -186,6 +188,12 @@ export function deliveryModeLabel(mode) {
   if (mode === 'pickup') return 'Recoger';
 
   return 'Entrega por confirmar';
+}
+
+/** Only the backend's verified commitment can supply a confirmed window. */
+function confirmedWindowLabel(order) {
+  const window = order?.delivery?.confirmed_window;
+  return window?.kind === 'confirmed' && typeof window.label === 'string' ? window.label : null;
 }
 
 /* WhatsApp carries the reference plus a compact product summary.

@@ -288,6 +288,17 @@ test('an order row shows folio, status and a recognisable thumbnail', () => {
   assert.match(html, /cuenta\.html\?folio=WEB-20260909-0001/);
 });
 
+test('a verified backend window is displayed separately from the original preference', () => {
+  const data = { ...order, delivery: { ...order.delivery, confirmed_window: { kind: 'confirmed', label: '2026-10-12 · 19:00–20:00' } } };
+  for (const html of [orderCardHtml(data), orderDetailHtml(data)]) {
+    assert.match(html, /Entrega confirmada: 2026-10-12 · 19:00–20:00/);
+    assert.match(html, /Horario preferido: Hoy · 4 - 7 pm/);
+  }
+  assert.doesNotMatch(orderDetailHtml(data), /lo confirmamos por WhatsApp/);
+  const requested = { ...data, delivery: { ...data.delivery, confirmed_window: { kind: 'requested', label: '16:00' } } };
+  assert.doesNotMatch(orderDetailHtml(requested), /Entrega confirmada:/);
+});
+
 test('the storefront renders the backend status label rather than deciding one', () => {
   const source = read('assets/js/pages/account.js');
 
