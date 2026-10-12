@@ -1,5 +1,5 @@
 {
-    "backend_head": "26f1c2d492d62f7d5e9dbabe4a246058e924aee5",
+    "backend_head": "f4ada811e50e32dee16185fdda1205d196811ff9",
     "environment": "isolated real Laravel HTTP, fictitious data, external HTTP forbidden",
     "cases": {
         "pickup": {
@@ -38,7 +38,7 @@
             "summary": {
                 "kind": "pedido",
                 "folio": "WEB-20261012-0001",
-                "created_at": "2026-10-12T22:32:29+00:00",
+                "created_at": "2026-10-12T22:54:49+00:00",
                 "status": {
                     "progress": "registrado",
                     "progress_label": "Pedido registrado",
@@ -69,7 +69,7 @@
             },
             "detail": {
                 "folio": "WEB-20261012-0001",
-                "created_at": "2026-10-12T22:32:29+00:00",
+                "created_at": "2026-10-12T22:54:49+00:00",
                 "status": {
                     "progress": "registrado",
                     "progress_label": "Pedido registrado",
@@ -153,7 +153,7 @@
             "summary": {
                 "kind": "pedido",
                 "folio": "WEB-20261012-0002",
-                "created_at": "2026-10-12T22:32:29+00:00",
+                "created_at": "2026-10-12T22:54:49+00:00",
                 "status": {
                     "progress": "registrado",
                     "progress_label": "Pedido registrado",
@@ -184,7 +184,7 @@
             },
             "detail": {
                 "folio": "WEB-20261012-0002",
-                "created_at": "2026-10-12T22:32:29+00:00",
+                "created_at": "2026-10-12T22:54:49+00:00",
                 "status": {
                     "progress": "registrado",
                     "progress_label": "Pedido registrado",

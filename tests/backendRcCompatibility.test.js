@@ -7,7 +7,7 @@ import { registeredFactsHtml } from '../assets/js/ui/checkoutFlow.js';
 const contract = JSON.parse(readFileSync(new URL('./fixtures/backend-rc-checkout-contract.json', import.meta.url), 'utf8'));
 
 test('real Laravel RC checkout/account responses keep canonical prices and pending payment', () => {
-  assert.equal(contract.backend_head, '26f1c2d492d62f7d5e9dbabe4a246058e924aee5');
+  assert.equal(contract.backend_head, 'f4ada811e50e32dee16185fdda1205d196811ff9');
   for (const { created, summary, detail } of Object.values(contract.cases)) {
     assert.equal(created.order.total, 150); // Client sent unit_price=1; Pricing selected 150.
     assert.equal(detail.items[0].unit_price, 150);
