@@ -10,7 +10,9 @@ Se reutilizan endpoints y sesión existentes. No se calcula horario, tarifa,
 capacidad, estado de pago ni una promesa de llegada en JavaScript. El módulo
 de cuenta tiene cache key nueva. No cambia checkout ni POS.
 
-Parche pequeño apilado sobre draft #22 `f8445fc0`, cuyo worktree se conserva.
+Parche pequeño que conserva draft #22 `f8445fc0` como su primer commit y su
+worktree intacto. El nuevo draft #23 se dirige a `production` para ejecutar la
+CI existente, limitada a PRs con esa base; contiene #22 y esta corrección.
 Se comprobó remoto `production` en `5e89246a`; no hubo publicación. Integración
 coordinada con backend #236 `d16945d4` después de SHA combinado, CI y autorización.
 Revertir retira sólo presentación y cache key. Las flags y restricciones
