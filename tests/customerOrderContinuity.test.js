@@ -289,14 +289,24 @@ test('an order row shows folio, status and a recognisable thumbnail', () => {
 });
 
 test('a verified backend window is displayed separately from the original preference', () => {
-  const data = { ...order, delivery: { ...order.delivery, confirmed_window: { kind: 'confirmed', label: '2026-10-12 · 19:00–20:00' } } };
+  const data = { ...order, delivery: { ...order.delivery, confirmed_window: { kind: 'confirmed', window_type: 'departure', label: 'Salida 2026-10-12 · 19:00–20:00' } } };
   for (const html of [orderCardHtml(data), orderDetailHtml(data)]) {
-    assert.match(html, /Entrega confirmada: 2026-10-12 · 19:00–20:00/);
+    assert.match(html, /Salida a reparto confirmada: Salida 2026-10-12 · 19:00–20:00/);
+    assert.match(html, /La llegada depende del recorrido/);
+    assert.doesNotMatch(html, /Entrega confirmada:/);
     assert.match(html, /Horario preferido: Hoy · 4 - 7 pm/);
   }
   assert.doesNotMatch(orderDetailHtml(data), /lo confirmamos por WhatsApp/);
   const requested = { ...data, delivery: { ...data.delivery, confirmed_window: { kind: 'requested', label: '16:00' } } };
-  assert.doesNotMatch(orderDetailHtml(requested), /Entrega confirmada:/);
+  assert.doesNotMatch(orderDetailHtml(requested), /Salida a reparto confirmada:|Horario confirmado:/);
+});
+
+test('a legacy confirmed snapshot stays neutral and its backend label is escaped', () => {
+  const data = { ...order, delivery: { ...order.delivery, confirmed_window: { kind: 'confirmed', label: '19:00 <img src=x onerror=alert(1)>' } } };
+  for (const html of [orderCardHtml(data), orderDetailHtml(data)]) {
+    assert.match(html, /Horario confirmado: 19:00 &lt;img/);
+    assert.doesNotMatch(html, /Entrega confirmada:|Salida a reparto confirmada:|<img src=x/);
+  }
 });
 
 test('the storefront renders the backend status label rather than deciding one', () => {

@@ -75,7 +75,7 @@ export function orderCardHtml(order) {
         <p class="account-order-meta">${esc(formatOrderDate(order.created_at))}${order.summary_line ? ` · ${esc(order.summary_line)}` : ''}</p>
         <p class="account-status account-status--${esc(statusTone(status))}">${esc(status.progress_label ?? 'Pedido registrado')}</p>
         ${preference ? `<p class="account-order-meta">Horario preferido: ${esc(preference)}</p>` : ''}
-        ${confirmedWindow ? `<p class="account-order-meta">Entrega confirmada: ${esc(confirmedWindow)}</p>` : ''}
+        ${confirmedWindow ? confirmedWindowHtml(order, confirmedWindow) : ''}
       </div>
       <div class="account-order-total">
         ${total
@@ -129,7 +129,7 @@ export function orderDetailHtml(order) {
         ${preference
           ? `<p class="account-order-meta">Horario preferido: ${esc(preference)}${confirmedWindow ? '' : ' · lo confirmamos por WhatsApp'}</p>`
           : ''}
-        ${confirmedWindow ? `<p class="account-order-meta">Entrega confirmada: ${esc(confirmedWindow)}</p>` : ''}
+        ${confirmedWindow ? confirmedWindowHtml(order, confirmedWindow) : ''}
       </section>
 
       <section class="account-block account-block--money" aria-label="Importe">
@@ -194,6 +194,13 @@ export function deliveryModeLabel(mode) {
 function confirmedWindowLabel(order) {
   const window = order?.delivery?.confirmed_window;
   return window?.kind === 'confirmed' && typeof window.label === 'string' ? window.label : null;
+}
+
+/** The API distinguishes departure from arrival; old snapshots stay neutral. */
+function confirmedWindowHtml(order, label) {
+  const departure = order?.delivery?.confirmed_window?.window_type === 'departure';
+  return `<p class="account-order-meta">${departure ? 'Salida a reparto confirmada' : 'Horario confirmado'}: ${esc(label)}</p>${departure
+    ? '<p class="account-order-meta">Es una ventana de salida. La llegada depende del recorrido.</p>' : ''}`;
 }
 
 /* WhatsApp carries the reference plus a compact product summary.

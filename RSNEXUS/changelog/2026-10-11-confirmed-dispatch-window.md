@@ -1,4 +1,8 @@
-# Ventana de entrega confirmada — candidata #220
+# Ventana confirmada — candidata #220
+
+> La semántica de salida sustituye la etiqueta anterior de entrega en el parche
+> `2026-10-12-dispatch-departure-labels.md`. #22 debe integrarse junto con ese
+> parche y backend #236; no publicarlo solo con la etiqueta anterior.
 
 Base remota `production` comprobada: `5e89246a82fab1fe19076af75fc6c8f3bb0920cc`.
 La cuenta muestra `delivery.confirmed_window` sólo cuando el backend devuelve
