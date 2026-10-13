@@ -1,0 +1,236 @@
+{
+    "backend_head": "f4ada811e50e32dee16185fdda1205d196811ff9",
+    "environment": "isolated real Laravel HTTP, fictitious data, external HTTP forbidden",
+    "cases": {
+        "pickup": {
+            "created": {
+                "ok": true,
+                "order": {
+                    "id": 1,
+                    "folio": "WEB-20261012-0001",
+                    "status": "pending",
+                    "address_saved": false,
+                    "subtotal": 150,
+                    "discount": 0,
+                    "total_discount": 0,
+                    "pack_discount": 0,
+                    "coupon_discount": 0,
+                    "packs": [],
+                    "discount_code": null,
+                    "coupons": [],
+                    "discount_message": null,
+                    "campaign_slug": null,
+                    "total": 150,
+                    "delivery": {
+                        "mode": "pickup",
+                        "zone_key": null,
+                        "shipping_cost": 0,
+                        "requires_manual_quote": false,
+                        "carrier": null,
+                        "service": null,
+                        "preference": null
+                    },
+                    "grand_total": 150,
+                    "whatsapp_url": "https://wa.me/529511111111?text=Hola%2C%20quiero%20confirmar%20mi%20pedido%3A%0A%0AMARCA%20QA%20PERFUME%20QA%20FICTICIO%20%E2%80%94%201%20%C3%97%20decant%20de%205%20ml%0A%0ATotal%20con%20entrega%3A%20%24150.00%20MXN.",
+                    "commerce": null
+                }
+            },
+            "summary": {
+                "kind": "pedido",
+                "folio": "WEB-20261012-0001",
+                "created_at": "2026-10-12T22:54:49+00:00",
+                "status": {
+                    "progress": "registrado",
+                    "progress_label": "Pedido registrado",
+                    "progress_detail": "Ya tenemos tu pedido y tu inventario está apartado. Confirmamos los detalles por WhatsApp.",
+                    "is_open": true,
+                    "payment": "por_confirmar",
+                    "payment_label": "Pago por confirmar"
+                },
+                "item_count": 1,
+                "preview": [
+                    {
+                        "name": "MARCA QA PERFUME QA FICTICIO",
+                        "brand": "MARCA QA",
+                        "image": null
+                    }
+                ],
+                "summary_line": "MARCA QA PERFUME QA FICTICIO",
+                "delivery": {
+                    "mode": "pickup",
+                    "shipping_cost": 0,
+                    "requires_manual_quote": false,
+                    "preference_label": null,
+                    "confirmed_window": null
+                },
+                "merchandise_total": 150,
+                "total": 150,
+                "payment": null
+            },
+            "detail": {
+                "folio": "WEB-20261012-0001",
+                "created_at": "2026-10-12T22:54:49+00:00",
+                "status": {
+                    "progress": "registrado",
+                    "progress_label": "Pedido registrado",
+                    "progress_detail": "Ya tenemos tu pedido y tu inventario está apartado. Confirmamos los detalles por WhatsApp.",
+                    "is_open": true,
+                    "payment": "por_confirmar",
+                    "payment_label": "Pago por confirmar"
+                },
+                "item_count": 1,
+                "preview": [
+                    {
+                        "name": "MARCA QA PERFUME QA FICTICIO",
+                        "brand": "MARCA QA",
+                        "image": null
+                    }
+                ],
+                "summary_line": "MARCA QA PERFUME QA FICTICIO",
+                "delivery": {
+                    "mode": "pickup",
+                    "shipping_cost": 0,
+                    "requires_manual_quote": false,
+                    "preference_label": null,
+                    "preference_is_guaranteed": false,
+                    "confirmed_window": null,
+                    "destination": null,
+                    "recipient": "Cliente QA ficticio"
+                },
+                "merchandise_total": 150,
+                "total": 150,
+                "payment": null,
+                "whatsapp_url": "https://wa.me/529511111111?text=Hola%2C%20quiero%20confirmar%20mi%20pedido%3A%0A%0AMARCA%20QA%20PERFUME%20QA%20FICTICIO%20%E2%80%94%201%20%C3%97%20decant%20de%205%20ml%0A%0ATotal%20con%20entrega%3A%20%24150.00%20MXN.",
+                "items": [
+                    {
+                        "name": "MARCA QA PERFUME QA FICTICIO",
+                        "brand": "MARCA QA",
+                        "image": null,
+                        "ml": 5,
+                        "quantity": 1,
+                        "unit_price": 150,
+                        "line_total": 150
+                    }
+                ],
+                "subtotal": 150,
+                "discount": 0,
+                "notes": null
+            }
+        },
+        "local_unknown": {
+            "created": {
+                "ok": true,
+                "order": {
+                    "id": 2,
+                    "folio": "WEB-20261012-0002",
+                    "status": "pending",
+                    "address_saved": false,
+                    "subtotal": 150,
+                    "discount": 0,
+                    "total_discount": 0,
+                    "pack_discount": 0,
+                    "coupon_discount": 0,
+                    "packs": [],
+                    "discount_code": null,
+                    "coupons": [],
+                    "discount_message": null,
+                    "campaign_slug": null,
+                    "total": 150,
+                    "delivery": {
+                        "mode": "local",
+                        "zone_key": null,
+                        "shipping_cost": null,
+                        "requires_manual_quote": true,
+                        "carrier": null,
+                        "service": null,
+                        "preference": null
+                    },
+                    "grand_total": null,
+                    "whatsapp_url": "https://wa.me/529511111111?text=Hola%2C%20quiero%20confirmar%20mi%20pedido%3A%0A%0AMARCA%20QA%20PERFUME%20QA%20FICTICIO%20%E2%80%94%201%20%C3%97%20decant%20de%205%20ml%0A%0AProductos%3A%20%24150.00%20MXN.%0ANo%20se%20ha%20confirmado%20el%20costo%20del%20env%C3%ADo.",
+                    "commerce": null
+                }
+            },
+            "summary": {
+                "kind": "pedido",
+                "folio": "WEB-20261012-0002",
+                "created_at": "2026-10-12T22:54:49+00:00",
+                "status": {
+                    "progress": "registrado",
+                    "progress_label": "Pedido registrado",
+                    "progress_detail": "Ya tenemos tu pedido y tu inventario está apartado. Confirmamos los detalles por WhatsApp.",
+                    "is_open": true,
+                    "payment": "por_confirmar",
+                    "payment_label": "Pago por confirmar"
+                },
+                "item_count": 1,
+                "preview": [
+                    {
+                        "name": "MARCA QA PERFUME QA FICTICIO",
+                        "brand": "MARCA QA",
+                        "image": null
+                    }
+                ],
+                "summary_line": "MARCA QA PERFUME QA FICTICIO",
+                "delivery": {
+                    "mode": "local",
+                    "shipping_cost": null,
+                    "requires_manual_quote": true,
+                    "preference_label": null,
+                    "confirmed_window": null
+                },
+                "merchandise_total": 150,
+                "total": null,
+                "payment": null
+            },
+            "detail": {
+                "folio": "WEB-20261012-0002",
+                "created_at": "2026-10-12T22:54:49+00:00",
+                "status": {
+                    "progress": "registrado",
+                    "progress_label": "Pedido registrado",
+                    "progress_detail": "Ya tenemos tu pedido y tu inventario está apartado. Confirmamos los detalles por WhatsApp.",
+                    "is_open": true,
+                    "payment": "por_confirmar",
+                    "payment_label": "Pago por confirmar"
+                },
+                "item_count": 1,
+                "preview": [
+                    {
+                        "name": "MARCA QA PERFUME QA FICTICIO",
+                        "brand": "MARCA QA",
+                        "image": null
+                    }
+                ],
+                "summary_line": "MARCA QA PERFUME QA FICTICIO",
+                "delivery": {
+                    "mode": "local",
+                    "shipping_cost": null,
+                    "requires_manual_quote": true,
+                    "preference_label": null,
+                    "preference_is_guaranteed": false,
+                    "confirmed_window": null,
+                    "destination": "Calle QA 1 · Colonia QA, Ciudad QA",
+                    "recipient": "Cliente QA ficticio"
+                },
+                "merchandise_total": 150,
+                "total": null,
+                "payment": null,
+                "whatsapp_url": "https://wa.me/529511111111?text=Hola%2C%20quiero%20confirmar%20mi%20pedido%3A%0A%0AMARCA%20QA%20PERFUME%20QA%20FICTICIO%20%E2%80%94%201%20%C3%97%20decant%20de%205%20ml%0A%0AProductos%3A%20%24150.00%20MXN.%0ANo%20se%20ha%20confirmado%20el%20costo%20del%20env%C3%ADo.",
+                "items": [
+                    {
+                        "name": "MARCA QA PERFUME QA FICTICIO",
+                        "brand": "MARCA QA",
+                        "image": null,
+                        "ml": 5,
+                        "quantity": 1,
+                        "unit_price": 150,
+                        "line_total": 150
+                    }
+                ],
+                "subtotal": 150,
+                "discount": 0,
+                "notes": null
+            }
+        }
+    }
+}
