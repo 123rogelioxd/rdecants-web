@@ -3,15 +3,15 @@
    Renders cart drawer from current Cart state.
    ============================================================= */
 
-import { Cart }      from './cart.js?v=1.0.2';
+import { Cart }      from './cart.js?v=1.0.3';
 import { sendCheckoutWhatsApp,
          syncCheckoutAvailability,
-         trackCheckoutStarted } from './checkout.js?v=1.0.2';
+         trackCheckoutStarted } from './checkout.js?v=1.0.3';
 import { EventBus }  from '../core/events.js';
 import { Tracker }   from '../tracking/tracker.js';
-import { formatPrice, isValidPrice } from '../utils/prices.js?v=1.0.2';
+import { formatPrice, isValidPrice } from '../utils/prices.js?v=1.0.3';
 
-const WHATSAPP_NUMBER = '5219516513018';
+const WHATSAPP_NUMBER = '529513446211';
 let _prevFocus = null;
 
 /* ── Render ─────────────────────────────────────────────────── */
