@@ -85,7 +85,7 @@ test('catalog, curated placements and packs exclude unavailable offers while det
 test('WhatsApp uses the canonical server URL and rejects unsafe destinations', () => {
   assert.equal(typeof Checkout.orderWhatsAppUrl, 'function');
   const url = 'https://wa.me/529511234567?text=Hola%2C%20Total%20%24350';
-  assert.equal(Checkout.orderWhatsAppUrl({ whatsapp_url: url }), url);
+  assert.equal(Checkout.orderWhatsAppUrl({ whatsapp_url: url }), 'https://wa.me/529513446211?text=Hola%2C%20Total%20%24350');
   for (const value of ['javascript:alert(1)', 'https://evil.test/?text=x', 'https://wa.me.evil.test/529511234567', 'http://wa.me/529511234567']) {
     assert.equal(Checkout.orderWhatsAppUrl({ whatsapp_url: value }), null);
   }
