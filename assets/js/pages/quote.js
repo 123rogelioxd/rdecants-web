@@ -1,3 +1,4 @@
+import { normalizeSalesWhatsAppUrl } from '../utils/whatsapp.js';
 import { bootstrapShell } from '../core/shell.js';
 import { ApiClient } from '../api/client.js';
 import { normalizeApiImageUrl } from '../api/config.js';
@@ -656,7 +657,7 @@ globalThis.document?.addEventListener('DOMContentLoaded', async () => {
       });
 
       const reference = String(response?.reference ?? '').trim();
-      const whatsappUrl = String(response?.whatsapp_url ?? '').trim();
+      const whatsappUrl = normalizeSalesWhatsAppUrl(response?.whatsapp_url);
 
       if (!reference || !whatsappUrl) {
         throw new Error('missing_reference');
