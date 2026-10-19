@@ -1,3 +1,4 @@
+import { normalizeSalesWhatsAppUrl } from '../utils/whatsapp.js';
 /* =============================================================
    RDECANTS - CHECKOUT WHATSAPP
    Customer data, validation, persistence and premium WA message.
@@ -491,13 +492,10 @@ export function buildWhatsAppMessage(folio = '', preference = null, items = []) 
 }
 
 /* The backend builds the message from the accepted order, canonical prices
-   and requested window. Never compose another order in the browser. */
+   and requested window. Never compose another order in the browser. The URL's
+   recipient is pinned to the public RDECANTS sales channel. */
 export function orderWhatsAppUrl(order) {
-  try {
-    const url = new URL(order?.whatsapp_url);
-    if (url.protocol !== 'https:' || url.hostname !== 'wa.me' || url.username || url.password || url.port || !/^\/\d{8,15}$/.test(url.pathname)) return null;
-    return url.href;
-  } catch { return null; }
+  return normalizeSalesWhatsAppUrl(order?.whatsapp_url);
 }
 
 /* "Horario preferido: 10/09, 4 - 7 pm." — or nothing.
