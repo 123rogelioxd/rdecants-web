@@ -37,6 +37,8 @@
    the customer is charged.
    ============================================================= */
 
+import { getGenderDisplay } from '../utils/gender.js';
+
 /** The presentation a pack is sold in. Three millilitres is the trial size. */
 export const STARTER_PACK_SIZE_ML = 3;
 
@@ -133,6 +135,28 @@ export function normalizePackPricing(raw) {
     savingsPercentage: Number(raw.savings_percentage ?? 0),
     discountType: raw.discount_type ?? 'none',
   };
+}
+
+export const PACK_AUDIENCE_LABELS = { masculine: 'Caballero', feminine: 'Dama', unisex: 'Unisex' };
+
+/**
+ * Pure: who the pack is for, derived from its three products' own gender
+ * (utils/gender.js) — R Supply OS stores no audience on a pack, and a typed
+ * one could disagree with its contents. Unisex items do not change a gendered
+ * pack's side; masculine and feminine together make it Unisex. Any product
+ * with no gender data means no badge: never a guess.
+ */
+export function packAudience(pack) {
+  const keys = (pack?.products ?? []).map(product => getGenderDisplay(product)?.key ?? null);
+  if (!keys.length || keys.includes(null)) return null;
+
+  const set = new Set(keys);
+  const key = set.size === 1 ? keys[0]
+    : !set.has('feminine') ? 'masculine'
+    : !set.has('masculine') ? 'feminine'
+    : 'unisex';
+
+  return { key, label: PACK_AUDIENCE_LABELS[key] };
 }
 
 /** True when a pack is worth showing a "Ahorras" badge for. */

@@ -2636,103 +2636,6 @@ body.pdp-cta-visible .whatsapp-float {
   font-family: var(--font-sans);
 }
 
-/* ── Packs ───────────────────────────────────────────────────── */
-.packs-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
-}
-
-.pack-card {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 32px;
-  transition: var(--transition);
-  position: relative;
-  overflow: hidden;
-}
-
-.pack-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--accent), transparent);
-  opacity: 0;
-  transition: var(--transition);
-}
-
-.pack-card:hover {
-  border-color: var(--border-hl);
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-md);
-}
-
-.pack-card:hover::before { opacity: 1; }
-
-.pack-badge {
-  display: inline-block;
-  font-size: 9px;
-  letter-spacing: 0.2em;
-  color: var(--accent);
-  border: 1px solid rgba(var(--accent-rgb), 0.3);
-  padding: 4px 12px;
-  border-radius: 999px;
-  margin-bottom: 20px;
-}
-
-.pack-emoji {
-  font-size: 40px;
-  margin-bottom: 16px;
-}
-
-.pack-name {
-  font-family: var(--font-display);
-  font-size: clamp(42px, 3vw, 54px);
-  font-weight: 600;
-  line-height: 0.9;
-  margin-bottom: 14px;
-}
-
-.pack-desc {
-  font-size: 15px;
-  color: rgba(25, 24, 22, 0.45);
-  line-height: 1.8;
-  margin-bottom: 6px;
-}
-
-.pack-detail {
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.8;
-  margin-bottom: 24px;
-}
-
-.pack-pricing {
-  display: flex; align-items: baseline; gap: 10px;
-  margin-bottom: 20px;
-}
-
-.pack-price-now {
-  font-family: var(--font-display);
-  font-size: 46px;
-  font-weight: 600;
-  color: var(--accent);
-}
-
-.pack-price-was {
-  font-size: 16px;
-  color: var(--muted);
-  text-decoration: line-through;
-}
-
-.pack-stock {
-  font-size: 10px;
-  color: var(--danger);
-  display: flex; align-items: center; gap: 6px;
-  margin-bottom: 20px;
-}
 
 /* ── Trust grid ──────────────────────────────────────────────── */
 .trust-grid {
@@ -4430,17 +4333,12 @@ body.pdp-cta-visible .whatsapp-float {
 
   .footer-links { gap: 20px; flex-wrap: wrap; }
 
-  .pack-name     { font-size: 40px; }
-  .pack-price-now { font-size: 40px; }
-
-  .card-story,
-  .pack-desc { font-size: 14px; }
+  .card-story { font-size: 14px; }
 }
 
 @media (max-width: 480px) {
   /* Catalog stays 2-up even on the smallest phones — compact cards make the
      collection scannable and comparable instead of one billboard per screen. */
-  .packs-grid    { grid-template-columns: 1fr; }
   .trust-grid    { grid-template-columns: 1fr; }
   .hero-actions  { flex-direction: row; align-items: center; }
 }
@@ -6720,14 +6618,12 @@ textarea:focus-visible {
 
 @media (hover: none) {
   .product-card:hover,
-  .rr-card:hover,
-  .pack-card:hover {
+  .rr-card:hover {
     transform: none;
   }
 
   .product-card:active,
-  .rr-card:active,
-  .pack-card:active {
+  .rr-card:active {
     transform: scale(0.985);
   }
 }
@@ -10020,77 +9916,94 @@ body.rd-searching .helper-band { display: none; }
 .hero-title { font-size: clamp(29px, 7.4vw, 48px); }
 
 /* ── Starter packs ───────────────────────────────────────────────
-   A horizontal, snapping rail on a phone (three cards fit no other way
-   without becoming a wall of scroll) and a plain three-column grid from
-   768px up. The rail bleeds to the viewport edges so a card is never
-   clipped by the container gutter, and it scrolls INSIDE itself — the
-   page never scrolls sideways. */
+   Stacked on a phone, three equal columns from 768px up. There are three
+   packs, and a sideways rail hid two of them behind a swipe; a compact card
+   in normal vertical scroll shows every one. No arrows, no dots, no
+   horizontal overflow — the list is as wide as the container. */
 .packs-rail {
   display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: min(84%, 330px);
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   list-style: none;
-  margin: 0 calc(var(--gutter) * -1);
-  padding: 2px var(--gutter) 8px;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  margin: 0;
+  padding: 0;
 }
-
-.packs-rail::-webkit-scrollbar { display: none; }
 
 .packs-rail > li {
   display: flex;
   min-width: 0;
-  scroll-snap-align: start;
 }
 
 .pack-card {
   display: flex;
   flex-direction: column;
   width: 100%;
-  padding: 16px;
+  min-width: 0;
+  padding: 14px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
 }
 
-/* Mark + name on one line. The circular tint is the only decoration on the
-   card, and it is what makes the three packs distinguishable at a glance
-   while scrolling the rail. */
+/* Mark · who it is for · 3 × 3 ml — the two facts a beginner needs before
+   reading anything else, on one line. */
 .pack-head {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  margin-bottom: 8px;
 }
-
-.pack-head-copy { min-width: 0; }
 
 .pack-icon {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px; height: 40px;
+  width: 26px; height: 26px;
   border-radius: var(--radius-pill);
   background: var(--bronze-tint);
   border: 1px solid var(--bronze-line);
   color: var(--bronze-ink);
 }
 
-.pack-icon svg { width: 20px; height: 20px; }
+.pack-icon svg { width: 14px; height: 14px; }
+
+.pack-audience {
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--bronze-tint);
+  border: 1px solid var(--bronze-line);
+  color: var(--ink);
+  white-space: nowrap;
+}
 
 .pack-kicker {
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--bronze-ink);
+  white-space: nowrap;
+}
+
+/* One restrained badge, end of the head line. Same rule as a placement's
+   label: two badges on a card is already too many. */
+.pack-badge {
+  margin-left: auto;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  background: var(--bg);
+  white-space: nowrap;
 }
 
 .pack-name {
@@ -10099,78 +10012,97 @@ body.rd-searching .helper-band { display: none; }
   font-weight: 600;
   line-height: 1.2;
   color: var(--ink);
-  margin: 2px 0 0;
+  margin: 0 0 3px;
 }
 
 .pack-copy {
-  font-size: 13.5px;
-  line-height: 1.45;
+  font-size: 13px;
+  line-height: 1.4;
   color: var(--ink-soft);
   margin: 0;
 }
 
-/* The three fragrances are named. A pack whose contents are hidden is a
-   blind purchase, and each name opens the real product. */
-/* The three real bottles. Small on purpose: they exist so the card is
-   understood ("this is three actual perfumes") before a single name is
-   read — they are not the product cards themselves, which live one tap
-   away in the modal. Each thumb IS the control, so the names below can be
-   plain text instead of three tiny tap targets. */
-.pack-thumbs {
-  display: flex;
+/* The three real bottles, each over its full name. The whole column is
+   one tap target that opens the product, so neither the photo nor the name
+   has to be a tiny link on its own. Photo boxes are uniform squares and the
+   photo is CONTAINED, never cropped: a new standardized photo drops in
+   without touching this layout. */
+.pack-items {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
-  margin: 10px 0 6px;
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+
+.pack-items > li { min-width: 0; }
+
+.pack-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
 }
 
 .pack-thumb {
-  flex: 0 0 auto;
-  width: 56px;
-  aspect-ratio: 4 / 5;
-  padding: 0;
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 76px;
+  aspect-ratio: 1 / 1;
   overflow: hidden;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-sm);
   background: var(--bg-sunk);
-  cursor: pointer;
   transition: border-color var(--dur) var(--ease-standard);
 }
 
 .pack-thumb img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 
-.pack-thumb:hover { border-color: var(--border-hl); }
+.pack-item:hover .pack-thumb { border-color: var(--border-hl); }
 
-.pack-thumb:focus-visible {
+.pack-item:focus-visible {
   outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
 }
 
 /* The shared monogram fallback is sized for a full card; scale it to the
    thumb so a missing photo reads as a mark, not as a cropped letter. */
 .pack-thumb.img-failed::after { font-size: 22px; }
 
-/* Compact names — one wrapped line, never a column of rows. Full names, no
-   ellipsis: this line is how the customer knows what is in the box. */
-.pack-names {
-  margin: 0 0 4px;
+/* Full names, no ellipsis: this line is how the customer knows what is in
+   the box. Long names wrap between words. */
+.pack-item-name {
   font-size: 11.5px;
-  line-height: 1.45;
-  color: var(--ink-soft);
+  line-height: 1.3;
+  color: var(--ink);
+  overflow-wrap: break-word;
 }
 
-.pack-name-item { white-space: normal; }
-.pack-name-sep { margin: 0 5px; color: var(--ink-faint); }
-
+/* Price on the left, the action on the right — one row on a phone. The
+   price column shrinks (its saving badge wraps under the total) before the
+   button would be squeezed. */
 .pack-foot {
   margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
   padding-top: 12px;
 }
 
@@ -10180,6 +10112,7 @@ body.rd-searching .helper-band { display: none; }
   justify-content: space-between;
   gap: 10px;
   margin: 0;
+  min-width: 0;
 }
 
 .pack-price-label {
@@ -10193,12 +10126,13 @@ body.rd-searching .helper-band { display: none; }
   font-size: 18px;
   font-weight: 600;
   color: var(--ink);
+  white-space: nowrap;
 }
 
 /* ── A pack that really is cheaper than its parts ─────────────────
-   R Supply OS now owns a real pack discount, derived from the canonical
-   3 ml prices and re-derived at checkout, so the card can finally state a
-   saving without inventing one.
+   R Supply OS owns the pack discount, derived from the canonical 3 ml
+   prices and re-derived at checkout, so the card can state a saving
+   without inventing one.
 
    The treatment is deliberately quiet. The commercial message is "this is
    obviously better value", not "this looks suspiciously cheap": the old
@@ -10212,18 +10146,18 @@ body.rd-searching .helper-band { display: none; }
   flex-wrap: wrap;
   justify-content: flex-start;
   align-items: baseline;
-  gap: 8px;
+  gap: 4px 6px;
 }
 
 .pack-price-was {
   font-size: 13px;
   color: var(--ink-faint);
+  white-space: nowrap;
   text-decoration-thickness: 1px;
-  text-underline-offset: 2px;
 }
 
 .pack-price .pack-price-now {
-  font-size: 20px;
+  font-size: 19px;
   font-weight: 600;
   color: var(--ink);
 }
@@ -10231,32 +10165,30 @@ body.rd-searching .helper-band { display: none; }
 .pack-save {
   flex: 0 0 auto;
   font-size: 11px;
-  letter-spacing: 0.04em;
-  padding: 3px 8px;
-  border-radius: 999px;
+  letter-spacing: 0.02em;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
   background: var(--bronze-tint);
   color: var(--bronze-ink);
   border: 1px solid var(--bronze-line);
   white-space: nowrap;
 }
 
-/* One restrained badge, top-right of the card head. Same rule as a
-   placement's label: two badges on a card is already too many. */
-.pack-badge {
-  margin-left: auto;
-  align-self: flex-start;
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 3px 8px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  color: var(--ink-soft);
-  background: var(--bg);
+.pack-add {
+  min-height: 44px;
+  padding: 10px 16px;
+  font-size: 14px;
   white-space: nowrap;
 }
 
-.pack-add { width: 100%; }
+/* The floating WhatsApp button steps aside while it would sit on a pack
+   (ui/starterPacks.js sets the class from the two rectangles). Beats
+   `.whatsapp-float.is-visible` on specificity. */
+body.wa-over-packs .whatsapp-float {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
 
 /* Reserves the card footprint while the catalog loads, so the section
    below never jumps once the packs resolve. */
@@ -10268,16 +10200,28 @@ body.rd-searching .helper-band { display: none; }
   background: var(--surface);
 }
 
-@media (min-width: 768px) {
+/* About two lines of copy on a phone: the first sentence carries the
+   pack; the second is extra and returns on wider cards. */
+@media (max-width: 767px) {
+  .pack-copy-rest { display: none; }
+}
+
+/* Tablet: still stacked — three columns at this width are ~220px and a
+   long name breaks into five lines — but no wider than a comfortable card. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .packs-rail { max-width: 640px; }
+}
+
+@media (min-width: 1024px) {
   .packs-rail {
-    grid-auto-flow: row;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: clamp(12px, 2vw, 20px);
-    margin: 0;
-    padding: 0;
-    overflow: visible;
   }
-  .pack-card { padding: 22px; }
+  .pack-card { padding: 18px; }
+  /* A column is narrower than a phone card, so the action takes its own
+     full-width row, aligned across the three cards. */
+  .pack-foot { grid-template-columns: minmax(0, 1fr); }
+  .pack-add { width: 100%; }
 }
 
 /* ── "Nuevos": a lighter rail than Roger's ───────────────────────

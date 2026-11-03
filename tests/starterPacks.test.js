@@ -36,6 +36,7 @@ import {
   normalizePacks,
   normalizePackPricing,
   hasRealSavings,
+  packAudience,
 } from '../assets/js/recommendations/starterPacks.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -241,4 +242,93 @@ test('adding a pack sends identity, and the price treatment stays restrained', (
   assert.match(ui, /cart\?\.addPack\?\.\(pack\)/, 'one cart entry point, identity only');
   /* No red, no urgency, no shouting — the RDECANTS price treatment. */
   assert.doesNotMatch(ui, /OFERTÓN|¡|!!|urgen|Últimas horas/i);
+});
+
+/* ── F. Who the pack is for ──────────────────────────────────── */
+
+const gendered = (id, gender) => ({ ...product(id, 100), fragrance: { gender } });
+const withGenders = (...genders) => normalizePack(apiPack({
+  items: genders.map((gender, position) => ({
+    position, product: gendered(`G${position}`, gender), variant: { id: `G${position}-3`, ml: 3, price: 100 },
+  })),
+}));
+
+test('the audience badge is derived from the three products, never typed', () => {
+  assert.deepEqual(packAudience(withGenders('masculine', 'masculine', 'masculine')), { key: 'masculine', label: 'Caballero' });
+  assert.deepEqual(packAudience(withGenders('feminine', 'lean_feminine', 'feminine')), { key: 'feminine', label: 'Dama' });
+  assert.deepEqual(packAudience(withGenders('unisex', 'unisex', 'unisex')), { key: 'unisex', label: 'Unisex' });
+});
+
+test('a unisex fragrance does not change a gendered pack; both genders make it unisex', () => {
+  assert.equal(packAudience(withGenders('masculine', 'unisex', 'masculine')).label, 'Caballero');
+  assert.equal(packAudience(withGenders('feminine', 'unisex_feminine', 'unisex')).label, 'Dama');
+  assert.equal(packAudience(withGenders('masculine', 'feminine', 'unisex')).label, 'Unisex');
+});
+
+test('a product with no gender data means no badge rather than a guess', () => {
+  assert.equal(packAudience(withGenders('masculine', null, 'masculine')), null);
+  assert.equal(packAudience(withGenders('masculine', 'sin asignar', 'masculine')), null);
+  assert.equal(packAudience(null), null);
+});
+
+/* ── G. The 2026-11 layout: stacked on a phone, three columns on desktop ── */
+
+test('the packs are a vertical list on a phone — no carousel', () => {
+  const css = read('assets/css/components.css');
+  const block = css.slice(css.indexOf('/* ── Starter packs'), css.indexOf('/* ── "Nuevos"'));
+  const rail = block.slice(block.indexOf('.packs-rail {'), block.indexOf('}', block.indexOf('.packs-rail {')));
+
+  assert.match(rail, /grid-template-columns: minmax\(0, 1fr\)/, 'one column');
+  assert.doesNotMatch(block, /overflow-x|scroll-snap|grid-auto-flow: column/, 'nothing scrolls sideways');
+  assert.doesNotMatch(block, /calc\(var\(--gutter\) \* -1\)/, 'no edge bleed: the list is the container width');
+
+  const ui = readCode('assets/js/ui/starterPacks.js');
+  assert.doesNotMatch(ui, /arrow|dots|indicator|scrollBy|scrollLeft/i, 'no carousel controls');
+  assert.doesNotMatch(ui, /\.sort\(/, 'the order is the backend order');
+});
+
+test('three equal columns from 1024px, stacked and capped on a tablet', () => {
+  const css = read('assets/css/components.css');
+  const desktop = css.slice(css.indexOf('@media (min-width: 1024px) {\n  .packs-rail {'));
+  assert.match(desktop.slice(0, 300), /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(css, /@media \(min-width: 768px\) and \(max-width: 1023px\) \{\n  \.packs-rail \{ max-width: 640px; \}/);
+});
+
+test('the card carries audience, size, name, short copy, three named bottles, price and the same action', () => {
+  const ui = readCode('assets/js/ui/starterPacks.js');
+
+  assert.match(ui, /packAudience\(pack\)/, 'audience from the shared helper');
+  assert.match(ui, /class="pack-kicker">\$\{pack\.count\} × \$\{pack\.itemSize\} ml/);
+  assert.match(ui, /class="pack-item-name"/, 'every bottle is named under its photo');
+  assert.match(ui, /Elegir este pack/, 'CTA copy unchanged');
+  assert.match(ui, /stripPictographs\(pack\.name\)/, 'no emoji in the printed name');
+
+  /* About two lines of copy on a phone: the second sentence hides there. */
+  const css = read('assets/css/components.css');
+  assert.match(css, /@media \(max-width: 767px\) \{\n  \.pack-copy-rest \{ display: none; \}/);
+});
+
+test('the bottle photos are uniform boxes that never crop or stretch', () => {
+  const css = read('assets/css/components.css');
+  const thumb = css.slice(css.indexOf('\n.pack-thumb {'), css.indexOf('}', css.indexOf('\n.pack-thumb {')));
+  const img = css.slice(css.indexOf('\n.pack-thumb img {'), css.indexOf('}', css.indexOf('\n.pack-thumb img {')));
+
+  assert.match(thumb, /aspect-ratio: 1 \/ 1/);
+  assert.match(img, /object-fit: contain/);
+});
+
+test('the floating WhatsApp button steps aside while it would cover a pack', () => {
+  const ui = readCode('assets/js/ui/starterPacks.js');
+  const css = read('assets/css/components.css');
+
+  assert.match(ui, /classList\.toggle\('wa-over-packs', overlaps\)/);
+  assert.match(css, /body\.wa-over-packs \.whatsapp-float \{[^}]*pointer-events: none/s);
+});
+
+test('a pack impression is counted when the card is actually seen', () => {
+  const ui = readCode('assets/js/ui/starterPacks.js');
+
+  assert.match(ui, /new IntersectionObserver/);
+  assert.match(ui, /Tracker\.packViewed\(pack\)/);
+  assert.match(ui, /Tracker\.packSelected\(pack, 'pack_cta'\)/, 'the CTA tap is measured before the add');
 });

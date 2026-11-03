@@ -208,8 +208,9 @@ test('pack thumbnails are the canonical catalog photos, never a second image sou
 
   /* Degradation, in both directions: a product with no photo falls back to
      the shared monogram treatment, and a pack where NOT ONE product has a
-     photo drops the row and keeps the icon-only card. */
-  assert.match(executable, /if \(!pack\.items\.some\(item => String\(item\.product\?\.image \?\? ''\)\.trim\(\)\)\) return ''/);
+     photo drops the photo boxes and keeps the names. */
+  assert.match(executable, /const withPhotos = pack\.items\.some\(item => String\(item\.product\?\.image \?\? ''\)\.trim\(\)\)/);
+  assert.match(executable, /const thumb = withPhotos/);
   assert.match(executable, /img-shell img-failed/);
   assert.match(executable, /--img-initial/);
   assert.match(read('assets/js/ui/images.js'), /'pack-thumb'/,
@@ -253,24 +254,9 @@ test('the FAQ reads as something you can open, on both pages that use it', () =>
 test('the horizontal rails scroll inside themselves', () => {
   const css = read('assets/css/components.css');
 
-  const packs = css.slice(css.indexOf('.packs-rail {'), css.indexOf('.packs-rail::-webkit-scrollbar'));
-  assert.match(packs, /overflow-x: auto/, 'the rail scrolls, not the document');
-  assert.match(packs, /scroll-snap-type: x mandatory/, 'cards snap');
-  assert.match(packs, /overscroll-behavior-x: contain/, 'the gesture does not chain to the page');
-
-  /* The bleed is exactly one gutter on each side and is paid back as
-     padding, so the rail's content box still lines up with the container. */
-  assert.match(packs, /margin: 0 calc\(var\(--gutter\) \* -1\)/);
-  assert.match(packs, /padding: 2px var\(--gutter\) 8px/);
-
+  /* The starter packs left this list in 2026-11: three packs stack
+     vertically on a phone (see starterPacks.test.js, section G). */
   const newest = css.slice(css.indexOf('.rail-grid--scroll {'), css.indexOf('.rail-grid--scroll::-webkit-scrollbar'));
   assert.match(newest, /overflow-x: auto/);
   assert.match(newest, /overscroll-behavior-x: contain/);
-});
-
-test('the packs stop scrolling and become a plain grid on desktop', () => {
-  const css = read('assets/css/components.css');
-  const desktop = css.slice(css.indexOf('@media (min-width: 768px) {\n  .packs-rail {'));
-  assert.match(desktop.slice(0, 400), /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
-  assert.match(desktop.slice(0, 400), /overflow: visible/);
 });

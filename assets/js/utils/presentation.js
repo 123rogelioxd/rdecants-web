@@ -10,6 +10,8 @@
      composeDisplayName(name, concentration)
                                  disambiguate duplicate names
                                  (e.g. two "SAUVAGE" → "SAUVAGE EDT" / "SAUVAGE EDP")
+     stripPictographs(text)      "🌎 PACK TODOTERRENO" → "PACK TODOTERRENO"
+     titleCaseName(text)         "BORN IN ROMA EDT" → "Born in Roma EDT"
 
    Backend data errors (typos, wrong house fields) are OUT of scope
    here — those are corrected at the source; this layer only fixes
@@ -43,4 +45,34 @@ export function composeDisplayName(name, concentration) {
   const isAllCaps = base === base.toUpperCase() && /[A-Za-zÀ-ÿ]/.test(base);
   const concOut = isAllCaps ? conc.toUpperCase() : conc;
   return `${base} ${concOut}`;
+}
+
+/* Emoji and their joiners / variation selectors / keycap marks. Operators
+   type them into back-office copy; the storefront's voice uses none. */
+const PICTOGRAPHS = /[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}\u{1F3FB}-\u{1F3FF}︎️‍⃣]/gu;
+
+export function stripPictographs(text) {
+  return String(text ?? '').replace(PICTOGRAPHS, '').replace(/\s{2,}/g, ' ').trim();
+}
+
+/* Shorthand that must stay upper-case when a shouting feed name is softened. */
+const KEEP_UPPER = new Set(['EDP', 'EDT', 'EDC', 'VIP', 'YSL', 'CK', 'DKNY', 'D&G', 'JPG', 'CH', 'TF', 'NYC', 'XS', 'OS', 'MYSLF']);
+const KEEP_LOWER = new Set(['in', 'di', 'de', 'del', 'da', 'du', 'des', 'la', 'of', 'et']);
+
+/* Title-case an ALL-CAPS feed name. Mixed-case input is returned unchanged:
+   once someone has cased a name by hand, that casing is the decision. Words
+   with digits ("9PM", "212") and known shorthand keep their capitals. */
+export function titleCaseName(text) {
+  const str = String(text ?? '').trim();
+  if (!str || str !== str.toUpperCase() || !/[A-ZÀ-Ý]/.test(str)) return str;
+
+  return str.split(/\s+/).map((word, index) => {
+    if (/\d/.test(word)) return word;
+    if (KEEP_UPPER.has(word.replace(/[^A-ZÀ-Ý&]/g, ''))) return word;
+    const lower = word.toLowerCase();
+    if (index > 0 && KEEP_LOWER.has(lower)) return lower;
+    const cased = lower.replace(/(^|['’])(\p{L})/gu, (_, lead, letter) => lead + letter.toUpperCase());
+    /* Elided particle inside a name stays lower: "L'Eau d'Issey". */
+    return index > 0 ? cased.replace(/^([DL])(['’])/, (_, p, apos) => p.toLowerCase() + apos) : cased;
+  }).join(' ');
 }

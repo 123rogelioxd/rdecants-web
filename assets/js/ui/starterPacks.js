@@ -21,15 +21,23 @@
        normal total, a prominent pack total, and one small taupe badge. The
        message is "this is obviously better value", not "this looks
        suspiciously cheap", and RDECANTS does not do red discount graphics.
+
+   Layout (2026-11): the cards stack vertically on a phone instead of
+   sitting in a sideways rail. With three packs a carousel hid two of them
+   behind a swipe most visitors never make; a compact stacked card costs
+   less scroll than it looks and every pack is seen.
    ============================================================= */
 
 import { CatalogProvider }   from '../providers/catalog.js';
 import { hasRealSavings,
+         packAudience,
          STARTER_PACK_SIZE_ML } from '../recommendations/starterPacks.js';
 import { openProductModal }  from './modal.js';
 import { primeImageStates }  from './images.js';
 import { Tracker }           from '../tracking/tracker.js';
 import { formatPrice }       from '../utils/prices.js';
+import { stripPictographs,
+         titleCaseName }     from '../utils/presentation.js';
 
 let _packs = [];
 
@@ -59,42 +67,72 @@ export async function renderStarterPacks(containerId = 'packs-rail') {
      product surface (ui/images.js). */
   primeImageStates(rail);
   _bind(rail);
+  _trackImpressions(rail);
+  _keepWhatsAppOffPacks(rail);
+}
 
-  _packs.forEach(pack => Tracker.packViewed(pack));
+/* Back-office copy can carry emoji and shouting capitals ("🌎 PACK
+   TODOTERRENO"); the card prints the words only. Presentation, not data —
+   the record in R Supply OS is untouched. */
+function _packName(pack) {
+  return titleCaseName(stripPictographs(pack.name)) || 'Pack';
+}
+
+/* The first sentence always shows; the rest is hidden on a phone (CSS) so
+   the description stays at about two lines. */
+function _packCopy(pack) {
+  const copy = stripPictographs(pack.copy);
+  if (!copy) return '';
+
+  const [, lead = copy, rest = ''] = copy.match(/^(.+?[.!?])\s+(.+)$/s) ?? [];
+  return `
+    <p class="pack-copy">${_escape(lead)}${rest
+      ? `<span class="pack-copy-rest"> ${_escape(rest)}</span>`
+      : ''}</p>`;
 }
 
 /**
- * The three fragrances, as the CANONICAL catalog photograph of each one.
+ * The three fragrances: the CANONICAL catalog photograph of each one over
+ * its name, all three one tap from the product modal.
  *
  * `product.image` is the same field the catalog card, the modal and the PDP
  * read — this surface stores no image of its own and has no second source of
- * image truth. The customer sees the actual bottles that are in the box, which
- * is the whole point of showing them, and now they genuinely are: the three
- * products are the three Roger configured, not three the page picked.
+ * image truth, so replacing a photo in the catalog replaces it here with no
+ * change to the card.
  *
  * Missing or broken photos degrade the way every other product surface does:
  * `img-shell img-failed` prints the house monogram. If NOT ONE of the three
- * has a photo, the row is dropped and the card falls back to the icon alone
- * rather than showing three empty boxes.
+ * has a photo, the photo boxes are dropped and the names stand alone rather
+ * than three empty boxes.
  */
-function _packThumbs(pack) {
-  if (!pack.items.some(item => String(item.product?.image ?? '').trim())) return '';
+function _packItems(pack) {
+  const withPhotos = pack.items.some(item => String(item.product?.image ?? '').trim());
 
-  const thumbs = pack.items.map(item => {
+  const items = pack.items.map(item => {
     const product = item.product;
     const image = String(product?.image ?? '').trim();
+    const name = titleCaseName(product?.name ?? '');
+
+    const thumb = withPhotos
+      ? `<span class="pack-thumb${image ? '' : ' img-shell img-failed'}"
+          style="--img-initial:${_brandInitialCss(product)}">
+          ${image
+            ? `<img src="${_escape(image)}" alt="" width="120" height="150" loading="lazy" decoding="async">`
+            : ''}
+        </span>`
+      : '';
+
     return `
-      <button type="button" class="pack-thumb${image ? '' : ' img-shell img-failed'}"
-        style="--img-initial:${_brandInitialCss(product)}"
-        data-product-id="${_escape(product?.id)}"
-        aria-label="Ver ${_escape(product?.house ?? '')} ${_escape(product?.name ?? '')}${item.label ? ` — ${_escape(item.label)}` : ''}">
-        ${image
-          ? `<img src="${_escape(image)}" alt="" width="120" height="150" loading="lazy" decoding="async">`
-          : ''}
-      </button>`;
+      <li>
+        <button type="button" class="pack-item" data-product-id="${_escape(product?.id)}"
+          aria-label="Ver ${_escape(product?.house ?? '')} ${_escape(name)}${item.label ? ` — ${_escape(item.label)}` : ''}">
+          ${thumb}
+          <span class="pack-item-name">${_escape(name)}</span>
+        </button>
+      </li>`;
   }).join('');
 
-  return `<div class="pack-thumbs">${thumbs}</div>`;
+  return `<ul class="pack-items">${items}</ul>`;
 }
 
 /* The price block. Two shapes, because a pack with no configured discount is
@@ -126,36 +164,32 @@ function _packPrice(pack) {
     </p>`;
 }
 
-/* Card face: mark + name · 3 × 3 ml · one sentence · the three real bottles ·
-   their names · the real price · one action. Each fragrance's ROLE is carried
-   by its own label when Roger wrote one, in the same order the thumbnails and
-   names print. */
+/* Card face: mark · who it is for · 3 × 3 ml, then the name, one or two
+   lines of copy, the three real bottles with their names, the real price
+   and one action. */
 function _packCard(pack) {
-  const names = pack.items
-    .map(item => `<span class="pack-name-item">${_escape(item.product?.name ?? '')}</span>`)
-    .join('<span class="pack-name-sep" aria-hidden="true">·</span>');
+  const name = _packName(pack);
+  const audience = packAudience(pack);
 
   return `
     <li>
       <article class="pack-card" data-pack-id="${_escape(pack.id)}">
         <div class="pack-head">
           ${_packIcon(pack)}
-          <div class="pack-head-copy">
-            <p class="pack-kicker">${pack.count} × ${pack.itemSize} ml</p>
-            <h3 class="pack-name">${_escape(pack.name)}</h3>
-          </div>
-          ${pack.badge ? `<span class="pack-badge">${_escape(pack.badge)}</span>` : ''}
+          ${audience ? `<span class="pack-audience">${audience.label}</span>` : ''}
+          <span class="pack-kicker">${pack.count} × ${pack.itemSize} ml</span>
+          ${pack.badge ? `<span class="pack-badge">${_escape(stripPictographs(pack.badge))}</span>` : ''}
         </div>
 
-        ${pack.copy ? `<p class="pack-copy">${_escape(pack.copy)}</p>` : ''}
+        <h3 class="pack-name">${_escape(name)}</h3>
+        ${_packCopy(pack)}
 
-        ${_packThumbs(pack)}
-        <p class="pack-names">${names}</p>
+        ${_packItems(pack)}
 
         <div class="pack-foot">
           ${_packPrice(pack)}
           <button type="button" class="btn-primary pack-add" data-pack-id="${_escape(pack.id)}"
-            aria-label="Agregar ${_escape(pack.name)} al carrito">
+            aria-label="Agregar ${_escape(name)} al carrito">
             Elegir este pack
           </button>
         </div>
@@ -199,11 +233,14 @@ function _bind(rail) {
     const add = event.target.closest('.pack-add');
     if (add) {
       const pack = _byId(add.dataset.packId);
-      if (pack) await _addPack(pack, add);
+      if (pack) {
+        Tracker.packSelected(pack, 'pack_cta');
+        await _addPack(pack, add);
+      }
       return;
     }
 
-    const item = event.target.closest('.pack-thumb');
+    const item = event.target.closest('.pack-item');
     if (item) {
       const card = item.closest('.pack-card');
       const pack = _byId(card?.dataset.packId);
@@ -220,6 +257,48 @@ function _bind(rail) {
     const pack = _byId(card?.dataset.packId);
     if (pack) Tracker.packSelected(pack, 'pack_card');
   });
+}
+
+/* pack_viewed is an impression: once per card, when half of it has actually
+   been on screen. Stacked vertically, the third pack is often below the
+   fold, so "rendered" would overstate it. */
+function _trackImpressions(rail) {
+  if (!('IntersectionObserver' in window)) {
+    _packs.forEach(pack => Tracker.packViewed(pack));
+    return;
+  }
+
+  const observer = new IntersectionObserver(entries => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      observer.unobserve(entry.target);
+      const pack = _byId(entry.target.dataset.packId);
+      if (pack) Tracker.packViewed(pack);
+    }
+  }, { threshold: 0.5 });
+
+  rail.querySelectorAll('.pack-card').forEach(card => observer.observe(card));
+}
+
+/* The floating WhatsApp button sits on the right edge, exactly where each
+   card's names, price and "Elegir este pack" pass under it. It steps aside
+   while it overlaps the packs and comes back as soon as it does not; same
+   pattern as the PDP sticky bar and the open cart (body class + CSS). */
+function _keepWhatsAppOffPacks(rail) {
+  const float = document.querySelector('.whatsapp-float');
+  if (!float) return;
+
+  const update = () => {
+    const fab = float.getBoundingClientRect();
+    const packs = rail.getBoundingClientRect();
+    const overlaps = fab.bottom > packs.top && fab.top < packs.bottom
+      && fab.right > packs.left && fab.left < packs.right;
+    document.body.classList.toggle('wa-over-packs', overlaps);
+  };
+
+  window.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update, { passive: true });
+  update();
 }
 
 async function _addPack(pack, button) {
