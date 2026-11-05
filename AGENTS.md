@@ -45,6 +45,11 @@ presentaciones y checkout) y la guía del backend citada arriba.
 - `VERSION`, `BUILD_VERSION` en `assets/js/api/config.js` y los `?v=` de cada
   HTML deben coincidir (`tests/cacheFreshness.test.js`).
 - Pruebas: `node --test` (rápido). Corre la suite antes de cada commit que cambie código.
+- Backend para pruebas integradas: la única QA del proyecto, «QA Local Principal»
+  (`http://127.0.0.1:8150`, datos ficticios), descrita en el backend en
+  `RSNEXUS/testing/QA-LOCAL-PRINCIPAL.md`. No levantes otra API de prueba. Para
+  usarla desde el navegador hace falta antes un ajuste de CORS en el backend (ver
+  ese documento); mientras tanto usa `node scripts/preview.mjs`.
 - Desplegar = merge a `production` (GitHub Actions publica por FTPS). Sólo con
   autorización de Roger. Una captura local no es la verificación del navegador
   real del dueño: dilo así.
