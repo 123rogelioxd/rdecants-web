@@ -22,9 +22,9 @@
 .scent-notes--illustrated .scent-note { max-width: none; font-size: 11px; line-height: 1.3; gap: 6px; color: var(--ink); overflow-wrap: break-word; hyphens: auto; }
 /* A label may use the 6px column gap (longest current word: 63px in a 60px cell). */
 .scent-notes--illustrated .scent-note > span { max-width: calc(100% + 6px); }
-/* Notes without their own drawing keep their line icon, drawn at 40px inside the
- same 60px box so its stroke weighs like the illustrations and rows stay aligned. */
-.scent-notes--illustrated .scent-note-icon.scent-note-icon--line { width: 40px; height: 40px; margin: 10px 0; flex-basis: auto; }
+/* Notes without their own drawing keep their line icon, on a round 60px tile: the
+ same footprint as a drawing, so a row that mixes both stays even. */
+.scent-notes--illustrated .scent-note-icon.scent-note-icon--line { width: 60px; height: 60px; padding: 15px; box-sizing: border-box; border-radius: 50%; background: #E9E1D3; color: var(--bronze-deep); flex-basis: auto; }
 .scent-notes--illustrated .scent-note-icon { width: min(100%, 60px); height: 60px; color: var(--bronze-deep); }
 /* Fewer than five notes: the approved cell width, centred, never stretched. */
 .scent-notes--illustrated .scent-notes-list:is([data-count="1"],[data-count="2"],[data-count="3"],[data-count="4"]) {

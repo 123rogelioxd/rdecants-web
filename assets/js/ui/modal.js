@@ -147,15 +147,16 @@ function _render() {
       const variant = variants.find(v => v.size === ml);
       if (!variant) return '';
       const disabled = variant.soldOut || variant.availability <= 0 || !_validVariantId(variant.variant_id);
+      const recommended = !disabled && _modalSizeLabel(ml) === 'Recomendado';
       return `
       <button
-        class="pdm-size-btn ${ml === _selectedSize ? 'pdm-size-btn--active' : ''} ${disabled ? 'pdm-size-btn--disabled' : ''}"
+        class="pdm-size-btn ${ml === _selectedSize ? 'pdm-size-btn--active' : ''} ${disabled ? 'pdm-size-btn--disabled' : ''} ${recommended ? 'pdm-size-btn--recommended' : ''}"
         data-size="${ml}"
         ${disabled ? 'disabled aria-disabled="true"' : ''}
         aria-pressed="${ml === _selectedSize}"
         aria-label="${ml}ml - $${variant.price} MXN${disabled ? ' agotado' : ''}"
       >
-        <span class="pdm-size-ml">${ml}ml</span>
+        <span class="pdm-size-ml">${ml} ml</span>
         <span class="pdm-size-price">$${variant.price}</span>
         <span class="pdm-size-label">${disabled ? 'Agotado' : _modalSizeLabel(ml)}</span>
       </button>
@@ -196,7 +197,7 @@ function _render() {
       <div class="pdm-info-scroll">
 
         <p class="pdm-house">${p.house ?? ''}</p>
-        <div class="pdm-title-row">
+        <div class="pdm-title-row${String(p.name ?? '').length > 24 ? ' pdm-title-row--long' : ''}">
           <h2 class="pdm-name" id="pdm-name">${p.name}</h2>
           <div class="pdm-meta-chips">
             ${genderHtml}
@@ -205,7 +206,7 @@ function _render() {
         </div>
         ${guidanceHtml}
 
-        ${!illustrated && vibe ? `<p class="pdm-vibe">${esc(vibe)}</p>` : ''}
+        ${vibe ? `<p class="pdm-vibe">${esc(vibe)}</p>` : ''}
         ${buildScentNotesHtml(p)}
 
         ${description && description !== vibe ? `<p class="pdm-story">${esc(description)}</p>` : ''}
@@ -225,7 +226,7 @@ function _render() {
         <div class="pdm-buybar-bottom">
           <div class="pdm-price-row">
             <span class="pdm-price" id="pdm-price">${formatPrice(price, 'Consultar precio')}</span>
-            <span class="pdm-price-unit">${_selectedSize ? `${_selectedSize}ml` : 'WhatsApp'}</span>
+            <span class="pdm-price-unit">${_selectedSize ? `${_selectedSize} ml` : 'WhatsApp'}</span>
           </div>
 
           <div class="pdm-actions">
@@ -318,7 +319,7 @@ function _updateSizeUI() {
   const priceEl = _modal.querySelector('#pdm-price');
   const unitEl  = _modal.querySelector('.pdm-price-unit');
   if (priceEl) priceEl.textContent = formatPrice(price, 'Consultar precio');
-  if (unitEl)  unitEl.textContent  = _selectedSize ? `${_selectedSize}ml` : 'WhatsApp';
+  if (unitEl)  unitEl.textContent  = _selectedSize ? `${_selectedSize} ml` : 'WhatsApp';
 
   /* Update button label */
   const addBtn = _modal.querySelector('#pdm-btn-add');

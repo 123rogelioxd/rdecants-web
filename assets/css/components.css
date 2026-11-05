@@ -11177,3 +11177,292 @@ body.rd-searching .quick-gender { display: none; }
 
   .bqv-img-wrap { aspect-ratio: 16 / 9; }
 }
+
+/* ── Quick view: quote under the chips ────────────────────────────────────
+   The perfume's first-person line, set as a quiet quote with a rose rule, as in
+   the approved Donna Extradose composition. */
+.pdm-vibe {
+  border-left: 2px solid #C04B73;
+  font-style: italic;
+  padding-left: 12px;
+}
+
+/* ── Quick view on phones: one sheet, one scroll (2026-11-05) ─────────────
+   Before: the photo and the whole buy bar (sizes, price, button, links, trust)
+   stayed fixed and only the middle scrolled, so the notes sat in a small window
+   and long names were clamped. Now the sheet itself is the only scroll area:
+   the photo is compact and scrolls away, the close button stays reachable, and
+   the purchase block follows the notes in the same flow. No fixed buy bar: on a
+   phone it would cover the size cards the customer has to choose first, and the
+   purchase block is one short scroll below the notes anyway. */
+@media (max-width: 768px) {
+  .pdm-modal {
+    display: block;
+    max-height: calc(100dvh - max(16px, env(safe-area-inset-top)));
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0;
+  }
+
+  .pdm-close {
+    position: sticky;
+    top: 10px;
+    margin: 10px 10px -42px auto;
+    background: rgba(255, 254, 250, 0.92);
+    color: var(--ink);
+  }
+
+  .pdm-img-panel {
+    flex: none;
+    height: 176px;
+    min-height: 0;
+    max-height: none;
+  }
+
+  .pdm-img-wrap {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    padding: 12px 56px;
+  }
+
+  .pdm-img {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    object-fit: contain;
+  }
+
+  .pdm-info {
+    display: block;
+    overflow: visible;
+  }
+
+  .pdm-info-scroll {
+    overflow: visible;
+    padding: 16px 18px 2px;
+  }
+
+  /* The whole name, on as many lines as it needs. */
+  .pdm-name {
+    display: block;
+    -webkit-line-clamp: none;
+    overflow: visible;
+    overflow-wrap: break-word;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.06;
+    margin-bottom: 10px;
+  }
+
+  .pdm-vibe {
+    font-size: 15px;
+    line-height: 1.45;
+    margin: 12px 0 4px;
+  }
+
+  /* A long name (over 24 characters) takes the full width; gender and
+     concentration move under it instead of squeezing it into five lines. */
+  .pdm-title-row--long {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .pdm-title-row--long .pdm-meta-chips {
+    justify-content: flex-start;
+    margin-bottom: 10px;
+    max-width: none;
+  }
+
+  /* Fallback paragraph (only when there is no short phrase): shown whole. */
+  .pdm-story {
+    display: block;
+    -webkit-line-clamp: none;
+    overflow: visible;
+  }
+
+  .pdm-buybar {
+    background: none;
+    border-top: 0;
+    box-shadow: none;
+    padding: 6px 18px calc(14px + var(--safe-b, 0px));
+    position: static;
+  }
+
+  .pdm-sizes-label {
+    font-size: 10px;
+    margin-bottom: 8px;
+  }
+
+  .pdm-sizes {
+    gap: 8px;
+    margin-bottom: 14px;
+    overflow: visible;
+    padding-top: 10px;
+  }
+
+  .pdm-size-btn {
+    border-radius: 12px;
+    padding: 12px 4px 10px;
+    position: relative;
+  }
+
+  .pdm-size-ml {
+    font-size: 17px;
+    font-weight: 700;
+  }
+
+  .pdm-size-price {
+    font-size: 13px;
+    margin-top: 2px;
+  }
+
+  .pdm-size-label {
+    font-size: 10px;
+    min-height: 0;
+  }
+
+  .pdm-size-btn--recommended {
+    padding-top: 16px;
+  }
+
+  .pdm-size-btn.pdm-size-btn--recommended .pdm-size-label {
+    -webkit-line-clamp: none;
+    overflow: visible;
+    background: var(--bronze-tint);
+    border: 1px solid var(--bronze-line);
+    border-radius: 999px;
+    color: var(--ink) !important; /* scent-experience.css whitens every span of the active card */
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    left: 50%;
+    line-height: 1;
+    margin: 0;
+    padding: 4px 8px;
+    position: absolute;
+    top: -10px;
+    transform: translateX(-50%);
+    white-space: nowrap;
+  }
+
+  .pdm-size-btn--recommended .pdm-size-label::before {
+    color: var(--bronze-ink);
+    content: '\2605\00a0';
+  }
+
+  .pdm-price-row {
+    align-items: center;
+    gap: 12px;
+  }
+
+  .pdm-price {
+    font-size: 27px;
+    font-weight: 700;
+  }
+
+  .pdm-price-unit {
+    border-left: 1px solid var(--line);
+    color: var(--ink-soft);
+    font-size: 14px;
+    line-height: 1.4;
+    padding-left: 12px;
+  }
+
+  .pdm-btn-add {
+    align-items: center;
+    border-radius: 12px;
+    display: inline-flex;
+    font-size: 16px;
+    gap: 10px;
+    min-height: 52px;
+  }
+
+  .pdm-btn-add:not(:disabled):not(.is-loading)::after {
+    background: currentColor;
+    content: '';
+    flex: 0 0 20px;
+    height: 20px;
+    order: -1;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4h2.5l2.2 10.2a1.5 1.5 0 0 0 1.5 1.2h8.2a1.5 1.5 0 0 0 1.5-1.1L21 8H6.3'/%3E%3Ccircle cx='10' cy='19.5' r='1.3'/%3E%3Ccircle cx='17' cy='19.5' r='1.3'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4h2.5l2.2 10.2a1.5 1.5 0 0 0 1.5 1.2h8.2a1.5 1.5 0 0 0 1.5-1.1L21 8H6.3'/%3E%3Ccircle cx='10' cy='19.5' r='1.3'/%3E%3Ccircle cx='17' cy='19.5' r='1.3'/%3E%3C/svg%3E") center / contain no-repeat;
+    width: 20px;
+  }
+
+  .pdm-secondary-actions {
+    gap: 0;
+    justify-content: center;
+    margin-top: 4px;
+  }
+
+  .pdm-details-link,
+  .pdm-btn-wa {
+    flex: 1 1 0;
+    font-size: 13px;
+    font-weight: 600;
+    gap: 8px;
+    justify-content: center;
+    letter-spacing: 0;
+    line-height: 1.2;
+    min-height: 44px;
+    min-width: 0;
+    text-align: left;
+    text-transform: none;
+    white-space: normal;
+  }
+
+  .pdm-details-link {
+    color: var(--ink);
+  }
+
+  .pdm-btn-wa {
+    border-left: 1px solid var(--line);
+    color: var(--wa-strong, #128c4a);
+  }
+
+  .pdm-details-link::before,
+  .pdm-btn-wa::before {
+    background: currentColor;
+    border-radius: 0;
+    content: '';
+    flex: 0 0 20px;
+    height: 20px;
+    width: 20px;
+  }
+
+  .pdm-details-link::before {
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E") center / contain no-repeat;
+  }
+
+  .pdm-btn-wa::before {
+    background: var(--wa);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-width='1.8' stroke-linejoin='round' d='M4.4 19.6l1.2-3.7a8 8 0 1 1 2.9 2.7Z'/%3E%3Cpath fill='black' d='M9.3 8.3c.3-.4.8-.4 1 .1l.6 1.4c.1.3 0 .6-.2.8l-.5.5a6 6 0 0 0 2.7 2.7l.5-.5c.2-.2.5-.3.8-.2l1.4.6c.5.2.5.7.1 1-.8.7-1.9.9-2.8.4a9 9 0 0 1-3.9-3.9c-.5-.9-.3-2 .3-2.9Z'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-width='1.8' stroke-linejoin='round' d='M4.4 19.6l1.2-3.7a8 8 0 1 1 2.9 2.7Z'/%3E%3Cpath fill='black' d='M9.3 8.3c.3-.4.8-.4 1 .1l.6 1.4c.1.3 0 .6-.2.8l-.5.5a6 6 0 0 0 2.7 2.7l.5-.5c.2-.2.5-.3.8-.2l1.4.6c.5.2.5.7.1 1-.8.7-1.9.9-2.8.4a9 9 0 0 1-3.9-3.9c-.5-.9-.3-2 .3-2.9Z'/%3E%3C/svg%3E") center / contain no-repeat;
+  }
+
+  .pdm-trust {
+    align-items: center;
+    background: var(--bg-sunk);
+    border-radius: 10px;
+    display: flex;
+    font-size: 11px;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 8px;
+    padding: 10px 12px;
+    text-align: left;
+  }
+
+  .pdm-trust::before {
+    background: var(--ink-soft);
+    content: '';
+    flex: 0 0 16px;
+    height: 16px;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3 5 6v5.5c0 4.2 3 7.6 7 9.5 4-1.9 7-5.3 7-9.5V6Z'/%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3 5 6v5.5c0 4.2 3 7.6 7 9.5 4-1.9 7-5.3 7-9.5V6Z'/%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E") center / contain no-repeat;
+    width: 16px;
+  }
+}

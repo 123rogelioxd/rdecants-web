@@ -28,14 +28,14 @@ test('Donna renders five distinct ingredient drawings and its summary once',()=>
 
 test('every perfume gets the illustrated block: drawings where they exist, its current icon otherwise, neutral last',()=>{
   const other={slug:'otro-perfume',desc:'Descripción larga.',scent_profile:{short_description:'Cítrico y fresco.',context_chips:['Diario','Fresco'],main_notes:[
-    {id:'bergamot',label:'Bergamota',family:'citrus'},{id:'lavender',label:'Lavanda',family:'aromatic'},
+    {id:'bergamot',label:'Bergamota',family:'citrus'},{id:'iris',label:'Iris',family:'floral'},
     {id:'albaricoque',label:'albaricoque',family:'fruit',icon:'fruit',known:true},{label:'Nota futura',family:'scent'},
   ]}};
   assert.equal(usesIllustratedScent(other),true);
   const html=buildScentNotesHtml(other);
   assert.ok(html.includes('scent-notes--illustrated'));
   assert.ok(html.includes('#ingredient-bergamot'));
-  assert.ok(html.includes('#lavender'));
+  assert.ok(html.includes('#iris"'));
   assert.ok(html.includes('#apple'));
   assert.ok(html.includes('#scent"'));
   assert.ok(html.includes('>Nota futura<'));
@@ -82,4 +82,42 @@ test('short copy is bounded, full profile retains the detailed description, and 
   assert.ok(buildProductPageHtml(p).includes(p.desc));
   assert.equal(getSensoryDescription({...p,scent_profile:{...p.scent_profile,short_description:p.desc}}),'');
   assert.equal(buildProductModalGuidanceHtml({...p,scent_profile:{...p.scent_profile,context_chips:[]}}),'');
+});
+
+test('Zara Bogos Vibrant Leather Coco Suede: every note gets an ingredient drawing, names untouched', () => {
+  const zara = {slug:'bogos-vibrant-leather-coco-suede-zara',name:'BOGOS VIBRANT LEATHER COCO SUEDE EDP',scent_profile:{short_description:'Frutal, amaderado y cremoso.',context_chips:['Diario','Frutal','Oficina'],main_notes:[
+    {id:'pineapple',label:'Piña',family:'fruit'},{id:'salt',label:'Sal',family:'mineral'},
+    {id:'sandalwood',label:'Sándalo',family:'woods'},{id:null,label:'ante',family:'scent'},
+  ]}};
+  const html = buildScentNotesHtml(zara);
+  for (const id of ['pineapple','salt','sandalwood','leather']) assert.ok(html.includes('#ingredient-'+id), id);
+  assert.equal((html.match(/scent-note-icon--line/g)||[]).length, 0, 'no monochrome icon left in this perfume');
+  assert.ok(html.includes('>Ante<'), 'the imported word stays; only its drawing is resolved');
+});
+
+test('imported notes reach their drawing through ids and existing aliases, one drawing per ingredient', () => {
+  const cases = {'Cassis':'blackcurrant','jengibre':'ginger','geranio Bourbon':'geranium','peonía roja':'peony','maracuyá':'passion_fruit','Toronja':'grapefruit','pimienta negra':'pepper','Notas marinas':'marine','gamuza':'leather','cedro de Virginia':'cedar'};
+  for (const [label, id] of Object.entries(cases)) {
+    const n = normalizeScentNote({label});
+    assert.equal(n.illustration, 'ingredient-'+id, label);
+    assert.equal(n.label, label, 'the canonical label is never rewritten');
+  }
+  // Not the same material: grey amber and oud keep their own (line) icons instead of a misleading drawing.
+  for (const label of ['Ámbar gris','Oud']) assert.ok(!normalizeScentNote({label}).illustration.startsWith('ingredient-'), label);
+  // Synonyms share an entry, so no ingredient is drawn twice.
+  const drawings = Object.values(SCENT_VOCABULARY).map(n => n.illustration).filter(Boolean);
+  assert.equal(new Set(drawings).size, drawings.length);
+});
+
+test('quick view: the whole name, the quote and the recommended badge are in the markup', () => {
+  const source = readFileSync(new URL('../assets/js/ui/modal.js', import.meta.url), 'utf8');
+  assert.match(source, /pdm-title-row--long/);
+  assert.match(source, /\$\{vibe \? `<p class="pdm-vibe">/);
+  assert.match(source, /pdm-size-btn--recommended/);
+  const css = readFileSync(new URL('../assets/css/components.css', import.meta.url), 'utf8');
+  const phone = css.slice(css.indexOf('Quick view on phones: one sheet, one scroll'));
+  assert.match(phone, /\.pdm-modal \{[^}]*overflow-y: auto/, 'the sheet itself is the only scroll area');
+  assert.match(phone, /\.pdm-info-scroll \{[^}]*overflow: visible/, 'no nested scroll inside it');
+  assert.match(phone, /\.pdm-name \{[^}]*-webkit-line-clamp: none/, 'long names are not clamped');
+  assert.match(phone, /\.pdm-buybar \{[^}]*position: static/, 'the buy block is not pinned');
 });
