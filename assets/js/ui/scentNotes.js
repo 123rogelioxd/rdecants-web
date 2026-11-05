@@ -14,6 +14,8 @@ export function usesIllustratedScent(product) {
 const SPRITE_URL = new URL(`../../img/scent-icons.svg?v=${BUILD_VERSION}`, import.meta.url).href;
 const text = value => typeof value === 'string' ? value.trim() : '';
 const list = value => Array.isArray(value) ? value : [];
+// Display only: family-matched notes arrive with their authored lowercase label.
+const upperFirst = value => value ? value.charAt(0).toLocaleUpperCase('es') + value.slice(1) : value;
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 export function normalizeScentNote(raw) {
@@ -63,8 +65,8 @@ export function buildScentNotesHtml(product, { heading = '¿A qué huele?', clas
     <h3 class="scent-notes-title">${escape(heading)}</h3>
     ${description ? `<p class="scent-notes-summary">${escape(description)}</p>` : ''}
     ${notes.length ? `<ul class="scent-notes-list" data-count="${notes.length}">${notes.map(note => `<li class="scent-note" data-scent-note="${escape(note.id ?? 'unknown')}">
-      <svg class="scent-note-icon" viewBox="${illustrated && note.illustration.startsWith('ingredient-') ? '0 0 96 96' : '0 0 32 32'}" width="${illustrated ? 56 : 32}" height="${illustrated ? 56 : 32}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="${escape(SPRITE_URL)}#${illustrated ? note.illustration : note.icon}"></use></svg>
-      <span>${escape(note.label)}</span></li>`).join('')}</ul>
+      <svg class="scent-note-icon${illustrated && !note.illustration.startsWith('ingredient-') ? ' scent-note-icon--line' : ''}" viewBox="${illustrated && note.illustration.startsWith('ingredient-') ? '0 0 96 96' : '0 0 32 32'}" width="${illustrated ? 56 : 32}" height="${illustrated ? 56 : 32}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="${escape(SPRITE_URL)}#${illustrated ? note.illustration : note.icon}"></use></svg>
+      <span>${escape(illustrated ? upperFirst(note.label) : note.label)}</span></li>`).join('')}</ul>
     ` : ''}
   </section>`;
 }

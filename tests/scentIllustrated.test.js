@@ -39,6 +39,8 @@ test('every perfume gets the illustrated block: drawings where they exist, its c
   assert.ok(html.includes('#apple'));
   assert.ok(html.includes('#scent"'));
   assert.ok(html.includes('>Nota futura<'));
+  assert.ok(html.includes('>Albaricoque<'),'family-matched lowercase labels are capitalised for display');
+  assert.equal((html.match(/scent-note-icon--line/g)||[]).length,3,'line icons are marked, drawings are not');
   assert.match(html,/data-count="4"/);
   assert.match(buildContextChipHtml('Diario',{withIcon:true}),/#context-calendar/);
 });
