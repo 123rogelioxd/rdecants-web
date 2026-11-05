@@ -97,6 +97,12 @@ Visual direction: deep charcoal/black backgrounds, warm ivory text, **muted** go
 ### Demo-fallback gate (`providers/catalog.js`)
 - Read `DECANTS_HIDE_DEMO_PRODUCTS` meta **and** hostname. In production (or when the flag is `true`), a catalog API failure resolves to `[]` (clean empty state) instead of `PRODUCTS`. On `localhost`/`127.0.0.1` keep the local fallback for development.
 
+### Scent block — «¿A qué huele?» (approved 2026-11-05, Donna Extradose pilot, whole catalogue)
+- Modal, bottle quick view and product page: context chips with icons; a bordered `--bg-sunk` block with one sensory phrase (≤ 70 chars, from the backend) and up to five notes.
+- Each note: its ingredient illustration (96 viewBox, 60 px) if one exists; otherwise its sprite icon drawn at 40 px in the same 60 px box; otherwise its family icon; otherwise the neutral icon. The canonical label is always shown.
+- No repeated copy in the modal: `vibe` is not shown there; the long description appears only when there is no short phrase. The product page keeps `vibe`, the long description and the full profile.
+- One switch: `SCENT_ILLUSTRATED` in `assets/js/ui/scentNotes.js`. Details: backend `RSNEXUS/changelog/2026-11-05-sistema-visual-olfativo.md`.
+
 ### SEO
 - `index.html`: canonical, `og:url`, `og:image` (existing hero webp), `twitter:card=summary_large_image`, corrected description (5 ml framing, no hardcoded fragile price), JSON-LD **Organization** (name, url, logo, sameAs WhatsApp) — **no** ratings/offers with invented values.
 - Add `robots.txt` (allow all, point to sitemap) and `sitemap.xml` (home, catalog anchor, WhatsApp is external so excluded).
