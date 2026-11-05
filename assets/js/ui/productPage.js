@@ -1,4 +1,4 @@
-import { buildScentNotesHtml, getFullDescription, getContextChips, getVibeCopy, usesScentPilot, buildContextChipHtml } from './scentNotes.js';
+import { buildScentNotesHtml, getFullDescription, getContextChips, getVibeCopy, usesIllustratedScent, buildContextChipHtml } from './scentNotes.js';
 /* =============================================================
    RDECANTS — PRODUCT DETAIL PAGE
    Editorial fragrance experience for /perfume/{slug}.
@@ -99,7 +99,7 @@ export function buildProductPageHtml(product) {
     ? contextChips
     : getDisplayBadges(product, { context: 'product_detail' }).map(g => g.label).slice(0, 3);
   const guidanceHtml = chipLabels
-    .map(label => buildContextChipHtml(label, { withIcon: usesScentPilot(product) }))
+    .map(label => buildContextChipHtml(label, { withIcon: usesIllustratedScent(product) }))
     .join('');
   const vibe = getVibeCopy(product);
   const description = getFullDescription(product);

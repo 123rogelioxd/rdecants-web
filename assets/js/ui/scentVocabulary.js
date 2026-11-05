@@ -80,7 +80,7 @@ const entries = [
   ['resin','Resinas','resin','resin','resina|resinas|resins'],
   ['balsamic','Balsámico','resin','resin','balsamico|balsamo|balsam'],
   ['musk','Almizcle','other','musk','almizcle|almizcles|white musk|almizcle blanco|musks'],
-  ['leather','Cuero','other','leather','cuero|suede|gamuza'],
+  ['leather','Cuero','other','leather','cuero|suede|gamuza|ante'],
   ['tobacco','Tabaco','other','tobacco','tabaco|tobacco leaf|hoja de tabaco'],
   ['smoke','Humo','other','smoke','humo|smoky|ahumado'],
   ['rum','Ron','other','glass','ron','ingredient-rum'],

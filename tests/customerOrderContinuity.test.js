@@ -62,7 +62,7 @@ test('the quick view renders at most three chips and escapes backend text', () =
     scent_profile: { context_chips: ['Noche & Cita', '<b>Dulce</b>', 'Frío', 'Extra'] },
   });
 
-  assert.equal((html.match(/<span class="guidance-chip"/g) || []).length, 3);
+  assert.equal((html.match(/<span class="guidance-chip(?: guidance-chip--icon)?"/g) || []).length, 3);
   assert.match(html, /Noche &amp; Cita/);
   assert.match(html, /&lt;b&gt;Dulce&lt;\/b&gt;/);
   assert.doesNotMatch(html, /<b>Dulce<\/b>/);

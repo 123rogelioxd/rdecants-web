@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {buildScentNotesHtml, buildContextChipHtml, getFullDescription, getSensoryDescription, normalizeScentNote, usesScentPilot} from '../assets/js/ui/scentNotes.js';
+import {buildScentNotesHtml, buildContextChipHtml, getFullDescription, getSensoryDescription, getStoryDescription, normalizeScentNote, usesIllustratedScent} from '../assets/js/ui/scentNotes.js';
 import {CONTEXT_SYMBOLS, SCENT_FAMILY_SYMBOLS, SCENT_VOCABULARY, resolveContextSymbol} from '../assets/js/ui/scentVocabulary.js';
 import {buildProductModalGuidanceHtml} from '../assets/js/ui/modal.js';
 import {buildProductPageHtml} from '../assets/js/ui/productPage.js';
@@ -17,22 +17,46 @@ const pilot = () => ({
   ]},
 });
 
-test('the Donna pilot renders five distinct ingredient drawings and leaves other perfumes on the current presentation',()=>{
+test('Donna renders five distinct ingredient drawings and its summary once',()=>{
   const p=pilot(), html=buildScentNotesHtml(p);
   assert.equal((html.match(/#ingredient-/g)||[]).length,5);
   for(const note of p.scent_profile.main_notes)assert.ok(html.includes('#ingredient-'+note.id));
   assert.equal((html.match(/Avainillado, frutal y licoroso\./g)||[]).length,1);
   assert.ok(!html.includes(p.desc));
-  const other={...p,slug:'otro-perfume'};
-  assert.equal(usesScentPilot(other),false);
-  assert.ok(!buildScentNotesHtml(other).includes('scent-notes--illustrated'));
-  assert.ok(!buildScentNotesHtml(other).includes('#ingredient-'));
+  assert.match(html,/data-count="5"/);
+});
+
+test('every perfume gets the illustrated block: drawings where they exist, its current icon otherwise, neutral last',()=>{
+  const other={slug:'otro-perfume',desc:'Descripción larga.',scent_profile:{short_description:'Cítrico y fresco.',context_chips:['Diario','Fresco'],main_notes:[
+    {id:'bergamot',label:'Bergamota',family:'citrus'},{id:'lavender',label:'Lavanda',family:'aromatic'},
+    {id:'albaricoque',label:'albaricoque',family:'fruit',icon:'fruit',known:true},{label:'Nota futura',family:'scent'},
+  ]}};
+  assert.equal(usesIllustratedScent(other),true);
+  const html=buildScentNotesHtml(other);
+  assert.ok(html.includes('scent-notes--illustrated'));
+  assert.ok(html.includes('#ingredient-bergamot'));
+  assert.ok(html.includes('#lavender'));
+  assert.ok(html.includes('#apple'));
+  assert.ok(html.includes('#scent"'));
+  assert.ok(html.includes('>Nota futura<'));
+  assert.match(html,/data-count="4"/);
+  assert.match(buildContextChipHtml('Diario',{withIcon:true}),/#context-calendar/);
+});
+
+test('the narrative paragraph appears only when there is no short phrase, so copy is never repeated or lost',()=>{
+  const p=pilot();
+  assert.equal(getStoryDescription(p),'');
+  const legacy={...p,scent_profile:{...p.scent_profile,short_description:p.desc}};
+  assert.equal(getSensoryDescription(legacy),'');
+  assert.equal(getStoryDescription(legacy),p.desc);
+  const empty={...p,desc:'',scent_profile:{...p.scent_profile,short_description:null}};
+  assert.equal(getStoryDescription(empty),'');
 });
 
 test('all shared graphic mappings exist, and unknown labels preserve their text with a neutral symbol',()=>{
   const sprite=readFileSync(new URL('../assets/img/scent-icons.svg',import.meta.url),'utf8');
   const ids=new Set([...sprite.matchAll(/<symbol id="([^"]+)"/g)].map(m=>m[1]));
-  const symbols=[...Object.values(CONTEXT_SYMBOLS),...Object.values(SCENT_FAMILY_SYMBOLS),...Object.values(SCENT_VOCABULARY).map(n=>n.illustration).filter(Boolean)];
+  const symbols=[...Object.values(CONTEXT_SYMBOLS),...Object.values(SCENT_FAMILY_SYMBOLS),...Object.values(SCENT_VOCABULARY).flatMap(n=>[n.symbol,n.illustration]).filter(Boolean),'scent','context-neutral'];
   for(const symbol of symbols)assert.ok(ids.has(symbol),symbol);
   for(const label of ['Cita','Dulce','Noche','Oficina','Escuela','Evento formal','Frío','Ámbar','Todo clima','Suave','Aromático','Templado'])assert.notEqual(resolveContextSymbol(label),'context-neutral');
   for(const family of ['citrico','fresco','acuatico','amaderado','aromatico','aromatico_dulce','especiado','oriental','oriental_dulce','gourmand','floral','frutal','cuero','oud','chipre','limpio'])assert.notEqual(resolveContextSymbol(family),'context-neutral',family);

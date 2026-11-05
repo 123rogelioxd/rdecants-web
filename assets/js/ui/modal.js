@@ -13,7 +13,7 @@
      • Safe: image fallback if src missing/broken
    ============================================================= */
 
-import { buildScentNotesHtml, getFullDescription, getCommercialProfileTags, getContextChips, getVibeCopy, usesScentPilot, buildContextChipHtml } from './scentNotes.js';
+import { buildScentNotesHtml, getCommercialProfileTags, getContextChips, getVibeCopy, getStoryDescription, usesIllustratedScent, buildContextChipHtml } from './scentNotes.js';
 import { showToast } from './toast.js';
 import { primeImageStates } from './images.js';
 import { lockBodyScroll, unlockBodyScroll } from './scrollLock.js';
@@ -138,8 +138,8 @@ function _render() {
 
   const guidanceHtml = buildProductModalGuidanceHtml(p);
   const detailsHref = productPageUrl(p);
-  const pilot = usesScentPilot(p);
-  const description = pilot ? '' : getFullDescription(p);
+  const illustrated = usesIllustratedScent(p);
+  const description = getStoryDescription(p);
   const vibe = getVibeCopy(p);
 
   const sizesHtml = PRIMARY_SIZES
@@ -162,7 +162,7 @@ function _render() {
     `;
     }).join('');
 
-  _modal.dataset.scentPilot = String(pilot);
+  _modal.dataset.scentIllustrated = String(illustrated);
   _modal.innerHTML = `
     <!-- Close -->
     <button class="pdm-close" aria-label="Cerrar detalle">
@@ -205,7 +205,7 @@ function _render() {
         </div>
         ${guidanceHtml}
 
-        ${!pilot && vibe ? `<p class="pdm-vibe">${esc(vibe)}</p>` : ''}
+        ${!illustrated && vibe ? `<p class="pdm-vibe">${esc(vibe)}</p>` : ''}
         ${buildScentNotesHtml(p)}
 
         ${description && description !== vibe ? `<p class="pdm-story">${esc(description)}</p>` : ''}
@@ -278,7 +278,7 @@ export function buildProductModalGuidanceHtml(product) {
 
   return `<div class="pdm-guidance" aria-label="Para qué sirve">${labels
     .slice(0, 3)
-    .map(label => buildContextChipHtml(label, { withIcon: usesScentPilot(product) }))
+    .map(label => buildContextChipHtml(label, { withIcon: usesIllustratedScent(product) }))
     .join('')}</div>`;
 }
 

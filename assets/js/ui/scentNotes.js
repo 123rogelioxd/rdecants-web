@@ -4,11 +4,12 @@ import { BUILD_VERSION } from '../api/config.js';
 
 export { SCENT_VOCABULARY, resolveScentId } from './scentVocabulary.js';
 export const MAX_MAIN_NOTES = 5;
-// Presentation rollout only. Canonical perfume facts and ingredient mappings
-// remain shared; broaden this switch only after the Donna pilot is approved.
-export const SCENT_CATALOG_ROLLOUT = false;
-export function usesScentPilot(product) {
-  return SCENT_CATALOG_ROLLOUT || product?.slug === 'donna-extradose-valentino';
+// Approved 2026-11-05 (Donna Extradose pilot) for the whole catalogue.
+// Presentation only: canonical facts and ingredient mappings are unchanged, and
+// false restores the previous plain presentation everywhere in one place.
+export const SCENT_ILLUSTRATED = true;
+export function usesIllustratedScent(product) {
+  return SCENT_ILLUSTRATED && Boolean(product);
 }
 const SPRITE_URL = new URL(`../../img/scent-icons.svg?v=${BUILD_VERSION}`, import.meta.url).href;
 const text = value => typeof value === 'string' ? value.trim() : '';
@@ -55,13 +56,13 @@ export function mainScentNotes(product, limit = MAX_MAIN_NOTES) {
 
 export function buildScentNotesHtml(product, { heading = '¿A qué huele?', className = '' } = {}) {
   const notes = mainScentNotes(product);
-  const illustrated = usesScentPilot(product);
+  const illustrated = usesIllustratedScent(product);
   const description = illustrated ? getSensoryDescription(product) : '';
   if (!notes.length && !description) return '';
   return `<section class="scent-notes ${illustrated ? 'scent-notes--illustrated' : ''} ${escape(className)}" aria-label="${escape(heading)}">
     <h3 class="scent-notes-title">${escape(heading)}</h3>
     ${description ? `<p class="scent-notes-summary">${escape(description)}</p>` : ''}
-    ${notes.length ? `<ul class="scent-notes-list">${notes.map(note => `<li class="scent-note" data-scent-note="${escape(note.id ?? 'unknown')}">
+    ${notes.length ? `<ul class="scent-notes-list" data-count="${notes.length}">${notes.map(note => `<li class="scent-note" data-scent-note="${escape(note.id ?? 'unknown')}">
       <svg class="scent-note-icon" viewBox="${illustrated && note.illustration.startsWith('ingredient-') ? '0 0 96 96' : '0 0 32 32'}" width="${illustrated ? 56 : 32}" height="${illustrated ? 56 : 32}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="${escape(SPRITE_URL)}#${illustrated ? note.illustration : note.icon}"></use></svg>
       <span>${escape(note.label)}</span></li>`).join('')}</ul>
     ` : ''}
@@ -79,6 +80,14 @@ export function getSensoryDescription(product) {
  * non-pilot views unchanged when the API starts sending a truly short summary. */
 export function getFullDescription(product) {
   return sentenceCase(text(product?.desc) || text(product?.fragrance?.summary) || text(product?.story)) || getShortDescription(product);
+}
+
+/** Narrative paragraph beside the illustrated block: shown only when there is
+ * no short sensory phrase inside it, so a perfume never repeats its copy and a
+ * long legacy summary is never lost while the backend still sends one. */
+export function getStoryDescription(product) {
+  if (usesIllustratedScent(product) && getSensoryDescription(product)) return '';
+  return getFullDescription(product);
 }
 
 export function buildContextChipHtml(label, { withIcon = false } = {}) {
