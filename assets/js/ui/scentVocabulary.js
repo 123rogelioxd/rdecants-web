@@ -1,7 +1,7 @@
 /* Display vocabulary, never a perfume database. Canonical product facts come
  * from RSupplyOS scent_profile. Related notes intentionally share an icon. */
 const entries = [
-  ['bergamot','Bergamota','citrus','citrus','bergamota|bergamot orange'],
+  ['bergamot','Bergamota','citrus','citrus','bergamota|bergamot orange','ingredient-bergamot'],
   ['lemon','Limón','citrus','lemon','limon|limones|sicilian lemon'],
   ['lime','Lima','citrus','lemon','lima|limas'],
   ['orange','Naranja','citrus','citrus','naranja|naranjas|sweet orange'],
@@ -16,7 +16,7 @@ const entries = [
   ['strawberry','Fresa','fruit','berry','fresa|fresas'],
   ['raspberry','Frambuesa','fruit','berries','frambuesa|frambuesas'],
   ['red_fruits','Frutos rojos','fruit','berries','red fruits|red berries|frutos rojos|frutas rojas|bayas rojas'],
-  ['blackcurrant','Grosella negra','fruit','berries','grosella negra|grosellas negras|black currant|cassis'],
+  ['blackcurrant','Grosella negra','fruit','berries','grosella negra|grosellas negras|black currant|cassis','ingredient-blackcurrant'],
   ['pineapple','Piña','fruit','pineapple','pina|ananas'],
   ['mango','Mango','fruit','mango','mangos'],
   ['coconut','Coco','fruit','coconut','coco|coconut water'],
@@ -25,7 +25,7 @@ const entries = [
   ['tropical_fruits','Frutas tropicales','fruit','mango','tropical fruits|frutas tropicales|tropical fruit'],
   ['fruit','Frutal','fruit','apple','fruta|frutas|frutal|frutales|fruity|fruits|fruity notes'],
   ['rose','Rosa','floral','rose','rosa|rosas|roses|bulgarian rose|rosa bulgara|turkish rose'],
-  ['jasmine','Jazmín','floral','flower','jazmin|jazmines|jasmine sambac|jazmin sambac'],
+  ['jasmine','Jazmín','floral','flower','jazmin|jazmines|jasmine sambac|jazmin sambac','ingredient-jasmine'],
   ['lavender','Lavanda','floral','lavender','lavanda|lavandin'],
   ['iris','Iris','floral','iris','orris|orris root|raiz de iris'],
   ['violet','Violeta','floral','flower','violeta|violetas'],
@@ -36,7 +36,7 @@ const entries = [
   ['ylang_ylang','Ylang-ylang','floral','ylang','ylang ylang|ylang-ylang'],
   ['white_flowers','Flores blancas','floral','flower','white flowers|white floral|flores blancas'],
   ['floral','Floral','floral','flower','flor|flores|flowers|floral notes|florales'],
-  ['vanilla','Vainilla','gourmand','vanilla','vainilla|bourbon vanilla|vainilla bourbon|madagascar vanilla'],
+  ['vanilla','Vainilla','gourmand','vanilla','vainilla|bourbon vanilla|vainilla bourbon|madagascar vanilla','ingredient-vanilla'],
   ['caramel','Caramelo','gourmand','caramel','caramelo|caramelos'],
   ['honey','Miel','gourmand','honey','miel'],
   ['chocolate','Chocolate','gourmand','chocolate','dark chocolate'],
@@ -83,7 +83,7 @@ const entries = [
   ['leather','Cuero','other','leather','cuero|suede|gamuza'],
   ['tobacco','Tabaco','other','tobacco','tabaco|tobacco leaf|hoja de tabaco'],
   ['smoke','Humo','other','smoke','humo|smoky|ahumado'],
-  ['rum','Ron','other','glass','ron'],
+  ['rum','Ron','other','glass','ron','ingredient-rum'],
   ['whiskey','Whisky','other','glass','whisky|bourbon'],
   ['salt','Sal','other','salt','sal|sea salt|sal marina'],
   ['mineral','Mineral','other','mineral','minerales|mineral notes|notas minerales'],
@@ -96,12 +96,45 @@ const entries = [
   ['moss','Musgo','other','moss','musgo|oakmoss|musgo de roble'],
 ];
 
-export const SCENT_VOCABULARY = Object.freeze(Object.fromEntries(entries.map(([id,label,family,symbol,aliases]) =>
-  [id, Object.freeze({ id, label, family, symbol, aliases: aliases.split('|') })])));
+export const SCENT_VOCABULARY = Object.freeze(Object.fromEntries(entries.map(([id,label,family,symbol,aliases,illustration = null]) =>
+  [id, Object.freeze({ id, label, family, symbol, illustration, aliases: aliases.split('|') })])));
+
+/* A visual fallback for the family Laravel already assigned, never a rule for
+ * deciding what a perfume contains. Both current API and legacy UI names are
+ * listed so an imported note keeps its factual label with a usable symbol. */
+export const SCENT_FAMILY_SYMBOLS = Object.freeze({
+  citrus: 'citrus', fruit: 'apple', floral: 'flower', gourmand: 'caramel',
+  woods: 'wood', spices: 'pepper', spice: 'pepper', aromatic: 'sprig',
+  fresh: 'breeze', resin: 'resin', musk: 'musk', leather: 'leather',
+  smoke: 'smoke', drink: 'glass', mineral: 'mineral', scent: 'scent', other: 'scent',
+});
+
+/* Presentation only. Laravel still chooses every label and its order. Keys
+ * are normalized display labels (also accepting the canonical family tokens),
+ * and values are fixed, local sprite IDs rather than caller-supplied paths. */
+export const CONTEXT_SYMBOLS = Object.freeze({
+  diario: 'context-calendar', oficina: 'context-briefcase', escuela: 'context-book',
+  cita: 'context-heart', noche: 'context-moon', fiesta: 'context-party',
+  antro: 'context-disco', 'evento formal': 'context-bowtie', regalo: 'context-gift',
+  dulce: 'context-cupcake', gourmand: 'context-cupcake', 'gourmand dulce': 'context-cupcake',
+  amaderado: 'wood', amaderada: 'wood', ambar: 'amber', ambarado: 'amber',
+  fresco: 'breeze', frutal: 'apple', floral: 'flower', especiado: 'pepper',
+  intenso: 'context-flame', suave: 'context-feather', aromatico: 'sprig', 'aromatico dulce': 'sprig',
+  calor: 'context-sun', 'calor verano': 'context-sun', calido: 'context-sun', frio: 'context-snowflake', templado: 'context-weather',
+  'todo clima': 'context-weather', citrico: 'citrus', acuatico: 'wave',
+  marino: 'wave', 'acuatico marino': 'wave', oriental: 'amber', 'oriental dulce': 'amber', cuero: 'leather',
+  oud: 'wood', 'oud arabe intenso': 'wood', chipre: 'moss', limpio: 'soap',
+  jabonoso: 'soap', 'limpio jabonoso': 'soap',
+});
 
 export function normalizeNoteKey(value) {
   return String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .toLowerCase().replace(/[_-]+/g, ' ').replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+export function resolveContextSymbol(value) {
+  const key = normalizeNoteKey(value);
+  return Object.hasOwn(CONTEXT_SYMBOLS, key) ? CONTEXT_SYMBOLS[key] : 'context-neutral';
 }
 
 const aliases = new Map();

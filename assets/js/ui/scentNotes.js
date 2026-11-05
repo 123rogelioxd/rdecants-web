@@ -1,9 +1,15 @@
-import { SCENT_VOCABULARY, normalizeNoteKey, resolveScentId } from './scentVocabulary.js';
+import { SCENT_VOCABULARY, SCENT_FAMILY_SYMBOLS, normalizeNoteKey, resolveScentId, resolveContextSymbol } from './scentVocabulary.js';
 import { sentenceCase } from '../utils/presentation.js';
 import { BUILD_VERSION } from '../api/config.js';
 
 export { SCENT_VOCABULARY, resolveScentId } from './scentVocabulary.js';
 export const MAX_MAIN_NOTES = 5;
+// Presentation rollout only. Canonical perfume facts and ingredient mappings
+// remain shared; broaden this switch only after the Donna pilot is approved.
+export const SCENT_CATALOG_ROLLOUT = false;
+export function usesScentPilot(product) {
+  return SCENT_CATALOG_ROLLOUT || product?.slug === 'donna-extradose-valentino';
+}
 const SPRITE_URL = new URL(`../../img/scent-icons.svg?v=${BUILD_VERSION}`, import.meta.url).href;
 const text = value => typeof value === 'string' ? value.trim() : '';
 const list = value => Array.isArray(value) ? value : [];
@@ -15,7 +21,10 @@ export function normalizeScentNote(raw) {
   const id = resolveScentId(raw?.id) ?? resolveScentId(label);
   const note = id ? SCENT_VOCABULARY[id] : null;
   const graphic = note ?? SCENT_VOCABULARY[resolveScentId(raw?.icon)];
-  return { id: id ?? raw?.id ?? null, label: typeof raw === 'object' ? label : note?.label ?? label, icon: graphic?.symbol ?? 'scent', family: graphic?.family ?? 'other', known: Boolean(note) || raw?.known === true };
+  const family = text(raw?.family) || graphic?.family || 'other';
+  const familyKey = normalizeNoteKey(family);
+  const familySymbol = Object.hasOwn(SCENT_FAMILY_SYMBOLS, familyKey) ? SCENT_FAMILY_SYMBOLS[familyKey] : null;
+  return { id: id ?? raw?.id ?? null, label: typeof raw === 'object' ? label : note?.label ?? label, icon: graphic?.symbol ?? 'scent', illustration: note?.illustration ?? note?.symbol ?? familySymbol ?? graphic?.symbol ?? 'scent', family, known: Boolean(note) || raw?.known === true };
 }
 
 /** Canonical API ordering wins, including an intentionally empty list. Before
@@ -46,13 +55,36 @@ export function mainScentNotes(product, limit = MAX_MAIN_NOTES) {
 
 export function buildScentNotesHtml(product, { heading = '¿A qué huele?', className = '' } = {}) {
   const notes = mainScentNotes(product);
-  if (!notes.length) return '';
-  return `<section class="scent-notes ${escape(className)}" aria-label="${escape(heading)}">
+  const illustrated = usesScentPilot(product);
+  const description = illustrated ? getSensoryDescription(product) : '';
+  if (!notes.length && !description) return '';
+  return `<section class="scent-notes ${illustrated ? 'scent-notes--illustrated' : ''} ${escape(className)}" aria-label="${escape(heading)}">
     <h3 class="scent-notes-title">${escape(heading)}</h3>
-    <ul class="scent-notes-list">${notes.map(note => `<li class="scent-note" data-scent-note="${escape(note.id ?? 'unknown')}">
-      <svg class="scent-note-icon" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="${escape(SPRITE_URL)}#${note.icon}"></use></svg>
+    ${description ? `<p class="scent-notes-summary">${escape(description)}</p>` : ''}
+    ${notes.length ? `<ul class="scent-notes-list">${notes.map(note => `<li class="scent-note" data-scent-note="${escape(note.id ?? 'unknown')}">
+      <svg class="scent-note-icon" viewBox="${illustrated && note.illustration.startsWith('ingredient-') ? '0 0 96 96' : '0 0 32 32'}" width="${illustrated ? 56 : 32}" height="${illustrated ? 56 : 32}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="${escape(SPRITE_URL)}#${illustrated ? note.illustration : note.icon}"></use></svg>
       <span>${escape(note.label)}</span></li>`).join('')}</ul>
+    ` : ''}
   </section>`;
+}
+
+/** Read only the backend's bounded sensory phrase. Never truncate a long
+ * narrative or derive a second opinion from product names in the browser. */
+export function getSensoryDescription(product) {
+  const value = getShortDescription(product);
+  return [...value].length <= 70 ? value : '';
+}
+
+/** Full canonical copy remains available on the complete profile and keeps
+ * non-pilot views unchanged when the API starts sending a truly short summary. */
+export function getFullDescription(product) {
+  return sentenceCase(text(product?.desc) || text(product?.fragrance?.summary) || text(product?.story)) || getShortDescription(product);
+}
+
+export function buildContextChipHtml(label, { withIcon = false } = {}) {
+  if (!withIcon) return `<span class="guidance-chip">${escape(label)}</span>`;
+  const symbol = resolveContextSymbol(label);
+  return `<span class="guidance-chip guidance-chip--icon"><svg class="guidance-chip-icon" viewBox="0 0 32 32" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="${escape(SPRITE_URL)}#${symbol}"></use></svg><span>${escape(label)}</span></span>`;
 }
 
 export function getShortDescription(product) {

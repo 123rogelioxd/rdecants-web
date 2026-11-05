@@ -56,4 +56,115 @@
   <symbol id="metal" viewBox="0 0 32 32"><path d="m3 13 10-9 15 5v14l-10 7-15-5V13Zm0 0 15 5 10-9m-10 9v12M9 13l8-6m4 15 4-3"/></symbol>
   <symbol id="earth" viewBox="0 0 32 32"><path d="M3 16c4-7 7-3 10-8 4 4 7 2 10 6l6 2M3 21c5-2 7 2 11 0s10 2 15 0M3 27c5-2 7 2 11 0s10 2 15 0M12 14l1 1m8 1 1 1"/></symbol>
   <symbol id="moss" viewBox="0 0 32 32"><path d="M3 27h26M8 26V13m0 7-4-5m4 2 5-7m4 16V6m0 12-5-4m5-3 5-6m2 22V15m0 7 5-5M6 9l2-2 2 2m5-6 2-2 2 2"/></symbol>
+  <symbol id="ingredient-blackcurrant" viewBox="0 0 96 96">
+    <defs><radialGradient id="ingredient-cassis-berry" cx="32%" cy="24%" r="78%"><stop stop-color="#655b68"/><stop offset=".4" stop-color="#37313e"/><stop offset="1" stop-color="#201f29"/></radialGradient></defs>
+    <g stroke="none">
+      <path fill="#52734a" d="m48 39-10-7-14 2 3-9-10-5 10-3-2-10 12 4 6-8 5 11 10-3-2 10 10 5-12 4Z"/>
+      <path fill="#78935d" d="m47 35-8-7-11 1 3-7-8-3 10-2-2-6 9 4 3-7 4 10 7-3-2 8 8 3-9 3Z"/>
+      <path d="m45 15 4 25m-2-14-12-7m14 12 7-9m-8 13 12 10m-11-5-15 8m13-9-3 25" fill="none" stroke="#4d5b35" stroke-width="1.8"/>
+      <circle cx="33" cy="45" r="10" fill="url(#ingredient-cassis-berry)"/><circle cx="50" cy="43" r="10" fill="url(#ingredient-cassis-berry)"/><circle cx="65" cy="49" r="10" fill="url(#ingredient-cassis-berry)"/>
+      <circle cx="23" cy="61" r="10" fill="url(#ingredient-cassis-berry)"/><circle cx="41" cy="61" r="11" fill="url(#ingredient-cassis-berry)"/><circle cx="60" cy="65" r="11" fill="url(#ingredient-cassis-berry)"/><circle cx="77" cy="64" r="9" fill="url(#ingredient-cassis-berry)"/>
+      <circle cx="31" cy="77" r="10" fill="url(#ingredient-cassis-berry)"/><circle cx="49" cy="80" r="10" fill="url(#ingredient-cassis-berry)"/><circle cx="68" cy="80" r="9" fill="url(#ingredient-cassis-berry)"/>
+      <path fill="#1d1d24" d="m33 48-2-2 3 1 2-2-1 3 2 2-3-1-2 2Zm17-2-2-2 3 1 2-2-1 3 2 2-3-1-2 2Zm15 6-2-2 3 1 2-2-1 3 2 2-3-1-2 2ZM23 64l-2-2 3 1 2-2-1 3 2 2-3-1-2 2Zm18 0-2-2 3 1 2-2-1 3 2 2-3-1-2 2Zm19 4-2-2 3 1 2-2-1 3 2 2-3-1-2 2Zm17-1-2-2 3 1 2-2-1 3 2 2-3-1-2 2ZM31 80l-2-2 3 1 2-2-1 3 2 2-3-1-2 2Zm18 3-2-2 3 1 2-2-1 3 2 2-3-1-2 2Zm19 0-2-2 3 1 2-2-1 3 2 2-3-1-2 2Z"/>
+      <path d="m28 40 3-1m14-1 3-1m12 7 3-1M18 56l3-1m14 1 4-1m15 5 4-1m15 0 2-1M26 72l3-1m15 4 3-1m16 1 2-1" fill="none" stroke="#a29aa5" stroke-opacity=".55" stroke-width="1.7" stroke-linecap="round"/>
+    </g>
+  </symbol>
+  <symbol id="ingredient-rum" viewBox="0 0 96 96">
+    <defs><linearGradient id="ingredient-rum-amber" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#dfb16a"/><stop offset=".5" stop-color="#ae6b28"/><stop offset="1" stop-color="#7f431e"/></linearGradient></defs>
+    <g stroke="none">
+      <path fill="#faf8ee" fill-opacity=".7" stroke="#a8a49a" stroke-width="1.4" d="m21 26 7 50c1 10 39 10 40 0l7-50Z"/>
+      <ellipse cx="48" cy="26" rx="27" ry="7" fill="#f8f6ed" fill-opacity=".45" stroke="#a8a49a" stroke-width="1.4"/>
+      <path fill="url(#ingredient-rum-amber)" d="M24 44c13 7 35 7 48 0l-5 29c-1 8-37 8-38 0Z"/>
+      <ellipse cx="48" cy="44" rx="24" ry="6" fill="#be853d"/>
+      <path fill="#f6e5bd" fill-opacity=".75" stroke="#f7efda" stroke-width="1" d="m31 38 17-4 5 14-17 5Z"/>
+      <path fill="#efddb5" fill-opacity=".7" stroke="#f6eedb" stroke-width="1" d="m51 42 16 3-3 15-16-3Z"/>
+      <path fill="#e6c992" fill-opacity=".65" stroke="#f4e4c5" stroke-width="1" d="m37 55 14-3 4 14-15 4Z"/>
+      <path d="m33 40 12-3m8 8 11 2m-24 11 10-3" fill="none" stroke="#fffaf0" stroke-width="1.3" stroke-linecap="round" opacity=".8"/>
+      <path fill="#fffdf4" fill-opacity=".65" d="m25 32 3 1 5 39-3-2Zm43 2 3-1-5 35-2 3Z"/>
+      <path d="M32 76c9 4 23 4 32 0m-30 5c8 2 20 2 28 0" fill="none" stroke="#a8a49a" stroke-width="1.3" stroke-linecap="round"/>
+      <path d="M26 25c10-4 32-4 43 0" fill="none" stroke="#fffdf5" stroke-width="1.5" stroke-linecap="round"/>
+    </g>
+  </symbol>
+  <symbol id="ingredient-vanilla" viewBox="0 0 96 96">
+    <g stroke="none">
+      <path fill="#443024" d="M13 82c25-11 47-31 66-64 3-5 6-4 4 1C69 52 39 81 15 86c-4 1-6-2-2-4Z"/>
+      <path fill="#6b4930" d="M24 85c23-14 42-32 56-54 3-5 5-4 3 1C71 59 48 80 27 89c-4 2-6-1-3-4Z"/>
+      <path d="M16 83c22-10 45-30 63-61M28 86c21-13 38-29 50-47" fill="none" stroke="#98714c" stroke-width="1.3" stroke-linecap="round"/>
+      <path fill="#526e43" d="M19 57c-9-8-11-16-9-25 12 5 18 14 15 24Z"/>
+      <path d="m14 39 10 19" fill="none" stroke="#8d9c62" stroke-width="1.3"/>
+      <path fill="#f1e7c5" stroke="#d6c8a1" stroke-width=".9" d="M36 39C25 31 26 12 33 8c8 3 13 18 9 29Z"/>
+      <path fill="#faf4df" stroke="#d6c8a1" stroke-width=".9" d="M35 38C18 34 10 21 14 14c12-1 24 10 27 22Z"/>
+      <path fill="#f5edcf" stroke="#d6c8a1" stroke-width=".9" d="M38 36c2-18 15-28 22-23 2 11-8 24-18 28Z"/>
+      <path fill="#fff9e8" stroke="#d6c8a1" stroke-width=".9" d="M38 39c10-15 29-17 32-9-4 12-19 17-30 15Z"/>
+      <path fill="#fff8e5" stroke="#d6c8a1" stroke-width=".9" d="M38 40C21 34 8 42 10 50c10 7 24 4 31-5Z"/>
+      <path fill="#eee0b5" stroke="#d6c8a1" stroke-width=".9" d="M39 42c-8 9-6 23 3 26 11-7 12-21 2-27Z"/>
+      <path fill="#d6b65a" d="M34 38c4-4 11-3 14 2 2 5-1 13-7 17-6-4-10-12-7-19Z"/>
+      <path fill="#fff2bd" d="M37 40c3-3 7-1 8 2 0 5-2 9-4 11-4-3-6-9-4-13Z"/>
+      <path fill="#9b7134" d="M38 40c2-2 5-1 6 1l-1 5-4-1Z"/>
+      <path d="m33 16 5 19m17-16L43 35M17 45l17-3m13 3 14-9" fill="none" stroke="#e6d9b5" stroke-width="1" stroke-linecap="round"/>
+    </g>
+  </symbol>
+  <symbol id="ingredient-bergamot" viewBox="0 0 96 96">
+    <defs><linearGradient id="ingredient-bergamot-rind" x1="0" x2="1"><stop stop-color="#57733c"/><stop offset=".5" stop-color="#91a655"/><stop offset="1" stop-color="#697f3b"/></linearGradient></defs>
+    <g stroke="none">
+      <path fill="#43683f" d="M35 25c0-14 11-20 26-18-3 13-13 19-26 18Z"/>
+      <path d="m38 22 16-10m-19 15-1-9" fill="none" stroke="#8c9c5a" stroke-width="1.4" stroke-linecap="round"/>
+      <path fill="url(#ingredient-bergamot-rind)" stroke="#647d3d" stroke-width="1" d="M30 24c-7-2-16 7-18 14-5 3-6 13-4 19-1 9 5 19 13 23 8 5 18 3 24-2 8-2 13-11 12-20 3-8-1-17-7-22-4-8-12-11-20-12Z"/>
+      <path d="m19 39-2 4m2 18 2 5m6-36 4-1m11 5 4 3M14 53v3m16 15 4 1m14-20 2 4m-18-9 1 3m8 12-1 3" fill="none" stroke="#b5c47a" stroke-opacity=".6" stroke-width="1.5" stroke-linecap="round"/>
+      <circle cx="63" cy="64" r="24" fill="#6d883f" stroke="#536c35" stroke-width="1"/>
+      <circle cx="63" cy="64" r="21" fill="#f2edcc"/>
+      <circle cx="63" cy="64" r="18.6" fill="#b5c574"/>
+      <path fill="#d5df98" d="M62 61 48 51a18 18 0 0 1 13-5Zm3 0 1-15a18 18 0 0 1 12 7Zm2 3 13-8a18 18 0 0 1 1 14Zm-2 3 14 6a18 18 0 0 1-12 9Zm-4 1 2 14a18 18 0 0 1-14-7Zm-2-4-13 8a18 18 0 0 1-1-15Z"/>
+      <path d="m63 64-1-18m1 18 16-11m-16 11 18 8m-18-8 3 18m-3-18-15 11m15-11-18-9" fill="none" stroke="#f2edcc" stroke-width="1.5"/>
+      <circle cx="63" cy="64" r="2.5" fill="#f6f0d4"/>
+      <path d="m68 52 2 2m6 10-2 2m-13 10-1-2m-8-13 2 1" fill="none" stroke="#ecedc2" stroke-width="1.1" stroke-linecap="round"/>
+    </g>
+  </symbol>
+  <symbol id="ingredient-jasmine" viewBox="0 0 96 96">
+    <g stroke="none">
+      <path d="M26 87c7-18 19-27 29-47m-18 31 29-4m-24-4-16-8" fill="none" stroke="#637848" stroke-width="2.4" stroke-linecap="round"/>
+      <path fill="#4d7145" d="M38 72C18 76 9 69 8 58c17-4 28 2 30 14Z"/>
+      <path fill="#759057" d="M39 72C25 72 17 66 12 61c12 0 22 4 27 11Z"/>
+      <path fill="#4d7145" d="M52 63c4-19 15-28 31-24-1 16-14 25-31 24Z"/>
+      <path fill="#78935d" d="M54 61c7-11 15-15 24-18-4 10-14 15-24 18Z"/>
+      <path fill="#52774b" d="M58 71c18-9 30-4 33 6-13 9-27 7-33-6Z"/>
+      <path fill="#7f995e" d="M60 71c12-2 22 1 27 5-12 4-21 1-27-5Z"/>
+      <g fill="#fffdf1" stroke="#c9ccba" stroke-width=".8">
+        <path d="M54 37c-8-9-8-23-2-26 7 4 10 15 7 25Z"/>
+        <path d="M58 36c0-13 8-23 14-21 4 7-2 20-10 25Z"/>
+        <path d="M61 40c10-9 23-9 26-3-2 8-15 11-26 8Z"/>
+        <path d="M61 45c13 0 23 9 20 15-7 3-18-5-22-14Z"/>
+        <path d="M57 47c9 8 10 22 4 25-8-3-12-15-9-25Z"/>
+        <path d="M52 46c-1 13-9 21-15 18-3-7 4-17 13-21Z"/>
+        <path d="M49 42c-11 7-24 6-26-1 4-7 16-9 27-4Z"/>
+        <path d="M51 37c-12-2-20-12-16-18 8-2 17 7 19 17Z"/>
+      </g>
+      <path fill="#e9e9d2" d="M49 39c2-6 11-6 15 1-1 8-9 11-14 5Z"/>
+      <path fill="#c7b675" d="m56 36 2 4 4 1-4 2-2 4-1-4-4-2 4-1Z"/>
+      <g fill="#fffdf1" stroke="#c9ccba" stroke-width=".8">
+        <path d="M24 50c-8-1-15-8-12-12 6-2 12 4 14 10Z"/>
+        <path d="M26 48c-4-8-1-17 4-16 5 4 3 12-1 17Z"/>
+        <path d="M29 50c5-8 13-10 16-5-1 6-8 9-15 8Z"/>
+        <path d="M29 54c8 3 12 10 8 14-6 0-10-6-11-12Z"/>
+        <path d="M25 54c-2 9-9 14-13 10-1-6 4-11 11-13Z"/>
+      </g>
+      <circle cx="27" cy="52" r="2.5" fill="#c9b876"/>
+    </g>
+  </symbol>
+  <symbol id="context-neutral" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h12l11 11-11 11L5 16Z"/><circle cx="11" cy="12" r="2"/></g></symbol>
+  <symbol id="context-heart" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 27S4 19 4 11a7 7 0 0 1 12-4 7 7 0 0 1 12 4c0 8-12 16-12 16Z"/></g></symbol>
+  <symbol id="context-calendar" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="7" width="22" height="21" rx="3"/><path d="M10 4v6m12-6v6M5 14h22m-16 6 4 4 7-7"/></g></symbol>
+  <symbol id="context-briefcase" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="10" width="26" height="18" rx="3"/><path d="M11 10V6h10v4M3 17c8 5 18 5 26 0m-15 2v5h4v-5"/></g></symbol>
+  <symbol id="context-book" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8C12 5 7 4 3 6v21c5-2 9-1 13 2 4-3 8-4 13-2V6c-4-2-9-1-13 2Zm0 0v21M7 11c2 0 3 0 5 1m-5 5c2 0 3 0 5 1m8-6 5-1m-5 7 5-1"/></g></symbol>
+  <symbol id="context-moon" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M26 22A12 12 0 0 1 12 4 12 12 0 1 0 26 22Z"/></g></symbol>
+  <symbol id="context-party" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 12 8 8L3 29Zm-3 7 4 4m-2-10 8 8M18 5l-1 4m9-2-3 4m5 5-4 1M13 3l1 3m8-3 1 2m6 7-1 1M7 7l2 2"/></g></symbol>
+  <symbol id="context-disco" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 2v6"/><circle cx="16" cy="19" r="11"/><ellipse cx="16" cy="19" rx="5" ry="11"/><path d="M5 19h22M8 12c5 3 11 3 16 0M8 26c5-3 11-3 16 0M4 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1m25-1 1 2 2 1-2 1-1 2-1-2-2-1 2-1"/></g></symbol>
+  <symbol id="context-bowtie" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="13" y="12" width="6" height="8" rx="1"/><path d="M13 13 4 7v18l9-6m6-6 9-6v18l-9-6M4 12l5 4-5 4m24-8-5 4 5 4"/></g></symbol>
+  <symbol id="context-gift" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17v12h22V17M3 11h26v6H3Zm13 0v18m0-18C4 12 6 1 12 5l4 6Zm0 0c12 1 10-10 4-6l-4 6Z"/></g></symbol>
+  <symbol id="context-cupcake" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 17 3 12h14l3-12M4 17h24c2-6-2-9-6-8 1-7-11-9-12-1-5-1-9 4-6 9Zm8 4 1 5m7-5-1 5"/></g></symbol>
+  <symbol id="context-sun" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="16" r="6"/><path d="M16 2v4m0 20v4M2 16h4m20 0h4M6 6l3 3m14 14 3 3M26 6l-3 3M9 23l-3 3"/></g></symbol>
+  <symbol id="context-snowflake" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 2v28M4 9l24 14M4 23 28 9M12 5l4 4 4-4m-8 22 4-4 4 4M4 14l5-2-1-5m16 18-1-5 5-2M4 18l5 2-1 5M24 7l-1 5 5 2"/></g></symbol>
+  <symbol id="context-weather" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 5V2M5 13H2m3-8 2 2m14-2-2 2M9 19a7 7 0 1 1 11-9"/><path d="M9 22a6 6 0 0 1 8-6 7 7 0 0 1 12 5c5 3 2 8-2 8H12c-5 0-7-5-3-7Z"/></g></symbol>
+  <symbol id="context-feather" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 25C1 11 16 1 27 4c3 11-7 26-19 21ZM3 30 24 8M10 23l-1-8m6 3 8-1m-4-4V7"/></g></symbol>
+  <symbol id="context-flame" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 3c-1 8 9 10 9 17a11 10 0 0 1-22 0c0-5 3-8 6-11 0 5 2 6 4 6 3-3 4-7 3-12Z"/><path d="M17 18c0 4 5 5 4 9-4 5-12 1-10-4l3-4c-1 4 2 5 3-1Z"/></g></symbol>
 </svg>

@@ -13,7 +13,7 @@
      • Safe: image fallback if src missing/broken
    ============================================================= */
 
-import { buildScentNotesHtml, getShortDescription, getCommercialProfileTags, getContextChips, getVibeCopy } from './scentNotes.js';
+import { buildScentNotesHtml, getFullDescription, getCommercialProfileTags, getContextChips, getVibeCopy, usesScentPilot, buildContextChipHtml } from './scentNotes.js';
 import { showToast } from './toast.js';
 import { primeImageStates } from './images.js';
 import { lockBodyScroll, unlockBodyScroll } from './scrollLock.js';
@@ -138,7 +138,8 @@ function _render() {
 
   const guidanceHtml = buildProductModalGuidanceHtml(p);
   const detailsHref = productPageUrl(p);
-  const description = getShortDescription(p);
+  const pilot = usesScentPilot(p);
+  const description = pilot ? '' : getFullDescription(p);
   const vibe = getVibeCopy(p);
 
   const sizesHtml = PRIMARY_SIZES
@@ -161,6 +162,7 @@ function _render() {
     `;
     }).join('');
 
+  _modal.dataset.scentPilot = String(pilot);
   _modal.innerHTML = `
     <!-- Close -->
     <button class="pdm-close" aria-label="Cerrar detalle">
@@ -203,7 +205,7 @@ function _render() {
         </div>
         ${guidanceHtml}
 
-        ${vibe ? `<p class="pdm-vibe">${esc(vibe)}</p>` : ''}
+        ${!pilot && vibe ? `<p class="pdm-vibe">${esc(vibe)}</p>` : ''}
         ${buildScentNotesHtml(p)}
 
         ${description && description !== vibe ? `<p class="pdm-story">${esc(description)}</p>` : ''}
@@ -267,7 +269,8 @@ function _render() {
    labels, not markup. */
 export function buildProductModalGuidanceHtml(product) {
   const chips = getContextChips(product, 3);
-  const labels = chips.length
+  const hasCanonicalChips = Array.isArray(product?.scent_profile?.context_chips);
+  const labels = hasCanonicalChips
     ? chips
     : getDisplayBadges(product, { context: 'quick_view' }).map(g => g.label);
 
@@ -275,7 +278,7 @@ export function buildProductModalGuidanceHtml(product) {
 
   return `<div class="pdm-guidance" aria-label="Para qué sirve">${labels
     .slice(0, 3)
-    .map(label => `<span class="guidance-chip">${esc(label)}</span>`)
+    .map(label => buildContextChipHtml(label, { withIcon: usesScentPilot(product) }))
     .join('')}</div>`;
 }
 

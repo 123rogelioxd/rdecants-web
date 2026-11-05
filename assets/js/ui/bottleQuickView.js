@@ -1,4 +1,4 @@
-import { buildScentNotesHtml, getShortDescription } from './scentNotes.js';
+import { buildScentNotesHtml, getFullDescription, usesScentPilot } from './scentNotes.js';
 /* =============================================================
    RDECANTS — BOTTLE QUICK VIEW
    A lightweight detail overlay for a physical bottle offer: condition,
@@ -144,7 +144,7 @@ function _render() {
 
       ${_conditionDetailHtml(offer)}
       ${!offer.image && !offer.sealed ? '<p class="bqv-image-note">Imagen de referencia de la fragancia. Consulta el estado de esta unidad por WhatsApp.</p>' : ''}
-      ${getShortDescription(p) ? `<p class="bqv-description">${_escape(getShortDescription(p))}</p>` : ''}
+      ${!usesScentPilot(p) && getFullDescription(p) ? `<p class="bqv-description">${_escape(getFullDescription(p))}</p>` : ''}
       ${buildScentNotesHtml(p)}
 
       ${siblings.length ? `
