@@ -2,7 +2,7 @@
  * from RSupplyOS scent_profile. Related notes intentionally share an icon. */
 const entries = [
   ['bergamot','Bergamota','citrus','citrus','bergamota|bergamot orange','ingredient-bergamot'],
-  ['lemon','Limón','citrus','lemon','limon|limones|sicilian lemon','ingredient-lemon'],
+  ['lemon','Limón','citrus','lemon','limon|limones|sicilian lemon|limon siciliano|limon de amalfi|limon amarillo','ingredient-lemon'],
   ['lime','Lima','citrus','lemon','lima|limas'],
   ['orange','Naranja','citrus','citrus','naranja|naranjas|sweet orange','ingredient-orange'],
   ['mandarin','Mandarina','citrus','citrus','mandarina|mandarinas|mandarin orange|tangerine','ingredient-mandarin'],
@@ -81,7 +81,7 @@ const entries = [
   ['aquatic','Acuático','fresh','water','acuatico|acuaticas|water notes'],
   ['marine','Notas marinas','fresh','wave','notas marinas|marine notes|sea notes|aquatic notes|marino|marina|sea water|agua de mar','ingredient-marine'],
   ['ozonic','Ozónico','fresh','breeze','ozonico|ozonic notes|ozone|ozono'],
-  ['amber','Ámbar','resin','amber','ambar|amber notes|ambarado','ingredient-amber'],
+  ['amber','Ámbar','resin','amber','ambar|amber notes|ambarado'],
   ['ambergris','Ámbar gris','resin','amber','ambar gris|grey amber'],
   ['incense','Incienso','resin','incense','incienso|frankincense|olibano|olibanum','ingredient-incense'],
   ['benzoin','Benjuí','resin','resin','benjui'],

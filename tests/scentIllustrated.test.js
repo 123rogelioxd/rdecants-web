@@ -155,3 +155,14 @@ test('the supplied ingredient images: every listed id is a vocabulary entry with
   assert.match(ingredientImageUrl(normalizeScentNote({label:'Lavanda'})), /ingredients\/lavender\.webp/, 'no photo yet: the illustration stays');
   assert.match(ingredientImageUrl(normalizeScentNote({label:'Ámbar gris'})), /neutral\.webp/);
 });
+
+test('lemon and lime stay apart, and abstract accords never borrow a material image', () => {
+  assert.match(ingredientImageUrl(normalizeScentNote({label:'Lima'})), /photo\/lime\.webp/, 'the green citrus image is a lime');
+  for (const label of ['Limón','limón siciliano','limon de amalfi']) {
+    assert.match(ingredientImageUrl(normalizeScentNote({label})), /ingredients\/lemon\.webp/, `${label}: yellow lemon drawing until its photo exists`);
+  }
+  for (const label of ['Ámbar','ámbar gris','Almizcle','Notas marinas','Mineral']) {
+    assert.doesNotMatch(ingredientImageUrl(normalizeScentNote({label})), /\/photo\//, label);
+  }
+  assert.match(ingredientImageUrl(normalizeScentNote({label:'Ámbar'})), /neutral\.webp/, 'perfumery amber is an accord, not amber stones');
+});

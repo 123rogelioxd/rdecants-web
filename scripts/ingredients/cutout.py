@@ -21,7 +21,7 @@ else:
 SHEETS = {
     4: ['pineapple', 'salt', 'sandalwood', 'leather', 'vanilla', 'rum', 'bergamot', 'jasmine'],
     5: ['rose', 'lily', 'lily_of_the_valley', 'peony', 'orange_blossom', 'geranium', 'bamboo', 'violet'],
-    6: ['apple', 'plum', 'mandarin', 'lemon', 'blackcurrant', 'mango', 'passion_fruit', 'apricot'],
+    6: ['apple', 'plum', 'mandarin', 'lime', 'blackcurrant', 'mango', 'passion_fruit', 'apricot'],
     7: ['cedar', 'oud', 'cardamom', 'ginger', 'cocoa', 'cinnamon', 'incense', 'moss'],
 }
 SIZE = 384

@@ -11,7 +11,7 @@ All 32 files in this folder (2026-11-05):
 
 Files: pineapple, salt, sandalwood, leather, vanilla, rum, bergamot, jasmine,
 rose, lily, lily_of_the_valley, peony, orange_blossom, geranium, bamboo, violet,
-apple, plum, mandarin, lemon, blackcurrant, mango, passion_fruit, apricot,
+apple, plum, mandarin, lime (delivered labelled «Limón»; it is a green lime), blackcurrant, mango, passion_fruit, apricot,
 cedar, oud, cardamom, ginger, cocoa, cinnamon, incense, moss.
 
 For any future file, add one line: `<id>.webp` | source | author | licence | date.
