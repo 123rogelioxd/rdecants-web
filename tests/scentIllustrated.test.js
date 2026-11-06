@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {existsSync, readFileSync} from 'node:fs';
-import {buildScentNotesHtml, buildContextChipHtml, getFullDescription, getSensoryDescription, getStoryDescription, ingredientImageUrl, normalizeScentNote, usesIllustratedScent} from '../assets/js/ui/scentNotes.js';
+import {buildScentNotesHtml, buildContextChipHtml, getFullDescription, getSensoryDescription, getStoryDescription, ingredientImageKind, ingredientImageUrl, normalizeScentNote, usesIllustratedScent} from '../assets/js/ui/scentNotes.js';
 import {CONTEXT_SYMBOLS, SCENT_FAMILY_SYMBOLS, SCENT_VOCABULARY, resolveContextSymbol} from '../assets/js/ui/scentVocabulary.js';
 import {buildProductModalGuidanceHtml, _displayName} from '../assets/js/ui/modal.js';
 import {buildProductPageHtml} from '../assets/js/ui/productPage.js';
@@ -125,4 +125,18 @@ test('phone quick view: a compact card with one scroll area and nothing pinned',
   assert.match(phone, /\.pdm-name \{[^}]*-webkit-line-clamp: none/, 'long names are not clamped');
   assert.match(phone, /\.pdm-buybar \{[^}]*position: static/, 'the buy block is not pinned');
   assert.match(phone, /env\(safe-area-inset-top\)/, 'Safari safe areas respected');
+});
+
+test('a licensed ingredient photo, once listed, replaces the illustration for every perfume with that note', async () => {
+  const {INGREDIENT_PHOTOS} = await import('../assets/js/ui/ingredientPhotos.js');
+  for (const id of INGREDIENT_PHOTOS) assert.ok(existsSync(new URL(`../assets/img/ingredients/photo/${id}.webp`, import.meta.url)), `photo/${id}.webp`);
+  const pineapple = normalizeScentNote({label:'Piña'});
+  assert.equal(ingredientImageKind(pineapple).kind, INGREDIENT_PHOTOS.has('pineapple') ? 'photo' : 'illustration');
+  const had = INGREDIENT_PHOTOS.has('pineapple');
+  INGREDIENT_PHOTOS.add('pineapple');
+  try {
+    assert.match(ingredientImageUrl(pineapple), /\/ingredients\/photo\/pineapple\.webp\?v=/);
+    assert.match(buildScentNotesHtml({scent_profile:{main_notes:[{id:'pineapple',label:'Piña'}]}}), /data-kind="photo"/);
+  } finally { if (!had) INGREDIENT_PHOTOS.delete('pineapple'); }
+  assert.equal(ingredientImageKind(normalizeScentNote({label:'Nota futura'})).kind, 'neutral');
 });

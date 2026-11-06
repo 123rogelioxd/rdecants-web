@@ -1,6 +1,7 @@
 import { SCENT_VOCABULARY, SCENT_FAMILY_SYMBOLS, normalizeNoteKey, resolveScentId, resolveContextSymbol } from './scentVocabulary.js';
 import { sentenceCase } from '../utils/presentation.js';
 import { BUILD_VERSION } from '../api/config.js';
+import { INGREDIENT_PHOTOS } from './ingredientPhotos.js';
 
 export { SCENT_VOCABULARY, resolveScentId } from './scentVocabulary.js';
 export const MAX_MAIN_NOTES = 5;
@@ -17,11 +18,17 @@ const SPRITE_URL = new URL(`../../img/scent-icons.svg?v=${BUILD_VERSION}`, impor
 // keeps their gradients and textures intact on iOS Safari, which drops gradients
 // referenced from an external SVG sprite. A note with no drawing gets the neutral one.
 const INGREDIENT_DIR = new URL('../../img/ingredients/', import.meta.url).href;
-export function ingredientImageUrl(note) {
-  const drawn = typeof note?.illustration === 'string' && note.illustration.startsWith('ingredient-')
+/** photo (a real, licensed photograph) → illustration → neutral drop. */
+export function ingredientImageKind(note) {
+  const id = typeof note?.illustration === 'string' && note.illustration.startsWith('ingredient-')
     ? note.illustration.slice('ingredient-'.length)
-    : 'neutral';
-  return `${INGREDIENT_DIR}${drawn}.webp?v=${BUILD_VERSION}`;
+    : null;
+  if (id && INGREDIENT_PHOTOS.has(id)) return { kind: 'photo', id };
+  return id ? { kind: 'illustration', id } : { kind: 'neutral', id: 'neutral' };
+}
+export function ingredientImageUrl(note) {
+  const { kind, id } = ingredientImageKind(note);
+  return `${INGREDIENT_DIR}${kind === 'photo' ? 'photo/' : ''}${id}.webp?v=${BUILD_VERSION}`;
 }
 const text = value => typeof value === 'string' ? value.trim() : '';
 const list = value => Array.isArray(value) ? value : [];
@@ -77,7 +84,7 @@ export function buildScentNotesHtml(product, { heading = '¿A qué huele?', clas
     ${description ? `<p class="scent-notes-summary">${escape(description)}</p>` : ''}
     ${notes.length ? `<ul class="scent-notes-list" data-count="${notes.length}">${notes.map(note => `<li class="scent-note" data-scent-note="${escape(note.id ?? 'unknown')}">
       ${illustrated
-        ? `<img class="scent-note-img" src="${escape(ingredientImageUrl(note))}" alt="" width="72" height="72" loading="lazy" decoding="async">`
+        ? `<img class="scent-note-img" data-kind="${ingredientImageKind(note).kind}" src="${escape(ingredientImageUrl(note))}" alt="" width="72" height="72" loading="lazy" decoding="async">`
         : `<svg class="scent-note-icon" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="${escape(SPRITE_URL)}#${note.icon}"></use></svg>`}
       <span>${escape(illustrated ? upperFirst(note.label) : note.label)}</span></li>`).join('')}</ul>
     ` : ''}
