@@ -472,3 +472,16 @@ Evitar: caricatura, ilustración, vector, 3D o CGI evidente, plástico, colores 
 2. `python scripts/ingredients/cutout.py --plan scripts/ingredients/sheets.json --sheet NN <imagen> assets/img/ingredients/photo <revision.png>`.
 3. Revisar la hoja de revisión; añadir cada ID a `INGREDIENT_PHOTOS` y su entrada/alias en `scentVocabulary.js` (los alias de cada ID están en `sheets.json`).
 4. Pruebas: `node --test tests/scentIllustrated.test.js`.
+
+## Cierre visual publicado · 2026-11-06
+
+La versión `2026.11.05.7` está en Hostinger. El paquete publicado contiene las
+168 fotos de ingredientes y 8 medallones de acorde con SHA-256 verificado.
+Producción mostró cuatro fotos en el modal de prueba. El catálogo tiene 140
+ingredientes físicos canónicos y 50 acordes; la biblioteca es ilustrativa y no
+pretende incluir una imagen para cada etiqueta. Alias `sugar`/«Azúcar» y
+`sugar_cane`/«Caña de azúcar» siguen separados. Las 136 láminas añadidas se
+generaron para RDECANTS con ChatGPT Images según confirmación de Roger y se
+procesaron localmente; no se atribuyen como stock ni se declara CC0. Ver
+[`photo/CREDITS.md`](../../assets/img/ingredients/photo/CREDITS.md) y el
+[cierre de release](../../docs/2026-11-05-rdecants-closure.md).

@@ -1,17 +1,18 @@
 # AGENTS.md — rdecants.com (tienda RDECANTS)
 
-Entrada para cualquier agente que trabaje en la tienda. Revisado el 2026-11-05.
+Entrada para cualquier agente que trabaje en la tienda. Revisado el 2026-11-06.
 Nota: el despliegue copia la raíz de este repositorio al sitio público; este
 archivo no debe contener rutas internas, credenciales ni datos privados.
 
 ## Continuidad entre sesiones
 
-Al continuar una misión, primero comprueba rama, commit y cambios sin guardar;
-lee el estado vigente, foco, autoridades, changelog reciente y decisiones ya
-aprobadas. Retoma la última evidencia real registrada: no repitas investigación,
-recuperación de commits ni generación de recursos que ya estén completos salvo
-que una verificación nueva indique un problema. Mantén este orden al actualizar
-la documentación de continuidad para futuras sesiones.
+En cada sesión, antes de trabajar, lee `AGENTS.md` y `CLAUDE.md`; comprueba rama,
+commit y cambios sin guardar; después lee `RSNEXUS/CURRENT_STATE.md` §0, el foco,
+las autoridades, la documentación de storefront/despliegue, el cierre reciente y
+las decisiones aprobadas. Retoma la última evidencia real: no repitas
+investigación, recuperación de commits ni generación de recursos completos salvo
+que una verificación nueva indique un problema. Esta regla es permanente para
+todas las sesiones futuras y se conserva al actualizar la documentación.
 
 ## 1. Qué es este repositorio
 
@@ -59,9 +60,12 @@ presentaciones y checkout) y la guía del backend citada arriba.
   `RSNEXUS/testing/QA-LOCAL-PRINCIPAL.md`. No levantes otra API de prueba. Para
   usarla desde el navegador hace falta antes un ajuste de CORS en el backend (ver
   ese documento); mientras tanto usa `node scripts/preview.mjs`.
-- Desplegar = merge a `production` (GitHub Actions publica por FTPS). Sólo con
-  autorización de Roger. Una captura local no es la verificación del navegador
-  real del dueño: dilo así.
+- La ruta automatizada es el merge autorizado a `production` (GitHub Actions / FTPS).
+  La ruta SSH directa a Hostinger también está documentada en `README_DEPLOY.md` y
+  se limita al docroot exacto `domains/rdecants.com/public_html`, con preflight de
+  huellas, respaldo y rollback. Usa una u otra sólo con autorización explícita;
+  no cambies datos persistentes ni otros dominios. Una captura local no es la
+  verificación del navegador real del dueño: dilo así.
 
 ## 4. Al terminar
 

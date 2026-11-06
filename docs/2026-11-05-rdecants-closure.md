@@ -77,3 +77,49 @@ Fecha: 2026-11-05. Estado: **candidata local; no publicada**.
 - Pendiente publicar sólo después de habilitar el canal oficial y verificar el
   rollback. Para comprobar binarios del API, usar el pipeline de despliegue
   aprobado; no repetir sondeos desde esta PC.
+
+## Actualización del cierre · 2026-11-06
+
+La versión `2026.11.05.7` quedó **publicada** en Hostinger mediante una única
+sesión SSH limitada a `/home/u377797534/domains/rdecants.com/public_html`. El
+paquete vino de la rama local/remota
+`trabajo/rediseno-rdecants-20261105`, commit
+`18c49348751686140376b02517e31d29a00c66ed`; GitHub `production` permanece en
+`c9d58897f0a96d97f6dcc3ceec619aba01c26c65`. No hubo PR ni ejecuciones Actions.
+
+- Preflight: `VERSION` anterior `.1`, las 21 rutas existentes coincidían con
+  los SHA-256 de la base y las 239 rutas nuevas estaban ausentes. Sin symlinks,
+  eliminaciones ni cambios a API/Laravel, Nexus, ventas, inventario o `.env`.
+- Resultado SSH: 260 archivos; assets primero, HTML después, `VERSION` al final.
+  Backup `/home/u377797534/backups/rdecants-web-20261105-7-20261106T060429Z/`;
+  SHA-256 de `storefront-before.tar.gz`:
+  `844be8d184d9447392fff168c093ff898e6e8c4f578428d1a54f9a7f52209142`.
+  Rollback: `bash /home/u377797534/backups/rdecants-web-20261105-7-20261106T060429Z/rollback.sh`.
+- Navegador real después del deploy: catálogo con 108 ofertas, 14 fotos de
+  frascos con ancho natural válido y cero imágenes rotas; modal de 390×844 sin
+  overflow horizontal y cuatro WebP olfativos cargados a 384 px; precios 3 ml
+  $60, 5 ml $100 y 10 ml $150; perfil completo cargado; consola sin errores ni
+  avisos. No se manipuló el carrito durante el chequeo público y no se
+  registraron pedidos/cobros.
+- Los 168 archivos fotográficos y 8 medallones fueron desplegados con hashes
+  verificados. En la página se observaron las cuatro fotos del perfil de prueba;
+  no se solicitó cada foto de todos los perfiles. Las 14 fotos de frasco son
+  muestras renderizadas, no las 112 rutas binarias individualmente.
+- Las 136 láminas nuevas se generaron para RDECANTS con ChatGPT Images según
+  confirmación de Roger; no son stock ni se afirma licencia CC0. Fuente y
+  procesamiento: `assets/img/ingredients/photo/CREDITS.md`.
+- La biblioteca 168/168, los 8 medallones, aliases de azúcar/caña y 1,188 de
+  1,189 pruebas frontend aprobadas (una omitida) se conservan. El proxy del
+  preview oficial elimina el falso 404 `/storage/`; las fotos de botellas
+  cargaron también desde `api.rdecants.com/storage/` en producción.
+- Laravel no cambió. En QA Principal los filtros focalizados pasaron 36 pruebas,
+  95 aserciones y una omitida. El filtro amplio `Storefront` conserva 2 fallas
+  entre 287. El wrapper autorizado oculta nombres/trazas; la revisión automática
+  no permitió invocar PHPUnit por fuera del wrapper. Sus causas no se atribuyen
+  sin evidencia; el alcance de este release es frontend estático.
+
+El canal SSH y el mecanismo de respaldo/rollback se describen en
+[`README_DEPLOY.md`](../README_DEPLOY.md). Pendientes actuales: alinear el
+puntero de GitHub `production` en una sesión sin Actions de pago y recuperar,
+mediante el entrypoint autorizado de QA, nombres y causas de las dos fallas
+Laravel.
