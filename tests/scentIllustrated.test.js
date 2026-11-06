@@ -6,7 +6,7 @@ import {CONTEXT_SYMBOLS, SCENT_FAMILY_SYMBOLS, SCENT_VOCABULARY, resolveContextS
 import {buildProductModalGuidanceHtml, _displayName} from '../assets/js/ui/modal.js';
 import {buildProductPageHtml} from '../assets/js/ui/productPage.js';
 
-const drawingsOf = html => [...html.matchAll(/ingredients\/(?:photo\/)?([a-z_]+)\.webp/g)].map(m => m[1]);
+const drawingsOf = html => [...html.matchAll(/ingredients\/(?:photo\/|accord\/)?([a-z_]+)\.webp/g)].map(m => m[1]);
 
 const pilot = () => ({
   id:'156',product_id:156,slug:'donna-extradose-valentino',name:'DONNA EXTRADOSE',house:'VALENTINO',
@@ -35,7 +35,7 @@ test('every perfume gets the illustrated block: a drawing where one exists, the 
   assert.equal(usesIllustratedScent(other), true);
   const html = buildScentNotesHtml(other);
   assert.ok(html.includes('scent-notes--illustrated'));
-  assert.deepEqual(drawingsOf(html), ['bergamot','neutral','apricot','neutral']);
+  assert.deepEqual(drawingsOf(html), ['bergamot','iris','apricot','neutral']);
   assert.ok(!html.includes('<svg'), 'no monochrome icon inside the block');
   assert.ok(html.includes('>Nota futura<'));
   assert.ok(html.includes('>Albaricoque<'), 'family-matched lowercase labels are capitalised for display');
@@ -71,7 +71,8 @@ test('canonical IDs and aliases resolve before the neutral drop without changing
   assert.equal(normalizeScentNote({label:'Cassis'}).illustration, 'ingredient-blackcurrant');
   const drink = normalizeScentNote({id:'champagne_rose',label:'Champagne rosé',family:'drink',known:true});
   assert.equal(drink.label, 'Champagne rosé');
-  assert.match(ingredientImageUrl(drink), /\/neutral\.webp\?v=/);
+  assert.match(ingredientImageUrl(drink), /\/photo\/champagne_rose\.webp\?v=/);
+  assert.match(ingredientImageUrl(normalizeScentNote({label:'Nota futura'})), /\/neutral\.webp\?v=/);
   assert.match(ingredientImageUrl(normalizeScentNote({label:'Piña'})), /\/pineapple\.webp\?v=/);
 });
 
@@ -90,20 +91,23 @@ test('Zara Bogos Vibrant Leather Coco Suede: pineapple, salt, sandalwood and sue
     {id:'sandalwood',label:'Sándalo',family:'woods'},{id:null,label:'ante',family:'scent'},
   ]}};
   const html = buildScentNotesHtml(zara);
-  assert.deepEqual(drawingsOf(html), ['pineapple','salt','sandalwood','leather']);
+  assert.deepEqual(drawingsOf(html), ['pineapple','salt','sandalwood','suede'], '«ante» is suede, not smooth leather');
   assert.ok(html.includes('>Ante<'), 'the imported word stays; only its drawing is resolved');
   assert.equal(_displayName(zara.name), 'Bogos Vibrant Leather Coco Suede EDP');
 });
 
 test('imported notes reach their drawing through ids and existing aliases, one drawing per ingredient', () => {
-  const cases = {'Cassis':'blackcurrant','jengibre':'ginger','geranio Bourbon':'geranium','peonía roja':'peony','maracuyá':'passion_fruit','Toronja':'grapefruit','pimienta negra':'pepper','Notas marinas':'marine','gamuza':'leather','cedro de Virginia':'cedar','muguete':'lily_of_the_valley','lirio de los valles':'lily_of_the_valley','azucena':'lily','bambú':'bamboo'};
+  const cases = {'Cassis':'blackcurrant','jengibre':'ginger','geranio Bourbon':'geranium','peonía roja':'peony','maracuyá':'passion_fruit','Toronja':'grapefruit','pimienta negra':'pepper','Notas marinas':'marine','cedro de Virginia':'cedar','muguete':'lily_of_the_valley','lirio de los valles':'lily_of_the_valley','azucena':'lily','bambú':'bamboo'};
   for (const [label, id] of Object.entries(cases)) {
     const n = normalizeScentNote({label});
     assert.equal(n.illustration, 'ingredient-'+id, label);
     assert.equal(n.label, label, 'the canonical label is never rewritten');
   }
-  // Not the same material: grey amber gets the neutral drop, not a misleading drawing.
-  for (const label of ['Ámbar gris']) assert.match(ingredientImageUrl(normalizeScentNote({label})), /neutral\.webp/, label);
+  // Suede and smooth leather are two ingredients; grey amber is an accord medallion, not a material.
+  for (const label of ['gamuza','ante']) assert.match(ingredientImageUrl(normalizeScentNote({label})), /photo\/suede\.webp/, label);
+  for (const label of ['cuero','Leather']) assert.match(ingredientImageUrl(normalizeScentNote({label})), /photo\/leather\.webp/, label);
+  assert.match(ingredientImageUrl(normalizeScentNote({id:'leather',label:'ante'})), /photo\/suede\.webp/, 'the label is more specific than the backend id');
+  for (const label of ['Ámbar gris','Ambroxan']) assert.match(ingredientImageUrl(normalizeScentNote({label})), /accord\/ambergris\.webp/, label);
   // Synonyms share an entry, so no ingredient is drawn twice.
   const drawings = Object.values(SCENT_VOCABULARY).map(n => n.illustration).filter(Boolean);
   assert.equal(new Set(drawings).size, drawings.length);
@@ -143,7 +147,7 @@ test('a licensed ingredient photo, once listed, replaces the illustration for ev
 
 test('the supplied ingredient images: every listed id is a vocabulary entry with a file, and they win over drawings', async () => {
   const {INGREDIENT_PHOTOS} = await import('../assets/js/ui/ingredientPhotos.js');
-  assert.equal(INGREDIENT_PHOTOS.size, 32);
+  assert.equal(INGREDIENT_PHOTOS.size, 168);
   for (const id of INGREDIENT_PHOTOS) {
     assert.ok(SCENT_VOCABULARY[id], `${id} is a vocabulary id`);
     assert.ok(existsSync(new URL(`../assets/img/ingredients/photo/${id}.webp`, import.meta.url)), id);
@@ -152,17 +156,25 @@ test('the supplied ingredient images: every listed id is a vocabulary entry with
   assert.equal((zara.match(/data-kind="photo"/g)||[]).length, 4);
   assert.match(ingredientImageUrl(normalizeScentNote({label:'Oud'})), /photo\/oud\.webp/, 'a note without a drawing can still have a photo');
   assert.match(ingredientImageUrl(normalizeScentNote({label:'chabacano'})), /photo\/apricot\.webp/);
-  assert.match(ingredientImageUrl(normalizeScentNote({label:'Lavanda'})), /ingredients\/lavender\.webp/, 'no photo yet: the illustration stays');
-  assert.match(ingredientImageUrl(normalizeScentNote({label:'Ámbar gris'})), /neutral\.webp/);
+  assert.match(ingredientImageUrl(normalizeScentNote({label:'Lavanda'})), /photo\/lavender\.webp/);
+  assert.match(ingredientImageUrl(normalizeScentNote({label:'Frutal'})), /neutral\.webp/, 'a family word is not an ingredient');
 });
 
-test('lemon and lime stay apart, and abstract accords never borrow a material image', () => {
+test('lemon and lime stay apart, and abstract accords never borrow a material image', async () => {
+  const {INGREDIENT_PHOTOS, INGREDIENT_ACCORDS} = await import('../assets/js/ui/ingredientPhotos.js');
   assert.match(ingredientImageUrl(normalizeScentNote({label:'Lima'})), /photo\/lime\.webp/, 'the green citrus image is a lime');
   for (const label of ['Limón','limón siciliano','limon de amalfi']) {
-    assert.match(ingredientImageUrl(normalizeScentNote({label})), /ingredients\/lemon\.webp/, `${label}: yellow lemon drawing until its photo exists`);
+    assert.match(ingredientImageUrl(normalizeScentNote({label})), /photo\/lemon\.webp/, `${label}: the yellow lemon`);
   }
-  for (const label of ['Ámbar','ámbar gris','Almizcle','Notas marinas','Mineral']) {
-    assert.doesNotMatch(ingredientImageUrl(normalizeScentNote({label})), /\/photo\//, label);
+  for (const label of ['Ámbar','ámbar gris','Almizcle','Notas marinas','Mineral','madera de cachemira','acuático']) {
+    const url = ingredientImageUrl(normalizeScentNote({label}));
+    assert.doesNotMatch(url, /\/photo\//, label);
+    assert.match(url, /\/accord\//, `${label}: an essence medallion`);
   }
-  assert.match(ingredientImageUrl(normalizeScentNote({label:'Ámbar'})), /neutral\.webp/, 'perfumery amber is an accord, not amber stones');
+  assert.match(ingredientImageUrl(normalizeScentNote({label:'Ámbar'})), /accord\/amber\.webp/, 'perfumery amber is an accord, not amber stones');
+  for (const [id, file] of Object.entries(INGREDIENT_ACCORDS)) {
+    assert.ok(SCENT_VOCABULARY[id], `${id} is a vocabulary id`);
+    assert.ok(!INGREDIENT_PHOTOS.has(id), `${id} is never a material photo`);
+    assert.ok(existsSync(new URL(`../assets/img/ingredients/accord/${file}.webp`, import.meta.url)), `accord/${file}.webp`);
+  }
 });

@@ -1,7 +1,7 @@
 import { SCENT_VOCABULARY, SCENT_FAMILY_SYMBOLS, normalizeNoteKey, resolveScentId, resolveContextSymbol } from './scentVocabulary.js';
 import { sentenceCase } from '../utils/presentation.js';
 import { BUILD_VERSION } from '../api/config.js';
-import { INGREDIENT_PHOTOS } from './ingredientPhotos.js';
+import { INGREDIENT_PHOTOS, INGREDIENT_ACCORDS } from './ingredientPhotos.js';
 
 export { SCENT_VOCABULARY, resolveScentId } from './scentVocabulary.js';
 export const MAX_MAIN_NOTES = 5;
@@ -23,6 +23,8 @@ export function ingredientImageKind(note) {
   // A photo belongs to the vocabulary id (so a note without a drawing, e.g. oud, can have one).
   const vocabularyId = typeof note?.id === 'string' && Object.hasOwn(SCENT_VOCABULARY, note.id) ? note.id : null;
   if (vocabularyId && INGREDIENT_PHOTOS.has(vocabularyId)) return { kind: 'photo', id: vocabularyId };
+  // Abstract accords: an essence-drop medallion, never a raw material.
+  if (vocabularyId && Object.hasOwn(INGREDIENT_ACCORDS, vocabularyId)) return { kind: 'accord', id: INGREDIENT_ACCORDS[vocabularyId] };
   const id = typeof note?.illustration === 'string' && note.illustration.startsWith('ingredient-')
     ? note.illustration.slice('ingredient-'.length)
     : null;
@@ -30,7 +32,8 @@ export function ingredientImageKind(note) {
 }
 export function ingredientImageUrl(note) {
   const { kind, id } = ingredientImageKind(note);
-  return `${INGREDIENT_DIR}${kind === 'photo' ? 'photo/' : ''}${id}.webp?v=${BUILD_VERSION}`;
+  const folder = kind === 'photo' ? 'photo/' : kind === 'accord' ? 'accord/' : '';
+  return `${INGREDIENT_DIR}${folder}${id}.webp?v=${BUILD_VERSION}`;
 }
 const text = value => typeof value === 'string' ? value.trim() : '';
 const list = value => Array.isArray(value) ? value : [];
@@ -41,7 +44,9 @@ const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp
 export function normalizeScentNote(raw) {
   const label = text(typeof raw === 'string' ? raw : raw?.label ?? raw?.name ?? raw?.id);
   if (!label) return null;
-  const id = resolveScentId(raw?.id) ?? resolveScentId(label);
+  // The commercial label is the more specific fact («ante» is suede even when the
+  // backend groups it under leather); the backend id is the fallback.
+  const id = resolveScentId(label) ?? resolveScentId(raw?.id);
   const note = id ? SCENT_VOCABULARY[id] : null;
   const graphic = note ?? SCENT_VOCABULARY[resolveScentId(raw?.icon)];
   const family = text(raw?.family) || graphic?.family || 'other';
