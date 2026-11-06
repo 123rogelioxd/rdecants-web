@@ -11,6 +11,7 @@ const entries = [
   ['apple','Manzana','fruit','apple','manzana|manzanas|green apple','ingredient-apple'],
   ['pear','Pera','fruit','pear','pera|peras','ingredient-pear'],
   ['peach','Durazno','fruit','peach','durazno|melocoton|nectarine','ingredient-peach'],
+  ['apricot','Albaricoque','fruit','peach','albaricoque|albaricoques|chabacano|chabacanos|apricot'],
   ['plum','Ciruela','fruit','peach','ciruela|ciruelas','ingredient-plum'],
   ['cherry','Cereza','fruit','cherry','cereza|cerezas|sour cherry','ingredient-cherry'],
   ['strawberry','Fresa','fruit','berry','fresa|fresas'],

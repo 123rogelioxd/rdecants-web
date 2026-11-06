@@ -20,10 +20,12 @@ const SPRITE_URL = new URL(`../../img/scent-icons.svg?v=${BUILD_VERSION}`, impor
 const INGREDIENT_DIR = new URL('../../img/ingredients/', import.meta.url).href;
 /** photo (a real, licensed photograph) → illustration → neutral drop. */
 export function ingredientImageKind(note) {
+  // A photo belongs to the vocabulary id (so a note without a drawing, e.g. oud, can have one).
+  const vocabularyId = typeof note?.id === 'string' && Object.hasOwn(SCENT_VOCABULARY, note.id) ? note.id : null;
+  if (vocabularyId && INGREDIENT_PHOTOS.has(vocabularyId)) return { kind: 'photo', id: vocabularyId };
   const id = typeof note?.illustration === 'string' && note.illustration.startsWith('ingredient-')
     ? note.illustration.slice('ingredient-'.length)
     : null;
-  if (id && INGREDIENT_PHOTOS.has(id)) return { kind: 'photo', id };
   return id ? { kind: 'illustration', id } : { kind: 'neutral', id: 'neutral' };
 }
 export function ingredientImageUrl(note) {

@@ -23,12 +23,14 @@ cut-out without halo, no text, no shadow plate. Licence: commercial use allowed
 (CC0 / own photo); record source and licence in `photo/CREDITS.md`. Never list
 a drawing as a photo.
 
-Priority (Zara Bogos + Donna Extradose first, then by appearances in the catalogue):
-1. pineapple, salt (sea salt), sandalwood, leather (suede swatch)
-2. blackcurrant, rum, vanilla, bergamot, jasmine
-3. lavender (27), lemon (15), cedar (15), apple (14), tonka_bean (11), mandarin (11),
-   patchouli (10), cardamom (10), orange (9), grapefruit (9)
-4. sage, vetiver, mint, pepper, rose, pink_pepper (8 each), coconut, orange_blossom (7)
+Done (2026-11-05): 32 images from Roger's sheets, cut with `cutout.py`
+(`python scripts/ingredients/cutout.py <sheets-dir> assets/img/ingredients/photo <review.png>`;
+edit its `SHEETS` map for new sheets: 4 × 2 labelled cells on a cream backdrop).
+They cover 223 of the 509 notes shown in the catalogue.
+
+Next sheet, by appearances still without a photo: lavender (27), tonka_bean (11),
+patchouli (10), orange (9), grapefruit (9), sage, vetiver, mint, pepper, pink_pepper (8),
+coconut (7), pear (6), caramel (6), amber (5), tobacco, marine.
 
 Abstract notes (musk, amber, marine, mineral, woods, citrus/spices/green mixes)
 keep their illustration: a photograph would suggest a material the perfume

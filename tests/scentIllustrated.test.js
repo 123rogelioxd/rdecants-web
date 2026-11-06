@@ -6,7 +6,7 @@ import {CONTEXT_SYMBOLS, SCENT_FAMILY_SYMBOLS, SCENT_VOCABULARY, resolveContextS
 import {buildProductModalGuidanceHtml, _displayName} from '../assets/js/ui/modal.js';
 import {buildProductPageHtml} from '../assets/js/ui/productPage.js';
 
-const drawingsOf = html => [...html.matchAll(/ingredients\/([a-z_]+)\.webp/g)].map(m => m[1]);
+const drawingsOf = html => [...html.matchAll(/ingredients\/(?:photo\/)?([a-z_]+)\.webp/g)].map(m => m[1]);
 
 const pilot = () => ({
   id:'156',product_id:156,slug:'donna-extradose-valentino',name:'DONNA EXTRADOSE',house:'VALENTINO',
@@ -35,7 +35,7 @@ test('every perfume gets the illustrated block: a drawing where one exists, the 
   assert.equal(usesIllustratedScent(other), true);
   const html = buildScentNotesHtml(other);
   assert.ok(html.includes('scent-notes--illustrated'));
-  assert.deepEqual(drawingsOf(html), ['bergamot','neutral','neutral','neutral']);
+  assert.deepEqual(drawingsOf(html), ['bergamot','neutral','apricot','neutral']);
   assert.ok(!html.includes('<svg'), 'no monochrome icon inside the block');
   assert.ok(html.includes('>Nota futura<'));
   assert.ok(html.includes('>Albaricoque<'), 'family-matched lowercase labels are capitalised for display');
@@ -102,8 +102,8 @@ test('imported notes reach their drawing through ids and existing aliases, one d
     assert.equal(n.illustration, 'ingredient-'+id, label);
     assert.equal(n.label, label, 'the canonical label is never rewritten');
   }
-  // Not the same material: grey amber and oud get the neutral drop, not a misleading drawing.
-  for (const label of ['Ámbar gris','Oud']) assert.match(ingredientImageUrl(normalizeScentNote({label})), /neutral\.webp/, label);
+  // Not the same material: grey amber gets the neutral drop, not a misleading drawing.
+  for (const label of ['Ámbar gris']) assert.match(ingredientImageUrl(normalizeScentNote({label})), /neutral\.webp/, label);
   // Synonyms share an entry, so no ingredient is drawn twice.
   const drawings = Object.values(SCENT_VOCABULARY).map(n => n.illustration).filter(Boolean);
   assert.equal(new Set(drawings).size, drawings.length);
@@ -139,4 +139,19 @@ test('a licensed ingredient photo, once listed, replaces the illustration for ev
     assert.match(buildScentNotesHtml({scent_profile:{main_notes:[{id:'pineapple',label:'Piña'}]}}), /data-kind="photo"/);
   } finally { if (!had) INGREDIENT_PHOTOS.delete('pineapple'); }
   assert.equal(ingredientImageKind(normalizeScentNote({label:'Nota futura'})).kind, 'neutral');
+});
+
+test('the supplied ingredient images: every listed id is a vocabulary entry with a file, and they win over drawings', async () => {
+  const {INGREDIENT_PHOTOS} = await import('../assets/js/ui/ingredientPhotos.js');
+  assert.equal(INGREDIENT_PHOTOS.size, 32);
+  for (const id of INGREDIENT_PHOTOS) {
+    assert.ok(SCENT_VOCABULARY[id], `${id} is a vocabulary id`);
+    assert.ok(existsSync(new URL(`../assets/img/ingredients/photo/${id}.webp`, import.meta.url)), id);
+  }
+  const zara = buildScentNotesHtml({scent_profile:{main_notes:[{id:'pineapple',label:'Piña'},{id:'salt',label:'Sal'},{id:'sandalwood',label:'Sándalo'},{id:null,label:'ante'}]}});
+  assert.equal((zara.match(/data-kind="photo"/g)||[]).length, 4);
+  assert.match(ingredientImageUrl(normalizeScentNote({label:'Oud'})), /photo\/oud\.webp/, 'a note without a drawing can still have a photo');
+  assert.match(ingredientImageUrl(normalizeScentNote({label:'chabacano'})), /photo\/apricot\.webp/);
+  assert.match(ingredientImageUrl(normalizeScentNote({label:'Lavanda'})), /ingredients\/lavender\.webp/, 'no photo yet: the illustration stays');
+  assert.match(ingredientImageUrl(normalizeScentNote({label:'Ámbar gris'})), /neutral\.webp/);
 });
