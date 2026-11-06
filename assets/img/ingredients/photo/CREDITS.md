@@ -20,15 +20,21 @@ rose, lily, lily_of_the_valley, peony, orange_blossom, geranium, bamboo, violet,
 apple, plum, mandarin, lime (delivered labelled «Limón»; it is a green lime), blackcurrant, mango, passion_fruit, apricot,
 cedar, oud, cardamom, ginger, cocoa, cinnamon, incense, moss.
 
-## Other photo assets
+## Additional generated ingredient photographs
 
-The repository contains 136 additional ingredient photographs integrated in
-`c9b317d` and eight accord medallions. `scripts/ingredients/LIBRARY.md`
-records the intended subjects and prompts, but the source sheets themselves are
-not present in this checkout and no per-sheet author/licence record was found.
-Their visual files and mappings were verified; their individual provenance is
-**not independently verified**. Do not describe these 136 files as Roger-owned
-or CC0 until the source is confirmed. No images were regenerated in this task.
+The 136 additional ingredient photographs integrated in `c9b317d` were
+generated for RDECANTS with ChatGPT Images. Roger confirmed this provenance on
+2026-11-05. The generated sheets were cropped and processed locally into
+transparent WebP files; `scripts/ingredients/cutout.py` records the processing
+path and `scripts/ingredients/LIBRARY.md` records the intended subjects and
+prompts. These are generated project assets: they are not stock photographs,
+and no CC0 or other third-party licence is asserted. No images were regenerated
+for this release.
+
+The eight abstract accord medallions are illustrations generated from the
+project's local vector drawing source in `scripts/ingredients/drawings.py` and
+rendered by `scripts/ingredients/render.py`; they are not ingredient
+photographs.
 
 For future additions, add one line per source: `<id>.webp` | source | author |
 licence | date. Keep the source sheet or an explicit owner/licence statement in
