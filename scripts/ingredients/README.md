@@ -1,4 +1,34 @@
-# Ingredient drawings («¿A qué huele?»)
+# Ingredient library («¿A qué huele?»)
+
+## Estado final · 2026-11-05
+
+- **168 fotografías** de ingredientes, 384 × 384 WebP con transparencia, enumeradas
+  en `INGREDIENT_PHOTOS`; las 168 tienen archivo y entrada de vocabulario.
+- **8 medallones únicos** para los 9 IDs de acorde (`aquatic` comparte el de
+  `marine`). Los acordes abstractos no usan fotos de materias primas.
+- Las ilustraciones siguen como respaldo si falta foto; una nota desconocida usa
+  `neutral.webp`. No se asignan imágenes por perfume.
+- `sugar` / «Azúcar» / `brown sugar` y `sugar_cane` / «Caña de azúcar» son IDs,
+  URLs y fotografías distintas. «Limón» es amarillo (`lemon`); «lima» es verde
+  (`lime`). «Cuero» es liso; «ante»/«gamuza» es `suede`.
+- La captura que originó el plan contiene 112 perfumes, 107 con notas, 250
+  etiquetas de nota distintas, 140 ingredientes físicos canónicos y 50 acordes.
+  El número 168 describe la biblioteca de fotos, no una promesa de que cada nota
+  del catálogo tenga una foto: los acordes y las notas no fotografiadas usan sus
+  respaldos existentes.
+- Calidad de los 168 WebP verificada localmente: decodifican, miden 384 × 384,
+  conservan canal alfa y no tienen contenido recortado por el límite del lienzo.
+  Se conservó la calidad fuente; los pocos archivos detallados que superan 40 KB
+  son excepciones hasta ~53 KB, no se recomprimieron con pérdida adicional.
+- Las URLs de fotos y medallones usan `?v=BUILD_VERSION`. El lote final queda en
+  `2026.11.05.7` en `VERSION`, `config.js` y todas las entradas HTML.
+- Fuentes/licencias: consultar [`photo/CREDITS.md`](../../assets/img/ingredients/photo/CREDITS.md).
+  Las 32 imágenes iniciales tienen su procedencia documentada; los originales
+  fuente de las 136 imágenes integradas después no están en este checkout, así
+  que su atribución individual queda pendiente de confirmación.
+
+El plan y las láminas siguientes se conservan como bitácora de cómo se llegó a
+la biblioteca; las cifras antiguas describen el corte original, no el estado actual.
 
 The storefront shows each scent note with a drawing from
 `assets/img/ingredients/<id>.webp` (192 px, transparent). `<id>` is the
@@ -23,7 +53,7 @@ cut-out without halo, no text, no shadow plate. Licence: commercial use allowed
 (CC0 / own photo); record source and licence in `photo/CREDITS.md`. Never list
 a drawing as a photo.
 
-Done (2026-11-05): 32 images from Roger's sheets, cut with `cutout.py`
+Historical first batch (2026-11-05): 32 images from Roger's sheets, cut with `cutout.py`
 (`python scripts/ingredients/cutout.py <sheets-dir> assets/img/ingredients/photo <review.png>`;
 edit its `SHEETS` map for new sheets: 4 × 2 labelled cells on a cream backdrop).
 They cover 223 of the 509 notes shown in the catalogue.

@@ -4,6 +4,15 @@ Entrada para cualquier agente que trabaje en la tienda. Revisado el 2026-11-05.
 Nota: el despliegue copia la raíz de este repositorio al sitio público; este
 archivo no debe contener rutas internas, credenciales ni datos privados.
 
+## Continuidad entre sesiones
+
+Al continuar una misión, primero comprueba rama, commit y cambios sin guardar;
+lee el estado vigente, foco, autoridades, changelog reciente y decisiones ya
+aprobadas. Retoma la última evidencia real registrada: no repitas investigación,
+recuperación de commits ni generación de recursos que ya estén completos salvo
+que una verificación nueva indique un problema. Mantén este orden al actualizar
+la documentación de continuidad para futuras sesiones.
+
 ## 1. Qué es este repositorio
 
 - La tienda pública `https://rdecants.com`: HTML estático + módulos ES nativos,

@@ -37,6 +37,7 @@ jobs:
             --exclude-glob tests/ \
             --exclude-glob scripts/ \
             --exclude-glob docs/ \
+            --exclude-glob "*.md" \
             --exclude-glob "*.zip" \
             ./ /
           bye

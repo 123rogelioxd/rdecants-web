@@ -177,4 +177,22 @@ test('lemon and lime stay apart, and abstract accords never borrow a material im
     assert.ok(!INGREDIENT_PHOTOS.has(id), `${id} is never a material photo`);
     assert.ok(existsSync(new URL(`../assets/img/ingredients/accord/${file}.webp`, import.meta.url)), `accord/${file}.webp`);
   }
+  assert.equal(new Set(Object.values(INGREDIENT_ACCORDS)).size, 8, 'aquatic reuses the marine medallion; eight unique accord files ship');
+});
+
+test('sugar and sugar cane keep distinct canonical photos and aliases', () => {
+  const cases = [
+    ['sugar', 'sugar', 'photo/sugar.webp'],
+    ['Azúcar', 'sugar', 'photo/sugar.webp'],
+    ['brown sugar', 'sugar', 'photo/sugar.webp'],
+    ['sugar_cane', 'sugar_cane', 'photo/sugar_cane.webp'],
+    ['Caña de azúcar', 'sugar_cane', 'photo/sugar_cane.webp'],
+    ['cana de azucar', 'sugar_cane', 'photo/sugar_cane.webp'],
+  ];
+  for (const [label, id, path] of cases) {
+    const note = normalizeScentNote({label});
+    assert.equal(note.id, id, label);
+    assert.ok(ingredientImageUrl(note).includes(`/ingredients/${path}?v=`), label);
+  }
+  assert.notEqual(ingredientImageUrl(normalizeScentNote({label:'Azúcar'})), ingredientImageUrl(normalizeScentNote({label:'Caña de azúcar'})));
 });
