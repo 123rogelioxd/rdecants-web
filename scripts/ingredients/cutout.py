@@ -6,7 +6,18 @@ import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-src, out, review_path = sys.argv[1], sys.argv[2], sys.argv[3]
+# Two modes:
+#   python cutout.py <dir-with-4.webp..7.webp> <out-dir> <review.png>              (first four sheets)
+#   python cutout.py --plan sheets.json --sheet NN <sheet-image> <out-dir> <review.png>  (plan sheets)
+PLAN_SHEET = None
+if sys.argv[1] == '--plan':
+    import json
+    plan = json.load(open(sys.argv[2], encoding='utf-8'))
+    number = int(sys.argv[4])
+    PLAN_SHEET = next(s for s in plan['sheets'] + [plan['optionalAccordSheet']] if s['sheet'] == number)
+    sheet_image, out, review_path = sys.argv[5], sys.argv[6], sys.argv[7]
+else:
+    src, out, review_path = sys.argv[1], sys.argv[2], sys.argv[3]
 SHEETS = {
     4: ['pineapple', 'salt', 'sandalwood', 'leather', 'vanilla', 'rum', 'bergamot', 'jasmine'],
     5: ['rose', 'lily', 'lily_of_the_valley', 'peony', 'orange_blossom', 'geranium', 'bamboo', 'violet'],
@@ -77,8 +88,9 @@ def square(rgba):
     return Image.fromarray(canvas, 'RGBA').resize((SIZE, SIZE), Image.LANCZOS)
 
 tiles = []
-for n, ids in SHEETS.items():
-    sheet = np.asarray(Image.open(f'{src}/{n}.webp').convert('RGB'))
+jobs = [(sheet_image, [i['id'] for i in PLAN_SHEET['items']])] if PLAN_SHEET else [(f'{src}/{n}.webp', ids) for n, ids in SHEETS.items()]
+for path, ids in jobs:
+    sheet = np.asarray(Image.open(path).convert('RGB'))
     H, W, _ = sheet.shape
     cw, ch = W / 4, H / 2
     for k, ident in enumerate(ids):

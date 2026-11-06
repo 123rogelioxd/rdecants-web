@@ -1,0 +1,1436 @@
+{
+ "generated": "2026-11-05",
+ "catalogPerfumes": 112,
+ "perfumesWithNotes": 107,
+ "rawUniqueNotes": 250,
+ "canonicalPhysical": 140,
+ "abstract": 50,
+ "covered": [
+  "vanilla",
+  "bergamot",
+  "cedar",
+  "jasmine",
+  "sandalwood",
+  "mandarin",
+  "apple",
+  "cardamom",
+  "rose",
+  "ginger",
+  "cinnamon",
+  "geranium",
+  "orange_blossom",
+  "incense",
+  "blackcurrant",
+  "moss",
+  "leather",
+  "pineapple",
+  "lily_of_the_valley",
+  "violet",
+  "cocoa",
+  "plum",
+  "mango",
+  "passion_fruit",
+  "peony",
+  "rum",
+  "salt",
+  "oud",
+  "apricot",
+  "bamboo",
+  "lily",
+  "lime"
+ ],
+ "missing": [
+  "patchouli",
+  "lavender",
+  "vetiver",
+  "tonka_bean",
+  "lemon",
+  "pink_pepper",
+  "sage",
+  "orange",
+  "mint",
+  "grapefruit",
+  "coconut",
+  "pear",
+  "pepper",
+  "cypress",
+  "tobacco",
+  "caramel",
+  "nutmeg",
+  "rosemary",
+  "juniper",
+  "elemi",
+  "benzoin",
+  "melon",
+  "peach",
+  "raspberry",
+  "saffron",
+  "labdanum",
+  "hazelnut",
+  "coriander",
+  "davana",
+  "violet_leaf",
+  "magnolia",
+  "coffee",
+  "gardenia",
+  "honey",
+  "ylang_ylang",
+  "lotus",
+  "anise",
+  "peru_balsam",
+  "sugar_cane",
+  "peach_blossom",
+  "frangipani",
+  "liqueur",
+  "guaiac",
+  "mimosa",
+  "petitgrain",
+  "sichuan_pepper",
+  "basil",
+  "cloves",
+  "praline",
+  "sugar",
+  "watermelon",
+  "whiskey",
+  "wormwood",
+  "styrax",
+  "fig",
+  "driftwood",
+  "pistachio",
+  "verbena",
+  "birch",
+  "absinthe",
+  "tonic_water",
+  "ambrette",
+  "star_anise",
+  "blueberry",
+  "calamus",
+  "bluebell",
+  "mahogany",
+  "candied_chestnut",
+  "champagne_rose",
+  "chili",
+  "chinotto",
+  "citron",
+  "cumin",
+  "dates",
+  "freesia",
+  "candied_fruit",
+  "gin",
+  "white_currant",
+  "hibiscus",
+  "fennel",
+  "kiwi",
+  "knafeh",
+  "mastic",
+  "lychee",
+  "iris",
+  "marshmallow",
+  "mignonette",
+  "narcissus",
+  "opoponax",
+  "oregano",
+  "osmanthus",
+  "rosewood",
+  "white_pepper",
+  "allspice",
+  "pitaya",
+  "licorice",
+  "oak",
+  "rhubarb",
+  "palo_santo",
+  "carrot_seed",
+  "marigold",
+  "black_tea",
+  "thyme",
+  "tuberose",
+  "yuzu",
+  "cherry",
+  "chocolate",
+  "cotton"
+ ],
+ "counts": {
+  "vanilla": 43,
+  "bergamot": 41,
+  "cedar": 36,
+  "patchouli": 33,
+  "lavender": 30,
+  "jasmine": 23,
+  "tonka_bean": 23,
+  "lemon": 22,
+  "sandalwood": 21,
+  "vetiver": 24,
+  "apple": 19,
+  "mandarin": 20,
+  "cardamom": 16,
+  "pink_pepper": 13,
+  "ginger": 12,
+  "mint": 12,
+  "rose": 14,
+  "sage": 13,
+  "cinnamon": 11,
+  "geranium": 11,
+  "grapefruit": 12,
+  "orange": 13,
+  "orange_blossom": 11,
+  "incense": 11,
+  "blackcurrant": 9,
+  "moss": 9,
+  "coconut": 8,
+  "pear": 8,
+  "pepper": 8,
+  "cypress": 7,
+  "tobacco": 7,
+  "caramel": 6,
+  "leather": 6,
+  "nutmeg": 6,
+  "pineapple": 6,
+  "lily_of_the_valley": 5,
+  "rosemary": 5,
+  "elemi": 4,
+  "benzoin": 4,
+  "melon": 4,
+  "peach": 4,
+  "raspberry": 4,
+  "saffron": 4,
+  "violet": 4,
+  "hazelnut": 3,
+  "coriander": 3,
+  "davana": 3,
+  "juniper": 5,
+  "violet_leaf": 3,
+  "magnolia": 3,
+  "cocoa": 4,
+  "coffee": 3,
+  "gardenia": 3,
+  "honey": 3,
+  "mango": 3,
+  "passion_fruit": 3,
+  "peony": 3,
+  "plum": 4,
+  "rum": 3,
+  "salt": 3,
+  "ylang_ylang": 3,
+  "anise": 2,
+  "peru_balsam": 2,
+  "sugar_cane": 2,
+  "peach_blossom": 2,
+  "frangipani": 2,
+  "labdanum": 4,
+  "liqueur": 2,
+  "guaiac": 2,
+  "mimosa": 2,
+  "petitgrain": 2,
+  "sichuan_pepper": 2,
+  "basil": 2,
+  "cloves": 2,
+  "oud": 2,
+  "praline": 2,
+  "sugar": 2,
+  "watermelon": 2,
+  "whiskey": 2,
+  "birch": 1,
+  "absinthe": 1,
+  "tonic_water": 1,
+  "wormwood": 2,
+  "ambrette": 1,
+  "star_anise": 1,
+  "blueberry": 1,
+  "calamus": 1,
+  "bluebell": 1,
+  "mahogany": 1,
+  "candied_chestnut": 1,
+  "champagne_rose": 1,
+  "chili": 1,
+  "chinotto": 1,
+  "citron": 1,
+  "cumin": 1,
+  "dates": 1,
+  "styrax": 2,
+  "lotus": 3,
+  "freesia": 1,
+  "candied_fruit": 1,
+  "gin": 1,
+  "white_currant": 1,
+  "hibiscus": 1,
+  "fig": 2,
+  "fennel": 1,
+  "kiwi": 1,
+  "knafeh": 1,
+  "mastic": 1,
+  "lychee": 1,
+  "iris": 1,
+  "driftwood": 2,
+  "marshmallow": 1,
+  "mignonette": 1,
+  "narcissus": 1,
+  "opoponax": 1,
+  "oregano": 1,
+  "osmanthus": 1,
+  "rosewood": 1,
+  "white_pepper": 1,
+  "allspice": 1,
+  "pistachio": 2,
+  "pitaya": 1,
+  "licorice": 1,
+  "oak": 1,
+  "rhubarb": 1,
+  "palo_santo": 1,
+  "carrot_seed": 1,
+  "marigold": 1,
+  "black_tea": 1,
+  "thyme": 1,
+  "tuberose": 1,
+  "verbena": 2,
+  "yuzu": 1,
+  "apricot": 1,
+  "bamboo": 1,
+  "cherry": 1,
+  "chocolate": 1,
+  "cotton": 1,
+  "lily": 1,
+  "lime": 1
+ },
+ "notes": {
+  "lemon": "The first sheets used a green lime for «Limón». Catalogue «limón» (siciliano, Amalfi) is the yellow lemon: on integration move photo/lemon.webp to photo/lime.webp and use the new yellow lemon for lemon.",
+  "leather": "photo/leather.webp is suede (ante/gamuza). Catalogue «cuero» gets its own smooth-leather image (leather_smooth) or keeps the suede.",
+  "amber": "Perfumery «ámbar» is an accord, not fossil amber: its current drawing of amber stones should become the accord treatment."
+ },
+ "sheets": [
+  {
+   "family": "planta",
+   "title": "Plantas, hojas y hierbas",
+   "items": [
+    {
+     "id": "patchouli",
+     "label": "Pachulí",
+     "show": "ramita de pachulí con hojas verdes y hojas secas",
+     "aliases": "hoja de pachuli de indonesia",
+     "catalogPerfumes": 33
+    },
+    {
+     "id": "lavender",
+     "label": "Lavanda",
+     "show": "ramillete de espigas de lavanda morada",
+     "aliases": "lavandin|lavanda diva|lavanda negra",
+     "catalogPerfumes": 30
+    },
+    {
+     "id": "vetiver",
+     "label": "Vetiver",
+     "show": "manojo de raíces de vetiver beige atadas",
+     "aliases": "vetiver de haiti|vetiver de madagascar|vetiver de uruguay",
+     "catalogPerfumes": 24
+    },
+    {
+     "id": "sage",
+     "label": "Salvia",
+     "show": "ramita de salvia con hojas gris verdosas aterciopeladas",
+     "aliases": "salvia esclarea|salvia sclarea|esclarea|salvia de provenza",
+     "catalogPerfumes": 13
+    },
+    {
+     "id": "mint",
+     "label": "Menta",
+     "show": "ramita de menta fresca",
+     "aliases": "hierbabuena",
+     "catalogPerfumes": 12
+    },
+    {
+     "id": "tobacco",
+     "label": "Tabaco",
+     "show": "hojas de tabaco curadas color miel, enrolladas",
+     "aliases": "hoja de tabaco",
+     "catalogPerfumes": 7
+    },
+    {
+     "id": "rosemary",
+     "label": "Romero",
+     "show": "ramitas de romero",
+     "aliases": "",
+     "catalogPerfumes": 5
+    },
+    {
+     "id": "juniper",
+     "label": "Enebro",
+     "show": "ramita de enebro con bayas azul oscuro",
+     "aliases": "enebro|bayas de enebro",
+     "catalogPerfumes": 5
+    }
+   ],
+   "sheet": 5,
+   "name": "Plantas, hojas y hierbas 1"
+  },
+  {
+   "family": "fruta",
+   "title": "Frutas y cítricos",
+   "items": [
+    {
+     "id": "lemon",
+     "label": "Limón amarillo",
+     "show": "limón amarillo entero y medio limón cortado mostrando la pulpa amarilla (no lima verde)",
+     "aliases": "limon|limon siciliano|limon de amalfi",
+     "catalogPerfumes": 22
+    },
+    {
+     "id": "orange",
+     "label": "Naranja",
+     "show": "naranja entera con hoja y media naranja cortada con pulpa jugosa",
+     "aliases": "naranja amarga|naranja brasilena|naranja italiana|naranja siciliana",
+     "catalogPerfumes": 13
+    },
+    {
+     "id": "grapefruit",
+     "label": "Toronja",
+     "show": "toronja rosada entera y media toronja con pulpa rosa",
+     "aliases": "pomelo|toronja rosa|pomelo rosa",
+     "catalogPerfumes": 12
+    },
+    {
+     "id": "coconut",
+     "label": "Coco",
+     "show": "coco marrón peludo entero y medio coco abierto con pulpa blanca",
+     "aliases": "agua de coco|leche de coco",
+     "catalogPerfumes": 8
+    },
+    {
+     "id": "pear",
+     "label": "Pera",
+     "show": "pera verde amarillenta entera con hoja y una rebanada",
+     "aliases": "",
+     "catalogPerfumes": 8
+    },
+    {
+     "id": "melon",
+     "label": "Melón",
+     "show": "medio melón chino naranja con red en la cáscara y una tajada",
+     "aliases": "",
+     "catalogPerfumes": 4
+    },
+    {
+     "id": "peach",
+     "label": "Durazno",
+     "show": "durazno aterciopelado con hoja y medio durazno con hueso",
+     "aliases": "melocoton",
+     "catalogPerfumes": 4
+    },
+    {
+     "id": "raspberry",
+     "label": "Frambuesa",
+     "show": "grupo de frambuesas rojas con hojas",
+     "aliases": "",
+     "catalogPerfumes": 4
+    }
+   ],
+   "sheet": 6,
+   "name": "Frutas y cítricos 1"
+  },
+  {
+   "family": "dulce",
+   "title": "Dulces y frutos secos",
+   "items": [
+    {
+     "id": "tonka_bean",
+     "label": "Haba tonka",
+     "show": "habas tonka negras arrugadas, una partida",
+     "aliases": "tonka|haba tonka",
+     "catalogPerfumes": 23
+    },
+    {
+     "id": "caramel",
+     "label": "Caramelo",
+     "show": "trozos de caramelo dorado y un hilo de caramelo",
+     "aliases": "caramelo salado|caramelo de fresa",
+     "catalogPerfumes": 6
+    },
+    {
+     "id": "hazelnut",
+     "label": "Avellana",
+     "show": "avellanas con cáscara y algunas peladas",
+     "aliases": "",
+     "catalogPerfumes": 3
+    },
+    {
+     "id": "coffee",
+     "label": "Café",
+     "show": "granos de café tostado",
+     "aliases": "",
+     "catalogPerfumes": 3
+    },
+    {
+     "id": "honey",
+     "label": "Miel",
+     "show": "panal de miel y miel dorada goteando",
+     "aliases": "",
+     "catalogPerfumes": 3
+    },
+    {
+     "id": "sugar_cane",
+     "label": "Caña de azúcar",
+     "show": "trozos de caña de azúcar cortada",
+     "aliases": "cana de azucar",
+     "catalogPerfumes": 2
+    },
+    {
+     "id": "praline",
+     "label": "Praliné",
+     "show": "trozos de praliné de avellana caramelizado",
+     "aliases": "praline",
+     "catalogPerfumes": 2
+    },
+    {
+     "id": "sugar",
+     "label": "Azúcar",
+     "show": "terrones de azúcar y azúcar morena",
+     "aliases": "azucar|azucar morena",
+     "catalogPerfumes": 2
+    }
+   ],
+   "sheet": 7,
+   "name": "Dulces y frutos secos 1"
+  },
+  {
+   "family": "especia",
+   "title": "Especias y semillas",
+   "items": [
+    {
+     "id": "pink_pepper",
+     "label": "Pimienta rosa",
+     "show": "bayas rosadas secas de pimienta rosa (schinus), no pimienta negra",
+     "aliases": "",
+     "catalogPerfumes": 13
+    },
+    {
+     "id": "pepper",
+     "label": "Pimienta negra",
+     "show": "granos de pimienta negra",
+     "aliases": "pimienta|pimienta negra",
+     "catalogPerfumes": 8
+    },
+    {
+     "id": "nutmeg",
+     "label": "Nuez moscada",
+     "show": "nueces moscadas enteras y una con macis rojo",
+     "aliases": "",
+     "catalogPerfumes": 6
+    },
+    {
+     "id": "saffron",
+     "label": "Azafrán",
+     "show": "hebras de azafrán rojo y una flor de azafrán morada",
+     "aliases": "azafran",
+     "catalogPerfumes": 4
+    },
+    {
+     "id": "anise",
+     "label": "Anís",
+     "show": "semillas de anís verde y una ramita",
+     "aliases": "anis",
+     "catalogPerfumes": 2
+    },
+    {
+     "id": "sichuan_pepper",
+     "label": "Pimienta de Sichuan",
+     "show": "cápsulas rojizas abiertas de pimienta de Sichuan",
+     "aliases": "pimienta de sichuan",
+     "catalogPerfumes": 2
+    },
+    {
+     "id": "cloves",
+     "label": "Clavo",
+     "show": "clavos de olor",
+     "aliases": "clavo|clavo de olor",
+     "catalogPerfumes": 2
+    },
+    {
+     "id": "ambrette",
+     "label": "Ambreta",
+     "show": "semillas de ambreta grises",
+     "aliases": "ambreta",
+     "catalogPerfumes": 1
+    }
+   ],
+   "sheet": 8,
+   "name": "Especias y semillas 1"
+  },
+  {
+   "family": "flor",
+   "title": "Flores",
+   "items": [
+    {
+     "id": "magnolia",
+     "label": "Magnolia",
+     "show": "flor de magnolia blanca rosada abierta con hojas",
+     "aliases": "",
+     "catalogPerfumes": 3
+    },
+    {
+     "id": "gardenia",
+     "label": "Gardenia",
+     "show": "gardenia blanca cremosa con hojas verde oscuro brillantes",
+     "aliases": "",
+     "catalogPerfumes": 3
+    },
+    {
+     "id": "ylang_ylang",
+     "label": "Ylang-ylang",
+     "show": "flores de ylang-ylang amarillas con pétalos largos y caídos",
+     "aliases": "ylang ylang",
+     "catalogPerfumes": 3
+    },
+    {
+     "id": "lotus",
+     "label": "Loto",
+     "show": "flor de loto rosa abierta con una hoja redonda",
+     "aliases": "flor de loto|loto azul",
+     "catalogPerfumes": 3
+    },
+    {
+     "id": "peach_blossom",
+     "label": "Flor de durazno",
+     "show": "rama con flores de durazno rosadas",
+     "aliases": "flor de durazno",
+     "catalogPerfumes": 2
+    },
+    {
+     "id": "frangipani",
+     "label": "Frangipani",
+     "show": "flores de frangipani blancas con centro amarillo",
+     "aliases": "plumeria",
+     "catalogPerfumes": 2
+    },
+    {
+     "id": "mimosa",
+     "label": "Mimosa",
+     "show": "ramillete de mimosa con pompones amarillos esponjosos",
+     "aliases": "",
+     "catalogPerfumes": 2
+    },
+    {
+     "id": "bluebell",
+     "label": "Campanilla",
+     "show": "tallo con campanillas azul violeta",
+     "aliases": "campanilla",
+     "catalogPerfumes": 1
+    }
+   ],
+   "sheet": 9,
+   "name": "Flores 1"
+  },
+  {
+   "family": "planta",
+   "title": "Plantas, hojas y hierbas",
+   "items": [
+    {
+     "id": "coriander",
+     "label": "Cilantro",
+     "show": "semillas de cilantro y una ramita de hojas",
+     "aliases": "cilantro",
+     "catalogPerfumes": 3
+    },
+    {
+     "id": "davana",
+     "label": "Davana",
+     "show": "ramitas de davana plateadas con pequeñas flores amarillas",
+     "aliases": "",
+     "catalogPerfumes": 3
+    },
+    {
+     "id": "violet_leaf",
+     "label": "Hoja de violeta",
+     "show": "hojas de violeta verdes en forma de corazón, sin flor",
+     "aliases": "hoja de violeta",
+     "catalogPerfumes": 3
+    },
+    {
+     "id": "petitgrain",
+     "label": "Petitgrain",
+     "show": "ramita de naranjo amargo con hojas y pequeños frutos verdes",
+     "aliases": "",
+     "catalogPerfumes": 2
+    },
+    {
+     "id": "basil",
+     "label": "Albahaca",
+     "show": "ramita de albahaca",
+     "aliases": "",
+     "catalogPerfumes": 2
+    },
+    {
+     "id": "wormwood",
+     "label": "Ajenjo",
+     "show": "ramas de ajenjo (artemisia) de hojas plateadas",
+     "aliases": "ajenjo|artemisia",
+     "catalogPerfumes": 2
+    },
+    {
+     "id": "verbena",
+     "label": "Verbena",
+     "show": "ramitas de verbena de limón (hierba luisa)",
+     "aliases": "verbena de limon|hierba luisa",
+     "catalogPerfumes": 2
+    },
+    {
+     "id": "calamus",
+     "label": "Cálamo",
+     "show": "rizomas de cálamo y hojas en espada",
+     "aliases": "calamo",
+     "catalogPerfumes": 1
+    }
+   ],
+   "sheet": 10,
+   "name": "Plantas, hojas y hierbas 2"
+  },
+  {
+   "family": "resina",
+   "title": "Resinas y bálsamos",
+   "items": [
+    {
+     "id": "elemi",
+     "label": "Elemí",
+     "show": "resina de elemí blanca amarillenta y pegajosa",
+     "aliases": "elemi",
+     "catalogPerfumes": 4
+    },
+    {
+     "id": "benzoin",
+     "label": "Benjuí",
+     "show": "trozos de resina de benjuí ámbar",
+     "aliases": "benjui",
+     "catalogPerfumes": 4
+    },
+    {
+     "id": "labdanum",
+     "label": "Ládano",
+     "show": "resina oscura de ládano y una ramita de jara",
+     "aliases": "ladano|labdano|jara",
+     "catalogPerfumes": 4
+    },
+    {
+     "id": "peru_balsam",
+     "label": "Bálsamo del Perú",
+     "show": "bálsamo del Perú marrón oscuro en cuchara de madera",
+     "aliases": "balsamo del peru",
+     "catalogPerfumes": 2
+    },
+    {
+     "id": "styrax",
+     "label": "Estoraque",
+     "show": "bálsamo de estoraque denso y trozos de corteza",
+     "aliases": "estoraque|styrax",
+     "catalogPerfumes": 2
+    },
+    {
+     "id": "opoponax",
+     "label": "Opopónaco",
+     "show": "lágrimas de resina de opopónaco marrón dorado",
+     "aliases": "opoponax",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "myrrh",
+     "label": "Mirra",
+     "show": "lágrimas de mirra rojizas",
+     "aliases": "mirra",
+     "catalogPerfumes": 0
+    },
+    {
+     "id": "galbanum",
+     "label": "Gálbano",
+     "show": "resina de gálbano verdosa",
+     "aliases": "galbano",
+     "catalogPerfumes": 0
+    }
+   ],
+   "sheet": 11,
+   "name": "Resinas y bálsamos"
+  },
+  {
+   "family": "madera",
+   "title": "Maderas",
+   "items": [
+    {
+     "id": "cypress",
+     "label": "Ciprés",
+     "show": "ramita de ciprés con dos gálbulos",
+     "aliases": "cipres|cipres italiano",
+     "catalogPerfumes": 7
+    },
+    {
+     "id": "guaiac",
+     "label": "Guayaco",
+     "show": "trozos de madera de guayaco verde oscuro",
+     "aliases": "madera de guayaco",
+     "catalogPerfumes": 2
+    },
+    {
+     "id": "driftwood",
+     "label": "Madera flotante",
+     "show": "pieza de madera flotante pulida por el mar, gris clara",
+     "aliases": "madera flotante|madera a la deriva",
+     "catalogPerfumes": 2
+    },
+    {
+     "id": "birch",
+     "label": "Abedul",
+     "show": "troncos de abedul con corteza blanca",
+     "aliases": "abedul",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "mahogany",
+     "label": "Caoba",
+     "show": "tablillas de caoba pulida rojiza",
+     "aliases": "caoba",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "rosewood",
+     "label": "Palo de rosa",
+     "show": "trozos de madera de palo de rosa rojiza",
+     "aliases": "palo de rosa",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "oak",
+     "label": "Roble",
+     "show": "trozos de roble y bellotas",
+     "aliases": "roble",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "palo_santo",
+     "label": "Palo santo",
+     "show": "palitos de palo santo amarillos",
+     "aliases": "santo palo",
+     "catalogPerfumes": 1
+    }
+   ],
+   "sheet": 12,
+   "name": "Maderas"
+  },
+  {
+   "family": "fruta",
+   "title": "Frutas y cítricos",
+   "items": [
+    {
+     "id": "watermelon",
+     "label": "Sandía",
+     "show": "tajada triangular de sandía roja con semillas negras y cáscara verde",
+     "aliases": "",
+     "catalogPerfumes": 2
+    },
+    {
+     "id": "fig",
+     "label": "Higo",
+     "show": "higo morado entero y medio higo mostrando el interior rosado",
+     "aliases": "higo verde",
+     "catalogPerfumes": 2
+    },
+    {
+     "id": "blueberry",
+     "label": "Arándanos",
+     "show": "puñado de arándanos azules con pruina",
+     "aliases": "",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "chinotto",
+     "label": "Chinotto",
+     "show": "pequeñas naranjas amargas chinotto con hojas",
+     "aliases": "",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "citron",
+     "label": "Cidra",
+     "show": "cidra grande amarilla de cáscara gruesa y una rebanada",
+     "aliases": "",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "dates",
+     "label": "Dátiles",
+     "show": "dátiles marrones brillantes, uno abierto",
+     "aliases": "",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "white_currant",
+     "label": "Grosella blanca",
+     "show": "racimo de grosellas blancas translúcidas",
+     "aliases": "",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "kiwi",
+     "label": "Kiwi",
+     "show": "kiwi entero peludo y medio kiwi con pulpa verde y semillas",
+     "aliases": "",
+     "catalogPerfumes": 1
+    }
+   ],
+   "sheet": 13,
+   "name": "Frutas y cítricos 2"
+  },
+  {
+   "family": "dulce",
+   "title": "Dulces y frutos secos",
+   "items": [
+    {
+     "id": "pistachio",
+     "label": "Pistache",
+     "show": "pistaches con cáscara abierta mostrando el fruto verde",
+     "aliases": "pistacho",
+     "catalogPerfumes": 2
+    },
+    {
+     "id": "candied_chestnut",
+     "label": "Castaña azucarada",
+     "show": "castañas glaseadas brillantes (marron glacé)",
+     "aliases": "castana azucarada",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "candied_fruit",
+     "label": "Frutas confitadas",
+     "show": "frutas confitadas de colores",
+     "aliases": "frutas confitadas",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "knafeh",
+     "label": "Knafeh",
+     "show": "porción de knafeh dorado con pistache",
+     "aliases": "",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "marshmallow",
+     "label": "Malvavisco",
+     "show": "malvaviscos blancos y rosas",
+     "aliases": "malvavisco",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "licorice",
+     "label": "Regaliz",
+     "show": "raíz de regaliz y piezas de regaliz negro",
+     "aliases": "regaliz negro",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "chocolate",
+     "label": "Chocolate",
+     "show": "trozos de chocolate oscuro",
+     "aliases": "",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "almond",
+     "label": "Almendra",
+     "show": "almendras con cáscara y peladas",
+     "aliases": "almendra|almendras",
+     "catalogPerfumes": 0
+    }
+   ],
+   "sheet": 14,
+   "name": "Dulces y frutos secos 2"
+  },
+  {
+   "family": "flor",
+   "title": "Flores",
+   "items": [
+    {
+     "id": "freesia",
+     "label": "Fresia",
+     "show": "vara de fresia con flores blancas y amarillas",
+     "aliases": "",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "hibiscus",
+     "label": "Hibisco",
+     "show": "flor de hibisco roja abierta",
+     "aliases": "jamaica",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "iris",
+     "label": "Iris",
+     "show": "flor de iris violeta azulado con su rizoma (raíz) limpio",
+     "aliases": "lirio|orris|raiz de iris",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "mignonette",
+     "label": "Reseda",
+     "show": "espiga de reseda (mignonette) verde amarillenta",
+     "aliases": "mignonette",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "narcissus",
+     "label": "Narciso",
+     "show": "narcisos blancos con corona amarilla",
+     "aliases": "",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "osmanthus",
+     "label": "Osmanto",
+     "show": "ramita con racimos de diminutas flores naranja de osmanto",
+     "aliases": "osmanthus",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "marigold",
+     "label": "Tagetes",
+     "show": "flores de tagetes (cempasúchil) naranjas",
+     "aliases": "tagetes|cempasuchil",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "tuberose",
+     "label": "Tuberosa",
+     "show": "vara de tuberosa con flores blancas cerosas",
+     "aliases": "nardo|nardos",
+     "catalogPerfumes": 1
+    }
+   ],
+   "sheet": 15,
+   "name": "Flores 2"
+  },
+  {
+   "family": "bebida",
+   "title": "Bebidas",
+   "items": [
+    {
+     "id": "liqueur",
+     "label": "Licor",
+     "show": "copita de licor ámbar",
+     "aliases": "licor",
+     "catalogPerfumes": 2
+    },
+    {
+     "id": "whiskey",
+     "label": "Whisky",
+     "show": "vaso de whisky con hielo grande",
+     "aliases": "whisky|bourbon",
+     "catalogPerfumes": 2
+    },
+    {
+     "id": "absinthe",
+     "label": "Absenta",
+     "show": "copa de absenta verde con cuchara perforada y terrón de azúcar",
+     "aliases": "absenta",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "tonic_water",
+     "label": "Agua tónica",
+     "show": "vaso de agua tónica con burbujas y rodaja de limón",
+     "aliases": "agua tonica",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "champagne_rose",
+     "label": "Champagne rosé",
+     "show": "copa flauta de champagne rosé con burbujas",
+     "aliases": "champagne rose",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "gin",
+     "label": "Ginebra",
+     "show": "vaso de gin con rodaja de pepino y enebro",
+     "aliases": "gin",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "cognac",
+     "label": "Coñac",
+     "show": "copa balón de coñac",
+     "aliases": "cognac|coñac",
+     "catalogPerfumes": 0
+    },
+    {
+     "id": "red_wine",
+     "label": "Vino tinto",
+     "show": "copa de vino tinto",
+     "aliases": "vino|vino tinto",
+     "catalogPerfumes": 0
+    }
+   ],
+   "sheet": 16,
+   "name": "Bebidas"
+  },
+  {
+   "family": "planta",
+   "title": "Plantas, hojas y hierbas",
+   "items": [
+    {
+     "id": "fennel",
+     "label": "Hinojo",
+     "show": "bulbo de hinojo con hojas plumosas",
+     "aliases": "",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "mastic",
+     "label": "Lentisco",
+     "show": "ramita de lentisco con lágrimas de resina de almáciga",
+     "aliases": "lentisco|almaciga",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "oregano",
+     "label": "Orégano",
+     "show": "ramita de orégano fresco",
+     "aliases": "",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "carrot_seed",
+     "label": "Semilla de zanahoria",
+     "show": "semillas de zanahoria y una zanahoria con hojas",
+     "aliases": "semilla de zanahoria",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "black_tea",
+     "label": "Té negro",
+     "show": "hojas de té negro secas enrolladas",
+     "aliases": "te negro",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "thyme",
+     "label": "Tomillo",
+     "show": "ramitas de tomillo",
+     "aliases": "",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "eucalyptus",
+     "label": "Eucalipto",
+     "show": "ramita de eucalipto de hojas azul verdoso",
+     "aliases": "eucalipto",
+     "catalogPerfumes": 0
+    },
+    {
+     "id": "fig_leaf",
+     "label": "Hoja de higuera",
+     "show": "hojas de higuera grandes y lobuladas",
+     "aliases": "hoja de higuera",
+     "catalogPerfumes": 0
+    }
+   ],
+   "sheet": 17,
+   "name": "Plantas, hojas y hierbas 3"
+  },
+  {
+   "family": "fruta",
+   "title": "Frutas y cítricos",
+   "items": [
+    {
+     "id": "lychee",
+     "label": "Lichi",
+     "show": "lichis de cáscara rosada rugosa, uno pelado con pulpa blanca translúcida",
+     "aliases": "",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "pitaya",
+     "label": "Pitaya",
+     "show": "pitaya rosa con escamas verdes y media pitaya con pulpa blanca y semillas",
+     "aliases": "",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "rhubarb",
+     "label": "Ruibarbo",
+     "show": "tallos de ruibarbo rojo-verde con una hoja",
+     "aliases": "",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "yuzu",
+     "label": "Yuzu",
+     "show": "yuzu amarillo de cáscara rugosa y medio yuzu",
+     "aliases": "",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "cherry",
+     "label": "Cereza",
+     "show": "par de cerezas rojas brillantes con tallos",
+     "aliases": "",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "strawberry",
+     "label": "Fresa",
+     "show": "fresas rojas con hojas y una fresa partida",
+     "aliases": "fresa|fresas",
+     "catalogPerfumes": 0
+    },
+    {
+     "id": "pomegranate",
+     "label": "Granada",
+     "show": "granada abierta mostrando granos rojos",
+     "aliases": "granada",
+     "catalogPerfumes": 0
+    },
+    {
+     "id": "blackberry",
+     "label": "Zarzamora",
+     "show": "zarzamoras negras brillantes con hojas",
+     "aliases": "mora|zarzamora|moras",
+     "catalogPerfumes": 0
+    }
+   ],
+   "sheet": 18,
+   "name": "Frutas y cítricos 3"
+  },
+  {
+   "family": "especia",
+   "title": "Especias y semillas",
+   "items": [
+    {
+     "id": "star_anise",
+     "label": "Anís estrellado",
+     "show": "estrellas de anís estrellado",
+     "aliases": "aniz estrellado|anis estrellado|badiana",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "chili",
+     "label": "Chile rojo",
+     "show": "chiles rojos frescos",
+     "aliases": "chile rojo",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "cumin",
+     "label": "Comino",
+     "show": "semillas de comino",
+     "aliases": "",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "white_pepper",
+     "label": "Pimienta blanca",
+     "show": "granos de pimienta blanca",
+     "aliases": "pimienta blanca",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "allspice",
+     "label": "Pimienta de Jamaica",
+     "show": "granos de pimienta de Jamaica marrones",
+     "aliases": "pimienta de jamaica",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "caraway",
+     "label": "Alcaravea",
+     "show": "semillas de alcaravea",
+     "aliases": "alcaravea",
+     "catalogPerfumes": 0
+    },
+    {
+     "id": "bay_leaf",
+     "label": "Laurel",
+     "show": "hojas de laurel",
+     "aliases": "laurel",
+     "catalogPerfumes": 0
+    },
+    {
+     "id": "mace",
+     "label": "Macis",
+     "show": "macis rojo anaranjado seco",
+     "aliases": "macis",
+     "catalogPerfumes": 0
+    }
+   ],
+   "sheet": 19,
+   "name": "Especias y semillas 2"
+  },
+  {
+   "family": "material",
+   "title": "Materiales y complementos",
+   "items": [
+    {
+     "id": "cotton",
+     "label": "Algodón y lino",
+     "show": "flor de algodón abierta junto a un lienzo de lino doblado",
+     "aliases": "lino|algodon",
+     "catalogPerfumes": 1
+    },
+    {
+     "id": "leather_smooth",
+     "label": "Cuero",
+     "show": "muestra de cuero liso marrón doblada (no gamuza)",
+     "aliases": "cuero",
+     "catalogPerfumes": 0
+    },
+    {
+     "id": "beeswax",
+     "label": "Cera de abejas",
+     "show": "bloque de cera de abejas dorada con panal",
+     "aliases": "cera de abejas",
+     "catalogPerfumes": 0
+    },
+    {
+     "id": "pine",
+     "label": "Pino",
+     "show": "ramita de pino con piña de pino",
+     "aliases": "pino",
+     "catalogPerfumes": 0
+    },
+    {
+     "id": "ebony",
+     "label": "Ébano",
+     "show": "trozos de ébano negro pulido",
+     "aliases": "ebano",
+     "catalogPerfumes": 0
+    },
+    {
+     "id": "papyrus",
+     "label": "Papiro",
+     "show": "tallos y umbelas de papiro",
+     "aliases": "papiro",
+     "catalogPerfumes": 0
+    },
+    {
+     "id": "rice",
+     "label": "Arroz",
+     "show": "granos de arroz blanco",
+     "aliases": "arroz",
+     "catalogPerfumes": 0
+    },
+    {
+     "id": "milk",
+     "label": "Leche",
+     "show": "vaso de leche y salpicadura",
+     "aliases": "leche",
+     "catalogPerfumes": 0
+    }
+   ],
+   "sheet": 20,
+   "name": "Materiales y complementos"
+  },
+  {
+   "family": "flor",
+   "title": "Flores",
+   "items": [
+    {
+     "id": "lilac",
+     "label": "Lila",
+     "show": "racimo de lilas moradas",
+     "aliases": "lila",
+     "catalogPerfumes": 0
+    },
+    {
+     "id": "carnation",
+     "label": "Clavel",
+     "show": "clavel rosa con borde ondulado",
+     "aliases": "clavel",
+     "catalogPerfumes": 0
+    },
+    {
+     "id": "honeysuckle",
+     "label": "Madreselva",
+     "show": "ramita de madreselva con flores blancas y amarillas",
+     "aliases": "madreselva",
+     "catalogPerfumes": 0
+    },
+    {
+     "id": "orchid",
+     "label": "Orquídea",
+     "show": "vara de orquídea blanca con centro rosado",
+     "aliases": "orquidea",
+     "catalogPerfumes": 0
+    },
+    {
+     "id": "cherry_blossom",
+     "label": "Flor de cerezo",
+     "show": "rama de flor de cerezo rosa claro",
+     "aliases": "flor de cerezo|sakura",
+     "catalogPerfumes": 0
+    },
+    {
+     "id": "champaca",
+     "label": "Champaca",
+     "show": "flores de champaca amarillo anaranjado",
+     "aliases": "champaca",
+     "catalogPerfumes": 0
+    },
+    {
+     "id": "wisteria",
+     "label": "Glicina",
+     "show": "racimo colgante de glicina lila",
+     "aliases": "glicina",
+     "catalogPerfumes": 0
+    },
+    {
+     "id": "sweet_pea",
+     "label": "Guisante de olor",
+     "show": "flores de guisante de olor pastel",
+     "aliases": "guisante de olor",
+     "catalogPerfumes": 0
+    }
+   ],
+   "sheet": 21,
+   "name": "Flores 3"
+  }
+ ],
+ "optionalAccordSheet": {
+  "sheet": 22,
+  "family": "acorde",
+  "name": "Acordes (opcional, no son materias primas)",
+  "items": [
+   {
+    "id": "accord_musk",
+    "label": "Almizcle",
+    "show": "gota de esencia transparente sobre seda blanca"
+   },
+   {
+    "id": "accord_amber",
+    "label": "Ámbar",
+    "show": "gota de esencia ámbar dorada con luz cálida"
+   },
+   {
+    "id": "accord_ambergris",
+    "label": "Ámbar gris",
+    "show": "gota de esencia gris perla sobre piedra lisa"
+   },
+   {
+    "id": "accord_woods",
+    "label": "Amaderado",
+    "show": "gota de esencia sobre una lámina fina de madera clara"
+   },
+   {
+    "id": "accord_marine",
+    "label": "Marino",
+    "show": "gota de esencia azul transparente con una ola suave al fondo"
+   },
+   {
+    "id": "accord_mineral",
+    "label": "Mineral",
+    "show": "gota de esencia transparente sobre piedra gris húmeda"
+   },
+   {
+    "id": "accord_green",
+    "label": "Verde",
+    "show": "gota de esencia verde translúcida sobre una hoja"
+   },
+   {
+    "id": "accord_cashmeran",
+    "label": "Cachemira",
+    "show": "gota de esencia sobre un tejido suave beige"
+   }
+  ]
+ }
+}
