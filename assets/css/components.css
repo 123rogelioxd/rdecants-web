@@ -11178,135 +11178,252 @@ body.rd-searching .quick-gender { display: none; }
   .bqv-img-wrap { aspect-ratio: 16 / 9; }
 }
 
-/* ── Quick view: quote under the chips ────────────────────────────────────
-   The perfume's first-person line, set as a quiet quote with a rose rule, as in
-   the approved Donna Extradose composition. */
-.pdm-vibe {
-  border-left: 2px solid #C04B73;
-  font-style: italic;
-  padding-left: 12px;
+/* ── Quick view: approved composition (2026-11-05) ────────────────────────
+   Photo + brand + full name + chips, the scent block, three sizes, price with
+   availability, "Agregar" and two quiet links. Name set in the display serif
+   and shown in title case by modal.js (the stored name never changes). */
+.pdm-name {
+  font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  letter-spacing: 0;
 }
 
-/* ── Quick view on phones: one sheet, one scroll (2026-11-05) ─────────────
-   Before: the photo and the whole buy bar (sizes, price, button, links, trust)
-   stayed fixed and only the middle scrolled, so the notes sat in a small window
-   and long names were clamped. Now the sheet itself is the only scroll area:
-   the photo is compact and scrolls away, the close button stays reachable, and
-   the purchase block follows the notes in the same flow. No fixed buy bar: on a
-   phone it would cover the size cards the customer has to choose first, and the
-   purchase block is one short scroll below the notes anyway. */
+.pdm-price-row {
+  align-items: center;
+}
+
+.pdm-avail {
+  align-items: center;
+  color: #1f7a45;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 500;
+  gap: 7px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.pdm-avail::before {
+  background: currentColor;
+  border-radius: 50%;
+  content: '';
+  height: 8px;
+  width: 8px;
+}
+
+.pdm-avail:not(.pdm-avail--ok) { color: #9a6512; }
+.pdm-avail--out { color: #a2382f; }
+
+.pdm-size-btn--recommended .pdm-size-label::before {
+  content: '\2605\00a0';
+}
+
+/* ── Phones: a compact modal window, one scroll area ──────────────────────
+   Not a sheet and not a page: an ivory card over the darkened, blurred store,
+   centred inside Safari's safe areas. Photo left, brand and full name right,
+   chips below, then the scent block and the purchase in the same flow. The card
+   itself is the only scroll area (no nested scroll, nothing pinned). */
 @media (max-width: 768px) {
+  .pdm-overlay {
+    align-items: center;
+    bottom: 0;
+    height: 100dvh;
+    justify-content: center;
+    overflow: hidden;
+    padding: max(14px, env(safe-area-inset-top)) 12px max(14px, env(safe-area-inset-bottom));
+  }
+
+  .pdm-overlay--open {
+    -webkit-backdrop-filter: blur(8px) saturate(.85);
+    backdrop-filter: blur(8px) saturate(.85);
+    background: rgba(20, 19, 17, .52);
+  }
+
   .pdm-modal {
-    display: block;
-    max-height: calc(100dvh - max(16px, env(safe-area-inset-top)));
+    align-content: start;
+    background: #FBF8F2;
+    border-radius: 24px;
+    bottom: auto;
+    column-gap: 14px;
+    display: grid;
+    grid-template-areas:
+      "photo head"
+      "chips chips"
+      "notes notes"
+      "buy buy";
+    grid-template-columns: minmax(0, 34%) minmax(0, 1fr);
+    height: auto;
+    left: auto;
+    margin: 0 auto;
+    max-height: calc(100dvh - max(14px, env(safe-area-inset-top)) - max(14px, env(safe-area-inset-bottom)));
+    max-width: 440px;
+    min-height: 0;
     overflow-x: hidden;
     overflow-y: auto;
-    overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: 0;
+    overscroll-behavior: contain;
+    padding: 16px 16px 8px;
+    position: relative;
+    right: auto;
+    transform: scale(.97) translateY(12px);
+    width: 100%;
+  }
+
+  .pdm-modal--open {
+    transform: none;
+  }
+
+  .pdm-info,
+  .pdm-info-scroll {
+    display: contents;
   }
 
   .pdm-close {
-    position: sticky;
-    top: 10px;
-    margin: 10px 10px -42px auto;
-    background: rgba(255, 254, 250, 0.92);
+    background: rgba(240, 235, 224, .94);
+    border: 1px solid var(--line-soft);
     color: var(--ink);
+    height: 34px;
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    width: 34px;
+    z-index: 3;
   }
 
   .pdm-img-panel {
+    align-self: start;
+    aspect-ratio: 3 / 3.8;
+    background: #ECEAE6;
+    border-radius: 16px;
     flex: none;
-    height: 176px;
-    min-height: 0;
+    grid-area: photo;
+    height: auto;
     max-height: none;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .pdm-img-wrap {
-    width: 100%;
     height: 100%;
     max-height: none;
-    padding: 12px 56px;
+    padding: 6px;
+    width: 100%;
   }
 
   .pdm-img {
-    width: 100%;
+    filter: none;
     height: 100%;
     max-height: none;
     object-fit: contain;
+    width: 100%;
   }
 
-  .pdm-info {
-    display: block;
-    overflow: visible;
+  .pdm-head {
+    align-self: center;
+    grid-area: head;
+    min-width: 0;
+    padding: 4px 30px 4px 0;
   }
 
-  .pdm-info-scroll {
-    overflow: visible;
-    padding: 16px 18px 2px;
+  .pdm-house {
+    color: #6b665e;
+    font-size: 11px;
+    letter-spacing: .26em;
+    margin: 0 0 6px;
+  }
+
+  .pdm-house::before {
+    display: none;
   }
 
   /* The whole name, on as many lines as it needs. */
   .pdm-name {
     display: block;
     -webkit-line-clamp: none;
+    font-size: 26px;
+    line-height: 1.02;
+    margin: 0;
     overflow: visible;
     overflow-wrap: break-word;
-    font-size: 28px;
-    font-weight: 700;
-    line-height: 1.06;
+  }
+
+  .pdm-guidance {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    grid-area: chips;
+    margin: 14px 0 0;
+  }
+
+  .pdm-guidance .guidance-chip {
+    border-radius: 12px;
+    flex: 1 1 auto;
+    font-size: 13px;
+    justify-content: center;
+    padding: 8px 10px;
+  }
+
+  .pdm-modal .scent-notes--illustrated {
+    border-radius: 18px;
+    grid-area: notes;
+    margin: 14px 0 0;
+    padding: 14px 12px 12px;
+  }
+
+  .pdm-modal .scent-notes--illustrated .scent-notes-title {
+    font-size: 17px;
+  }
+
+  .pdm-modal .scent-notes--illustrated .scent-notes-summary {
+    font-size: 14px;
     margin-bottom: 10px;
   }
 
-  .pdm-vibe {
-    font-size: 15px;
-    line-height: 1.45;
-    margin: 12px 0 4px;
+  .pdm-modal .scent-notes--illustrated .scent-note {
+    font-size: 12px;
+    gap: 4px;
   }
 
-  /* A long name (over 24 characters) takes the full width; gender and
-     concentration move under it instead of squeezing it into five lines. */
-  .pdm-title-row--long {
-    flex-direction: column;
-    gap: 0;
+  /* Words are never split inside a note name; five notes use 11px so the
+     longest current names (Bergamota, Cardamomo) fit their cell plus the gap. */
+  .pdm-modal .scent-notes--illustrated .scent-note > span {
+    hyphens: none;
+    overflow-wrap: normal;
+    word-break: normal;
   }
 
-  .pdm-title-row--long .pdm-meta-chips {
-    justify-content: flex-start;
-    margin-bottom: 10px;
-    max-width: none;
+  .pdm-modal .scent-notes--illustrated .scent-notes-list[data-count="5"] {
+    column-gap: 4px;
   }
 
-  /* Fallback paragraph (only when there is no short phrase): shown whole. */
-  .pdm-story {
-    display: block;
-    -webkit-line-clamp: none;
-    overflow: visible;
+  .pdm-modal .scent-notes--illustrated .scent-notes-list[data-count="5"] .scent-note {
+    font-size: 11px;
   }
 
   .pdm-buybar {
     background: none;
     border-top: 0;
     box-shadow: none;
-    padding: 6px 18px calc(14px + var(--safe-b, 0px));
+    grid-area: buy;
+    padding: 16px 0 4px;
     position: static;
   }
 
   .pdm-sizes-label {
-    font-size: 10px;
-    margin-bottom: 8px;
+    color: #5f5a52;
+    font-size: 11px;
+    letter-spacing: .22em;
+    margin: 0 0 8px;
   }
 
   .pdm-sizes {
     gap: 8px;
-    margin-bottom: 14px;
-    overflow: visible;
-    padding-top: 10px;
+    margin: 0 0 14px;
   }
 
   .pdm-size-btn {
-    border-radius: 12px;
-    padding: 12px 4px 10px;
-    position: relative;
+    border-radius: 14px;
+    padding: 10px 4px;
   }
 
   .pdm-size-ml {
@@ -11315,67 +11432,55 @@ body.rd-searching .quick-gender { display: none; }
   }
 
   .pdm-size-price {
-    font-size: 13px;
+    font-size: 15px;
     margin-top: 2px;
   }
 
   .pdm-size-label {
-    font-size: 10px;
-    min-height: 0;
-  }
-
-  .pdm-size-btn--recommended {
-    padding-top: 16px;
-  }
-
-  .pdm-size-btn.pdm-size-btn--recommended .pdm-size-label {
-    -webkit-line-clamp: none;
-    overflow: visible;
-    background: var(--bronze-tint);
-    border: 1px solid var(--bronze-line);
-    border-radius: 999px;
-    color: var(--ink) !important; /* scent-experience.css whitens every span of the active card */
     display: block;
-    font-size: 10px;
-    font-weight: 600;
-    left: 50%;
-    line-height: 1;
-    margin: 0;
-    padding: 4px 8px;
-    position: absolute;
-    top: -10px;
-    transform: translateX(-50%);
-    white-space: nowrap;
+    -webkit-line-clamp: none;
+    font-size: 11px;
+    letter-spacing: 0;
+    margin-top: 3px;
+    min-height: 0;
+    overflow: visible;
   }
 
-  .pdm-size-btn--recommended .pdm-size-label::before {
-    color: var(--bronze-ink);
-    content: '\2605\00a0';
-  }
-
-  .pdm-price-row {
-    align-items: center;
+  .pdm-buybar-bottom {
     gap: 12px;
   }
 
+  .pdm-price-row {
+    flex-wrap: wrap;
+    gap: 4px 10px;
+  }
+
   .pdm-price {
-    font-size: 27px;
+    font-size: 28px;
     font-weight: 700;
   }
 
   .pdm-price-unit {
     border-left: 1px solid var(--line);
     color: var(--ink-soft);
-    font-size: 14px;
+    font-size: 15px;
     line-height: 1.4;
-    padding-left: 12px;
+    padding-left: 10px;
+  }
+
+  .pdm-avail {
+    font-size: 14px;
+  }
+
+  .pdm-actions {
+    gap: 8px;
   }
 
   .pdm-btn-add {
     align-items: center;
-    border-radius: 12px;
+    border-radius: 14px;
     display: inline-flex;
-    font-size: 16px;
+    font-size: 17px;
     gap: 10px;
     min-height: 52px;
   }
@@ -11383,30 +11488,32 @@ body.rd-searching .quick-gender { display: none; }
   .pdm-btn-add:not(:disabled):not(.is-loading)::after {
     background: currentColor;
     content: '';
-    flex: 0 0 20px;
-    height: 20px;
+    flex: 0 0 21px;
+    height: 21px;
     order: -1;
     -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4h2.5l2.2 10.2a1.5 1.5 0 0 0 1.5 1.2h8.2a1.5 1.5 0 0 0 1.5-1.1L21 8H6.3'/%3E%3Ccircle cx='10' cy='19.5' r='1.3'/%3E%3Ccircle cx='17' cy='19.5' r='1.3'/%3E%3C/svg%3E") center / contain no-repeat;
     mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4h2.5l2.2 10.2a1.5 1.5 0 0 0 1.5 1.2h8.2a1.5 1.5 0 0 0 1.5-1.1L21 8H6.3'/%3E%3Ccircle cx='10' cy='19.5' r='1.3'/%3E%3Ccircle cx='17' cy='19.5' r='1.3'/%3E%3C/svg%3E") center / contain no-repeat;
-    width: 20px;
+    width: 21px;
   }
 
   .pdm-secondary-actions {
+    border-top: 1px solid var(--line-soft);
     gap: 0;
     justify-content: center;
     margin-top: 4px;
+    padding-top: 2px;
   }
 
   .pdm-details-link,
   .pdm-btn-wa {
     flex: 1 1 0;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     gap: 8px;
     justify-content: center;
     letter-spacing: 0;
     line-height: 1.2;
-    min-height: 44px;
+    min-height: 48px;
     min-width: 0;
     text-align: left;
     text-transform: none;
@@ -11427,9 +11534,9 @@ body.rd-searching .quick-gender { display: none; }
     background: currentColor;
     border-radius: 0;
     content: '';
-    flex: 0 0 20px;
-    height: 20px;
-    width: 20px;
+    flex: 0 0 22px;
+    height: 22px;
+    width: 22px;
   }
 
   .pdm-details-link::before {
@@ -11442,27 +11549,45 @@ body.rd-searching .quick-gender { display: none; }
     -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-width='1.8' stroke-linejoin='round' d='M4.4 19.6l1.2-3.7a8 8 0 1 1 2.9 2.7Z'/%3E%3Cpath fill='black' d='M9.3 8.3c.3-.4.8-.4 1 .1l.6 1.4c.1.3 0 .6-.2.8l-.5.5a6 6 0 0 0 2.7 2.7l.5-.5c.2-.2.5-.3.8-.2l1.4.6c.5.2.5.7.1 1-.8.7-1.9.9-2.8.4a9 9 0 0 1-3.9-3.9c-.5-.9-.3-2 .3-2.9Z'/%3E%3C/svg%3E") center / contain no-repeat;
     mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-width='1.8' stroke-linejoin='round' d='M4.4 19.6l1.2-3.7a8 8 0 1 1 2.9 2.7Z'/%3E%3Cpath fill='black' d='M9.3 8.3c.3-.4.8-.4 1 .1l.6 1.4c.1.3 0 .6-.2.8l-.5.5a6 6 0 0 0 2.7 2.7l.5-.5c.2-.2.5-.3.8-.2l1.4.6c.5.2.5.7.1 1-.8.7-1.9.9-2.8.4a9 9 0 0 1-3.9-3.9c-.5-.9-.3-2 .3-2.9Z'/%3E%3C/svg%3E") center / contain no-repeat;
   }
+}
 
-  .pdm-trust {
-    align-items: center;
-    background: var(--bg-sunk);
-    border-radius: 10px;
-    display: flex;
-    font-size: 11px;
-    gap: 8px;
-    justify-content: center;
-    margin-top: 8px;
-    padding: 10px 12px;
-    text-align: left;
+@media (max-width: 360px) {
+  .pdm-modal {
+    column-gap: 12px;
+    padding: 14px 12px 6px;
   }
 
-  .pdm-trust::before {
-    background: var(--ink-soft);
-    content: '';
-    flex: 0 0 16px;
-    height: 16px;
-    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3 5 6v5.5c0 4.2 3 7.6 7 9.5 4-1.9 7-5.3 7-9.5V6Z'/%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E") center / contain no-repeat;
-    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3 5 6v5.5c0 4.2 3 7.6 7 9.5 4-1.9 7-5.3 7-9.5V6Z'/%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E") center / contain no-repeat;
-    width: 16px;
+  .pdm-name {
+    font-size: 23px;
+  }
+
+  .pdm-price {
+    font-size: 25px;
+  }
+
+  .pdm-guidance {
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  .pdm-guidance .guidance-chip {
+    font-size: 12px;
+    gap: 4px;
+    min-width: 0;
+    padding: 7px 6px;
+  }
+
+  .pdm-guidance .guidance-chip-icon {
+    flex-basis: 15px;
+    height: 15px;
+    width: 15px;
+  }
+
+  .pdm-modal .scent-notes--illustrated .scent-note {
+    font-size: 11px;
+  }
+
+  .pdm-modal .scent-notes--illustrated .scent-note-img {
+    width: min(100%, 56px);
   }
 }

@@ -32,7 +32,8 @@ test('previously corrupted strings now read correctly', () => {
      want the perfume, so it moved below the buy actions and is phrased as
      reassurance (.pdm-trust). The UTF-8 guard this line was carrying moves with
      it — 'presentación' below is on the same screen and still accented. */
-  assert.ok(modal.includes('Original preparado por RDECANTS'), 'trust microcopy present');
+  /* 2026-11-05: the approved quick view has no trust line (Roger's reference). */
+  assert.ok(!modal.includes('Original preparado por RDECANTS'), 'trust line is not in the quick view');
   assert.ok(!modal.includes('pdm-decant-hint'), 'the old headline position is gone');
   assert.ok(modal.includes('Elige presentación'), 'presentación restored');
   assert.ok(modal.includes('Ideal para probar'), 'modal size guidance present');

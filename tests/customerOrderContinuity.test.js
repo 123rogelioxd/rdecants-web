@@ -83,7 +83,7 @@ test('vibe copy is first person, short, and never fabricated', () => {
   assert.equal(getVibeCopy({ desc: 'Legacy' }), '');
 });
 
-test('the quick view leads with chips and vibe, and keeps the trust line below the CTA', () => {
+test('the quick view follows the approved composition: name, chips, scent, sizes, price, add, links', () => {
   const source = read('assets/js/ui/modal.js');
 
   /* Indexed on the TEMPLATE call, not the bare identifier: `buildScentNotesHtml`
@@ -91,10 +91,14 @@ test('the quick view leads with chips and vibe, and keeps the trust line below t
      this assertion pass for the wrong reason. */
   const notes = source.indexOf('${buildScentNotesHtml(p)}');
 
-  assert.ok(source.indexOf('${guidanceHtml}') < source.indexOf('pdm-vibe'), 'chips come before the vibe');
-  assert.ok(source.indexOf('pdm-vibe') < notes, 'the vibe comes before the notes');
-  assert.ok(notes < source.indexOf('pdm-story'), 'the technical paragraph is demoted');
-  assert.ok(source.indexOf('id="pdm-btn-add"') < source.indexOf('pdm-trust'), 'trust copy sits below the buy action');
+  assert.ok(source.indexOf('id="pdm-name"') < source.indexOf('${guidanceHtml}'), 'name before the chips');
+  assert.ok(source.indexOf('${guidanceHtml}') < notes, 'chips before the scent block');
+  assert.ok(notes < source.indexOf('class="pdm-sizes"'), 'scent block before the sizes');
+  assert.ok(source.indexOf('${availabilityHtml}') < source.indexOf('id="pdm-btn-add"'), 'availability sits with the price, above Agregar');
+  assert.ok(source.indexOf('id="pdm-btn-add"') < source.indexOf('Ver perfil completo'), 'quiet links below Agregar');
+  for (const gone of ['class="pdm-vibe"', 'class="pdm-trust"', 'class="pdm-story"', 'pdm-meta-chips']) {
+    assert.ok(!source.includes(gone), `${gone} lives on the full profile, not in the quick view`);
+  }
 });
 
 test('the PDP uses the same canonical hierarchy as the quick view', () => {

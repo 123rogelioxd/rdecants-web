@@ -127,21 +127,16 @@ function _render() {
   const hasImage = p.image && p.image.trim() !== '';
 
   const scarcity = getScarcityDisplay(p);
-  const stockHtml = _stockHtml(scarcity);
-  const concentrationHtml = p.concentration
-    ? `<span class="pdm-concentration">${p.concentration}</span>`
-    : '';
-  const genderHtml = genderBadgeHtml(p, { compact: false, className: 'pdm-gender' });
-  const badgeHtml = scarcity.key === 'ok'
-    ? ''
-    : `<span class="pdm-badge ${scarcity.badgeClass}">${scarcity.label}</span>`;
-
+  const availabilityHtml = _availabilityHtml(scarcity);
   const guidanceHtml = buildProductModalGuidanceHtml(p);
   const detailsHref = productPageUrl(p);
   const illustrated = usesIllustratedScent(p);
-  const description = getStoryDescription(p);
-  const vibe = getVibeCopy(p);
+  const displayName = _displayName(p.name);
 
+  /* Approved composition (2026-11-05): photo + brand + full name + chips, the
+     scent block, three sizes, price with availability, "Agregar" and two quiet
+     links. The quote, the long story, the trust line and gender/concentration
+     live on the full profile, not here. */
   const sizesHtml = PRIMARY_SIZES
     .map(ml => {
       const variant = variants.find(v => v.size === ml);
@@ -165,7 +160,6 @@ function _render() {
 
   _modal.dataset.scentIllustrated = String(illustrated);
   _modal.innerHTML = `
-    <!-- Close -->
     <button class="pdm-close" aria-label="Cerrar detalle">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
            stroke-width="1.5" width="18" height="18" aria-hidden="true">
@@ -173,14 +167,12 @@ function _render() {
       </svg>
     </button>
 
-    <!-- Image panel -->
     <div class="pdm-img-panel">
-      ${badgeHtml}
       <div class="pdm-img-wrap">
         ${hasImage
           ? `<img
                src="${p.image}"
-               alt="${p.name}"
+               alt="${esc(p.name)}"
                class="pdm-img"
                loading="eager"
                decoding="async"
@@ -191,29 +183,15 @@ function _render() {
       </div>
     </div>
 
-    <!-- Info panel -->
     <div class="pdm-info">
-
       <div class="pdm-info-scroll">
-
-        <p class="pdm-house">${p.house ?? ''}</p>
-        <div class="pdm-title-row${String(p.name ?? '').length > 24 ? ' pdm-title-row--long' : ''}">
-          <h2 class="pdm-name" id="pdm-name">${p.name}</h2>
-          <div class="pdm-meta-chips">
-            ${genderHtml}
-            ${concentrationHtml}
-          </div>
+        <div class="pdm-head">
+          <p class="pdm-house">${esc(p.house ?? '')}</p>
+          <h2 class="pdm-name" id="pdm-name">${esc(displayName)}</h2>
         </div>
         ${guidanceHtml}
-
-        ${vibe ? `<p class="pdm-vibe">${esc(vibe)}</p>` : ''}
         ${buildScentNotesHtml(p)}
-
-        ${description && description !== vibe ? `<p class="pdm-story">${esc(description)}</p>` : ''}
-
-        ${stockHtml}
-
-      </div><!-- /pdm-info-scroll -->
+      </div>
 
       <div class="pdm-buybar" aria-label="Compra rapida">
         ${variants.length
@@ -227,29 +205,29 @@ function _render() {
           <div class="pdm-price-row">
             <span class="pdm-price" id="pdm-price">${formatPrice(price, 'Consultar precio')}</span>
             <span class="pdm-price-unit">${_selectedSize ? `${_selectedSize} ml` : 'WhatsApp'}</span>
+            ${availabilityHtml}
           </div>
 
           <div class="pdm-actions">
             <button class="btn-primary pdm-btn-add" id="pdm-btn-add"
               ${_isOrderableVariant(activeVariant) ? '' : 'disabled aria-disabled="true"'}
-              aria-label="${activeVariant ? `Agregar ${p.name} ${_selectedSize}ml al carrito` : 'Precio por consultar'}">
+              aria-label="${activeVariant ? `Agregar ${esc(p.name)} ${_selectedSize}ml al carrito` : 'Precio por consultar'}">
               ${_isOrderableVariant(activeVariant) ? 'Agregar' : 'Agotado'}
             </button>
             <div class="pdm-secondary-actions">
               <a class="pdm-details-link" href="${detailsHref}"
-                 aria-label="Ver perfil completo de ${p.name}">
+                 aria-label="Ver perfil completo de ${esc(p.name)}">
                 Ver perfil completo
               </a>
               <button class="pdm-btn-wa" type="button"
-                aria-label="Consultar ${p.name} por WhatsApp">
+                aria-label="Consultar ${esc(p.name)} por WhatsApp">
                 Consultar por WhatsApp
               </button>
             </div>
-            <p class="pdm-trust">Original preparado por RDECANTS · prueba antes de comprar la botella</p>
           </div>
         </div>
       </div>
-    </div><!-- /pdm-info -->
+    </div>
   `;
   primeImageStates(_modal);
 
@@ -435,6 +413,24 @@ function _modalSizeLabel(ml) {
      product — never a blanket claim on a size that saves nothing. */
   if (n === 10) return isBetterValuePerMl(_activeProduct, 10, 5) ? 'Mejor valor' : '';
   return '';
+}
+
+/* Availability beside the price: "Disponible", the scarcity label, or "Agotado". */
+function _availabilityHtml(scarcity) {
+  if (scarcity.state === 'sold_out') return '<span class="pdm-avail pdm-avail--out">Agotado</span>';
+  return `<span class="pdm-avail pdm-avail--${esc(scarcity.key)}">${esc(scarcity.label || 'Disponible')}</span>`;
+}
+
+/* Display only: "BOGOS VIBRANT LEATHER" reads "Bogos Vibrant Leather". Acronyms,
+   numbers and single letters keep their case; the stored name never changes. */
+const KEEP_UPPER = new Set(['EDP', 'EDT', 'EDC', 'NYC', 'VIP', 'CK', 'YSL', 'DG', 'II', 'III', 'IV', 'XS']);
+export function _displayName(name) {
+  const raw = String(name ?? '').trim();
+  if (!raw || raw !== raw.toUpperCase()) return raw;
+  return raw.split(/(\s+)/).map(word => {
+    if (/^\s+$/.test(word) || KEEP_UPPER.has(word) || /\d/.test(word) || word.length === 1) return word;
+    return word.toLowerCase().replace(/(^|[-'’])(\p{L})/gu, (m, sep, ch) => sep + ch.toLocaleUpperCase('es'));
+  }).join('');
 }
 
 function _stockHtml(scarcity) {

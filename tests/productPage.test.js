@@ -285,7 +285,7 @@ test('PDP hero displays principal SVG notes and keeps full metadata in details',
     html.indexOf('id="pdp-novice"')
   );
   assert.ok(!heroSlice.includes('note-tag'), 'notes hidden from hero');
-  assert.ok(heroSlice.includes('scent-note-icon'), 'principal note icons visible');
+  assert.ok(heroSlice.includes('scent-note-img'), 'principal note drawings visible');
   assert.ok((heroSlice.match(/data-scent-note=/g) || []).length <= 5, 'principal notes capped');
 
   const detailsSlice = html.slice(html.indexOf('id="pdp-tech"'));

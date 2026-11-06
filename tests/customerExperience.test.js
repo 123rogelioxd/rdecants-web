@@ -27,7 +27,7 @@ test('principal notes normalize accents, deduplicate aliases, interleave the pyr
 test('a related note preserves its factual name and unknown notes remain readable and escaped', () => {
  assert.equal(normalizeScentNote({id:'ambroxan',label:'Ambroxan',icon:'resin',known:true}).label,'Ambroxan');
  const html = buildScentNotesHtml({scent_profile:{main_notes:[{label:'<Desconocida>',icon:'missing'}]}});
- assert.match(html, /#scent/); assert.match(html,/&lt;Desconocida&gt;/); assert.doesNotMatch(html,/<Desconocida>/);
+ assert.match(html, /neutral\.webp/); assert.match(html,/&lt;Desconocida&gt;/); assert.doesNotMatch(html,/<Desconocida>/);
 });
 test('canonical commercial metadata wins over legacy descriptions and tags', () => {
  const p={desc:'Legacy',scent_profile:{short_description:'Fresco y acuático.',profile_tags:['Fresco','Fresco','Marino','Dulce']}};

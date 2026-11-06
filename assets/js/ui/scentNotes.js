@@ -12,6 +12,17 @@ export function usesIllustratedScent(product) {
   return SCENT_ILLUSTRATED && Boolean(product);
 }
 const SPRITE_URL = new URL(`../../img/scent-icons.svg?v=${BUILD_VERSION}`, import.meta.url).href;
+// Ingredient drawings are pre-rendered transparent WebP files (one per vocabulary
+// entry, assets/img/ingredients/<id>.webp; source in scripts/ingredients). Raster
+// keeps their gradients and textures intact on iOS Safari, which drops gradients
+// referenced from an external SVG sprite. A note with no drawing gets the neutral one.
+const INGREDIENT_DIR = new URL('../../img/ingredients/', import.meta.url).href;
+export function ingredientImageUrl(note) {
+  const drawn = typeof note?.illustration === 'string' && note.illustration.startsWith('ingredient-')
+    ? note.illustration.slice('ingredient-'.length)
+    : 'neutral';
+  return `${INGREDIENT_DIR}${drawn}.webp?v=${BUILD_VERSION}`;
+}
 const text = value => typeof value === 'string' ? value.trim() : '';
 const list = value => Array.isArray(value) ? value : [];
 // Display only: family-matched notes arrive with their authored lowercase label.
@@ -65,7 +76,9 @@ export function buildScentNotesHtml(product, { heading = '¿A qué huele?', clas
     <h3 class="scent-notes-title">${escape(heading)}</h3>
     ${description ? `<p class="scent-notes-summary">${escape(description)}</p>` : ''}
     ${notes.length ? `<ul class="scent-notes-list" data-count="${notes.length}">${notes.map(note => `<li class="scent-note" data-scent-note="${escape(note.id ?? 'unknown')}">
-      <svg class="scent-note-icon${illustrated && !note.illustration.startsWith('ingredient-') ? ' scent-note-icon--line' : ''}" viewBox="${illustrated && note.illustration.startsWith('ingredient-') ? '0 0 96 96' : '0 0 32 32'}" width="${illustrated ? 56 : 32}" height="${illustrated ? 56 : 32}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="${escape(SPRITE_URL)}#${illustrated ? note.illustration : note.icon}"></use></svg>
+      ${illustrated
+        ? `<img class="scent-note-img" src="${escape(ingredientImageUrl(note))}" alt="" width="72" height="72" loading="lazy" decoding="async">`
+        : `<svg class="scent-note-icon" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="${escape(SPRITE_URL)}#${note.icon}"></use></svg>`}
       <span>${escape(illustrated ? upperFirst(note.label) : note.label)}</span></li>`).join('')}</ul>
     ` : ''}
   </section>`;
